@@ -1,0 +1,278 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Secure Login Collector 1.5.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-01-01 12:00+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: secure-login-collector.php
+msgid "Invalid security token."
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Missing required data."
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Invalid metadata format."
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Login data saved successfully."
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Failed to save data to database."
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Insufficient permissions."
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Failed to decrypt data."
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Login data deleted successfully."
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Failed to delete data from database."
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Never expires"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Expired"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "%d days, %d hours"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "%d hours"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Secure Login Data"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Login Data"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Settings"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "This page shows all encrypted login data collected from clients. Click \"Decrypt\" to view the data inline."
+msgstr ""
+
+#: secure-login-collector.php
+msgid "ID"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Email Address"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Name"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Website"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "IP Address"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Date"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Expires In"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Actions"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "No login data found."
+msgstr ""
+
+#: secure-login-collector.php
+msgid "N/A"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Not provided"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Decrypt"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Delete"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Decrypted Data:"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Hide"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Copy Login Data"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Login data copied to clipboard!"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Failed to copy login data."
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Are you sure you want to delete this login data? This action cannot be undone."
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Send Secure Login Data"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Please fill out this form to securely send your login credentials. All data is encrypted before transmission."
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Security & Privacy:"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Your data is encrypted in your browser before being sent to our server. We store the encrypted data securely and automatically delete it after the configured retention period for your privacy and security."
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Your data is encrypted in your browser before being sent to our server. We store the encrypted data securely and automatically delete it after %d days for your privacy and security."
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Your data is encrypted in your browser before being sent to our server. We store the encrypted data securely for your privacy and security."
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Your Email Address (required)"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Your Name (required)"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Website URL (optional, https:// will be added automatically if missing)"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Login Credentials"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Enter your login details here (username, password, etc.)"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Send Encrypted Data"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Notification Settings"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Configure email notifications for new login data submissions."
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Data Expiration Settings"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Configure automatic deletion of old login data."
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Enable Email Notifications"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Send email notifications when new login data is received"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Notification Email Address"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Email address to receive notifications (defaults to admin email)"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Data Expiration (Days)"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Number of days to keep login data (0 = never expires)"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Save Settings"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "[%s] New Secure Login Data Received"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Hello,\n\nNew secure login data has been submitted to your website.\n\nSender Email: %s\nSender Name: %s\nSubmitted: %s\n\nTo view and decrypt the login data, please visit:\n%s\n\nThis is an automated notification from %s\nWebsite: %s"
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Data expiration is disabled. Cannot extend retention period."
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Failed to extend retention period."
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Retention period extended by %d days."
+msgstr ""
+
+#: secure-login-collector.php
+msgid "Extend"
+msgstr "" 

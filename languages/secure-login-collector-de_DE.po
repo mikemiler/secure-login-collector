@@ -1,0 +1,406 @@
+# German translation for Secure Login Collector
+# Copyright (C) 2024 Secure Login Collector
+# This file is distributed under the same license as the Secure Login Collector package.
+msgid ""
+msgstr ""
+"Project-Id-Version: Secure Login Collector 2.1.0\n"
+"Report-Msgid-Bugs-To: https://wp-mike.com\n"
+"POT-Creation-Date: 2024-01-01 12:00+0000\n"
+"PO-Revision-Date: 2024-01-01 12:00+0000\n"
+"Last-Translator: Mike Miler <mike@wp-mike.com>\n"
+"Language-Team: German\n"
+"Language: de_DE\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: secure-login-collector.php:82
+msgid "OpenSSL extension is required for RSA encryption."
+msgstr "OpenSSL-Erweiterung ist für RSA-Verschlüsselung erforderlich."
+
+#: secure-login-collector.php:95
+msgid "Failed to generate RSA key pair."
+msgstr "Fehler beim Generieren des RSA-Schlüsselpaars."
+
+#: secure-login-collector.php:159
+msgid "Invalid security token."
+msgstr "Ungültiges Sicherheitstoken."
+
+#: secure-login-collector.php:164
+msgid "User must be logged in."
+msgstr "Benutzer muss angemeldet sein."
+
+#: secure-login-collector.php:172
+msgid "Missing required data."
+msgstr "Erforderliche Daten fehlen."
+
+#: secure-login-collector.php:178
+msgid "Invalid metadata format. JSON Error: "
+msgstr "Ungültiges Metadatenformat. JSON-Fehler: "
+
+#: secure-login-collector.php:184
+msgid "Missing email in metadata."
+msgstr "E-Mail in Metadaten fehlt."
+
+#: secure-login-collector.php:207
+msgid "Failed to save data to database."
+msgstr "Fehler beim Speichern der Daten in der Datenbank."
+
+#: secure-login-collector.php:220
+msgid "Login data saved securely."
+msgstr "Anmeldedaten sicher gespeichert."
+
+#: secure-login-collector.php:241
+msgid "Insufficient permissions."
+msgstr "Unzureichende Berechtigungen."
+
+#: secure-login-collector.php:260
+msgid "Decryption failed. Please check the encryption key."
+msgstr "Entschlüsselung fehlgeschlagen. Bitte überprüfen Sie den Verschlüsselungsschlüssel."
+
+#: secure-login-collector.php:295
+msgid "Failed to delete data from database."
+msgstr "Fehler beim Löschen der Daten aus der Datenbank."
+
+#: secure-login-collector.php:306
+msgid "Login data deleted successfully."
+msgstr "Anmeldedaten erfolgreich gelöscht."
+
+#: secure-login-collector.php:349
+msgid "[%s] New Secure Login Data Received"
+msgstr "[%s] Neue sichere Anmeldedaten erhalten"
+
+#: secure-login-collector.php:352
+msgid "Hello,\n\nNew secure login data has been submitted to your website.\n\nSender Email: %s\nSender Name: %s\nSubmitted: %s\n\nTo view and decrypt the login data, please visit:\n%s\n\nThis is an automated notification from %s\nWebsite: %s"
+msgstr "Hallo,\n\nNeue sichere Anmeldedaten wurden an Ihre Website übermittelt.\n\nAbsender E-Mail: %s\nAbsender Name: %s\nÜbermittelt: %s\n\nUm die Anmeldedaten anzuzeigen und zu entschlüsseln, besuchen Sie bitte:\n%s\n\nDies ist eine automatische Benachrichtigung von %s\nWebsite: %s"
+
+#: secure-login-collector.php:355
+msgid "Not provided"
+msgstr "Nicht angegeben"
+
+#: secure-login-collector.php:383
+msgid "Never expires"
+msgstr "Läuft nie ab"
+
+#: secure-login-collector.php:390
+msgid "Expired"
+msgstr "Abgelaufen"
+
+#: secure-login-collector.php:396
+msgid "%d days, %d hours"
+msgstr "%d Tage, %d Stunden"
+
+#: secure-login-collector.php:398
+msgid "%d hours"
+msgstr "%d Stunden"
+
+#: secure-login-collector.php:408
+msgid "Secure Login Data"
+msgstr "Sichere Anmeldedaten"
+
+#: secure-login-collector.php:409
+msgid "Login Data"
+msgstr "Anmeldedaten"
+
+#: secure-login-collector.php:417
+#: secure-login-collector.php:418
+msgid "Settings"
+msgstr "Einstellungen"
+
+#: secure-login-collector.php:433
+msgid "This page shows all encrypted login data collected from clients. Click \"Decrypt\" to view the data inline."
+msgstr "Diese Seite zeigt alle verschlüsselten Anmeldedaten von Kunden. Klicken Sie auf \"Entschlüsseln\", um die Daten inline anzuzeigen."
+
+#: secure-login-collector.php:437
+msgid "ID"
+msgstr "ID"
+
+#: secure-login-collector.php:438
+msgid "Email Address"
+msgstr "E-Mail-Adresse"
+
+#: secure-login-collector.php:439
+msgid "Name"
+msgstr "Name"
+
+#: secure-login-collector.php:440
+msgid "Website"
+msgstr "Website"
+
+#: secure-login-collector.php:441
+msgid "Date"
+msgstr "Datum"
+
+#: secure-login-collector.php:442
+msgid "Expires In"
+msgstr "Läuft ab in"
+
+#: secure-login-collector.php:443
+msgid "Actions"
+msgstr "Aktionen"
+
+#: secure-login-collector.php:449
+msgid "No login data found."
+msgstr "Keine Anmeldedaten gefunden."
+
+#: secure-login-collector.php:457
+msgid "N/A"
+msgstr "N/V"
+
+#: secure-login-collector.php:468
+msgid "Decrypt"
+msgstr "Entschlüsseln"
+
+#: secure-login-collector.php:473
+msgid "Extend"
+msgstr "Verlängern"
+
+#: secure-login-collector.php:478
+msgid "Delete"
+msgstr "Löschen"
+
+#: secure-login-collector.php:484
+msgid "Decrypted Data:"
+msgstr "Entschlüsselte Daten:"
+
+#: secure-login-collector.php:486
+msgid "Hide"
+msgstr "Ausblenden"
+
+# Passkey authentication strings
+msgid "Passkey not registered. Please register a passkey first."
+msgstr "Passkey nicht registriert. Bitte registrieren Sie zuerst einen Passkey."
+
+msgid "Passkey authentication required. Please authenticate with your passkey."
+msgstr "Passkey-Authentifizierung erforderlich. Bitte authentifizieren Sie sich mit Ihrem Passkey."
+
+msgid "Missing encryption key."
+msgstr "Verschlüsselungsschlüssel fehlt."
+
+msgid "Pro version required."
+msgstr "Pro-Version erforderlich."
+
+msgid "Missing credential data."
+msgstr "Anmeldedaten fehlen."
+
+msgid "Passkey registered successfully."
+msgstr "Passkey erfolgreich registriert."
+
+msgid "Passkey not registered."
+msgstr "Passkey nicht registriert."
+
+msgid "No pending decrypt request found."
+msgstr "Keine ausstehende Entschlüsselungsanfrage gefunden."
+
+msgid "Missing authentication data."
+msgstr "Authentifizierungsdaten fehlen."
+
+msgid "Decryption failed."
+msgstr "Entschlüsselung fehlgeschlagen."
+
+# Settings page strings
+msgid "Email Notifications"
+msgstr "E-Mail-Benachrichtigungen"
+
+msgid "Data Expiration"
+msgstr "Datenablauf"
+
+msgid "Encryption Settings"
+msgstr "Verschlüsselungseinstellungen"
+
+msgid "Pro Version Settings"
+msgstr "Pro-Version-Einstellungen"
+
+msgid "Configure email notifications for new login data submissions."
+msgstr "E-Mail-Benachrichtigungen für neue Anmeldedaten-Übermittlungen konfigurieren."
+
+msgid "Configure automatic deletion of old login data."
+msgstr "Automatisches Löschen alter Anmeldedaten konfigurieren."
+
+msgid "Manage RSA encryption keys for secure data transmission."
+msgstr "RSA-Verschlüsselungsschlüssel für sichere Datenübertragung verwalten."
+
+msgid "Advanced security settings for the pro version including passkey authentication."
+msgstr "Erweiterte Sicherheitseinstellungen für die Pro-Version einschließlich Passkey-Authentifizierung."
+
+msgid "RSA Keys Status:"
+msgstr "RSA-Schlüssel-Status:"
+
+msgid "Active"
+msgstr "Aktiv"
+
+msgid "Generated:"
+msgstr "Generiert:"
+
+msgid "Not generated"
+msgstr "Nicht generiert"
+
+msgid "Generate New RSA Keys"
+msgstr "Neue RSA-Schlüssel generieren"
+
+msgid "Export Public Key"
+msgstr "Öffentlichen Schlüssel exportieren"
+
+msgid "This will generate new RSA keys and invalidate all existing encrypted data. Continue?"
+msgstr "Dies wird neue RSA-Schlüssel generieren und alle vorhandenen verschlüsselten Daten ungültig machen. Fortfahren?"
+
+msgid "Generating..."
+msgstr "Generiere..."
+
+msgid "RSA keys generated successfully!"
+msgstr "RSA-Schlüssel erfolgreich generiert!"
+
+msgid "Failed to generate keys:"
+msgstr "Fehler beim Generieren der Schlüssel:"
+
+msgid "Network error occurred."
+msgstr "Netzwerkfehler aufgetreten."
+
+msgid "Failed to export public key:"
+msgstr "Fehler beim Exportieren des öffentlichen Schlüssels:"
+
+msgid "Passkey Status:"
+msgstr "Passkey-Status:"
+
+msgid "Registered and Active"
+msgstr "Registriert und aktiv"
+
+msgid "Not registered"
+msgstr "Nicht registriert"
+
+msgid "Register Passkey"
+msgstr "Passkey registrieren"
+
+msgid "Test Passkey"
+msgstr "Passkey testen"
+
+msgid "Passkeys provide enhanced security for decrypting login data. Once registered, you can use your phone, tablet, or security key to authenticate before viewing sensitive data."
+msgstr "Passkeys bieten erhöhte Sicherheit für die Entschlüsselung von Anmeldedaten. Nach der Registrierung können Sie Ihr Telefon, Tablet oder Ihren Sicherheitsschlüssel zur Authentifizierung verwenden, bevor Sie sensible Daten anzeigen."
+
+msgid "Registering..."
+msgstr "Registriere..."
+
+msgid "Failed to register passkey:"
+msgstr "Fehler beim Registrieren des Passkeys:"
+
+msgid "Passkey registration failed:"
+msgstr "Passkey-Registrierung fehlgeschlagen:"
+
+msgid "Testing..."
+msgstr "Teste..."
+
+msgid "Passkey test successful!"
+msgstr "Passkey-Test erfolgreich!"
+
+msgid "Passkey test failed:"
+msgstr "Passkey-Test fehlgeschlagen:"
+
+msgid "RSA keys generated successfully."
+msgstr "RSA-Schlüssel erfolgreich generiert."
+
+msgid "No public key available."
+msgstr "Kein öffentlicher Schlüssel verfügbar."
+
+# Frontend form strings
+msgid "Submit Secure Login Data"
+msgstr "Sichere Anmeldedaten übermitteln"
+
+msgid "Submit Securely"
+msgstr "Sicher übermitteln"
+
+msgid "Please fill out this form to securely send your login credentials. All data is encrypted before transmission."
+msgstr "Bitte füllen Sie dieses Formular aus, um Ihre Anmeldedaten sicher zu senden. Alle Daten werden vor der Übertragung verschlüsselt."
+
+msgid "Security & Privacy:"
+msgstr "Sicherheit & Datenschutz:"
+
+msgid "Your data is encrypted in your browser before being sent to our server. We store the encrypted data securely and automatically delete it after %d days for your privacy and security."
+msgstr "Ihre Daten werden in Ihrem Browser verschlüsselt, bevor sie an unseren Server gesendet werden. Wir speichern die verschlüsselten Daten sicher und löschen sie automatisch nach %d Tagen für Ihren Datenschutz und Ihre Sicherheit."
+
+msgid "Your data is encrypted in your browser before being sent to our server. We store the encrypted data securely for your privacy and security."
+msgstr "Ihre Daten werden in Ihrem Browser verschlüsselt, bevor sie an unseren Server gesendet werden. Wir speichern die verschlüsselten Daten sicher für Ihren Datenschutz und Ihre Sicherheit."
+
+msgid "Email Address:"
+msgstr "E-Mail-Adresse:"
+
+msgid "your@email.com"
+msgstr "ihre@email.de"
+
+msgid "Name:"
+msgstr "Name:"
+
+msgid "Your full name"
+msgstr "Ihr vollständiger Name"
+
+msgid "Service Name:"
+msgstr "Service-Name:"
+
+msgid "Name like email account or hosting company etc."
+msgstr "Name wie E-Mail-Konto oder Hosting-Unternehmen usw."
+
+msgid "Enter the name of the service, email provider, hosting company, or platform these credentials are for."
+msgstr "Geben Sie den Namen des Dienstes, E-Mail-Anbieters, Hosting-Unternehmens oder der Plattform ein, für die diese Anmeldedaten bestimmt sind."
+
+msgid "Login Data:"
+msgstr "Anmeldedaten:"
+
+msgid "Enter your login credentials, passwords, or any access information here..."
+msgstr "Geben Sie hier Ihre Anmeldedaten, Passwörter oder andere Zugriffsinformationen ein..."
+
+msgid "Enter usernames, passwords, URLs, or any login information you need to share securely."
+msgstr "Geben Sie Benutzernamen, Passwörter, URLs oder andere Anmeldeinformationen ein, die Sie sicher teilen möchten."
+
+# Admin interface editing strings
+msgid "Edit"
+msgstr "Bearbeiten"
+
+msgid "Save"
+msgstr "Speichern"
+
+msgid "Cancel"
+msgstr "Abbrechen"
+
+msgid "Email and Name are required fields."
+msgstr "E-Mail, Name und Service-Name sind Pflichtfelder."
+
+msgid "Entry not found."
+msgstr "Eintrag nicht gefunden."
+
+msgid "Invalid current metadata."
+msgstr "Ungültige aktuelle Metadaten."
+
+msgid "Failed to update metadata in database."
+msgstr "Fehler beim Aktualisieren der Metadaten in der Datenbank."
+
+msgid "Metadata updated successfully."
+msgstr "Metadaten erfolgreich aktualisiert."
+
+# JavaScript strings
+msgid "Please fill in all required fields (Email Address, Name, and Login Data)."
+msgstr "Bitte füllen Sie alle erforderlichen Felder aus (E-Mail-Adresse, Name, Service-Name und Anmeldedaten)."
+
+msgid "Submitting..."
+msgstr "Übermittlung..."
+
+msgid "Login data saved securely! Thank you for your submission."
+msgstr "Anmeldedaten sicher gespeichert! Vielen Dank für Ihre Übermittlung."
+
+msgid "Error saving data: "
+msgstr "Fehler beim Speichern der Daten: "
+
+msgid "Unknown error"
+msgstr "Unbekannter Fehler"
+
+msgid "Network error occurred while saving data. Please try again."
+msgstr "Netzwerkfehler beim Speichern der Daten. Bitte versuchen Sie es erneut."
+
+msgid "Encryption failed. Please try again."
+msgstr "Verschlüsselung fehlgeschlagen. Bitte versuchen Sie es erneut."
+
+# New validation messages for service name requirement
+msgid "Missing service name in metadata."
+msgstr "Service-Name in Metadaten fehlt."
+
+msgid "Email, Name, and Service Name are required fields."
+msgstr "E-Mail, Name und Service-Name sind Pflichtfelder." 
