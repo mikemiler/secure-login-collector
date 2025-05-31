@@ -1,62 +1,11 @@
 /**
  * Secure Login Collector - Ultra-Secure Frontend Script
- * Uses passkey-derived encryption for maximum security
+ * Uses RSA encryption on frontend, server handles passkey re-encryption
  */
 
 jQuery(document).ready(function($) {
     
-    // Passkey-derived encryption function
-    async function encryptWithPasskeyKey(data) {
-        try {
-            // First, authenticate with passkey to get signature
-            const challenge = new Uint8Array(32);
-            window.crypto.getRandomValues(challenge);
-            
-            const getCredentialArgs = {
-                publicKey: {
-                    timeout: 60000,
-                    challenge: challenge,
-                    userVerification: "required"
-                }
-            };
-            
-            const assertion = await navigator.credentials.get(getCredentialArgs);
-            
-            // Extract signature for key derivation
-            const signature = new Uint8Array(assertion.response.signature);
-            const signatureBase64 = btoa(String.fromCharCode(...signature));
-            
-            // Send data and signature to server for encryption
-            return new Promise((resolve, reject) => {
-                $.ajax({
-                    url: secureLoginAjax.ajaxurl,
-                    type: 'POST',
-                    data: {
-                        action: 'encrypt_with_passkey',
-                        data: data,
-                        signature: signatureBase64,
-                        nonce: secureLoginAjax.nonce
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            resolve(response.data.encrypted_data);
-                        } else {
-                            reject(new Error(response.data || 'Encryption failed'));
-                        }
-                    },
-                    error: function() {
-                        reject(new Error('Network error during encryption'));
-                    }
-                });
-            });
-            
-        } catch (error) {
-            console.error('Passkey encryption failed:', error);
-            throw new Error('Passkey encryption failed: ' + error.message);
-        }
-    }
-    
-    // Fallback RSA encryption function
+    // RSA encryption function
     async function encryptWithRSA(data, publicKeyPem) {
         try {
             // Convert PEM to ArrayBuffer
@@ -112,25 +61,16 @@ jQuery(document).ready(function($) {
         );
     }
     
-    // Main encryption function
+    // Main encryption function - always uses RSA
     async function encryptData(data) {
-        // Check if ultra-secure mode is enabled
-        if (secureLoginAjax.ultra_secure_mode && secureLoginAjax.passkey_registered) {
-            try {
-                return await encryptWithPasskeyKey(data);
-            } catch (error) {
-                console.error('Passkey encryption failed, falling back to RSA:', error);
-                // Fall back to RSA if passkey fails
-            }
-        }
-        
-        // Fallback to RSA encryption
+        // Always use RSA encryption on frontend
+        // Server will handle passkey re-encryption if ultra-secure mode is enabled
         if (secureLoginAjax.public_key) {
             try {
                 return await encryptWithRSA(data, secureLoginAjax.public_key);
             } catch (error) {
                 console.error('RSA encryption failed:', error);
-                throw new Error('All encryption methods failed');
+                throw new Error('Encryption failed');
             }
         }
         
@@ -178,9 +118,6 @@ jQuery(document).ready(function($) {
             
             // Determine encryption type used
             let encryptionType = 'rsa'; // Default fallback
-            if (secureLoginAjax.ultra_secure_mode && secureLoginAjax.passkey_registered) {
-                encryptionType = 'passkey_derived';
-            }
             
             // Prepare metadata
             const metadata = {

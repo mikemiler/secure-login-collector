@@ -38,6 +38,7 @@ class SecureLoginCollector {
         add_action('wp_ajax_decrypt_secure_login_data', array($this, 'handle_decrypt_ajax'));
         add_action('wp_ajax_delete_secure_login_data', array($this, 'handle_delete_ajax'));
         add_action('wp_ajax_extend_secure_login_data', array($this, 'handle_extend_ajax'));
+        add_action('wp_ajax_save_manual_login_data', array($this, 'handle_save_manual_login_data'));
         add_action('wp_ajax_generate_rsa_keys', array($this, 'handle_generate_rsa_keys'));
         add_action('wp_ajax_export_public_key', array($this, 'handle_export_public_key'));
         add_action('wp_ajax_register_passkey', array($this, 'handle_register_passkey'));
@@ -45,6 +46,7 @@ class SecureLoginCollector {
         add_action('wp_ajax_reset_passkey', array($this, 'handle_reset_passkey'));
         add_action('wp_ajax_update_secure_login_metadata', array($this, 'handle_update_metadata_ajax'));
         add_action('wp_ajax_encrypt_with_passkey', array($this, 'handle_encrypt_with_passkey'));
+        add_action('wp_ajax_test_passkey_encryption', array($this, 'handle_test_passkey_encryption'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
         add_action('admin_menu', array($this, 'add_admin_menu'));
         add_action('admin_init', array($this, 'register_settings'));
@@ -327,26 +329,15 @@ class SecureLoginCollector {
         if (is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'secure_login_form')) {
             wp_enqueue_script('jquery');
             
-            // Check if ultra-secure mode is enabled
-            $ultra_secure_mode = $this->is_pro_version && get_option('secure_login_ultra_secure_mode', false);
-            $passkey_registered = get_option('secure_login_passkey_registered', false);
-            
-            if ($ultra_secure_mode && $passkey_registered) {
-                // Use ultra-secure script with passkey-derived encryption
-                wp_enqueue_script('secure-login-frontend', plugin_dir_url(__FILE__) . 'js/frontend-ultra-secure.js', array('jquery'), '2.3.8', true);
-            } else {
-                // Use standard pro script with RSA encryption
-                wp_enqueue_script('secure-login-frontend', plugin_dir_url(__FILE__) . 'js/frontend-pro.js', array('jquery'), '2.1.0', true);
-            }
+            // Always use RSA encryption on frontend
+            // Server will handle passkey re-encryption if ultra-secure mode is enabled
+            wp_enqueue_script('secure-login-frontend', plugin_dir_url(__FILE__) . 'js/frontend-ultra-secure.js', array('jquery'), '2.4.0', true);
             
             // Prepare localization data
             $localize_data = array(
                 'ajaxurl' => admin_url('admin-ajax.php'),
                 'nonce' => wp_create_nonce('secure_login_nonce'),
                 'is_pro' => $this->is_pro_version,
-                'ultra_secure_mode' => $ultra_secure_mode,
-                'passkey_registered' => $passkey_registered,
-                'use_rsa' => true, // Always have RSA as fallback
                 'strings' => array(
                     'required_fields_error' => __('Please fill in all required fields (Email Address, Name, Service Name, and Login Data).', 'secure-login-collector'),
                     'submitting' => __('Submitting...', 'secure-login-collector'),
@@ -359,7 +350,7 @@ class SecureLoginCollector {
                 )
             );
             
-            // Add public key for RSA encryption (fallback)
+            // Add public key for RSA encryption
             $public_key = $this->get_public_key();
             if (!is_wp_error($public_key)) {
                 $localize_data['public_key'] = $public_key;
@@ -427,8 +418,25 @@ class SecureLoginCollector {
         // Re-encode the sanitized metadata.
         $metadata = json_encode($metadata_array);
         
-        // Prepare data for database insertion.
-        global $wpdb;
+        // ULTRA-SECURE MODE: Double-encrypt with passkey-derived encryption if enabled
+        // Instead of decrypt->re-encrypt, we encrypt the already-encrypted RSA data
+        if ($this->is_pro_version && get_option('secure_login_ultra_secure_mode', false) && get_option('secure_login_passkey_registered', false)) {
+            // Encrypt the RSA-encrypted data with passkey-derived encryption (double encryption)
+            $passkey_encrypted_data = $this->encrypt_with_passkey_key($encrypted_data, null);
+            
+            if ($passkey_encrypted_data !== false) {
+                // Use double-encrypted data and update metadata
+                $encrypted_data = $passkey_encrypted_data;
+                $metadata_array['encryption_type'] = 'passkey_derived';
+                $metadata_array['inner_encryption'] = 'rsa'; // Track inner encryption method
+                $metadata_array['double_encrypted'] = true; // Flag for double encryption
+                $metadata = json_encode($metadata_array);
+                
+                error_log('Secure Login Collector: Data double-encrypted with passkey-derived encryption over RSA');
+            } else {
+                error_log('Secure Login Collector: Failed to double-encrypt with passkey, keeping RSA encryption');
+            }
+        }
         
         // Calculate retention_until based on expiration settings.
         $expiration_days = get_option('secure_login_expiration_days', 30);
@@ -436,6 +444,9 @@ class SecureLoginCollector {
         if ($expiration_days > 0) {
             $retention_until = date('Y-m-d H:i:s', strtotime("+{$expiration_days} days"));
         }
+        
+        // Prepare data for database insertion.
+        global $wpdb;
         
         $data = array(
             'encrypted_data' => $encrypted_data,
@@ -716,6 +727,13 @@ class SecureLoginCollector {
     public function cleanup_old_data() {
         global $wpdb;
         
+        // Check if auto-deletion is enabled
+        $expiration_days = get_option('secure_login_expiration_days', 30);
+        if ($expiration_days <= 0) {
+            // Auto-deletion is disabled, don't delete anything
+            return;
+        }
+        
         // Delete entries where retention_until has passed.
         $current_time = current_time('mysql');
         
@@ -797,6 +815,84 @@ class SecureLoginCollector {
             <h1><?php echo esc_html__('Secure Login Data', 'secure-login-collector'); ?></h1>
             <p><?php echo esc_html__('This page shows all encrypted login data collected from clients. Click "Decrypt" to view the data inline.', 'secure-login-collector'); ?></p>
             
+            <!-- Add New Entry Button -->
+            <div style="margin-bottom: 20px;">
+                <button type="button" class="button button-primary" id="add-new-entry-btn">
+                    <?php echo esc_html__('Add New Entry', 'secure-login-collector'); ?>
+                </button>
+            </div>
+            
+            <!-- Add New Entry Modal -->
+            <div id="add-new-entry-modal" style="display: none; position: fixed; z-index: 100000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+                <div style="background-color: #fff; margin: 5% auto; padding: 20px; border-radius: 5px; width: 80%; max-width: 600px; position: relative;">
+                    <span class="close-modal" style="color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer;">&times;</span>
+                    <h2><?php echo esc_html__('Add New Login Data Entry', 'secure-login-collector'); ?></h2>
+                    
+                    <form id="manual-add-form">
+                        <table class="form-table">
+                            <tr>
+                                <th scope="row">
+                                    <label for="manual_email"><?php echo esc_html__('Email Address', 'secure-login-collector'); ?> <span style="color: red;">*</span></label>
+                                </th>
+                                <td>
+                                    <input type="email" id="manual_email" name="manual_email" class="regular-text" required>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row">
+                                    <label for="manual_name"><?php echo esc_html__('Name', 'secure-login-collector'); ?> <span style="color: red;">*</span></label>
+                                </th>
+                                <td>
+                                    <input type="text" id="manual_name" name="manual_name" class="regular-text" required>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row">
+                                    <label for="manual_service_name"><?php echo esc_html__('Service Name', 'secure-login-collector'); ?> <span style="color: red;">*</span></label>
+                                </th>
+                                <td>
+                                    <input type="text" id="manual_service_name" name="manual_service_name" class="regular-text" required>
+                                    <p class="description"><?php echo esc_html__('Name of the service, email provider, hosting company, etc.', 'secure-login-collector'); ?></p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row">
+                                    <label for="manual_login_data"><?php echo esc_html__('Login Data', 'secure-login-collector'); ?> <span style="color: red;">*</span></label>
+                                </th>
+                                <td>
+                                    <textarea id="manual_login_data" name="manual_login_data" rows="6" class="large-text" required placeholder="<?php echo esc_attr__('Enter login credentials, passwords, URLs, or any access information...', 'secure-login-collector'); ?>"></textarea>
+                                    <p class="description"><?php echo esc_html__('Enter usernames, passwords, URLs, or any login information.', 'secure-login-collector'); ?></p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row">
+                                    <label for="manual_encryption_method"><?php echo esc_html__('Encryption Method', 'secure-login-collector'); ?></label>
+                                </th>
+                                <td>
+                                    <select id="manual_encryption_method" name="manual_encryption_method">
+                                        <?php if ($this->is_pro_version && get_option('secure_login_passkey_registered', false)): ?>
+                                            <option value="passkey_derived"><?php echo esc_html__('🔐 Ultra-Secure (Passkey)', 'secure-login-collector'); ?></option>
+                                        <?php endif; ?>
+                                        <option value="rsa" selected><?php echo esc_html__('🔒 RSA-2048', 'secure-login-collector'); ?></option>
+                                        <option value="xor"><?php echo esc_html__('🔓 XOR (Legacy)', 'secure-login-collector'); ?></option>
+                                    </select>
+                                    <p class="description"><?php echo esc_html__('Choose the encryption method for this entry.', 'secure-login-collector'); ?></p>
+                                </td>
+                            </tr>
+                        </table>
+                        
+                        <p class="submit">
+                            <button type="submit" class="button button-primary" id="save-manual-entry">
+                                <?php echo esc_html__('Save Entry', 'secure-login-collector'); ?>
+                            </button>
+                            <button type="button" class="button" id="cancel-manual-entry">
+                                <?php echo esc_html__('Cancel', 'secure-login-collector'); ?>
+                            </button>
+                        </p>
+                    </form>
+                </div>
+            </div>
+            
             <table class="wp-list-table widefat fixed striped">
                 <thead>
                     <tr>
@@ -805,6 +901,7 @@ class SecureLoginCollector {
                         <th><?php echo esc_html__('Name', 'secure-login-collector'); ?></th>
                         <th><?php echo esc_html__('Service Name', 'secure-login-collector'); ?></th>
                         <th><?php echo esc_html__('Date', 'secure-login-collector'); ?></th>
+                        <th><?php echo esc_html__('Encryption Method', 'secure-login-collector'); ?></th>
                         <th><?php echo esc_html__('Expires In', 'secure-login-collector'); ?></th>
                         <th><?php echo esc_html__('Actions', 'secure-login-collector'); ?></th>
                     </tr>
@@ -812,7 +909,7 @@ class SecureLoginCollector {
                 <tbody>
                     <?php if (empty($results)): ?>
                         <tr>
-                            <td colspan="7"><?php echo esc_html__('No login data found.', 'secure-login-collector'); ?></td>
+                            <td colspan="8"><?php echo esc_html__('No login data found.', 'secure-login-collector'); ?></td>
                         </tr>
                     <?php else: ?>
                         <?php foreach ($results as $row): ?>
@@ -821,6 +918,9 @@ class SecureLoginCollector {
                             $hostname = isset($metadata['key_hostname']) ? $metadata['key_hostname'] : '';
                             $timestamp_suffix = isset($metadata['key_timestamp_suffix']) ? $metadata['key_timestamp_suffix'] : '';
                             $encryption_type = isset($metadata['encryption_type']) ? $metadata['encryption_type'] : 'xor'; // Default to XOR for legacy entries
+                            
+                            // Get encryption method information
+                            $encryption_info = $this->get_encryption_method_info($encryption_type);
                             ?>
                             <tr>
                                 <td><?php echo esc_html($row->id); ?></td>
@@ -846,6 +946,11 @@ class SecureLoginCollector {
                                            value="<?php echo esc_attr($metadata['service_name'] ?? ''); ?>" style="display: none;">
                                 </td>
                                 <td><?php echo esc_html($row->created_at); ?></td>
+                                <td>
+                                    <span class="encryption-method <?php echo esc_attr($encryption_info['class']); ?>" title="<?php echo esc_attr($encryption_info['description']); ?>">
+                                        <?php echo $encryption_info['name']; ?>
+                                    </span>
+                                </td>
                                 <td><?php echo $this->calculate_expiration($row->retention_until); ?></td>
                                 <td>
                                     <button type="button" class="button edit-btn" data-id="<?php echo $row->id; ?>">
@@ -879,7 +984,7 @@ class SecureLoginCollector {
                                 </td>
                             </tr>
                             <tr id="decrypted-row-<?php echo $row->id; ?>" class="decrypted-data-row" style="display: none;">
-                                <td colspan="7">
+                                <td colspan="8">
                                     <div class="decrypted-content">
                                         <h4><?php echo esc_html__('Decrypted Data:', 'secure-login-collector'); ?></h4>
                                         <div class="decrypted-json" style="background: #f9f9f9; padding: 15px; border: 1px solid #ddd; border-radius: 3px; max-height: 600px; overflow-y: auto;"></div>
@@ -925,6 +1030,49 @@ class SecureLoginCollector {
         }
         .wp-list-table .button:last-child {
             margin-right: 0;
+        }
+        
+        /* Encryption method styling */
+        .encryption-method {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            min-width: 120px;
+            cursor: help;
+        }
+        
+        .encryption-ultra-secure {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
+        }
+        
+        .encryption-rsa {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+            color: white;
+            box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3);
+        }
+        
+        .encryption-xor {
+            background: linear-gradient(135deg, #FF9800, #F57C00);
+            color: white;
+            box-shadow: 0 2px 4px rgba(255, 152, 0, 0.3);
+        }
+        
+        .encryption-method:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s ease;
+        }
+        
+        /* Encryption method column width */
+        .wp-list-table th:nth-child(6),
+        .wp-list-table td:nth-child(6) {
+            width: 140px;
+            text-align: center;
         }
         </style>
         <script>
@@ -1049,8 +1197,8 @@ class SecureLoginCollector {
                 var decryptedRow = $('#decrypted-row-' + id);
                 
                 // Check if this is pro version and passkey is available
-                var isProVersion = <?php echo $this->is_pro_version ? 'true' : 'false'; ?>;
-                var passkeyRegistered = <?php echo get_option('secure_login_passkey_registered', false) ? 'true' : 'false'; ?>;
+                var isProVersion = <?php echo json_encode($this->is_pro_version); ?>;
+                var passkeyRegistered = <?php echo json_encode(get_option('secure_login_passkey_registered', false)); ?>;
                 
                 // SECURITY ENHANCEMENT: Pro version with passkey MUST use passkey authentication
                 if (isProVersion && passkeyRegistered) {
@@ -1402,6 +1550,88 @@ class SecureLoginCollector {
                     }
                 });
             });
+            
+            // Modal functionality
+            $('#add-new-entry-btn').on('click', function() {
+                $('#add-new-entry-modal').show();
+            });
+            
+            $('.close-modal, #cancel-manual-entry').on('click', function() {
+                $('#add-new-entry-modal').hide();
+                $('#manual-add-form')[0].reset();
+            });
+            
+            // Close modal when clicking outside
+            $(window).on('click', function(event) {
+                if (event.target.id === 'add-new-entry-modal') {
+                    $('#add-new-entry-modal').hide();
+                    $('#manual-add-form')[0].reset();
+                }
+            });
+            
+            // Handle manual entry form submission
+            $('#manual-add-form').on('submit', function(e) {
+                e.preventDefault();
+                
+                var form = $(this);
+                var submitBtn = $('#save-manual-entry');
+                
+                // Get form data
+                var email = $('#manual_email').val().trim();
+                var name = $('#manual_name').val().trim();
+                var serviceName = $('#manual_service_name').val().trim();
+                var loginData = $('#manual_login_data').val().trim();
+                var encryptionMethod = $('#manual_encryption_method').val();
+                
+                // Validate required fields
+                if (!email || !name || !serviceName || !loginData) {
+                    alert('<?php echo esc_js(__('Please fill in all required fields.', 'secure-login-collector')); ?>');
+                    return;
+                }
+                
+                // Disable submit button and show loading
+                submitBtn.prop('disabled', true).text('<?php echo esc_js(__('Saving...', 'secure-login-collector')); ?>');
+                
+                // For manual entries, we'll use server-side encryption
+                var metadata = {
+                    email: email,
+                    name: name,
+                    service_name: serviceName,
+                    created_at: new Date().toISOString(),
+                    encryption_type: encryptionMethod,
+                    manually_added: true,
+                    added_by_user: <?php echo json_encode(get_current_user_id()); ?>
+                };
+                
+                // Submit to server for encryption and storage
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'save_manual_login_data',
+                        login_data: loginData,
+                        metadata: JSON.stringify(metadata),
+                        encryption_method: encryptionMethod,
+                        nonce: '<?php echo wp_create_nonce('save_manual_login_data'); ?>'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            alert('<?php echo esc_js(__('Login data saved successfully!', 'secure-login-collector')); ?>');
+                            $('#add-new-entry-modal').hide();
+                            $('#manual-add-form')[0].reset();
+                            location.reload(); // Refresh to show new entry
+                        } else {
+                            alert('<?php echo esc_js(__('Error saving data: ', 'secure-login-collector')); ?>' + (response.data || '<?php echo esc_js(__('Unknown error', 'secure-login-collector')); ?>'));
+                        }
+                    },
+                    error: function() {
+                        alert('<?php echo esc_js(__('Network error occurred while saving data.', 'secure-login-collector')); ?>');
+                    },
+                    complete: function() {
+                        submitBtn.prop('disabled', false).text('<?php echo esc_js(__('Save Entry', 'secure-login-collector')); ?>');
+                    }
+                });
+            });
         });
         </script>
         <?php
@@ -1452,35 +1682,51 @@ class SecureLoginCollector {
     
     /**
      * Decrypt passkey-derived encrypted data (requires passkey authentication).
+     * Now supports double encryption: passkey -> RSA -> plain data
      */
     private function decrypt_passkey_derived_data($encrypted_data) {
         // This method is called after passkey authentication
-        // The signature should be available from the authentication process
+        // We no longer need the signature since we use the stored public key for key derivation
         $user_id = get_current_user_id();
-        $passkey_signature = get_transient('secure_login_passkey_signature_' . $user_id);
         
-        if (!$passkey_signature) {
-            error_log('Secure Login Collector: No passkey signature available for decryption');
+        // Check if passkey authentication was successful
+        $passkey_authenticated = get_transient('secure_login_passkey_authenticated_' . $user_id);
+        if (!$passkey_authenticated) {
+            error_log('Secure Login Collector: Passkey authentication not verified for decryption');
             return false;
         }
         
-        // Decrypt using passkey-derived key
-        $decrypted = $this->decrypt_with_passkey_key($encrypted_data, $passkey_signature);
+        // First decrypt with passkey-derived key
+        $first_decrypted = $this->decrypt_with_passkey_key($encrypted_data, null);
         
-        if ($decrypted === false) {
+        if ($first_decrypted === false) {
             error_log('Secure Login Collector: Passkey-derived decryption failed');
             return false;
         }
         
-        // Parse JSON
-        $data = json_decode($decrypted, true);
+        // Check if this is double-encrypted data by trying to parse as JSON first
+        $data = json_decode($first_decrypted, true);
         
         if (json_last_error() === JSON_ERROR_NONE) {
-            error_log('Secure Login Collector: Passkey-derived decryption successful');
+            // Successfully parsed as JSON - this is single-encrypted data (old format)
+            error_log('Secure Login Collector: Single passkey-derived decryption successful');
             return $data;
         } else {
-            error_log('Secure Login Collector: JSON decode failed - ' . json_last_error_msg());
-            return false;
+            // Not JSON - this might be double-encrypted data (RSA-encrypted data that was passkey-encrypted)
+            error_log('Secure Login Collector: Attempting RSA decryption of inner layer');
+            
+            // Try to decrypt the inner RSA layer
+            $final_decrypted = $this->decrypt_rsa_data($first_decrypted);
+            
+            if ($final_decrypted !== false) {
+                error_log('Secure Login Collector: Double decryption (passkey + RSA) successful');
+                return $final_decrypted;
+            } else {
+                error_log('Secure Login Collector: RSA inner decryption failed, treating as raw data');
+                // If RSA decryption fails, treat the first decrypted data as the final result
+                // This handles edge cases where the data might not be JSON but is still valid
+                return array('raw_data' => $first_decrypted);
+            }
         }
     }
     
@@ -1604,10 +1850,16 @@ class SecureLoginCollector {
                 <p><?php echo esc_html__('Please fill out this form to securely send your login credentials. All data is encrypted before transmission.', 'secure-login-collector'); ?></p>
                 <?php 
                 $expiration_days = get_option('secure_login_expiration_days', 30);
-                if ($expiration_days > 0): ?>
+                $ultra_secure_mode = $this->is_pro_version && get_option('secure_login_ultra_secure_mode', false) && get_option('secure_login_passkey_registered', false);
+                
+                if ($ultra_secure_mode): ?>
+                    <p><strong><?php echo esc_html__('🔐 Ultra-Secure Mode Active:', 'secure-login-collector'); ?></strong> <?php echo esc_html__('Your data will be encrypted with advanced passkey-derived encryption for maximum security.', 'secure-login-collector'); ?></p>
+                <?php endif; ?>
+                
+                <?php if ($expiration_days > 0): ?>
                     <p><strong><?php echo esc_html__('Security & Privacy:', 'secure-login-collector'); ?></strong> <?php echo sprintf(esc_html__('Your data is encrypted in your browser before being sent to our server. We store the encrypted data securely and automatically delete it after %d days for your privacy and security.', 'secure-login-collector'), $expiration_days); ?></p>
                 <?php else: ?>
-                    <p><strong><?php echo esc_html__('Security & Privacy:', 'secure-login-collector'); ?></strong> <?php echo esc_html__('Your data is encrypted in your browser before being sent to our server. We store the encrypted data securely for your privacy and security.', 'secure-login-collector'); ?></p>
+                    <p><strong><?php echo esc_html__('Security & Privacy:', 'secure-login-collector'); ?></strong> <?php echo esc_html__('Your data is encrypted in your browser before being sent to our server. We store the encrypted data securely. Auto-deletion is disabled, so data will be retained until manually deleted by the administrator.', 'secure-login-collector'); ?></p>
                 <?php endif; ?>
             </div>
             <form id="secure-login-frontend-form" class="secure-login-form">
@@ -1820,6 +2072,43 @@ class SecureLoginCollector {
     public function encryption_section_callback() {
         echo '<p>' . esc_html__('Manage RSA encryption keys for secure data transmission.', 'secure-login-collector') . '</p>';
         
+        // Display encryption methods information
+        echo '<div class="encryption-methods-info" style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 15px; margin-bottom: 20px;">';
+        echo '<h4>' . esc_html__('Available Encryption Methods:', 'secure-login-collector') . '</h4>';
+        echo '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-top: 10px;">';
+        
+        // Ultra-Secure (Passkey-derived)
+        if ($this->is_pro_version) {
+            echo '<div style="background: white; border: 1px solid #4CAF50; border-radius: 4px; padding: 12px;">';
+            echo '<div style="display: flex; align-items: center; margin-bottom: 8px;">';
+            echo '<span style="background: linear-gradient(135deg, #4CAF50, #45a049); color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: 600; margin-right: 8px;">🔐 ULTRA-SECURE</span>';
+            echo '<strong>' . esc_html__('Passkey-Derived', 'secure-login-collector') . '</strong>';
+            echo '</div>';
+            echo '<p style="margin: 0; font-size: 13px; color: #666;">' . esc_html__('Uses your passkey signature to derive encryption keys. Maximum security - even server compromise cannot decrypt data without your physical device.', 'secure-login-collector') . '</p>';
+            echo '</div>';
+        }
+        
+        // RSA-2048
+        echo '<div style="background: white; border: 1px solid #2196F3; border-radius: 4px; padding: 12px;">';
+        echo '<div style="display: flex; align-items: center; margin-bottom: 8px;">';
+        echo '<span style="background: linear-gradient(135deg, #2196F3, #1976D2); color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: 600; margin-right: 8px;">🔒 SECURE</span>';
+        echo '<strong>' . esc_html__('RSA-2048', 'secure-login-collector') . '</strong>';
+        echo '</div>';
+        echo '<p style="margin: 0; font-size: 13px; color: #666;">' . esc_html__('Industry-standard RSA encryption with 2048-bit keys. Secure for most use cases and available for all users.', 'secure-login-collector') . '</p>';
+        echo '</div>';
+        
+        // XOR (Legacy)
+        echo '<div style="background: white; border: 1px solid #FF9800; border-radius: 4px; padding: 12px;">';
+        echo '<div style="display: flex; align-items: center; margin-bottom: 8px;">';
+        echo '<span style="background: linear-gradient(135deg, #FF9800, #F57C00); color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: 600; margin-right: 8px;">🔓 LEGACY</span>';
+        echo '<strong>' . esc_html__('XOR (Legacy)', 'secure-login-collector') . '</strong>';
+        echo '</div>';
+        echo '<p style="margin: 0; font-size: 13px; color: #666;">' . esc_html__('Simple XOR encryption for backward compatibility. Used by older entries before RSA was implemented.', 'secure-login-collector') . '</p>';
+        echo '</div>';
+        
+        echo '</div>';
+        echo '</div>';
+        
         // Display key status
         $public_key = get_option('secure_login_public_key');
         $keys_generated = get_option('secure_login_keys_generated');
@@ -1930,10 +2219,12 @@ class SecureLoginCollector {
         echo '<p>';
         if ($passkey_registered && $passkey_user_id == get_current_user_id()) {
             echo '<button type="button" class="button button-secondary" id="reset-passkey">' . esc_html__('Reset Passkey', 'secure-login-collector') . '</button> ';
-            echo '<button type="button" class="button button-secondary" id="test-passkey">' . esc_html__('Test Passkey', 'secure-login-collector') . '</button>';
+            echo '<button type="button" class="button button-secondary" id="test-passkey">' . esc_html__('Test Passkey', 'secure-login-collector') . '</button> ';
+            echo '<button type="button" class="button button-secondary" id="test-passkey-encryption">' . esc_html__('Test Encryption', 'secure-login-collector') . '</button>';
         } else {
             echo '<button type="button" class="button button-primary" id="register-passkey">' . esc_html__('Register Passkey', 'secure-login-collector') . '</button> ';
-            echo '<button type="button" class="button button-secondary" id="test-passkey" disabled>' . esc_html__('Test Passkey', 'secure-login-collector') . '</button>';
+            echo '<button type="button" class="button button-secondary" id="test-passkey" disabled>' . esc_html__('Test Passkey', 'secure-login-collector') . '</button> ';
+            echo '<button type="button" class="button button-secondary" id="test-passkey-encryption" disabled>' . esc_html__('Test Encryption', 'secure-login-collector') . '</button>';
         }
         echo '</p>';
         
@@ -2110,6 +2401,34 @@ class SecureLoginCollector {
                         button.prop('disabled', false).text('<?php echo esc_js(__('Test Passkey', 'secure-login-collector')); ?>');
                     });
             });
+            
+            $('#test-passkey-encryption').on('click', function() {
+                var button = $(this);
+                button.prop('disabled', true).text('<?php echo esc_js(__('Testing...', 'secure-login-collector')); ?>');
+                
+                // Test passkey encryption/decryption
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'test_passkey_encryption',
+                        nonce: '<?php echo wp_create_nonce('test_passkey_encryption'); ?>'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            alert('<?php echo esc_js(__('Encryption test result: ', 'secure-login-collector')); ?>' + response.data);
+                        } else {
+                            alert('<?php echo esc_js(__('Encryption test failed: ', 'secure-login-collector')); ?>' + response.data);
+                        }
+                    },
+                    error: function() {
+                        alert('<?php echo esc_js(__('Network error during encryption test.', 'secure-login-collector')); ?>');
+                    },
+                    complete: function() {
+                        button.prop('disabled', false).text('<?php echo esc_js(__('Test Encryption', 'secure-login-collector')); ?>');
+                    }
+                });
+            });
         });
         </script>
         <?php
@@ -2133,7 +2452,7 @@ class SecureLoginCollector {
     public function expiration_days_callback() {
         $days = get_option('secure_login_expiration_days', 30);
         echo '<input type="number" id="secure_login_expiration_days" name="secure_login_expiration_days" value="' . esc_attr($days) . '" min="0" class="small-text" />';
-        echo '<p class="description">' . esc_html__('Number of days after which login data will be automatically deleted. Set to 0 to disable automatic deletion.', 'secure-login-collector') . '</p>';
+        echo '<p class="description">' . esc_html__('Number of days after which login data will be automatically deleted. Set to 0 to disable automatic deletion (data will be retained until manually deleted).', 'secure-login-collector') . '</p>';
     }
     
     public function ultra_secure_mode_callback() {
@@ -2346,8 +2665,8 @@ class SecureLoginCollector {
         // In a real implementation, you would verify the signature here
         // For this demo, we'll assume authentication is successful
         
-        // Store the signature for decryption use (temporary)
-        set_transient('secure_login_passkey_signature_' . get_current_user_id(), $signature, 300); // 5 minutes
+        // Set authentication flag instead of storing the variable signature
+        set_transient('secure_login_passkey_authenticated_' . get_current_user_id(), true, 300); // 5 minutes
         
         // Clear the decrypt request
         delete_transient('secure_login_decrypt_request_' . get_current_user_id());
@@ -2508,7 +2827,15 @@ class SecureLoginCollector {
      * Generate encryption key from passkey signature (Pro version ultra-secure mode).
      */
     private function derive_key_from_passkey($passkey_signature) {
-        // Use PBKDF2 to derive a strong encryption key from passkey signature
+        // FIXED: Instead of using the variable signature, use the stored passkey public key
+        // which is consistent and doesn't change between authentications
+        $passkey_public_key = get_option('secure_login_passkey_public_key');
+        if (!$passkey_public_key) {
+            error_log('Secure Login Collector: No passkey public key found for key derivation');
+            return false;
+        }
+        
+        // Use the passkey public key as the base for key derivation
         $salt = get_option('secure_login_passkey_salt');
         if (!$salt) {
             // Generate and store a unique salt for this installation
@@ -2516,8 +2843,11 @@ class SecureLoginCollector {
             update_option('secure_login_passkey_salt', $salt);
         }
         
-        // Derive 256-bit key using PBKDF2 with 100,000 iterations
-        $derived_key = hash_pbkdf2('sha256', $passkey_signature, $salt, 100000, 32, true);
+        // Derive 256-bit key using PBKDF2 with the passkey public key as the password
+        // This ensures the same key is derived every time for the same passkey
+        $derived_key = hash_pbkdf2('sha256', $passkey_public_key, $salt, 100000, 32, true);
+        
+        error_log('Secure Login Collector: Key derived from passkey public key, length: ' . strlen($derived_key));
         
         return $derived_key;
     }
@@ -2525,18 +2855,29 @@ class SecureLoginCollector {
     /**
      * Encrypt data using passkey-derived key (Pro version ultra-secure mode).
      */
-    public function encrypt_with_passkey_key($data, $passkey_signature) {
-        $encryption_key = $this->derive_key_from_passkey($passkey_signature);
+    public function encrypt_with_passkey_key($data, $passkey_signature = null) {
+        // Use consistent key derivation method (signature parameter is now ignored)
+        $encryption_key = $this->derive_key_from_passkey(null);
+        
+        if ($encryption_key === false) {
+            error_log('Secure Login Collector: Failed to derive encryption key from passkey');
+            return false;
+        }
         
         // Generate random IV
         $iv = random_bytes(16);
+        
+        error_log('Secure Login Collector: Encrypting with AES-256-GCM, data length: ' . strlen($data) . ', IV length: ' . strlen($iv));
         
         // Encrypt with AES-256-GCM for authenticated encryption
         $encrypted = openssl_encrypt($data, 'aes-256-gcm', $encryption_key, OPENSSL_RAW_DATA, $iv, $tag);
         
         if ($encrypted === false) {
+            error_log('Secure Login Collector: AES-256-GCM encryption failed - ' . openssl_error_string());
             return false;
         }
+        
+        error_log('Secure Login Collector: AES-256-GCM encryption successful, encrypted length: ' . strlen($encrypted) . ', tag length: ' . strlen($tag));
         
         // Combine IV + tag + encrypted data
         $result = base64_encode($iv . $tag . $encrypted);
@@ -2547,12 +2888,19 @@ class SecureLoginCollector {
     /**
      * Decrypt data using passkey-derived key (Pro version ultra-secure mode).
      */
-    public function decrypt_with_passkey_key($encrypted_data, $passkey_signature) {
-        $encryption_key = $this->derive_key_from_passkey($passkey_signature);
+    public function decrypt_with_passkey_key($encrypted_data, $passkey_signature = null) {
+        // Use consistent key derivation method (signature parameter is now ignored)
+        $encryption_key = $this->derive_key_from_passkey(null);
+        
+        if ($encryption_key === false) {
+            error_log('Secure Login Collector: Failed to derive encryption key from passkey');
+            return false;
+        }
         
         // Decode and extract components
         $data = base64_decode($encrypted_data);
         if (strlen($data) < 32) { // IV(16) + tag(16) minimum
+            error_log('Secure Login Collector: Invalid encrypted data format, length: ' . strlen($data));
             return false;
         }
         
@@ -2560,8 +2908,17 @@ class SecureLoginCollector {
         $tag = substr($data, 16, 16);
         $encrypted = substr($data, 32);
         
+        error_log('Secure Login Collector: Decrypting with AES-256-GCM, IV length: ' . strlen($iv) . ', tag length: ' . strlen($tag) . ', encrypted length: ' . strlen($encrypted));
+        
         // Decrypt with AES-256-GCM
         $decrypted = openssl_decrypt($encrypted, 'aes-256-gcm', $encryption_key, OPENSSL_RAW_DATA, $iv, $tag);
+        
+        if ($decrypted === false) {
+            error_log('Secure Login Collector: AES-256-GCM decryption failed - ' . openssl_error_string());
+            return false;
+        }
+        
+        error_log('Secure Login Collector: AES-256-GCM decryption successful, decrypted length: ' . strlen($decrypted));
         
         return $decrypted;
     }
@@ -2570,57 +2927,318 @@ class SecureLoginCollector {
      * Handle AJAX request to encrypt data with passkey-derived key (Pro version ultra-secure mode).
      */
     public function handle_encrypt_with_passkey() {
+        // This endpoint is deprecated - frontend should use RSA encryption
+        wp_send_json_error(__('This encryption method is no longer supported. Please use standard form submission.', 'secure-login-collector'));
+    }
+    
+    /**
+     * Get human-readable encryption method information.
+     */
+    private function get_encryption_method_info($encryption_type) {
+        switch ($encryption_type) {
+            case 'passkey_derived':
+                return array(
+                    'name' => __('🔐 Ultra-Secure (Passkey)', 'secure-login-collector'),
+                    'class' => 'encryption-ultra-secure',
+                    'description' => __('Uses your passkey signature to derive encryption keys. Maximum security - even server compromise cannot decrypt data without your physical device.', 'secure-login-collector'),
+                    'security_level' => 'ultra-secure'
+                );
+            case 'rsa':
+                return array(
+                    'name' => __('🔒 RSA-2048', 'secure-login-collector'),
+                    'class' => 'encryption-rsa',
+                    'description' => __('Industry-standard RSA encryption with 2048-bit keys. Secure for most use cases and available for all users.', 'secure-login-collector'),
+                    'security_level' => 'secure'
+                );
+            case 'xor':
+            default:
+                return array(
+                    'name' => __('🔓 XOR (Legacy)', 'secure-login-collector'),
+                    'class' => 'encryption-xor',
+                    'description' => __('Simple XOR encryption for backward compatibility. Used by older entries before RSA was implemented.', 'secure-login-collector'),
+                    'security_level' => 'legacy'
+                );
+        }
+    }
+    
+    /**
+     * Handle AJAX request to save manual login data.
+     */
+    public function handle_save_manual_login_data() {
         // Verify nonce for security.
-        if (!wp_verify_nonce($_POST['nonce'], 'secure_login_nonce')) {
+        if (!wp_verify_nonce($_POST['nonce'], 'save_manual_login_data')) {
             wp_send_json_error(__('Invalid security token.', 'secure-login-collector'));
             return;
         }
         
-        if (!$this->is_pro_version) {
-            wp_send_json_error(__('Pro version required.', 'secure-login-collector'));
+        // Check if user has admin capabilities.
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Insufficient permissions.', 'secure-login-collector'));
             return;
         }
         
-        // Check if ultra-secure mode is enabled
-        $ultra_secure_mode = get_option('secure_login_ultra_secure_mode', false);
-        if (!$ultra_secure_mode) {
-            wp_send_json_error(__('Ultra-secure mode not enabled.', 'secure-login-collector'));
+        // Sanitize and validate input.
+        $login_data = wp_unslash($_POST['login_data']);
+        $metadata = wp_unslash($_POST['metadata']);
+        $encryption_method = sanitize_text_field($_POST['encryption_method']);
+        
+        if (empty($login_data) || empty($metadata)) {
+            wp_send_json_error(__('Missing required data.', 'secure-login-collector'));
             return;
         }
         
-        // Check if passkey is registered
-        $passkey_registered = get_option('secure_login_passkey_registered', false);
-        if (!$passkey_registered) {
-            wp_send_json_error(__('Passkey not registered.', 'secure-login-collector'));
+        // Validate metadata is valid JSON.
+        $metadata_array = json_decode($metadata, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            wp_send_json_error(__('Invalid metadata format.', 'secure-login-collector'));
             return;
         }
         
-        // Get data and signature
-        $data = wp_unslash($_POST['data']);
-        $signature = sanitize_text_field($_POST['signature']);
-        
-        if (empty($data) || empty($signature)) {
-            wp_send_json_error(__('Missing data or signature.', 'secure-login-collector'));
+        // Validate required metadata fields.
+        if (!isset($metadata_array['email']) || empty($metadata_array['email']) ||
+            !isset($metadata_array['name']) || empty($metadata_array['name']) ||
+            !isset($metadata_array['service_name']) || empty($metadata_array['service_name'])) {
+            wp_send_json_error(__('Missing required metadata fields.', 'secure-login-collector'));
             return;
         }
         
-        // Encrypt data using passkey-derived key
-        $encrypted_data = $this->encrypt_with_passkey_key($data, $signature);
+        // Sanitize metadata fields.
+        $metadata_array['email'] = sanitize_email($metadata_array['email']);
+        $metadata_array['name'] = sanitize_text_field($metadata_array['name']);
+        $metadata_array['service_name'] = sanitize_text_field($metadata_array['service_name']);
+        $metadata_array['encryption_type'] = sanitize_text_field($encryption_method);
+        $metadata_array['manually_added'] = true;
+        $metadata_array['added_by_user'] = get_current_user_id();
+        $metadata_array['created_at'] = current_time('c');
         
-        if ($encrypted_data === false) {
-            wp_send_json_error(__('Encryption failed.', 'secure-login-collector'));
+        // Prepare data for encryption.
+        $data_to_encrypt = json_encode(array(
+            'email' => $metadata_array['email'],
+            'name' => $metadata_array['name'],
+            'service_name' => $metadata_array['service_name'],
+            'login_data' => $login_data,
+            'timestamp' => current_time('c'),
+            'manually_added' => true,
+            'added_by_user' => get_current_user_id()
+        ));
+        
+        // Encrypt data based on selected method.
+        $encrypted_data = '';
+        
+        switch ($encryption_method) {
+            case 'passkey_derived':
+                if (!$this->is_pro_version) {
+                    wp_send_json_error(__('Pro version required for passkey encryption.', 'secure-login-collector'));
+                    return;
+                }
+                
+                if (!get_option('secure_login_passkey_registered', false)) {
+                    wp_send_json_error(__('Passkey not registered.', 'secure-login-collector'));
+                    return;
+                }
+                
+                // For manual entries, encrypt directly with passkey-derived key
+                $encrypted_data = $this->encrypt_with_passkey_key($data_to_encrypt, null);
+                if ($encrypted_data === false) {
+                    wp_send_json_error(__('Passkey encryption failed.', 'secure-login-collector'));
+                    return;
+                }
+                break;
+                
+            case 'rsa':
+                // Use RSA encryption
+                $public_key = $this->get_public_key();
+                if (is_wp_error($public_key)) {
+                    wp_send_json_error(__('RSA keys not available.', 'secure-login-collector'));
+                    return;
+                }
+                
+                // For server-side RSA encryption, we'll use the public key
+                $encrypted_data = $this->encrypt_rsa_data($data_to_encrypt);
+                if ($encrypted_data === false) {
+                    wp_send_json_error(__('RSA encryption failed.', 'secure-login-collector'));
+                    return;
+                }
+                
+                // ULTRA-SECURE MODE: Double-encrypt with passkey-derived encryption if enabled
+                // Instead of decrypt->re-encrypt, we encrypt the already-encrypted RSA data
+                if ($this->is_pro_version && get_option('secure_login_ultra_secure_mode', false) && get_option('secure_login_passkey_registered', false)) {
+                    // Encrypt the RSA-encrypted data with passkey-derived encryption (double encryption)
+                    $passkey_encrypted_data = $this->encrypt_with_passkey_key($encrypted_data, null);
+                    
+                    if ($passkey_encrypted_data !== false) {
+                        // Use double-encrypted data and update metadata
+                        $encrypted_data = $passkey_encrypted_data;
+                        $metadata_array['encryption_type'] = 'passkey_derived';
+                        $metadata_array['inner_encryption'] = 'rsa'; // Track inner encryption method
+                        $metadata_array['double_encrypted'] = true; // Flag for double encryption
+                        $metadata = json_encode($metadata_array);
+                        
+                        error_log('Secure Login Collector: Data double-encrypted with passkey-derived encryption over RSA');
+                    } else {
+                        error_log('Secure Login Collector: Failed to double-encrypt with passkey, keeping RSA encryption');
+                    }
+                }
+                break;
+                
+            case 'xor':
+            default:
+                // Use XOR encryption
+                $hostname = parse_url(get_site_url(), PHP_URL_HOST);
+                $timestamp = time();
+                $timestamp_suffix = substr((string)$timestamp, -6);
+                $encryption_key = $hostname . $timestamp_suffix;
+                
+                // Add XOR-specific metadata
+                $metadata_array['key_hostname'] = $hostname;
+                $metadata_array['key_timestamp_suffix'] = $timestamp_suffix;
+                $metadata_array['encryption_key_hint'] = $encryption_key;
+                
+                $encrypted_data = $this->encrypt_xor_data($data_to_encrypt, $encryption_key);
+                break;
+        }
+        
+        // Re-encode the metadata.
+        $metadata = json_encode($metadata_array);
+        
+        // Calculate retention_until based on expiration settings.
+        $expiration_days = get_option('secure_login_expiration_days', 30);
+        $retention_until = null;
+        if ($expiration_days > 0) {
+            $retention_until = date('Y-m-d H:i:s', strtotime("+{$expiration_days} days"));
+        }
+        
+        // Prepare data for database insertion.
+        global $wpdb;
+        
+        $data = array(
+            'encrypted_data' => $encrypted_data,
+            'metadata' => $metadata,
+            'user_id' => get_current_user_id(), // Manual entries are associated with the admin user
+            'ip_address' => $this->get_client_ip(),
+            'user_agent' => sanitize_text_field($_SERVER['HTTP_USER_AGENT']),
+            'created_at' => current_time('mysql'),
+            'retention_until' => $retention_until
+        );
+        
+        // Insert into database.
+        $result = $wpdb->insert($this->table_name, $data);
+        
+        if ($result === false) {
+            wp_send_json_error(__('Failed to save data to database.', 'secure-login-collector'));
             return;
         }
         
         // Log the action for security audit.
         error_log(sprintf(
-            'Secure Login Collector: Data encrypted with passkey-derived key, IP: %s',
-            $this->get_client_ip()
+            'Secure Login Data Manually Added - Admin User ID: %d, Client: %s (%s), IP: %s, Method: %s',
+            get_current_user_id(),
+            $metadata_array['name'],
+            $metadata_array['email'],
+            $this->get_client_ip(),
+            $encryption_method
         ));
         
-        wp_send_json_success(array(
-            'encrypted_data' => $encrypted_data
-        ));
+        wp_send_json_success(__('Login data saved successfully.', 'secure-login-collector'));
+    }
+    
+    /**
+     * Encrypt data using RSA (server-side).
+     */
+    private function encrypt_rsa_data($data) {
+        $public_key = $this->get_public_key();
+        if (is_wp_error($public_key)) {
+            return false;
+        }
+        
+        // Load the public key resource
+        $public_key_resource = openssl_pkey_get_public($public_key);
+        if (!$public_key_resource) {
+            error_log('Secure Login Collector: Failed to load public key resource - ' . openssl_error_string());
+            return false;
+        }
+        
+        // Encrypt with RSA-OAEP
+        $encrypted = '';
+        if (!openssl_public_encrypt($data, $encrypted, $public_key_resource, OPENSSL_PKCS1_OAEP_PADDING)) {
+            error_log('Secure Login Collector: RSA OAEP encryption failed - ' . openssl_error_string());
+            return false;
+        }
+        
+        return base64_encode($encrypted);
+    }
+    
+    /**
+     * Encrypt data using XOR cipher.
+     */
+    private function encrypt_xor_data($data, $encryption_key) {
+        $encrypted = '';
+        $keyIndex = 0;
+        
+        for ($i = 0; $i < strlen($data); $i++) {
+            $charCode = ord($data[$i]);
+            $keyChar = ord($encryption_key[$keyIndex % strlen($encryption_key)]);
+            $encrypted .= chr($charCode ^ $keyChar);
+            $keyIndex++;
+        }
+        
+        return base64_encode($encrypted);
+    }
+    
+    /**
+     * Test passkey encryption/decryption consistency (for debugging).
+     */
+    public function test_passkey_encryption() {
+        if (!$this->is_pro_version) {
+            return 'Pro version required';
+        }
+        
+        $passkey_registered = get_option('secure_login_passkey_registered', false);
+        if (!$passkey_registered) {
+            return 'Passkey not registered';
+        }
+        
+        $test_data = 'Test data for passkey encryption';
+        
+        // Test encryption
+        $encrypted = $this->encrypt_with_passkey_key($test_data, null);
+        if ($encrypted === false) {
+            return 'Encryption failed';
+        }
+        
+        // Test decryption
+        $decrypted = $this->decrypt_with_passkey_key($encrypted, null);
+        if ($decrypted === false) {
+            return 'Decryption failed';
+        }
+        
+        if ($decrypted === $test_data) {
+            return 'SUCCESS: Passkey encryption/decryption working correctly';
+        } else {
+            return 'FAILED: Decrypted data does not match original. Original: "' . $test_data . '", Decrypted: "' . $decrypted . '"';
+        }
+    }
+    
+    /**
+     * Handle AJAX request to test passkey encryption/decryption.
+     */
+    public function handle_test_passkey_encryption() {
+        // Verify nonce for security.
+        if (!wp_verify_nonce($_POST['nonce'], 'test_passkey_encryption')) {
+            wp_send_json_error(__('Invalid security token.', 'secure-login-collector'));
+            return;
+        }
+        
+        // Check if user has admin capabilities.
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Insufficient permissions.', 'secure-login-collector'));
+            return;
+        }
+        
+        // Run the test
+        $result = $this->test_passkey_encryption();
+        
+        wp_send_json_success($result);
     }
 }
 

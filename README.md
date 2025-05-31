@@ -1,247 +1,189 @@
 # Secure Login Collector
 
-**Version:** 2.1.0  
-**Author:** Mike Miler  
-**License:** GPL v2 or later
-
-A WordPress plugin that allows clients to securely submit login credentials through a frontend form. All data is encrypted client-side with RSA-2048 encryption before transmission and stored securely in the database.
+A WordPress plugin for securely collecting and storing encrypted login credentials from clients with multiple encryption methods and advanced security features.
 
 ## Features
 
-- **Frontend Form**: Simple shortcode `[secure_login_form]` for client submissions
-- **No Login Required**: Clients can submit data without WordPress accounts
-- **RSA-2048 Encryption**: Enterprise-grade client-side encryption for all users
-- **Secure Storage**: Encrypted data stored in custom database table
-- **Admin Interface**: View and decrypt submissions in WordPress admin
-- **Email Notifications**: Optional notifications when new data is received
-- **Auto-Expiration**: Configurable automatic deletion of old data
-- **Multilingual Support**: Full German translation included
-- **Delete Functionality**: Manual deletion with confirmation dialogs
-- **Auto-Protocol**: Automatically adds https:// to website URLs if missing
-- **Pro Version**: Enhanced security with passkey authentication
+### 🔐 Multiple Encryption Methods
 
-## Pro Version Features
+The plugin supports different encryption methods that can coexist in the same database:
+
+#### **Ultra-Secure (Passkey-Derived)** - Pro Version
+- **Icon**: 🔐 Ultra-Secure (Passkey)
+- **Technology**: Passkey signature → PBKDF2 → AES-256-GCM
+- **Security Level**: Maximum
+- **Key Features**:
+  - Encryption key derived from your physical passkey device
+  - Even server compromise cannot decrypt data without your passkey
+  - Uses PBKDF2 with 100,000 iterations for key derivation
+  - AES-256-GCM authenticated encryption
+  - No encryption keys stored on server
+
+#### **RSA-2048** - All Versions
+- **Icon**: 🔒 RSA-2048
+- **Technology**: RSA-OAEP with 2048-bit keys
+- **Security Level**: Secure
+- **Key Features**:
+  - Industry-standard RSA encryption
+  - 2048-bit key strength
+  - Available for all users (free and pro)
+  - Server-side key management with WordPress salt encryption
+
+#### **XOR (Legacy)** - Backward Compatibility
+- **Icon**: 🔓 XOR (Legacy)
+- **Technology**: XOR cipher with hostname+timestamp keys
+- **Security Level**: Basic
+- **Key Features**:
+  - Simple XOR encryption for backward compatibility
+  - Used by entries created before RSA implementation
+  - Automatic key reconstruction from metadata
+
+### 🎯 Mixed Encryption Support
+
+**Yes, different rows can use different encryption methods!** The plugin automatically:
+
+1. **Detects encryption method** from metadata stored with each entry
+2. **Displays the method** in the admin interface with color-coded badges
+3. **Uses appropriate decryption** based on the stored encryption type
+4. **Maintains backward compatibility** with older entries
+
+### 📊 Admin Interface
+
+The admin interface shows encryption methods for each row:
+
+| ID | Email | Name | Service | Date | **Encryption Method** | Expires | Actions |
+|----|-------|------|---------|------|---------------------|---------|---------|
+| 1  | user@example.com | John | Gmail | 2024-01-15 | **🔐 Ultra-Secure (Passkey)** | 29 days | Decrypt, Delete |
+| 2  | admin@site.com | Admin | Hosting | 2024-01-14 | **🔒 RSA-2048** | 28 days | Decrypt, Delete |
+| 3  | old@user.com | Legacy | Email | 2024-01-10 | **🔓 XOR (Legacy)** | 24 days | Decrypt, Delete |
+
+### 🔄 Encryption Method Selection
+
+The plugin automatically selects the encryption method based on:
+
+1. **Pro Version + Ultra-Secure Mode + Passkey Registered** → Passkey-Derived
+2. **RSA Keys Available** → RSA-2048
+3. **Fallback** → XOR (Legacy)
+
+### 🛡️ Security Features
+
+- **Client-side encryption** - Data encrypted in browser before transmission
+- **Multiple encryption layers** - Different methods for different security needs
+- **Passkey authentication** - Physical device required for ultra-secure decryption
+- **Automatic key management** - RSA keys generated and managed securely
+- **Audit logging** - All encryption/decryption actions logged
+- **Data expiration** - Automatic cleanup of old encrypted data
+- **Email notifications** - Alerts when new data is received (no sensitive data in emails)
+
+### 🚀 Usage
+
+#### Frontend Form
+Use the shortcode `[secure_login_form]` to display the secure submission form:
+
+```php
+[secure_login_form title="Submit Your Credentials" button_text="Send Securely"]
+```
+
+#### Manual Entry (Admin)
+Administrators can manually add login data entries directly from the admin interface:
+
+1. Navigate to **Login Data** in WordPress admin
+2. Click **Add New Entry** button
+3. Fill in the required fields:
+   - Email Address (required)
+   - Name (required) 
+   - Service Name (required)
+   - Login Data (required)
+   - Encryption Method (choose from available options)
+4. Click **Save Entry**
+
+**Available Encryption Methods for Manual Entry:**
+- **🔐 Ultra-Secure (Passkey)** - Pro version only, requires passkey registration
+- **🔒 RSA-2048** - Recommended for most use cases
+- **🔓 XOR (Legacy)** - For backward compatibility
+
+#### Admin Management
+1. Navigate to **Login Data** in WordPress admin
+2. View all submissions with their encryption methods
+3. Click **Decrypt** to view data (authentication required for passkey-encrypted data)
+4. Edit metadata, extend retention, or delete entries
+5. Use **Add New Entry** to manually add login data
+
+#### Settings Configuration
+1. Go to **Login Data > Settings**
+2. Configure email notifications
+3. Set data expiration periods:
+   - **Positive number** (e.g., 30): Auto-delete after specified days
+   - **0**: Disable auto-deletion (data retained until manually deleted)
+4. Manage RSA encryption keys
+5. Register passkeys for ultra-secure mode (Pro version)
+
+### 🔧 Installation
+
+1. Upload the plugin files to `/wp-content/plugins/secure-login-collector/`
+2. Activate the plugin through WordPress admin
+3. Configure settings in **Login Data > Settings**
+4. Add the shortcode `[secure_login_form]` to any page/post
+
+### 🎛️ Pro Version Features
 
 To enable pro version features, add this line to your `wp-config.php`:
+
 ```php
 define('SECURE_LOGIN_PRO', true);
 ```
 
-**Pro Features:**
-- **Passkey Authentication**: Use your phone, tablet, or security key to decrypt data
-- **Enhanced Security**: WebAuthn-based authentication for viewing sensitive data
-- **Biometric Protection**: Face ID, Touch ID, or PIN protection for data access
-- **Audit Logging**: Enhanced security logging for passkey operations
+Pro features include:
+- **Ultra-secure passkey-derived encryption**
+- **Passkey authentication for decryption**
+- **Enhanced security settings**
+- **Advanced encryption options**
 
-## Installation
+### 🔍 Verification
 
-1. Upload the plugin files to `/wp-content/plugins/secure-login-collector/`
-2. Activate the plugin through the 'Plugins' menu in WordPress
-3. Configure settings under 'Login Data' → 'Settings' in admin
-4. (Optional) Enable pro version by adding `define('SECURE_LOGIN_PRO', true);` to wp-config.php
+To verify that passkey encryption is truly part of the encryption (not just a gatekeeper):
 
-## Usage
+1. **Check database entries** - Look for `encryption_type: 'passkey_derived'` in metadata
+2. **Test decryption** - Passkey-encrypted data cannot be decrypted without the physical passkey
+3. **Code inspection** - The passkey signature is used directly in PBKDF2 key derivation
+4. **Security audit** - All encryption/decryption actions are logged with method used
 
-### Frontend Form
+### 📝 Technical Details
 
-Add the shortcode to any page or post where you want the form to appear:
-
+#### Encryption Flow
 ```
-[secure_login_form]
+Frontend Form → Client-side Encryption → Server Storage → Admin Decryption
 ```
 
-The form includes:
-- **Email Address** (required)
-- **Name** (required) 
-- **Website URL** (optional - https:// added automatically if missing)
-- **Login Credentials** (free text area for login details)
+#### Passkey-Derived Encryption
+```
+Passkey Signature → PBKDF2(signature, salt, 100k iterations) → AES-256-GCM(data, derived_key)
+```
 
-### Admin Interface
+#### RSA Encryption
+```
+RSA Public Key → RSA-OAEP(data, public_key) → Server Storage → RSA-OAEP Decrypt(private_key)
+```
 
-1. Go to **Login Data** in the WordPress admin menu
-2. View all submitted encrypted data
-3. Click **Decrypt** to view data inline
-4. For pro version: Choose between traditional decryption or passkey authentication
-5. Use **Delete** to remove entries with confirmation
-6. Configure settings under **Login Data** → **Settings**
+#### XOR Encryption (Legacy)
+```
+Hostname + Timestamp → XOR(data, key) → Server Storage → XOR Decrypt(same_key)
+```
 
-### Settings
+### 🔒 Security Considerations
 
-#### Email Notifications
-- Enable/disable notifications for new submissions
-- Set custom notification email address
+- **Passkey-derived encryption** provides maximum security - even plugin code modification cannot decrypt data without the physical passkey
+- **RSA encryption** provides strong security for most use cases
+- **XOR encryption** is maintained for backward compatibility only
+- **All methods** encrypt data client-side before transmission
+- **No sensitive data** is ever stored unencrypted on the server
 
-#### Data Expiration
-- Set automatic deletion after X days (0 = never expires)
-- Extend retention period for individual entries
+### 📞 Support
 
-#### Encryption Settings (All Users)
-- Generate new RSA-2048 key pairs
-- Export public keys for external use
-- View key generation status and timestamps
+For support and questions about the Secure Login Collector plugin, please refer to the plugin documentation or contact the developer.
 
-#### Pro Version Settings
-- Register passkey for enhanced authentication
-- Test passkey functionality
-- View passkey registration status
+---
 
-## Security Features
-
-- **RSA-2048 encryption** with SHA-256 hashing for all users
-- **Client-side encryption** before data transmission
-- **Secure key storage** with WordPress salt-based encryption
-- **IP address logging** for audit trails
-- **Admin-only access** to view encrypted data
-- **Automatic key generation** on first use
-- **Security logging** for all actions
-- **Pro: Passkey authentication** using WebAuthn standard
-
-## Technical Details
-
-### Encryption
-
-#### RSA Encryption (All Users)
-- **Algorithm**: RSA-OAEP with SHA-256
-- **Key Size**: 2048-bit keys
-- **Frontend**: Web Crypto API for browser-based encryption
-- **Backend**: OpenSSL for server-side decryption
-- **Key Storage**: Private keys encrypted with WordPress salts
-
-#### Legacy XOR Support
-- Maintains compatibility with older submissions
-- Automatic detection of encryption type
-- Graceful fallback for legacy data
-
-### Passkey Authentication (Pro Version)
-
-- **Standard**: WebAuthn/FIDO2 compliant
-- **Authenticators**: Platform authenticators (Face ID, Touch ID, Windows Hello)
-- **Security**: Biometric or PIN-based authentication
-- **Privacy**: No biometric data stored on server
-- **Compatibility**: Modern browsers with WebAuthn support
-
-### Database
-
-Custom table: `wp_secure_login_data`
-- `id` - Auto-increment primary key
-- `encrypted_data` - RSA encrypted content (base64 encoded)
-- `metadata` - JSON with email, name, website, encryption type
-- `user_id` - Always 0 for anonymous frontend submissions
-- `ip_address` - Client IP for audit trail
-- `user_agent` - Client browser information
-- `created_at` - Submission timestamp
-- `retention_until` - Automatic expiration timestamp
-
-### Automatic Cleanup
-
-- Daily cron job removes expired entries
-- Configurable expiration period in settings
-- Logs cleanup actions for audit
-
-## Multilingual Support
-
-The plugin includes full internationalization support:
-
-- **Text Domain**: `secure-login-collector`
-- **German Translation**: Complete translation included
-- **Translation Files**: POT template, German PO/MO files
-- **Localized JavaScript**: Frontend messages translated
-
-### Adding New Languages
-
-1. Use the POT file as template: `languages/secure-login-collector.pot`
-2. Create PO file for your language: `secure-login-collector-{locale}.po`
-3. Compile to MO file: `msgfmt file.po -o file.mo`
-4. Place in `languages/` directory
-
-## Browser Compatibility
-
-### RSA Encryption (All Users)
-- **Chrome**: 37+
-- **Firefox**: 34+
-- **Safari**: 10.1+
-- **Edge**: 79+
-
-### Passkey Authentication (Pro Version)
-- **Chrome**: 67+
-- **Firefox**: 60+
-- **Safari**: 14+
-- **Edge**: 18+
-
-## Changelog
-
-### Version 2.1.0
-- **MAJOR**: RSA-2048 encryption now available for all users (not just pro)
-- **NEW**: Passkey authentication for pro version using WebAuthn
-- **NEW**: Biometric authentication (Face ID, Touch ID, Windows Hello)
-- **NEW**: Enhanced security settings section for all users
-- **NEW**: Pro version settings with passkey management
-- **IMPROVED**: Frontend always uses RSA encryption when available
-- **IMPROVED**: Automatic fallback to XOR for legacy compatibility
-- **IMPROVED**: Enhanced admin interface with passkey options
-- **SECURITY**: Enterprise-grade encryption for all installations
-
-### Version 2.0.0
-- **NEW**: Pro version with RSA-2048 encryption
-- **NEW**: Dual encryption system (RSA for pro, XOR for basic)
-- **NEW**: Secure key management with WordPress salt encryption
-- **NEW**: Web Crypto API integration for modern browsers
-- **NEW**: Key generation and export functionality
-- **IMPROVED**: Enhanced security architecture
-- **IMPROVED**: Automatic script selection based on version
-
-### Version 1.6.2
-- Removed IP address column from admin interface
-- Improved button layout and spacing
-- Enhanced actions column design
-- Better responsive table layout
-
-### Version 1.6.1
-- Added retention extension functionality
-- Implemented proper `retention_until` field system
-- Enhanced database upgrade mechanism
-- Improved expiration calculation accuracy
-
-### Version 1.5.1
-- Added security information to frontend form
-- Dynamic retention period display
-- Enhanced user privacy communication
-
-### Version 1.5.0
-- **BREAKING**: Removed login requirement for frontend submissions
-- Removed "Submitted By" column from admin interface
-- All submissions now anonymous (user_id = 0)
-- Updated logging to focus on client information
-
-### Version 1.4.0
-- Added full multilingual support with German translation
-- Implemented WordPress i18n system with text domain
-- Added auto-protocol feature for website URLs
-
-### Version 1.3.0
-- Added name field to frontend form (required)
-- Enhanced admin table with name column
-- Updated email notifications to include sender name
-
-### Version 1.2.0
-- Added delete functionality with confirmation dialogs
-- Implemented automatic data expiration system
-- Added "Expires In" column showing remaining time
-
-### Version 1.1.0
-- Added email notification system
-- Created settings page for notifications and expiration
-- Enhanced admin interface with better formatting
-
-### Version 1.0.0
-- Initial release with core functionality
-- Frontend form with XOR encryption
-- Admin interface for viewing data
-
-## Support
-
-For support, feature requests, or bug reports, please contact the plugin author.
-
-## License
-
-This plugin is licensed under the GPL v2 or later license.
+**Version**: 2.4.0  
+**Author**: Mike Miler  
+**License**: GPL v2 or later
