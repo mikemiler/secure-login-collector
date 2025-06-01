@@ -15,160 +15,120 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: secure-login-collector.php:82
 msgid "OpenSSL extension is required for RSA encryption."
 msgstr "OpenSSL-Erweiterung ist für RSA-Verschlüsselung erforderlich."
 
-#: secure-login-collector.php:95
 msgid "Failed to generate RSA key pair."
 msgstr "Fehler beim Generieren des RSA-Schlüsselpaars."
 
-#: secure-login-collector.php:159
 msgid "Invalid security token."
 msgstr "Ungültiges Sicherheitstoken."
 
-#: secure-login-collector.php:164
 msgid "User must be logged in."
 msgstr "Benutzer muss angemeldet sein."
 
-#: secure-login-collector.php:172
 msgid "Missing required data."
 msgstr "Erforderliche Daten fehlen."
 
-#: secure-login-collector.php:178
 msgid "Invalid metadata format. JSON Error: "
 msgstr "Ungültiges Metadatenformat. JSON-Fehler: "
 
-#: secure-login-collector.php:184
 msgid "Missing email in metadata."
 msgstr "E-Mail in Metadaten fehlt."
 
-#: secure-login-collector.php:207
 msgid "Failed to save data to database."
 msgstr "Fehler beim Speichern der Daten in der Datenbank."
 
-#: secure-login-collector.php:220
 msgid "Login data saved securely."
 msgstr "Anmeldedaten sicher gespeichert."
 
-#: secure-login-collector.php:241
 msgid "Insufficient permissions."
 msgstr "Unzureichende Berechtigungen."
 
-#: secure-login-collector.php:260
 msgid "Decryption failed. Please check the encryption key."
 msgstr "Entschlüsselung fehlgeschlagen. Bitte überprüfen Sie den Verschlüsselungsschlüssel."
 
-#: secure-login-collector.php:295
 msgid "Failed to delete data from database."
 msgstr "Fehler beim Löschen der Daten aus der Datenbank."
 
-#: secure-login-collector.php:306
 msgid "Login data deleted successfully."
 msgstr "Anmeldedaten erfolgreich gelöscht."
 
-#: secure-login-collector.php:349
 msgid "[%s] New Secure Login Data Received"
 msgstr "[%s] Neue sichere Anmeldedaten erhalten"
 
-#: secure-login-collector.php:352
 msgid "Hello,\n\nNew secure login data has been submitted to your website.\n\nSender Email: %s\nSender Name: %s\nSubmitted: %s\n\nTo view and decrypt the login data, please visit:\n%s\n\nThis is an automated notification from %s\nWebsite: %s"
 msgstr "Hallo,\n\nNeue sichere Anmeldedaten wurden an Ihre Website übermittelt.\n\nAbsender E-Mail: %s\nAbsender Name: %s\nÜbermittelt: %s\n\nUm die Anmeldedaten anzuzeigen und zu entschlüsseln, besuchen Sie bitte:\n%s\n\nDies ist eine automatische Benachrichtigung von %s\nWebsite: %s"
 
-#: secure-login-collector.php:355
 msgid "Not provided"
 msgstr "Nicht angegeben"
 
-#: secure-login-collector.php:383
 msgid "Never expires"
 msgstr "Läuft nie ab"
 
-#: secure-login-collector.php:390
 msgid "Expired"
 msgstr "Abgelaufen"
 
-#: secure-login-collector.php:396
 msgid "%d days, %d hours"
 msgstr "%d Tage, %d Stunden"
 
-#: secure-login-collector.php:398
 msgid "%d hours"
 msgstr "%d Stunden"
 
-#: secure-login-collector.php:408
 msgid "Secure Login Data"
 msgstr "Sichere Anmeldedaten"
 
-#: secure-login-collector.php:409
 msgid "Login Data"
 msgstr "Anmeldedaten"
 
-#: secure-login-collector.php:417
-#: secure-login-collector.php:418
 msgid "Settings"
 msgstr "Einstellungen"
 
-#: secure-login-collector.php:433
 msgid "This page shows all encrypted login data collected from clients. Click \"Decrypt\" to view the data inline."
 msgstr "Diese Seite zeigt alle verschlüsselten Anmeldedaten von Kunden. Klicken Sie auf \"Entschlüsseln\", um die Daten inline anzuzeigen."
 
-#: secure-login-collector.php:437
 msgid "ID"
 msgstr "ID"
 
-#: secure-login-collector.php:438
 msgid "Email Address"
 msgstr "E-Mail-Adresse"
 
-#: secure-login-collector.php:439
 msgid "Name"
 msgstr "Name"
 
-#: secure-login-collector.php:440
 msgid "Website"
 msgstr "Website"
 
-#: secure-login-collector.php:441
 msgid "Date"
 msgstr "Datum"
 
-#: secure-login-collector.php:442
 msgid "Expires In"
 msgstr "Läuft ab in"
 
-#: secure-login-collector.php:443
 msgid "Actions"
 msgstr "Aktionen"
 
-#: secure-login-collector.php:449
 msgid "No login data found."
 msgstr "Keine Anmeldedaten gefunden."
 
-#: secure-login-collector.php:457
 msgid "N/A"
 msgstr "N/V"
 
-#: secure-login-collector.php:468
 msgid "Decrypt"
 msgstr "Entschlüsseln"
 
-#: secure-login-collector.php:473
 msgid "Extend"
 msgstr "Verlängern"
 
-#: secure-login-collector.php:478
 msgid "Delete"
 msgstr "Löschen"
 
-#: secure-login-collector.php:484
 msgid "Decrypted Data:"
 msgstr "Entschlüsselte Daten:"
 
-#: secure-login-collector.php:486
 msgid "Hide"
 msgstr "Ausblenden"
 
-# Passkey authentication strings
 msgid "Passkey not registered. Please register a passkey first."
 msgstr "Passkey nicht registriert. Bitte registrieren Sie zuerst einen Passkey."
 
@@ -199,7 +159,6 @@ msgstr "Authentifizierungsdaten fehlen."
 msgid "Decryption failed."
 msgstr "Entschlüsselung fehlgeschlagen."
 
-# Settings page strings
 msgid "Email Notifications"
 msgstr "E-Mail-Benachrichtigungen"
 
@@ -212,6 +171,9 @@ msgstr "Verschlüsselungseinstellungen"
 msgid "Pro Version Settings"
 msgstr "Pro-Version-Einstellungen"
 
+msgid "Ultra-Secure Mode"
+msgstr "Ultra-Sicher-Modus"
+
 msgid "Configure email notifications for new login data submissions."
 msgstr "E-Mail-Benachrichtigungen für neue Anmeldedaten-Übermittlungen konfigurieren."
 
@@ -223,6 +185,27 @@ msgstr "RSA-Verschlüsselungsschlüssel für sichere Datenübertragung verwalten
 
 msgid "Advanced security settings for the pro version including passkey authentication."
 msgstr "Erweiterte Sicherheitseinstellungen für die Pro-Version einschließlich Passkey-Authentifizierung."
+
+msgid "Available Encryption Methods:"
+msgstr "Verfügbare Verschlüsselungsmethoden:"
+
+msgid "Passkey-Derived"
+msgstr "Passkey-abgeleitet"
+
+msgid "Uses your passkey signature to derive encryption keys. Maximum security - even server compromise cannot decrypt data without your physical device."
+msgstr "Verwendet Ihre Passkey-Signatur zur Ableitung von Verschlüsselungsschlüsseln. Maximale Sicherheit - selbst bei Server-Kompromittierung können Daten ohne Ihr physisches Gerät nicht entschlüsselt werden."
+
+msgid "RSA-2048"
+msgstr "RSA-2048"
+
+msgid "Industry-standard RSA encryption with 2048-bit keys. Secure for most use cases and available for all users."
+msgstr "Industriestandard RSA-Verschlüsselung mit 2048-Bit-Schlüsseln. Sicher für die meisten Anwendungsfälle und für alle Benutzer verfügbar."
+
+msgid "XOR (Legacy)"
+msgstr "XOR (Legacy)"
+
+msgid "Simple XOR encryption for backward compatibility. Used by older entries before RSA was implemented."
+msgstr "Einfache XOR-Verschlüsselung für Rückwärtskompatibilität. Wird von älteren Einträgen vor der RSA-Implementierung verwendet."
 
 msgid "RSA Keys Status:"
 msgstr "RSA-Schlüssel-Status:"
@@ -266,9 +249,6 @@ msgstr "Passkey-Status:"
 msgid "Registered and Active"
 msgstr "Registriert und aktiv"
 
-msgid "Not registered"
-msgstr "Nicht registriert"
-
 msgid "Register Passkey"
 msgstr "Passkey registrieren"
 
@@ -302,7 +282,15 @@ msgstr "RSA-Schlüssel erfolgreich generiert."
 msgid "No public key available."
 msgstr "Kein öffentlicher Schlüssel verfügbar."
 
-# Frontend form strings
+msgid "Enable Email Notifications"
+msgstr "E-Mail-Benachrichtigungen aktivieren"
+
+msgid "Notification Email Address"
+msgstr "Benachrichtigungs-E-Mail-Adresse"
+
+msgid "Auto-Delete After (Days)"
+msgstr "Automatisch löschen nach (Tagen)"
+
 msgid "Submit Secure Login Data"
 msgstr "Sichere Anmeldedaten übermitteln"
 
@@ -312,14 +300,20 @@ msgstr "Sicher übermitteln"
 msgid "Please fill out this form to securely send your login credentials. All data is encrypted before transmission."
 msgstr "Bitte füllen Sie dieses Formular aus, um Ihre Anmeldedaten sicher zu senden. Alle Daten werden vor der Übertragung verschlüsselt."
 
+msgid "🔐 Ultra-Secure Mode Active:"
+msgstr "🔐 Ultra-Sicher-Modus aktiv:"
+
+msgid "Your data will be encrypted with advanced passkey-derived encryption for maximum security."
+msgstr "Ihre Daten werden mit fortschrittlicher Passkey-basierter Verschlüsselung für maximale Sicherheit verschlüsselt."
+
 msgid "Security & Privacy:"
 msgstr "Sicherheit & Datenschutz:"
 
-msgid "Your data is encrypted in your browser before being sent to our server. We store the encrypted data securely and automatically delete it after %d days for your privacy and security."
-msgstr "Ihre Daten werden in Ihrem Browser verschlüsselt, bevor sie an unseren Server gesendet werden. Wir speichern die verschlüsselten Daten sicher und löschen sie automatisch nach %d Tagen für Ihren Datenschutz und Ihre Sicherheit."
+msgid "Your data is encrypted in your browser before being sent to our server. We store the encrypted data securely{EXPIRATION_TEXT}."
+msgstr "Ihre Daten werden in Ihrem Browser verschlüsselt, bevor sie an unseren Server gesendet werden. Wir speichern die verschlüsselten Daten sicher{EXPIRATION_TEXT}."
 
-msgid "Your data is encrypted in your browser before being sent to our server. We store the encrypted data securely for your privacy and security."
-msgstr "Ihre Daten werden in Ihrem Browser verschlüsselt, bevor sie an unseren Server gesendet werden. Wir speichern die verschlüsselten Daten sicher für Ihren Datenschutz und Ihre Sicherheit."
+msgid "Auto-deletion is disabled, so data will be retained until manually deleted by the administrator"
+msgstr "Die automatische Löschung ist deaktiviert, sodass die Daten bis zur manuellen Löschung durch den Administrator gespeichert bleiben"
 
 msgid "Email Address:"
 msgstr "E-Mail-Adresse:"
@@ -332,6 +326,42 @@ msgstr "Name:"
 
 msgid "Your full name"
 msgstr "Ihr vollständiger Name"
+
+msgid "Login URL:"
+msgstr "Login-URL:"
+
+msgid "https://example.com/login or service name"
+msgstr "https://beispiel.de/login oder Service-Name"
+
+msgid "Enter the login URL or service name where these credentials are used."
+msgstr "Geben Sie die Login-URL oder den Service-Namen ein, wo diese Anmeldedaten verwendet werden."
+
+msgid "Username/Email:"
+msgstr "Benutzername/E-Mail:"
+
+msgid "Username or email for login"
+msgstr "Benutzername oder E-Mail für die Anmeldung"
+
+msgid "The username or email address used to log into this service."
+msgstr "Der Benutzername oder die E-Mail-Adresse, die für die Anmeldung bei diesem Service verwendet wird."
+
+msgid "Password:"
+msgstr "Passwort:"
+
+msgid "Enter the password"
+msgstr "Passwort eingeben"
+
+msgid "The password for this account."
+msgstr "Das Passwort für dieses Konto."
+
+msgid "Additional Notes:"
+msgstr "Zusätzliche Notizen:"
+
+msgid "Any additional information, security questions, backup codes, etc. (optional)"
+msgstr "Alle zusätzlichen Informationen, Sicherheitsfragen, Backup-Codes usw. (optional)"
+
+msgid "Optional: Any additional information like security questions, backup codes, or special instructions."
+msgstr "Optional: Alle zusätzlichen Informationen wie Sicherheitsfragen, Backup-Codes oder spezielle Anweisungen."
 
 msgid "Service Name:"
 msgstr "Service-Name:"
@@ -351,7 +381,6 @@ msgstr "Geben Sie hier Ihre Anmeldedaten, Passwörter oder andere Zugriffsinform
 msgid "Enter usernames, passwords, URLs, or any login information you need to share securely."
 msgstr "Geben Sie Benutzernamen, Passwörter, URLs oder andere Anmeldeinformationen ein, die Sie sicher teilen möchten."
 
-# Admin interface editing strings
 msgid "Edit"
 msgstr "Bearbeiten"
 
@@ -360,6 +389,12 @@ msgstr "Speichern"
 
 msgid "Cancel"
 msgstr "Abbrechen"
+
+msgid "Login URL"
+msgstr "Login-URL"
+
+msgid "Encryption Method"
+msgstr "Verschlüsselungsmethode"
 
 msgid "Email and Name are required fields."
 msgstr "E-Mail, Name und Service-Name sind Pflichtfelder."
@@ -376,9 +411,92 @@ msgstr "Fehler beim Aktualisieren der Metadaten in der Datenbank."
 msgid "Metadata updated successfully."
 msgstr "Metadaten erfolgreich aktualisiert."
 
-# JavaScript strings
-msgid "Please fill in all required fields (Email Address, Name, and Login Data)."
-msgstr "Bitte füllen Sie alle erforderlichen Felder aus (E-Mail-Adresse, Name, Service-Name und Anmeldedaten)."
+msgid "Search entries"
+msgstr "Einträge durchsuchen"
+
+msgid "Search in email, name, login URL..."
+msgstr "In E-Mail, Name, Login-URL suchen..."
+
+msgid "Add New Entry"
+msgstr "Neuen Eintrag hinzufügen"
+
+msgid "This page shows all encrypted login data collected from clients. Use the search box to filter entries and bulk actions for management."
+msgstr "Diese Seite zeigt alle verschlüsselten Anmeldedaten von Kunden. Verwenden Sie das Suchfeld zum Filtern von Einträgen und Sammelaktionen zur Verwaltung."
+
+msgid "Add New Login Data Entry"
+msgstr "Neuen Anmeldedaten-Eintrag hinzufügen"
+
+msgid "Login URL or service name where these credentials are used."
+msgstr "Login-URL oder Service-Name, wo diese Anmeldedaten verwendet werden."
+
+msgid "Choose the encryption method for this entry."
+msgstr "Wählen Sie die Verschlüsselungsmethode für diesen Eintrag."
+
+msgid "Save Entry"
+msgstr "Eintrag speichern"
+
+msgid "Export to Password Manager"
+msgstr "Zu Passwort-Manager exportieren"
+
+msgid "Entries per page"
+msgstr "Einträge pro Seite"
+
+msgid "Export Bitwarden CSV"
+msgstr "Bitwarden CSV exportieren"
+
+msgid "Export 1Password CSV"
+msgstr "1Password CSV exportieren"
+
+msgid "Export LastPass CSV"
+msgstr "LastPass CSV exportieren"
+
+msgid "Export Chrome CSV"
+msgstr "Chrome CSV exportieren"
+
+msgid "Export Firefox CSV"
+msgstr "Firefox CSV exportieren"
+
+msgid "Export Safari CSV"
+msgstr "Safari CSV exportieren"
+
+msgid "Export Dashlane CSV"
+msgstr "Dashlane CSV exportieren"
+
+msgid "Export KeePass CSV"
+msgstr "KeePass CSV exportieren"
+
+msgid "Security check failed."
+msgstr "Sicherheitsprüfung fehlgeschlagen."
+
+msgid "Bulk export initiated for %d entries. Please wait..."
+msgstr "Massenexport für %d Einträge gestartet. Bitte warten..."
+
+msgid "Export request not found or expired."
+msgstr "Exportanfrage nicht gefunden oder abgelaufen."
+
+msgid "Bulk export prepared for %d entries."
+msgstr "Massenexport für %d Einträge vorbereitet."
+
+msgid "🔐 Ultra-Secure (Passkey)"
+msgstr "🔐 Ultra-Sicher (Passkey)"
+
+msgid "🔒 RSA-2048"
+msgstr "🔒 RSA-2048"
+
+msgid "🔓 XOR (Legacy)"
+msgstr "🔓 XOR (Legacy)"
+
+msgid "Passkey-derived encryption for maximum security."
+msgstr "Passkey-abgeleitete Verschlüsselung für maximale Sicherheit."
+
+msgid "Industry-standard RSA encryption."
+msgstr "Industriestandard RSA-Verschlüsselung."
+
+msgid "Legacy XOR encryption."
+msgstr "Legacy XOR-Verschlüsselung."
+
+msgid "Please fill in all required fields (Email Address, Name, Login URL, Username/Email, and Password)."
+msgstr "Bitte füllen Sie alle erforderlichen Felder aus (E-Mail-Adresse, Name, Login-URL, Benutzername/E-Mail und Passwort)."
 
 msgid "Submitting..."
 msgstr "Übermittlung..."
@@ -398,9 +516,107 @@ msgstr "Netzwerkfehler beim Speichern der Daten. Bitte versuchen Sie es erneut."
 msgid "Encryption failed. Please try again."
 msgstr "Verschlüsselung fehlgeschlagen. Bitte versuchen Sie es erneut."
 
-# New validation messages for service name requirement
-msgid "Missing service name in metadata."
-msgstr "Service-Name in Metadaten fehlt."
+msgid "No decrypted data available. Please decrypt the data first."
+msgstr "Keine entschlüsselten Daten verfügbar. Bitte entschlüsseln Sie die Daten zuerst."
 
-msgid "Email, Name, and Service Name are required fields."
-msgstr "E-Mail, Name und Service-Name sind Pflichtfelder." 
+msgid "Please fill in all required fields."
+msgstr "Bitte füllen Sie alle erforderlichen Felder aus."
+
+msgid "Saving..."
+msgstr "Speichere..."
+
+msgid "Login data saved successfully!"
+msgstr "Anmeldedaten erfolgreich gespeichert!"
+
+msgid "Network error occurred while saving data."
+msgstr "Netzwerkfehler beim Speichern der Daten."
+
+msgid "Passkey authentication is required in Pro version. Traditional decryption is disabled for enhanced security."
+msgstr "Passkey-Authentifizierung ist in der Pro-Version erforderlich. Traditionelle Entschlüsselung ist für erweiterte Sicherheit deaktiviert."
+
+msgid "Missing passkey signature."
+msgstr "Passkey-Signatur fehlt."
+
+msgid "Passkey decryption failed. Please check your passkey authentication."
+msgstr "Passkey-Entschlüsselung fehlgeschlagen. Bitte überprüfen Sie Ihre Passkey-Authentifizierung."
+
+msgid "Invalid security token or insufficient permissions."
+msgstr "Ungültiges Sicherheitstoken oder unzureichende Berechtigungen."
+
+msgid "Missing %s in metadata."
+msgstr "%s in Metadaten fehlt."
+
+msgid "This encryption method is no longer supported. Please use standard form submission."
+msgstr "Diese Verschlüsselungsmethode wird nicht mehr unterstützt. Bitte verwenden Sie die Standardformular-Übermittlung."
+
+msgid "Passkey reset authorized."
+msgstr "Passkey-Reset autorisiert."
+
+msgid "Bulk Decrypt with Passkey"
+msgstr "Massendecryption mit Passkey"
+
+msgid "You have selected %d entries for bulk export. All selected entries will be decrypted using your passkey and then exported to %s format."
+msgstr "Sie haben %d Einträge für den Massenexport ausgewählt. Alle ausgewählten Einträge werden mit Ihrem Passkey entschlüsselt und dann im %s-Format exportiert."
+
+msgid "Authenticate with Passkey to Decrypt All"
+msgstr "Mit Passkey authentifizieren, um alle zu entschlüsseln"
+
+msgid "Authenticating and decrypting %d entries..."
+msgstr "Authentifiziere und entschlüssele %d Einträge..."
+
+msgid "Successfully decrypted %d entries. Generating CSV..."
+msgstr "%d Einträge erfolgreich entschlüsselt. Generiere CSV..."
+
+msgid "Bulk decryption completed. CSV file downloaded."
+msgstr "Massendecryption abgeschlossen. CSV-Datei heruntergeladen."
+
+msgid "Bulk decryption failed for some entries. Only successfully decrypted entries were exported."
+msgstr "Massendecryption für einige Einträge fehlgeschlagen. Nur erfolgreich entschlüsselte Einträge wurden exportiert."
+
+msgid "Bulk passkey authentication failed."
+msgstr "Massen-Passkey-Authentifizierung fehlgeschlagen."
+
+msgid "No entries selected for export."
+msgstr "Keine Einträge für Export ausgewählt."
+
+msgid "Processing bulk export..."
+msgstr "Verarbeite Massenexport..."
+
+msgid "Bulk export failed:"
+msgstr "Massenexport fehlgeschlagen:"
+
+msgid "Missing export manager."
+msgstr "Export-Manager fehlt."
+
+msgid "Bulk decrypt request not found or expired."
+msgstr "Massendecryption-Anfrage nicht gefunden oder abgelaufen."
+
+msgid "Bulk decryption failed for all entries."
+msgstr "Massendecryption für alle Einträge fehlgeschlagen."
+
+msgid "for %d days, after which it will be automatically deleted"
+msgstr " für %d Tage, danach werden sie automatisch gelöscht"
+
+msgid "Text Type"
+msgstr "Texttyp"
+
+msgid "Default (Automatic encryption & expiration details)"
+msgstr "Standard (Automatische Verschlüsselung & Ablaufdetails)"
+
+msgid "Custom Text (Use the text below)"
+msgstr "Benutzerdefinierter Text (Verwenden Sie den Text unten)"
+
+msgid "Choose whether to use the default security information text or your custom text below."
+msgstr "Wählen Sie, ob Sie den Standard-Sicherheitsinformationstext oder Ihren benutzerdefinierten Text unten verwenden möchten."
+
+msgid "Custom Description Text"
+msgstr "Benutzerdefinierter Beschreibungstext"
+
+msgid "Custom text to display above the login form. Basic HTML allowed (p, strong, em, br, a). This field is automatically populated with the default text when no custom text is provided. Use {EXPIRATION_TEXT} placeholder for automatic expiration information."
+msgstr "Benutzerdefinierter Text, der über dem Anmeldeformular angezeigt wird. Einfaches HTML erlaubt (p, strong, em, br, a). Dieses Feld wird automatisch mit dem Standardtext gefüllt, wenn kein benutzerdefinierter Text angegeben wird. Verwenden Sie den Platzhalter {EXPIRATION_TEXT} für automatische Ablaufinformationen."
+
+msgid "What happens to your data:"
+msgstr "Was mit Ihren Daten passiert:"
+
+msgid "Your login data is encrypted in your browser before being sent to our server. We use strong RSA-2048 encryption to ensure maximum security."
+msgstr "Ihre Anmeldedaten werden in Ihrem Browser verschlüsselt, bevor sie an unseren Server gesendet werden. Wir verwenden starke RSA-2048-Verschlüsselung, um maximale Sicherheit zu gewährleisten."

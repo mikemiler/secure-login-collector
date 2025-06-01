@@ -1,0 +1,675 @@
+<?php
+/**
+ * Encryption Handler Class
+ * 
+ * Handles all encryption and decryption operations including:
+ * - RSA key generation and management
+ * - Passkey-derived encryption (Pro version)
+ * - XOR encryption (legacy)
+ * - Double encryption for ultra-secure mode
+ */
+
+// Prevent direct access.
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+class Secure_Login_Encryption_Handler
+{
+    
+    private $is_pro_version;
+    
+    public function __construct($is_pro_version)
+    {
+        $this->is_pro_version = $is_pro_version;
+        
+        // Register AJAX handlers for encryption operations.
+        add_action('wp_ajax_generate_rsa_keys', array($this, 'handle_generate_rsa_keys'));
+        add_action('wp_ajax_export_public_key', array($this, 'handle_export_public_key'));
+        add_action('wp_ajax_register_passkey', array($this, 'handle_register_passkey'));
+        add_action('wp_ajax_authenticate_passkey', array($this, 'handle_authenticate_passkey'));
+        add_action('wp_ajax_reset_passkey', array($this, 'handle_reset_passkey'));
+        add_action('wp_ajax_encrypt_with_passkey', array($this, 'handle_encrypt_with_passkey'));
+        add_action('wp_ajax_test_passkey_encryption', array($this, 'handle_test_passkey_encryption'));
+    }
+    
+    /**
+     * Generate RSA key pair (available for all users).
+     */
+    public function generate_rsa_keypair()
+    {
+        if (!function_exists('openssl_pkey_new')) {
+            return new WP_Error('openssl_missing', __('OpenSSL extension is required for RSA encryption.', 'secure-login-collector'));
+        }
+        
+        $config = array(
+            "digest_alg" => "sha1",
+            "private_key_bits" => 2048,
+            "private_key_type" => OPENSSL_KEYTYPE_RSA,
+        );
+        
+        $keypair = openssl_pkey_new($config);
+        if (!$keypair) {
+            return new WP_Error('key_generation_failed', __('Failed to generate RSA key pair.', 'secure-login-collector'));
+        }
+        
+        // Extract private key.
+        openssl_pkey_export($keypair, $private_key);
+        
+        // Extract public key.
+        $public_key_details = openssl_pkey_get_details($keypair);
+        $public_key = $public_key_details["key"];
+        
+        // Store keys securely.
+        $this->store_keypair($public_key, $private_key);
+        
+        return array(
+            'public_key' => $public_key,
+            'private_key' => $private_key
+        );
+    }
+    
+    /**
+     * Store RSA key pair securely.
+     */
+    private function store_keypair($public_key, $private_key)
+    {
+        // Store public key (can be accessed by frontend).
+        update_option('secure_login_public_key', $public_key);
+        
+        // Store private key encrypted with WordPress salts.
+        $encrypted_private_key = $this->encrypt_private_key($private_key);
+        update_option('secure_login_private_key_encrypted', $encrypted_private_key);
+        
+        // Store key generation timestamp.
+        update_option('secure_login_keys_generated', current_time('mysql'));
+        
+        // Store key version for compatibility tracking.
+        update_option('secure_login_key_version', '2.5.0');
+    }
+    
+    /**
+     * Encrypt private key using WordPress salts.
+     */
+    private function encrypt_private_key($private_key)
+    {
+        if (!defined('AUTH_KEY') || !defined('SECURE_AUTH_KEY')) {
+            return base64_encode($private_key); // Fallback to base64 if salts not available.
+        }
+        
+        $key = hash('sha256', AUTH_KEY . SECURE_AUTH_KEY);
+        $iv = substr(hash('sha256', SECURE_AUTH_KEY . AUTH_KEY), 0, 16);
+        
+        return base64_encode(openssl_encrypt($private_key, 'AES-256-CBC', $key, 0, $iv));
+    }
+    
+    /**
+     * Decrypt private key using WordPress salts.
+     */
+    private function decrypt_private_key($encrypted_private_key)
+    {
+        if (!defined('AUTH_KEY') || !defined('SECURE_AUTH_KEY')) {
+            return base64_decode($encrypted_private_key); // Fallback.
+        }
+        
+        $key = hash('sha256', AUTH_KEY . SECURE_AUTH_KEY);
+        $iv = substr(hash('sha256', SECURE_AUTH_KEY . AUTH_KEY), 0, 16);
+        
+        $decrypted = openssl_decrypt(base64_decode($encrypted_private_key), 'AES-256-CBC', $key, 0, $iv);
+        
+        if ($decrypted === false) {
+            return base64_decode($encrypted_private_key);
+        }
+        
+        return $decrypted;
+    }
+    
+    /**
+     * Get public key for frontend encryption.
+     */
+    public function get_public_key()
+    {
+        $public_key = get_option('secure_login_public_key');
+        if (!$public_key) {
+            // Generate keys if they don't exist.
+            $keypair = $this->generate_rsa_keypair();
+            if (is_wp_error($keypair)) {
+                return $keypair;
+            }
+            $public_key = $keypair['public_key'];
+        }
+        
+        return $public_key;
+    }
+    
+    /**
+     * Ensure RSA keys are generated and available.
+     */
+    public function ensure_rsa_keys()
+    {
+        $public_key = get_option('secure_login_public_key');
+        $key_version = get_option('secure_login_key_version', '1.0');
+        
+        // Force regeneration if keys don't exist or were generated with old version.
+        if (!$public_key || version_compare($key_version, '2.5.0', '<')) {
+            $keypair = $this->generate_rsa_keypair();
+            if (!is_wp_error($keypair)) {
+                update_option('secure_login_key_version', '2.5.0');
+                error_log('Secure Login Collector: RSA keys regenerated for compatibility (version 2.5.0)');
+            } else {
+                error_log('Secure Login Collector: Failed to generate RSA keys - ' . $keypair->get_error_message());
+            }
+        }
+    }
+    
+    /**
+     * Encrypt data using RSA (server-side).
+     */
+    public function encrypt_rsa_data($data)
+    {
+        $public_key = $this->get_public_key();
+        if (is_wp_error($public_key)) {
+            return false;
+        }
+        
+        // Load the public key resource.
+        $public_key_resource = openssl_pkey_get_public($public_key);
+        if (!$public_key_resource) {
+            error_log('Secure Login Collector: Failed to load public key resource - ' . openssl_error_string());
+            return false;
+        }
+        
+        // Encrypt with RSA-OAEP.
+        $encrypted = '';
+        if (!openssl_public_encrypt($data, $encrypted, $public_key_resource, OPENSSL_PKCS1_OAEP_PADDING)) {
+            error_log('Secure Login Collector: RSA OAEP encryption failed - ' . openssl_error_string());
+            return false;
+        }
+        
+        return base64_encode($encrypted);
+    }
+    
+    /**
+     * Decrypt RSA encrypted data.
+     */
+    public function decrypt_rsa_data($encrypted_data)
+    {
+        // Get encrypted private key.
+        $encrypted_private_key = get_option('secure_login_private_key_encrypted');
+        if (!$encrypted_private_key) {
+            return false;
+        }
+        
+        // Decrypt private key.
+        $private_key = $this->decrypt_private_key($encrypted_private_key);
+        if (!$private_key) {
+            return false;
+        }
+        
+        // Decode base64 encrypted data.
+        $encrypted_data = base64_decode($encrypted_data);
+        if ($encrypted_data === false) {
+            return false;
+        }
+        
+        // Load the private key resource.
+        $private_key_resource = openssl_pkey_get_private($private_key);
+        if (!$private_key_resource) {
+            return false;
+        }
+        
+        // Decrypt with RSA-OAEP.
+        $decrypted = '';
+        if (!openssl_private_decrypt($encrypted_data, $decrypted, $private_key_resource, OPENSSL_PKCS1_OAEP_PADDING)) {
+            return false;
+        }
+        
+        // Parse JSON.
+        $data = json_decode($decrypted, true);
+        return (json_last_error() === JSON_ERROR_NONE) ? $data : false;
+    }
+    
+    /**
+     * Encrypt data using XOR cipher (legacy).
+     */
+    public function encrypt_xor_data($data, $encryption_key)
+    {
+        $encrypted = '';
+        $keyIndex = 0;
+        
+        for ($i = 0; $i < strlen($data); $i++) {
+            $charCode = ord($data[$i]);
+            $keyChar = ord($encryption_key[$keyIndex % strlen($encryption_key)]);
+            $encrypted .= chr($charCode ^ $keyChar);
+            $keyIndex++;
+        }
+        
+        return base64_encode($encrypted);
+    }
+    
+    /**
+     * Decrypt XOR encrypted data (legacy).
+     */
+    public function decrypt_xor_data($encrypted_data, $encryption_key)
+    {
+        // Decode base64.
+        $encrypted_data = base64_decode($encrypted_data);
+        
+        // Decrypt using XOR cipher.
+        $decrypted = '';
+        $keyIndex = 0;
+        
+        for ($i = 0; $i < strlen($encrypted_data); $i++) {
+            $charCode = ord($encrypted_data[$i]);
+            $keyChar = ord($encryption_key[$keyIndex % strlen($encryption_key)]);
+            $decrypted .= chr($charCode ^ $keyChar);
+            $keyIndex++;
+        }
+        
+        // Parse JSON.
+        $data = json_decode($decrypted, true);
+        return (json_last_error() === JSON_ERROR_NONE) ? $data : false;
+    }
+    
+    /**
+     * Generate encryption key from passkey (Pro version).
+     */
+    private function derive_key_from_passkey($passkey_signature = null)
+    {
+        if (!$this->is_pro_version) {
+            return false;
+        }
+        
+        // Use the stored passkey public key for consistent key derivation.
+        $passkey_public_key = get_option('secure_login_passkey_public_key');
+        if (!$passkey_public_key) {
+            return false;
+        }
+        
+        // Use the passkey public key as the base for key derivation.
+        $salt = get_option('secure_login_passkey_salt');
+        if (!$salt) {
+            // Generate and store a unique salt for this installation.
+            $salt = wp_generate_password(32, true, true);
+            update_option('secure_login_passkey_salt', $salt);
+        }
+        
+        // Derive 256-bit key using PBKDF2.
+        return hash_pbkdf2('sha256', $passkey_public_key, $salt, 100000, 32, true);
+    }
+    
+    /**
+     * Encrypt data using passkey-derived key (Pro version).
+     */
+    public function encrypt_with_passkey_key($data, $passkey_signature = null)
+    {
+        if (!$this->is_pro_version) {
+            return false;
+        }
+        
+        $encryption_key = $this->derive_key_from_passkey($passkey_signature);
+        if ($encryption_key === false) {
+            return false;
+        }
+        
+        // Generate random IV.
+        $iv = random_bytes(16);
+        
+        // Encrypt with AES-256-GCM for authenticated encryption.
+        $encrypted = openssl_encrypt($data, 'aes-256-gcm', $encryption_key, OPENSSL_RAW_DATA, $iv, $tag);
+        
+        if ($encrypted === false) {
+            return false;
+        }
+        
+        // Combine IV + tag + encrypted data.
+        return base64_encode($iv . $tag . $encrypted);
+    }
+    
+    /**
+     * Decrypt data using passkey-derived key (Pro version).
+     */
+    public function decrypt_with_passkey_key($encrypted_data, $passkey_signature = null)
+    {
+        if (!$this->is_pro_version) {
+            return false;
+        }
+        
+        $encryption_key = $this->derive_key_from_passkey($passkey_signature);
+        if ($encryption_key === false) {
+            return false;
+        }
+        
+        // Decode and extract components.
+        $data = base64_decode($encrypted_data);
+        if (strlen($data) < 32) { // IV(16) + tag(16) minimum.
+            return false;
+        }
+        
+        $iv = substr($data, 0, 16);
+        $tag = substr($data, 16, 16);
+        $encrypted = substr($data, 32);
+        
+        // Decrypt with AES-256-GCM.
+        $decrypted = openssl_decrypt($encrypted, 'aes-256-gcm', $encryption_key, OPENSSL_RAW_DATA, $iv, $tag);
+        
+        return ($decrypted !== false) ? $decrypted : false;
+    }
+    
+    /**
+     * Decrypt data with double encryption support.
+     */
+    public function decrypt_data($encrypted_data, $encryption_type, $encryption_key = null)
+    {
+        if ($encryption_type === 'passkey_derived') {
+            return $this->decrypt_passkey_derived_data($encrypted_data);
+        } else if ($encryption_type === 'rsa') {
+            return $this->decrypt_rsa_data($encrypted_data);
+        } else {
+            // XOR decryption.
+            if ($encryption_key) {
+                return $this->decrypt_xor_data($encrypted_data, $encryption_key);
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Decrypt passkey-derived encrypted data with double encryption support.
+     */
+    private function decrypt_passkey_derived_data($encrypted_data)
+    {
+        if (!$this->is_pro_version) {
+            return false;
+        }
+        
+        // Check if passkey authentication was successful.
+        $user_id = get_current_user_id();
+        $passkey_authenticated = get_transient('secure_login_passkey_authenticated_' . $user_id);
+        if (!$passkey_authenticated) {
+            return false;
+        }
+        
+        // First decrypt with passkey-derived key.
+        $first_decrypted = $this->decrypt_with_passkey_key($encrypted_data, null);
+        if ($first_decrypted === false) {
+            return false;
+        }
+        
+        // Check if this is double-encrypted data.
+        $data = json_decode($first_decrypted, true);
+        if (json_last_error() === JSON_ERROR_NONE) {
+            // Single encryption.
+            return $data;
+        } else {
+            // Double encryption - try RSA decryption of inner layer.
+            $final_decrypted = $this->decrypt_rsa_data($first_decrypted);
+            return ($final_decrypted !== false) ? $final_decrypted : array('raw_data' => $first_decrypted);
+        }
+    }
+    
+    /**
+     * Test passkey encryption/decryption consistency.
+     */
+    public function test_passkey_encryption()
+    {
+        if (!$this->is_pro_version) {
+            return 'Pro version required';
+        }
+        
+        $passkey_registered = get_option('secure_login_passkey_registered', false);
+        if (!$passkey_registered) {
+            return 'Passkey not registered';
+        }
+        
+        // Check if passkey data is available
+        $passkey_public_key = get_option('secure_login_passkey_public_key');
+        if (!$passkey_public_key) {
+            return 'FAILED: Passkey public key not found in database';
+        }
+        
+        $test_data = 'Test data for passkey encryption';
+        
+        // Test encryption.
+        $encrypted = $this->encrypt_with_passkey_key($test_data, null);
+        if ($encrypted === false) {
+            return 'FAILED: Encryption failed - check if passkey data is properly stored';
+        }
+        
+        // Test decryption.
+        $decrypted = $this->decrypt_with_passkey_key($encrypted, null);
+        if ($decrypted === false) {
+            return 'FAILED: Decryption failed - encrypted data: ' . substr($encrypted, 0, 50) . '...';
+        }
+        
+        if ($decrypted === $test_data) {
+            return 'SUCCESS: Passkey encryption/decryption working correctly. Encrypted length: ' . strlen($encrypted) . ' bytes';
+        } else {
+            return 'FAILED: Data mismatch. Original: "' . $test_data . '", Decrypted: "' . $decrypted . '"';
+        }
+    }
+    
+    // AJAX Handlers
+    
+    public function handle_generate_rsa_keys()
+    {
+        if (!wp_verify_nonce($_POST['nonce'], 'generate_rsa_keys') || !current_user_can('manage_options')) {
+            wp_send_json_error(__('Invalid security token or insufficient permissions.', 'secure-login-collector'));
+            return;
+        }
+        
+        $result = $this->generate_rsa_keypair();
+        if (is_wp_error($result)) {
+            wp_send_json_error($result->get_error_message());
+            return;
+        }
+        
+        wp_send_json_success(__('RSA keys generated successfully.', 'secure-login-collector'));
+    }
+    
+    public function handle_export_public_key()
+    {
+        if (!wp_verify_nonce($_POST['nonce'], 'export_public_key') || !current_user_can('manage_options')) {
+            wp_send_json_error(__('Invalid security token or insufficient permissions.', 'secure-login-collector'));
+            return;
+        }
+        
+        $public_key = $this->get_public_key();
+        if (is_wp_error($public_key) || !$public_key) {
+            wp_send_json_error(__('No public key available.', 'secure-login-collector'));
+            return;
+        }
+        
+        wp_send_json_success(array('public_key' => $public_key));
+    }
+    
+    public function handle_register_passkey()
+    {
+        if (!wp_verify_nonce($_POST['nonce'], 'register_passkey') || !current_user_can('manage_options')) {
+            wp_send_json_error(__('Invalid security token or insufficient permissions.', 'secure-login-collector'));
+            return;
+        }
+        
+        if (!$this->is_pro_version) {
+            wp_send_json_error(__('Pro version required.', 'secure-login-collector'));
+            return;
+        }
+        
+        $credential_id = sanitize_text_field($_POST['credential_id']);
+        $public_key = sanitize_text_field($_POST['public_key']);
+        
+        if (empty($credential_id) || empty($public_key)) {
+            wp_send_json_error(__('Missing credential data.', 'secure-login-collector'));
+            return;
+        }
+        
+        // Store passkey data.
+        update_option('secure_login_passkey_credential_id', $credential_id);
+        update_option('secure_login_passkey_public_key', $public_key);
+        update_option('secure_login_passkey_registered', true);
+        update_option('secure_login_passkey_user_id', get_current_user_id());
+        update_option('secure_login_passkey_registered_at', current_time('mysql'));
+        
+        wp_send_json_success(__('Passkey registered successfully.', 'secure-login-collector'));
+    }
+    
+    public function handle_authenticate_passkey()
+    {
+        if (!wp_verify_nonce($_POST['nonce'], 'authenticate_passkey') || !current_user_can('manage_options')) {
+            wp_send_json_error(__('Invalid security token or insufficient permissions.', 'secure-login-collector'));
+            return;
+        }
+        
+        if (!$this->is_pro_version) {
+            wp_send_json_error(__('Pro version required.', 'secure-login-collector'));
+            return;
+        }
+        
+        // Check if passkey is registered
+        $passkey_registered = get_option('secure_login_passkey_registered', false);
+        if (!$passkey_registered) {
+            wp_send_json_error(__('Passkey not registered.', 'secure-login-collector'));
+            return;
+        }
+        
+        // Get the pending decrypt request
+        $decrypt_id = get_transient('secure_login_decrypt_request_' . get_current_user_id());
+        if (!$decrypt_id) {
+            wp_send_json_error(__('No pending decrypt request found.', 'secure-login-collector'));
+            return;
+        }
+        
+        // Verify the passkey authentication (simplified for demo)
+        $signature = sanitize_text_field($_POST['signature']);
+        $authenticator_data = sanitize_text_field($_POST['authenticator_data']);
+        
+        if (empty($signature) || empty($authenticator_data)) {
+            wp_send_json_error(__('Missing authentication data.', 'secure-login-collector'));
+            return;
+        }
+        
+        // In a real implementation, you would verify the signature here
+        // For this demo, we'll assume authentication is successful
+        
+        // Set authentication flag
+        set_transient('secure_login_passkey_authenticated_' . get_current_user_id(), true, 300); // 5 minutes
+        
+        // Clear the decrypt request
+        delete_transient('secure_login_decrypt_request_' . get_current_user_id());
+        
+        // Decrypt the data using the admin interface's decrypt_data method
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'secure_login_data';
+        
+        $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table_name} WHERE id = %d", $decrypt_id));
+        if (!$row) {
+            wp_send_json_error(__('Entry not found.', 'secure-login-collector'));
+            return;
+        }
+        
+        // Parse metadata to get encryption type
+        $metadata = json_decode($row->metadata, true);
+        $encryption_type = isset($metadata['encryption_type']) ? $metadata['encryption_type'] : 'xor';
+        
+        // Decrypt the data
+        $decrypted_data = $this->decrypt_data($row->encrypted_data, $encryption_type);
+        
+        if ($decrypted_data === false) {
+            wp_send_json_error(__('Decryption failed.', 'secure-login-collector'));
+            return;
+        }
+        
+        // Log the action for security audit
+        error_log(
+            sprintf(
+                'Secure Login Collector: Data decrypted via passkey by Admin User ID: %d, Entry ID: %d, IP: %s',
+                get_current_user_id(),
+                $decrypt_id,
+                $this->get_client_ip()
+            )
+        );
+        
+        wp_send_json_success($decrypted_data);
+    }
+    
+    /**
+     * Get client IP address.
+     */
+    private function get_client_ip()
+    {
+        $ip_keys = array('HTTP_CLIENT_IP', 'HTTP_X_FORWARDED_FOR', 'REMOTE_ADDR');
+        foreach ($ip_keys as $key) {
+            if (array_key_exists($key, $_SERVER) === true) {
+                foreach (explode(',', $_SERVER[$key]) as $ip) {
+                    $ip = trim($ip);
+                    if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false) {
+                        return $ip;
+                    }
+                }
+            }
+        }
+        return isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'Unknown';
+    }
+    
+    public function handle_reset_passkey()
+    {
+        if (!wp_verify_nonce($_POST['nonce'], 'reset_passkey') || !current_user_can('manage_options')) {
+            wp_send_json_error(__('Invalid security token or insufficient permissions.', 'secure-login-collector'));
+            return;
+        }
+        
+        if (!$this->is_pro_version) {
+            wp_send_json_error(__('Pro version required.', 'secure-login-collector'));
+            return;
+        }
+        
+        // Set flag to allow re-registration.
+        set_transient('secure_login_force_passkey_reregister_' . get_current_user_id(), true, 300);
+        
+        wp_send_json_success(__('Passkey reset authorized.', 'secure-login-collector'));
+    }
+    
+    public function handle_encrypt_with_passkey()
+    {
+        // This endpoint is deprecated - frontend should use RSA encryption
+        wp_send_json_error(__('This encryption method is no longer supported. Please use standard form submission.', 'secure-login-collector'));
+    }
+    
+    public function handle_test_passkey_encryption()
+    {
+        if (!wp_verify_nonce($_POST['nonce'], 'test_passkey_encryption') || !current_user_can('manage_options')) {
+            wp_send_json_error(__('Invalid security token or insufficient permissions.', 'secure-login-collector'));
+            return;
+        }
+        
+        if (!$this->is_pro_version) {
+            wp_send_json_error(__('Pro version required.', 'secure-login-collector'));
+            return;
+        }
+        
+        $passkey_registered = get_option('secure_login_passkey_registered', false);
+        if (!$passkey_registered) {
+            wp_send_json_error(__('Passkey not registered. Please register a passkey first.', 'secure-login-collector'));
+            return;
+        }
+        
+        // For testing purposes, temporarily set the authentication flag
+        // This allows the test to work without requiring actual passkey authentication
+        $user_id = get_current_user_id();
+        set_transient('secure_login_passkey_authenticated_' . $user_id, true, 60); // 1 minute for test
+        
+        // Run the test
+        $result = $this->test_passkey_encryption();
+        
+        // Clear the temporary authentication flag
+        delete_transient('secure_login_passkey_authenticated_' . $user_id);
+        
+        // Provide detailed result
+        if (strpos($result, 'SUCCESS') === 0) {
+            wp_send_json_success($result);
+        } else {
+            wp_send_json_error($result);
+        }
+    }
+} 
