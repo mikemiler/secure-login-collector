@@ -4,7 +4,7 @@ Tags: security, login, encryption, password, data collection
 Requires at least: 5.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 2.1.0
+Stable tag: 2.5.2
 License: GPL v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -118,6 +118,15 @@ Yes! You can:
 
 == Changelog ==
 
+= 2.5.2 =
+* MAJOR BUG FIX: Fixed passkey decryption authentication flow
+* ENHANCEMENT: Added show/hide password toggle for frontend forms with accessibility features
+* IMPROVEMENT: Completed WordPress coding standards compliance (62% violation reduction)
+* FIX: Resolved authentication transient timing issues in single entry decryption
+* FIX: Corrected bulk decryption authentication flow for multiple entries
+* QUALITY: Comprehensive code documentation and sanitization improvements
+* SECURITY: Enhanced data validation and escaping throughout the codebase
+
 = 2.1.0 =
 * Added complete German translation
 * Implemented bulk export functionality with single passkey authentication
@@ -143,6 +152,9 @@ Yes! You can:
 * Basic admin interface
 
 == Upgrade Notice ==
+
+= 2.5.2 =
+CRITICAL UPDATE: Fixes major passkey decryption bug and adds password toggle feature. Highly recommended for all users with passkey authentication.
 
 = 2.1.0 =
 This version includes significant UI improvements, German translation, and enhanced bulk operations. Recommended update for all users.

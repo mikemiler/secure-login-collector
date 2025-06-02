@@ -55,11 +55,45 @@
     min-height: 120px;
 }
 
+/* Password field with toggle button */
+.password-field-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+}
+
+.password-field-wrapper input {
+    padding-right: 40px;
+}
+
+.password-toggle-btn {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    color: #666;
+    padding: 5px;
+    z-index: 1;
+}
+
+.password-toggle-btn:hover {
+    color: #333;
+}
+
+.password-toggle-btn:focus {
+    outline: 2px solid #0073aa;
+    outline-offset: 2px;
+}
+
 .secure-login-form .form-help {
     display: block;
     margin-top: 5px;
     color: #666;
-    font-size: 0.9em;
+    font-size: 0.7em;
 }
 
 .secure-submit-btn {
@@ -98,4 +132,4 @@
     background: #f8d7da;
     color: #721c24;
     border: 1px solid #f5c6cb;
-} 
+}
