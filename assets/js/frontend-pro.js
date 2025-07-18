@@ -86,14 +86,14 @@ jQuery(document).ready(
         async function encryptData(data) {
             // RSA encryption is required
             if (!secureLoginAjax.public_key) {
-                throw new Error('RSA public key not available. Please contact administrator.');
+                throw new Error(secureLoginAjax.strings.rsa_key_not_available || 'RSA public key not available. Please contact administrator.');
             }
             
             try {
                 return await encryptWithRSA(data, secureLoginAjax.public_key);
             } catch (error) {
                 console.error('RSA encryption failed:', error);
-                throw new Error('Encryption failed. Please try again or contact administrator.');
+                throw new Error(secureLoginAjax.strings.encryption_retry_failed || 'Encryption failed. Please try again or contact administrator.');
             }
         }
 

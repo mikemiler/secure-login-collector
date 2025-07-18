@@ -6,7 +6,7 @@ jQuery(document).ready(function($) {
         
         // Login URL from metadata
         var loginUrl = metadata && metadata.login_url ? metadata.login_url : '';
-        if (loginUrl && loginUrl !== 'Not provided') {
+        if (loginUrl && loginUrl !== secureLoginAjax.strings.not_provided) {
             html += '<div class="data-field">';
             html += '<strong>Login URL:</strong>';
             html += '<div class="field-row">';
@@ -117,7 +117,7 @@ jQuery(document).ready(function($) {
             newData[fieldName] = newValue;
         });
         
-        button.prop('disabled', true).text('Saving...');
+        button.prop('disabled', true).text(secureLoginAjax.strings.saving);
         
         $.ajax({
             url: secureLoginAjax.ajaxurl,
@@ -140,12 +140,12 @@ jQuery(document).ready(function($) {
                     row.find('.save-btn, .cancel-btn').hide();
                     row.find('.edit-btn').show();
                 } else {
-                    alert('Save failed: ' + (response.data || 'Unknown error'));
+                    alert(secureLoginAjax.strings.save_failed + (response.data || secureLoginAjax.strings.unknown_error));
                 }
                 button.prop('disabled', false);
             },
             error: function() {
-                alert('Network error occurred during save.');
+                alert(secureLoginAjax.strings.network_error_save);
                 button.prop('disabled', false);
             }
         });
@@ -167,7 +167,7 @@ jQuery(document).ready(function($) {
         // SECURITY ENHANCEMENT: Pro version with passkey MUST use passkey authentication
         if (isProVersion && passkeyRegistered) {
             // Force passkey authentication - no choice given
-            button.prop('disabled', true).attr('title', 'Requesting passkey...');
+            button.prop('disabled', true).attr('title', secureLoginAjax.strings.requesting_passkey);
             
             $.ajax({
                 url: secureLoginAjax.ajaxurl,
@@ -183,13 +183,13 @@ jQuery(document).ready(function($) {
                         // Initiate passkey authentication
                         authenticateWithPasskey(id, button, decryptedRow);
                     } else {
-                        alert('Passkey authentication setup failed: ' + (response.data || 'Unknown error'));
-                        button.prop('disabled', false).attr('title', 'Decrypt data');
+                        alert(secureLoginAjax.strings.passkey_setup_failed + (response.data || secureLoginAjax.strings.unknown_error));
+                        button.prop('disabled', false).attr('title', secureLoginAjax.strings.decrypt_data);
                     }
                 },
                 error: function() {
-                    alert('Network error occurred during passkey setup.');
-                    button.prop('disabled', false).attr('title', 'Decrypt data');
+                    alert(secureLoginAjax.strings.network_error_passkey);
+                    button.prop('disabled', false).attr('title', secureLoginAjax.strings.decrypt_data);
                 }
             });
             return;
@@ -198,7 +198,7 @@ jQuery(document).ready(function($) {
         // For pro version without passkey or non-pro version, offer choice
         if (isProVersion && !passkeyRegistered) {
             // Pro version but no passkey registered - warn user and suggest registering passkey
-            if (!confirm('Pro version detected but no passkey registered.\n\nFor maximum security, consider registering a passkey in Settings.\n\nContinue with traditional decryption?')) {
+            if (!confirm(secureLoginAjax.strings.pro_no_passkey_continue)) {
                 return;
             }
         }
@@ -216,14 +216,14 @@ jQuery(document).ready(function($) {
                 encryptionKey = hostname + timestamp;
             } else {
                 // Very old legacy data - prompt user for manual key entry
-                encryptionKey = prompt('This entry was created before automatic key reconstruction was available.\nPlease enter the encryption key manually:');
+                encryptionKey = prompt(secureLoginAjax.strings.enter_encryption_key);
                 if (!encryptionKey) {
                     return;
                 }
             }
             
             // Disable button and show loading.
-            button.prop('disabled', true).attr('title', 'Decrypting...');
+            button.prop('disabled', true).attr('title', secureLoginAjax.strings.decrypting);
             
             // Make AJAX request to decrypt data.
             $.ajax({
@@ -244,32 +244,32 @@ jQuery(document).ready(function($) {
                         var formattedData = formatDecryptedData(response.data.data || response.data, response.data.metadata);
                         decryptedRow.find('.decrypted-json').html(formattedData);
                         decryptedRow.show();
-                        button.attr('title', 'Data decrypted').addClass('button-secondary');
+                        button.attr('title', secureLoginAjax.strings.data_decrypted).addClass('button-secondary');
                         button.find('.dashicons').removeClass('dashicons-unlock').addClass('dashicons-yes');
                     } else {
-                        alert('Decryption failed: ' + (response.data || 'Unknown error'));
-                        button.prop('disabled', false).attr('title', 'Decrypt data');
+                        alert(secureLoginAjax.strings.decryption_failed + (response.data || secureLoginAjax.strings.unknown_error));
+                        button.prop('disabled', false).attr('title', secureLoginAjax.strings.decrypt_data);
                     }
                 },
                 error: function() {
-                    alert('Network error occurred during decryption.');
-                    button.prop('disabled', false).attr('title', 'Decrypt data');
+                    alert(secureLoginAjax.strings.network_error_decryption);
+                    button.prop('disabled', false).attr('title', secureLoginAjax.strings.decrypt_data);
                 }
             });
             
         } catch (e) {
-            alert('Error processing decryption: ' + e.message);
+            alert(secureLoginAjax.strings.error_processing_decryption + e.message);
         }
     });
     
     // Passkey authentication function
     function authenticateWithPasskey(id, button, decryptedRow) {
-        button.attr('title', 'Authenticate with passkey...');
+        button.attr('title', secureLoginAjax.strings.authenticate_with_passkey);
         
         // Check if WebAuthn is supported
         if (!window.PublicKeyCredential) {
-            alert('WebAuthn/Passkeys are not supported in this browser.');
-            button.prop('disabled', false).attr('title', 'Decrypt data');
+            alert(secureLoginAjax.strings.webauthn_not_supported);
+            button.prop('disabled', false).attr('title', secureLoginAjax.strings.decrypt_data);
             return;
         }
         
@@ -288,7 +288,7 @@ jQuery(document).ready(function($) {
         navigator.credentials.get(getCredentialDefaultArgs)
             .then((assertion) => {
                 // Send authentication data to server for passkey verification and decryption
-                button.attr('title', 'Verifying passkey and decrypting...');
+                button.attr('title', secureLoginAjax.strings.verifying_passkey);
                 
                 $.ajax({
                     url: secureLoginAjax.ajaxurl,
@@ -311,23 +311,23 @@ jQuery(document).ready(function($) {
                             var formattedData = formatDecryptedData(response.data.data || response.data, response.data.metadata);
                             decryptedRow.find('.decrypted-json').html(formattedData);
                             decryptedRow.show();
-                            button.attr('title', 'Data decrypted with passkey').addClass('button-secondary');
+                            button.attr('title', secureLoginAjax.strings.data_decrypted_passkey).addClass('button-secondary');
                             button.find('.dashicons').removeClass('dashicons-unlock').addClass('dashicons-yes');
                         } else {
-                            alert('Passkey decryption failed: ' + (response.data || 'Unknown error'));
-                            button.prop('disabled', false).attr('title', 'Decrypt data');
+                            alert(secureLoginAjax.strings.passkey_decryption_failed + (response.data || secureLoginAjax.strings.unknown_error));
+                            button.prop('disabled', false).attr('title', secureLoginAjax.strings.decrypt_data);
                         }
                     },
                     error: function() {
-                        alert('Network error occurred during passkey decryption.');
-                        button.prop('disabled', false).attr('title', 'Decrypt data');
+                        alert(secureLoginAjax.strings.network_error_passkey_decrypt);
+                        button.prop('disabled', false).attr('title', secureLoginAjax.strings.decrypt_data);
                     }
                 });
             })
             .catch((err) => {
-                console.error('Passkey authentication failed:', err);
-                alert('Passkey authentication failed: ' + err.message);
-                button.prop('disabled', false).attr('title', 'Decrypt data');
+                console.error(secureLoginAjax.strings.passkey_auth_failed, err);
+                alert(secureLoginAjax.strings.passkey_auth_failed + ' ' + err.message);
+                button.prop('disabled', false).attr('title', secureLoginAjax.strings.decrypt_data);
             });
     }
     
@@ -342,7 +342,7 @@ jQuery(document).ready(function($) {
         decryptedRow.removeData('decrypted-data');
         
         decryptedRow.hide();
-        decryptBtn.prop('disabled', false).attr('title', 'Decrypt data').removeClass('button-secondary');
+        decryptBtn.prop('disabled', false).attr('title', secureLoginAjax.strings.decrypt_data).removeClass('button-secondary');
         decryptBtn.find('.dashicons').removeClass('dashicons-yes').addClass('dashicons-unlock');
     });
     
@@ -351,11 +351,11 @@ jQuery(document).ready(function($) {
         var button = $(this);
         var id = button.data('id');
         
-        if (!confirm('Are you sure you want to extend the retention period for this entry?')) {
+        if (!confirm(secureLoginAjax.strings.confirm_extend_retention)) {
             return;
         }
         
-        button.prop('disabled', true).text('Extending...');
+        button.prop('disabled', true).text(secureLoginAjax.strings.extending);
         
         $.ajax({
             url: secureLoginAjax.ajaxurl,
@@ -367,7 +367,7 @@ jQuery(document).ready(function($) {
             },
             success: function(response) {
                 if (response.success) {
-                    alert(response.data.message || 'Retention period extended successfully.');
+                    alert(response.data.message || secureLoginAjax.strings.retention_extended);
                     // Refresh page to show updated expiration
                     location.reload();
                 } else {
@@ -655,7 +655,7 @@ jQuery(document).ready(function($) {
     function authenticateWithPasskeyForBulkDecrypt(data, button) {
         // Check if WebAuthn is supported
         if (!window.PublicKeyCredential) {
-            alert('WebAuthn/Passkeys are not supported in this browser.');
+            alert(secureLoginAjax.strings.webauthn_not_supported);
             button.prop('disabled', false).text('Authenticate with Passkey to Decrypt All');
             return;
         }
@@ -726,7 +726,7 @@ jQuery(document).ready(function($) {
             })
             .catch((err) => {
                 console.error('Bulk passkey authentication failed:', err);
-                alert('Passkey authentication failed: ' + err.message);
+                alert(secureLoginAjax.strings.passkey_auth_failed + ' ' + err.message);
                 button.prop('disabled', false).text('Authenticate with Passkey to Decrypt All');
             });
     }

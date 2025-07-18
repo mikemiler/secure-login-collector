@@ -49,7 +49,7 @@ jQuery(document).ready(
 
             } catch (error) {
                 console.error('RSA encryption failed:', error);
-                throw new Error('Encryption failed');
+                throw new Error(secureLoginAjax.strings.encryption_failed || 'Encryption failed');
             }
         }
 
@@ -90,11 +90,11 @@ jQuery(document).ready(
                     return await encryptWithRSA(data, secureLoginAjax.public_key);
                 } catch (error) {
                     console.error('RSA encryption failed:', error);
-                    throw new Error('Encryption failed');
+                    throw new Error(secureLoginAjax.strings.encryption_failed || 'Encryption failed');
                 }
             }
 
-            throw new Error('No encryption method available');
+            throw new Error(secureLoginAjax.strings.no_encryption_available || 'No encryption method available');
         }
 
         // Form submission handler
