@@ -3,10 +3,12 @@
     border-color: #dc3545 !important;
     color: #dc3545 !important;
 }
+
 .delete-btn:hover {
     border-color: #c82333 !important;
     color: #c82333 !important;
 }
+
 .delete-btn:focus {
     box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.5) !important;
 }
@@ -15,10 +17,12 @@
 .wp-list-table td:last-child {
     white-space: nowrap;
 }
+
 .wp-list-table .button {
     margin-right: 5px;
     margin-bottom: 2px;
 }
+
 .wp-list-table .button:last-child {
     margin-right: 0;
 }
@@ -36,7 +40,7 @@
 }
 
 .encryption-ultra-secure {
-    background: linear-gradient(135deg, #4CAF50, #45a049);
+    background: linear-gradient(135deg, #1a551c, #45a049);
     color: white;
     box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
 }
@@ -47,11 +51,6 @@
     box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3);
 }
 
-.encryption-xor {
-    background: linear-gradient(135deg, #FF9800, #F57C00);
-    color: white;
-    box-shadow: 0 2px 4px rgba(255, 152, 0, 0.3);
-}
 
 .encryption-method:hover {
     transform: translateY(-1px);
@@ -72,17 +71,16 @@
     padding: 2px 4px;
     border-radius: 2px;
 }
+
 .editable-field:hover {
     background-color: #f0f0f0;
 }
-.editable-field.editing {
-   
-    
-}
+
+.editable-field.editing {}
 
 /* Formatted data styling */
-.formatted-data { 
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+.formatted-data {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 /* Additional styles for data formatting */
@@ -212,7 +210,8 @@
 }
 
 /* Checkbox styles */
-.select-entry, #select-all-entries {
+.select-entry,
+#select-all-entries {
     margin: 0;
     transform: scale(1.2);
 }
@@ -228,15 +227,15 @@ tr.selected {
         flex-direction: column;
         gap: 10px;
     }
-    
-    .search-bulk-container > div {
+
+    .search-bulk-container>div {
         width: 100%;
     }
-    
+
     #search-entries {
         width: 100% !important;
     }
-    
+
     #bulk-actions {
         width: 100%;
     }
@@ -301,4 +300,4 @@ tr.selected {
 
 .button[title] {
     position: relative;
-} 
+}

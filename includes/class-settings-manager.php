@@ -228,14 +228,6 @@ class Secure_Login_Settings_Manager {
 		echo '<p style="margin: 0; font-size: 13px; color: #666;">' . esc_html__( 'Industry-standard RSA encryption with 2048-bit keys. Secure for most use cases and available for all users.', 'secure-login-collector' ) . '</p>';
 		echo '</div>';
 
-		// XOR (Legacy).
-		echo '<div style="background: white; border: 1px solid #FF9800; border-radius: 4px; padding: 12px;">';
-		echo '<div style="display: flex; align-items: center; margin-bottom: 8px;">';
-		echo '<span style="background: linear-gradient(135deg, #FF9800, #F57C00); color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: 600; margin-right: 8px;">🔓 LEGACY</span>';
-		echo '<strong>' . esc_html__( 'XOR (Legacy)', 'secure-login-collector' ) . '</strong>';
-		echo '</div>';
-		echo '<p style="margin: 0; font-size: 13px; color: #666;">' . esc_html__( 'Simple XOR encryption for backward compatibility. Used by older entries before RSA was implemented.', 'secure-login-collector' ) . '</p>';
-		echo '</div>';
 
 		echo '</div>';
 		echo '</div>';

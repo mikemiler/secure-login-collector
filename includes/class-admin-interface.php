@@ -214,7 +214,7 @@ class Secure_Login_List_Table extends WP_List_Table {
 	 */
 	public function column_encryption( $item ) {
 		$metadata        = json_decode( $item->metadata, true );
-		$encryption_type = isset( $metadata['encryption_type'] ) ? $metadata['encryption_type'] : 'xor';
+		$encryption_type = isset( $metadata['encryption_type'] ) ? $metadata['encryption_type'] : 'rsa';
 		$encryption_info = $this->get_encryption_method_info( $encryption_type );
 
 		return sprintf(
@@ -319,12 +319,11 @@ class Secure_Login_List_Table extends WP_List_Table {
 					'class'       => 'encryption-rsa',
 					'description' => __( 'Industry-standard RSA encryption.', 'secure-login-collector' ),
 				);
-			case 'xor':
 			default:
 				return array(
-					'name'        => __( '🔓 XOR (Legacy)', 'secure-login-collector' ),
-					'class'       => 'encryption-xor',
-					'description' => __( 'Legacy XOR encryption.', 'secure-login-collector' ),
+					'name'        => __( '🔒 RSA-2048', 'secure-login-collector' ),
+					'class'       => 'encryption-rsa',
+					'description' => __( 'Industry-standard RSA encryption.', 'secure-login-collector' ),
 				);
 		}
 	}
@@ -776,7 +775,6 @@ class Secure_Login_Admin_Interface {
 											<option value="passkey_derived"><?php echo esc_html__( '🔐 Ultra-Secure (Passkey)', 'secure-login-collector' ); ?></option>
 										<?php endif; ?>
 										<option value="rsa" selected><?php echo esc_html__( '🔒 RSA-2048', 'secure-login-collector' ); ?></option>
-										<option value="xor"><?php echo esc_html__( '🔓 XOR (Legacy)', 'secure-login-collector' ); ?></option>
 									</select>
 									<p class="description"><?php echo esc_html__( 'Choose the encryption method for this entry.', 'secure-login-collector' ); ?></p>
 								</td>
@@ -818,12 +816,11 @@ class Secure_Login_Admin_Interface {
 					'class'       => 'encryption-rsa',
 					'description' => __( 'Industry-standard RSA encryption.', 'secure-login-collector' ),
 				);
-			case 'xor':
 			default:
 				return array(
-					'name'        => __( '🔓 XOR (Legacy)', 'secure-login-collector' ),
-					'class'       => 'encryption-xor',
-					'description' => __( 'Legacy XOR encryption.', 'secure-login-collector' ),
+					'name'        => __( '🔒 RSA-2048', 'secure-login-collector' ),
+					'class'       => 'encryption-rsa',
+					'description' => __( 'Industry-standard RSA encryption.', 'secure-login-collector' ),
 				);
 		}
 	}
@@ -989,7 +986,7 @@ class Secure_Login_Admin_Interface {
 			}
 
 			$metadata        = json_decode( $row->metadata, true );
-			$encryption_type = isset( $metadata['encryption_type'] ) ? $metadata['encryption_type'] : 'xor';
+			$encryption_type = isset( $metadata['encryption_type'] ) ? $metadata['encryption_type'] : 'rsa';
 
 			// Decrypt using encryption handler with passkey authentication.
 			$decrypted_data = $this->encryption_handler->decrypt_data( $row->encrypted_data, $encryption_type );
@@ -1132,7 +1129,7 @@ class Secure_Login_Admin_Interface {
 				}
 
 				$metadata        = json_decode( $row->metadata, true );
-				$encryption_type = isset( $metadata['encryption_type'] ) ? $metadata['encryption_type'] : 'xor';
+				$encryption_type = isset( $metadata['encryption_type'] ) ? $metadata['encryption_type'] : 'rsa';
 
 				// Decrypt using encryption handler with passkey authentication.
 				$decrypted_data = $this->encryption_handler->decrypt_data( $row->encrypted_data, $encryption_type );
@@ -1204,7 +1201,7 @@ class Secure_Login_Admin_Interface {
 		try {
 			// Check if this is passkey-derived encrypted data.
 			$metadata        = json_decode( $row->metadata, true );
-			$encryption_type = isset( $metadata['encryption_type'] ) ? $metadata['encryption_type'] : 'xor';
+			$encryption_type = isset( $metadata['encryption_type'] ) ? $metadata['encryption_type'] : 'rsa';
 
 			if ( 'passkey_derived' === $encryption_type ) {
 				// For passkey-derived encryption, we need the passkey signature.
@@ -1214,10 +1211,6 @@ class Secure_Login_Admin_Interface {
 				return $this->encryption_handler->decrypt_rsa_data( $row->encrypted_data );
 			}
 
-			// Fallback to XOR decryption for legacy data.
-			if ( $encryption_key && 'rsa' !== $encryption_key ) {
-				return $this->encryption_handler->decrypt_xor_data( $row->encrypted_data, $encryption_key );
-			}
 
 			return false;
 
@@ -1405,20 +1398,9 @@ class Secure_Login_Admin_Interface {
 				}
 				break;
 
-			case 'xor':
 			default:
-				// Use XOR encryption.
-				$hostname         = wp_parse_url( get_site_url(), PHP_URL_HOST );
-				$timestamp        = time();
-				$timestamp_suffix = substr( (string) $timestamp, -6 );
-				$encryption_key   = $hostname . $timestamp_suffix;
-
-				// Add XOR-specific metadata.
-				$metadata_array['key_hostname']         = $hostname;
-				$metadata_array['key_timestamp_suffix'] = $timestamp_suffix;
-				$metadata_array['encryption_key_hint']  = $encryption_key;
-
-				$encrypted_data = $this->encryption_handler->encrypt_xor_data( $data_to_encrypt, $encryption_key );
+				// Default to RSA encryption.
+				$encrypted_data = $this->encryption_handler->encrypt_rsa_data( $data_to_encrypt );
 				break;
 		}
 

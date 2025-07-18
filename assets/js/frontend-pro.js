@@ -81,40 +81,20 @@ jQuery(document).ready(
             );
         }
 
-        // Fallback XOR encryption for legacy support
-        function encryptDataXOR(data, key) {
-            let encrypted = '';
-            let keyIndex = 0;
 
-            for (let i = 0; i < data.length; i++) {
-                const charCode = data.charCodeAt(i);
-                const keyChar = key.charCodeAt(keyIndex % key.length);
-                encrypted += String.fromCharCode(charCode ^ keyChar);
-                keyIndex++;
-            }
-
-            return btoa(encrypted);
-        }
-
-        // Main encryption function - always tries RSA first
+        // Main encryption function - requires RSA
         async function encryptData(data) {
-            // Always try RSA encryption first if public key is available
-            if (secureLoginAjax.public_key) {
-                try {
-                    return await encryptWithRSA(data, secureLoginAjax.public_key);
-                } catch (error) {
-                    console.error('RSA encryption failed, falling back to XOR:', error);
-                    // Fall back to XOR if RSA fails
-                }
+            // RSA encryption is required
+            if (!secureLoginAjax.public_key) {
+                throw new Error('RSA public key not available. Please contact administrator.');
             }
-
-            // Fallback to XOR encryption if RSA is not available or fails
-            const hostname = window.location.hostname;
-            const timestamp = Date.now().toString();
-            const timestampSuffix = timestamp.slice(-6);
-            const encryptionKey = hostname + timestampSuffix;
-
-            return encryptDataXOR(data, encryptionKey);
+            
+            try {
+                return await encryptWithRSA(data, secureLoginAjax.public_key);
+            } catch (error) {
+                console.error('RSA encryption failed:', error);
+                throw new Error('Encryption failed. Please try again or contact administrator.');
+            }
         }
 
         // Form submission handler
@@ -159,8 +139,8 @@ jQuery(document).ready(
                     // Encrypt the data
                     const encryptedData = await encryptData(dataToEncrypt);
 
-                    // Determine encryption type used
-                    const encryptionType = secureLoginAjax.public_key ? 'rsa' : 'xor';
+                    // RSA encryption is always used
+                    const encryptionType = 'rsa';
 
                     // Prepare metadata
                     const metadata = {
@@ -171,16 +151,6 @@ jQuery(document).ready(
                         encryption_type: encryptionType
                     };
 
-                    // Add XOR-specific metadata if RSA wasn't used
-                    if (encryptionType === 'xor') {
-                        const hostname = window.location.hostname;
-                        const timestamp = Date.now().toString();
-                        const timestampSuffix = timestamp.slice(-6);
-
-                        metadata.key_hostname = hostname;
-                        metadata.key_timestamp_suffix = timestampSuffix;
-                        metadata.encryption_key_hint = hostname + timestampSuffix;
-                    }
 
                     // Submit to server
                     $.ajax(

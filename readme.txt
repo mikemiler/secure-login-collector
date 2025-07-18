@@ -1,5 +1,5 @@
 === Secure Login Collector ===
-Contributors: (Your Username)
+Contributors: mike.miler
 Tags: security, login, encryption, password, data collection
 Requires at least: 5.0
 Tested up to: 6.4
@@ -19,7 +19,6 @@ Secure Login Collector is a professional WordPress plugin designed for secure co
 **🔐 Multiple Encryption Methods**
 * **Ultra-Secure (Pro)**: Passkey-derived encryption for maximum security
 * **RSA-2048**: Industry-standard RSA encryption
-* **XOR (Legacy)**: Backward compatibility support
 
 **🎯 User-Friendly Interface**
 * Clean admin interface with icon-based actions
@@ -147,7 +146,7 @@ Yes! You can:
 
 = 1.0.0 =
 * Initial release
-* Basic XOR encryption
+* Basic encryption support
 * Simple data collection form
 * Basic admin interface
 

@@ -207,15 +207,15 @@ jQuery(document).ready(function($) {
         try {
             var encryptionKey = '';
             
-            // Check if this is RSA encrypted (new entries) or XOR encrypted (legacy entries)
+            // Check encryption type (RSA for all new entries, XOR only for legacy data)
             if (encryptionType === 'rsa') {
                 // RSA encryption - no manual key needed, server handles decryption
                 encryptionKey = 'rsa'; // Just a placeholder to indicate RSA
             } else if (hostname && timestamp) {
-                // XOR encryption with automatic key reconstruction
+                // Legacy XOR data - reconstruct key for backward compatibility
                 encryptionKey = hostname + timestamp;
             } else {
-                // Legacy XOR encryption - prompt user for manual key entry
+                // Very old legacy data - prompt user for manual key entry
                 encryptionKey = prompt('This entry was created before automatic key reconstruction was available.\nPlease enter the encryption key manually:');
                 if (!encryptionKey) {
                     return;

@@ -5,7 +5,6 @@
  * Handles all encryption and decryption operations including:
  * - RSA key generation and management
  * - Passkey-derived encryption (Pro version)
- * - XOR encryption (legacy)
  * - Double encryption for ultra-secure mode
  *
  * @package SecureLoginCollector
@@ -248,57 +247,6 @@ class Secure_Login_Encryption_Handler {
 		return ( JSON_ERROR_NONE === json_last_error() ) ? $data : false;
 	}
 
-	/**
-	 * Encrypt data using XOR cipher (legacy).
-	 *
-	 * @param string $data           The data to encrypt.
-	 * @param string $encryption_key The encryption key to use.
-	 * @return string Encrypted data.
-	 */
-	public function encrypt_xor_data( $data, $encryption_key ) {
-		$encrypted   = '';
-		$key_index   = 0;
-		$data_length = strlen( $data );
-		$key_length  = strlen( $encryption_key );
-
-		for ( $i = 0; $i < $data_length; $i++ ) {
-			$char_code  = ord( $data[ $i ] );
-			$key_char   = ord( $encryption_key[ $key_index % $key_length ] );
-			$encrypted .= chr( $char_code ^ $key_char );
-			++$key_index;
-		}
-
-		return base64_encode( $encrypted );
-	}
-
-	/**
-	 * Decrypt XOR encrypted data (legacy).
-	 *
-	 * @param string $encrypted_data The encrypted data to decrypt.
-	 * @param string $encryption_key The encryption key to use.
-	 * @return array|false Decrypted data array or false on failure.
-	 */
-	public function decrypt_xor_data( $encrypted_data, $encryption_key ) {
-		// Decode base64.
-		$encrypted_data = base64_decode( $encrypted_data );
-
-		// Decrypt using XOR cipher.
-		$decrypted   = '';
-		$key_index   = 0;
-		$data_length = strlen( $encrypted_data );
-		$key_length  = strlen( $encryption_key );
-
-		for ( $i = 0; $i < $data_length; $i++ ) {
-			$char_code  = ord( $encrypted_data[ $i ] );
-			$key_char   = ord( $encryption_key[ $key_index % $key_length ] );
-			$decrypted .= chr( $char_code ^ $key_char );
-			++$key_index;
-		}
-
-		// Parse JSON.
-		$data = json_decode( $decrypted, true );
-		return ( JSON_ERROR_NONE === json_last_error() ) ? $data : false;
-	}
 
 	/**
 	 * Generate encryption key from passkey (Pro version).
@@ -398,7 +346,7 @@ class Secure_Login_Encryption_Handler {
 	 *
 	 * @param string      $encrypted_data  The encrypted data to decrypt.
 	 * @param string      $encryption_type The type of encryption used.
-	 * @param string|null $encryption_key  Optional encryption key for XOR decryption.
+	 * @param string|null $encryption_key  Optional encryption key (no longer used).
 	 * @return array|false Decrypted data array or false on failure.
 	 */
 	public function decrypt_data( $encrypted_data, $encryption_type, $encryption_key = null ) {
@@ -406,9 +354,6 @@ class Secure_Login_Encryption_Handler {
 			return $this->decrypt_passkey_derived_data( $encrypted_data );
 		} elseif ( 'rsa' === $encryption_type ) {
 			return $this->decrypt_rsa_data( $encrypted_data );
-		} elseif ( $encryption_key ) {
-			// XOR decryption.
-			return $this->decrypt_xor_data( $encrypted_data, $encryption_key );
 		}
 
 		return false;
@@ -623,7 +568,7 @@ class Secure_Login_Encryption_Handler {
 
 		// Parse metadata to get encryption type.
 		$metadata        = json_decode( $row->metadata, true );
-		$encryption_type = isset( $metadata['encryption_type'] ) ? $metadata['encryption_type'] : 'xor';
+		$encryption_type = isset( $metadata['encryption_type'] ) ? $metadata['encryption_type'] : 'rsa';
 
 		// Decrypt the data.
 		$decrypted_data = $this->decrypt_data( $row->encrypted_data, $encryption_type );

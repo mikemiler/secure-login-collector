@@ -111,7 +111,6 @@ function slc_fs_custom_pricing_page()
                 <h2><?php esc_html_e('Free Version', 'secure-login-collector'); ?></h2>
                 <ul>
                     <li>✅ <?php esc_html_e('RSA-2048 Encryption', 'secure-login-collector'); ?></li>
-                    <li>✅ <?php esc_html_e('XOR Legacy Encryption', 'secure-login-collector'); ?></li>
                     <li>✅ <?php esc_html_e('Email Notifications', 'secure-login-collector'); ?></li>
                     <li>✅ <?php esc_html_e('Auto-deletion', 'secure-login-collector'); ?></li>
                     <li>✅ <?php esc_html_e('Export to Password Managers', 'secure-login-collector'); ?></li>
