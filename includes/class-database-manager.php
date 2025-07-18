@@ -320,7 +320,7 @@ class Secure_Login_Database_Manager {
 
 		$site_name = get_bloginfo( 'name' );
 		$site_url  = get_site_url();
-		$admin_url = admin_url( 'admin.php?page=secure-login-data' );
+		$admin_url = admin_url( 'admin.php?page=secure-login-collector' );
 
 		// translators: %s is the site name.
 		$subject = sprintf( __( '[%s] New Secure Login Data Received', 'secure-login-collector' ), $site_name );

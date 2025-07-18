@@ -44,7 +44,7 @@ class Secure_Login_Settings_Manager {
 		$this->encryption_handler = $encryption_handler;
 
 		// Register hooks.
-		add_action( 'admin_menu', array( $this, 'add_settings_menu' ) );
+		add_action( 'admin_menu', array( $this, 'add_settings_menu' ), 20 );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 	}
 
@@ -52,13 +52,28 @@ class Secure_Login_Settings_Manager {
 	 * Add settings submenu.
 	 */
 	public function add_settings_menu() {
+		// Add to the plugin's own menu
 		add_submenu_page(
-			'secure-login-data',
+			'secure-login-collector',
 			__( 'Settings', 'secure-login-collector' ),
 			__( 'Settings', 'secure-login-collector' ),
 			'manage_options',
-			'secure-login-settings',
+			'secure-login-collector-settings',
 			array( $this, 'settings_page' )
+		);
+		
+		// Add custom account page
+		if ( file_exists( SECURE_LOGIN_PLUGIN_DIR . 'includes/account-page-simple.php' ) ) {
+			require_once SECURE_LOGIN_PLUGIN_DIR . 'includes/account-page-simple.php';
+		}
+		
+		add_submenu_page(
+			'secure-login-collector',
+			__( 'Account', 'secure-login-collector' ),
+			__( 'Account', 'secure-login-collector' ),
+			'manage_options',
+			'secure-login-collector-account',
+			'slc_simple_account_page'
 		);
 	}
 
@@ -636,6 +651,24 @@ class Secure_Login_Settings_Manager {
 		?>
 		<div class="wrap">
 			<h1><?php echo esc_html__( 'Secure Login Collector Settings', 'secure-login-collector' ); ?></h1>
+			
+			<!-- Shortcode Display Section -->
+			<div class="notice notice-info" style="margin: 20px 0; padding: 15px;">
+				<h2 style="margin-top: 0;"><?php echo esc_html__( 'Frontend Form Shortcode', 'secure-login-collector' ); ?></h2>
+				<p><?php echo esc_html__( 'Use this shortcode to display the secure login form on any page or post:', 'secure-login-collector' ); ?></p>
+				<div style="background: #f5f5f5; padding: 10px 15px; border-radius: 4px; display: inline-block; font-family: monospace; font-size: 16px; border: 1px solid #ddd;">
+					[secure_login_form]
+				</div>
+				<p style="margin-top: 10px;">
+					<button type="button" class="button button-secondary" onclick="navigator.clipboard.writeText('[secure_login_form]'); this.textContent = '<?php echo esc_js( __( 'Copied!', 'secure-login-collector' ) ); ?>'; setTimeout(() => { this.textContent = '<?php echo esc_js( __( 'Copy Shortcode', 'secure-login-collector' ) ); ?>'; }, 2000);">
+						<?php echo esc_html__( 'Copy Shortcode', 'secure-login-collector' ); ?>
+					</button>
+				</p>
+				<p style="margin-top: 15px; font-style: italic; color: #666;">
+					<?php echo esc_html__( 'Simply paste this shortcode into any page or post where you want clients to submit their login credentials.', 'secure-login-collector' ); ?>
+				</p>
+			</div>
+			
 			<form method="post" action="options.php">
 				<?php
 				settings_fields( 'secure_login_settings' );

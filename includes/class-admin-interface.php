@@ -538,7 +538,7 @@ class Secure_Login_Admin_Interface {
 		$this->database_manager   = $database_manager;
 
 		// Register hooks.
-		add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
+		add_action( 'admin_menu', array( $this, 'add_admin_menu' ), 5 );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_scripts' ) );
 
 		// Register AJAX handlers.
@@ -551,7 +551,7 @@ class Secure_Login_Admin_Interface {
 		add_action( 'wp_ajax_bulk_decrypt_with_passkey', array( $this, 'handle_bulk_decrypt_with_passkey_ajax' ) );
 
 		// Add screen option for items per page.
-		add_action( 'load-toplevel_page_secure-login-data', array( $this, 'add_screen_options' ) );
+		add_action( 'load-toplevel_page_secure-login-collector', array( $this, 'add_screen_options' ) );
 	}
 
 	/**
@@ -580,11 +580,18 @@ class Secure_Login_Admin_Interface {
 	 * Add admin menu for viewing collected data.
 	 */
 	public function add_admin_menu() {
+		$menu_title = __( 'Login Data', 'secure-login-collector' );
+		
+		// Add Pro badge if using free version
+		if ( function_exists( 'slc_fs' ) && slc_fs()->is_not_paying() ) {
+			$menu_title .= ' <span style="color: #f18500; font-size: 10px; vertical-align: super;">PRO</span>';
+		}
+		
 		add_menu_page(
 			__( 'Secure Login Data', 'secure-login-collector' ),
-			__( 'Login Data', 'secure-login-collector' ),
+			$menu_title,
 			'manage_options',
-			'secure-login-data',
+			'secure-login-collector',
 			array( $this, 'admin_page' ),
 			'dashicons-lock',
 			30
@@ -598,7 +605,7 @@ class Secure_Login_Admin_Interface {
 	 */
 	public function enqueue_admin_scripts( $hook ) {
 		// Only load on our admin page.
-		if ( ! in_array( $hook, array( 'toplevel_page_secure-login-data' ), true ) ) {
+		if ( ! in_array( $hook, array( 'toplevel_page_secure-login-collector' ), true ) ) {
 			return;
 		}
 
