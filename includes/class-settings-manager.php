@@ -62,19 +62,19 @@ class Secure_Login_Settings_Manager {
 			array( $this, 'settings_page' )
 		);
 		
-		// Add custom account page
-		if ( file_exists( SECURE_LOGIN_PLUGIN_DIR . 'includes/account-page-simple.php' ) ) {
-			require_once SECURE_LOGIN_PLUGIN_DIR . 'includes/account-page-simple.php';
-		}
+		// Add custom account page - Disabled to use Freemius account page instead
+		// if ( file_exists( SECURE_LOGIN_PLUGIN_DIR . 'includes/account-page-simple.php' ) ) {
+		// 	require_once SECURE_LOGIN_PLUGIN_DIR . 'includes/account-page-simple.php';
+		// }
 		
-		add_submenu_page(
-			'secure-login-collector',
-			__( 'Account', 'secure-login-collector' ),
-			__( 'Account', 'secure-login-collector' ),
-			'manage_options',
-			'secure-login-collector-account',
-			'slc_simple_account_page'
-		);
+		// add_submenu_page(
+		// 	'secure-login-collector',
+		// 	__( 'Account', 'secure-login-collector' ),
+		// 	__( 'Account', 'secure-login-collector' ),
+		// 	'manage_options',
+		// 	'secure-login-collector-account',
+		// 	'slc_simple_account_page'
+		// );
 	}
 
 	/**
