@@ -206,6 +206,48 @@ class Secure_Login_Encryption_Handler {
 	}
 
 	/**
+	 * Decrypt RSA encrypted key only (for v2 format).
+	 *
+	 * @param string $encrypted_key The RSA-encrypted key to decrypt.
+	 * @return string|false Decrypted key data or false on failure.
+	 */
+	public function decrypt_rsa_key( $encrypted_key ) {
+		// Get encrypted private key.
+		$encrypted_private_key = get_option( 'secure_login_private_key_encrypted' );
+		if ( ! $encrypted_private_key ) {
+			return false;
+		}
+
+		// Decrypt private key.
+		$private_key = $this->decrypt_private_key( $encrypted_private_key );
+		if ( ! $private_key ) {
+			return false;
+		}
+
+		// Decode base64 encrypted key.
+		$encrypted_key_data = base64_decode( $encrypted_key );
+		if ( false === $encrypted_key_data ) {
+			return false;
+		}
+
+		// Load the private key resource.
+		$private_key_resource = openssl_pkey_get_private( $private_key );
+		if ( ! $private_key_resource ) {
+			return false;
+		}
+
+		// Decrypt with RSA-OAEP.
+		$decrypted = '';
+		if ( ! openssl_private_decrypt( $encrypted_key_data, $decrypted, $private_key_resource, OPENSSL_PKCS1_OAEP_PADDING ) ) {
+			return false;
+		}
+
+		// The decrypted data is now the raw AES key bytes
+		// Return it as base64 for transport to frontend
+		return base64_encode( $decrypted );
+	}
+
+	/**
 	 * Decrypt RSA encrypted data.
 	 *
 	 * @param string $encrypted_data The encrypted data to decrypt.
@@ -615,10 +657,28 @@ class Secure_Login_Encryption_Handler {
 			return;
 		}
 
+		// Store the old credential ID to exclude it during re-registration
+		$old_credential_id = get_option( 'secure_login_passkey_credential_id' );
+		if ( $old_credential_id ) {
+			set_transient( 'secure_login_old_passkey_credential_' . get_current_user_id(), $old_credential_id, 3600 ); // 1 hour
+		}
+		
+		// Increment passkey version to force browsers to treat as new registration
+		$passkey_version = get_option( 'secure_login_passkey_version', 0 );
+		update_option( 'secure_login_passkey_version', $passkey_version + 1 );
+		
+		// Clear all passkey-related options.
+		delete_option( 'secure_login_passkey_credential_id' );
+		delete_option( 'secure_login_passkey_public_key' );
+		delete_option( 'secure_login_passkey_registered' );
+		delete_option( 'secure_login_passkey_user_id' );
+		delete_option( 'secure_login_passkey_registered_at' );
+		delete_option( 'secure_login_passkey_salt' );
+		
 		// Set flag to allow re-registration.
 		set_transient( 'secure_login_force_passkey_reregister_' . get_current_user_id(), true, 300 );
 
-		wp_send_json_success( __( 'Passkey reset authorized.', 'secure-login-collector' ) );
+		wp_send_json_success( __( 'Passkey reset successfully. You will need to create a brand new passkey. Note: Your old passkey will remain in your password manager but will no longer work with this plugin.', 'secure-login-collector' ) );
 	}
 
 	/**

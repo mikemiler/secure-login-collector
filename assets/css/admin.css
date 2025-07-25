@@ -301,3 +301,101 @@ tr.selected {
 .button[title] {
     position: relative;
 }
+
+/* Decrypted data display styles */
+.decrypted-data-row {
+    background-color: #f9f9f9;
+}
+
+.decrypted-content {
+    padding: 20px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 5px;
+    margin: 10px 0;
+}
+
+.decrypted-content h4 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #23282d;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.field-group {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.field-group:last-child {
+    margin-bottom: 0;
+}
+
+.field-group label {
+    font-weight: 600;
+    color: #444;
+    min-width: 150px;
+    margin: 0;
+}
+
+.field-value {
+    flex: 1;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 14px;
+    color: #2c3e50;
+    word-break: break-all;
+    padding: 8px 12px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+
+.password-field {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    letter-spacing: 2px;
+}
+
+.copy-btn,
+.show-btn {
+    margin-left: 5px;
+    min-width: 60px;
+}
+
+.copy-btn:focus,
+.show-btn:focus {
+    box-shadow: 0 0 0 1px #007cba;
+    outline: 2px solid transparent;
+}
+
+/* Copy notification styling */
+.copy-notification {
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Hide decrypted button */
+.hide-decrypted {
+    margin-left: 10px;
+}
+
+/* Export button */
+.export-to-password-manager {
+    margin-right: 10px;
+}

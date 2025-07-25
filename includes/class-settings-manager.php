@@ -353,6 +353,29 @@ class Secure_Login_Settings_Manager {
 				echo '<p>';
 				echo '<button type="button" class="button button-primary" id="register-passkey">' . esc_html__( 'Register Passkey', 'secure-login-collector' ) . '</button>';
 				echo '</p>';
+				
+				// Show additional help if old credential exists
+				$old_credential_id = get_transient( 'secure_login_old_passkey_credential_' . get_current_user_id() );
+				if ( $old_credential_id ) {
+					echo '<div class="notice notice-error inline">';
+					echo '<p><strong>' . esc_html__( 'CRITICAL - You MUST remove the old passkey first!', 'secure-login-collector' ) . '</strong></p>';
+					echo '<p>' . esc_html__( 'Your browser/password manager still has the old passkey saved and will not allow creating a new one until it is removed.', 'secure-login-collector' ) . '</p>';
+					echo '<h4>' . esc_html__( 'Required Steps:', 'secure-login-collector' ) . '</h4>';
+					echo '<ol>';
+					echo '<li><strong>' . esc_html__( 'Remove the old passkey from your browser/password manager', 'secure-login-collector' ) . '</strong> ';
+					echo esc_html__( '(see instructions below)', 'secure-login-collector' ) . '</li>';
+					echo '<li>' . esc_html__( 'Refresh this page', 'secure-login-collector' ) . '</li>';
+					echo '<li>' . esc_html__( 'Click "Register Passkey" again', 'secure-login-collector' ) . '</li>';
+					echo '</ol>';
+					echo '<p><a href="#" onclick="jQuery(\'#passkey-removal-instructions\').toggle(); return false;" class="button button-secondary">' . esc_html__( 'Show Removal Instructions', 'secure-login-collector' ) . '</a></p>';
+					echo '<div id="passkey-removal-instructions" style="display: none; margin-top: 15px; padding: 15px; background: #f9f9f9; border: 1px solid #ddd;">';
+					echo '<h4>' . esc_html__( 'Quick Removal Instructions:', 'secure-login-collector' ) . '</h4>';
+					echo '<p><strong>Chrome/Edge:</strong> ' . esc_html__( 'Go to Settings → Passwords → Manage passkeys → Find this site → Delete', 'secure-login-collector' ) . '</p>';
+					echo '<p><strong>Safari:</strong> ' . esc_html__( 'System Preferences → Passwords → Find this site → Delete', 'secure-login-collector' ) . '</p>';
+					echo '<p><strong>1Password/Bitwarden:</strong> ' . esc_html__( 'Open your password manager → Find passkey → Delete', 'secure-login-collector' ) . '</p>';
+					echo '</div>';
+					echo '</div>';
+				}
 			}
 
 			// Add JavaScript for passkey management.
@@ -370,24 +393,64 @@ class Secure_Login_Settings_Manager {
 					var userId = <?php echo esc_attr( get_current_user_id() ); ?>;
 					var userIdBytes = new TextEncoder().encode(userId.toString());
 					
+					// Force a unique user ID after reset to bypass browser restrictions
+					<?php if ( get_transient( 'secure_login_old_passkey_credential_' . get_current_user_id() ) ) : ?>
+					// After reset, create a completely different user entity
+					var timestamp = Date.now();
+					userId = userId + '_reset_' + timestamp;
+					userIdBytes = new TextEncoder().encode(userId);
+					console.log('Creating passkey for new user ID:', userId);
+					<?php endif; ?>
+					
 					var createCredentialDefaultArgs = {
 						publicKey: {
 							rp: {
-								name: "<?php echo esc_js( get_bloginfo( 'name' ) ); ?>",
+								name: "<?php echo esc_js( get_bloginfo( 'name' ) ); ?><?php 
+								$version = get_option( 'secure_login_passkey_version', 0 );
+								if ( $version > 0 ) {
+									echo esc_js( ' (v' . ($version + 1) . ')' );
+								}
+								?>",
 								id: "<?php echo esc_js( wp_parse_url( home_url(), PHP_URL_HOST ) ); ?>",
 							},
 							user: {
 								id: userIdBytes,
-								name: "<?php echo esc_js( wp_get_current_user()->user_login ); ?>",
-								displayName: "<?php echo esc_js( wp_get_current_user()->display_name ); ?>"
+								name: "<?php echo esc_js( wp_get_current_user()->user_login ); ?><?php 
+								if ( get_transient( 'secure_login_old_passkey_credential_' . get_current_user_id() ) ) {
+									echo esc_js( '_' . time() );
+								}
+								?>",
+								displayName: "<?php echo esc_js( wp_get_current_user()->display_name ); ?><?php 
+								if ( get_transient( 'secure_login_old_passkey_credential_' . get_current_user_id() ) ) {
+									echo esc_js( ' (New)' );
+								}
+								?>"
 							},
 							pubKeyCredParams: [{alg: -7, type: "public-key"}],
 							authenticatorSelection: {
+								<?php if ( get_transient( 'secure_login_old_passkey_credential_' . get_current_user_id() ) ) : ?>
+								// After reset, don't require platform authenticator to allow more options
+								authenticatorAttachment: "cross-platform",
+								requireResidentKey: false,
+								residentKey: "discouraged",
+								<?php else : ?>
 								authenticatorAttachment: "platform",
+								<?php endif; ?>
 								userVerification: "required"
 							},
 							timeout: 60000,
-							challenge: challenge
+							challenge: challenge,
+							<?php 
+							// Exclude old credential if it exists (after reset)
+							$old_credential_id = get_transient( 'secure_login_old_passkey_credential_' . get_current_user_id() );
+							if ( $old_credential_id ) : 
+							?>
+							excludeCredentials: [{
+								id: Uint8Array.from(atob("<?php echo esc_js( $old_credential_id ); ?>"), c => c.charCodeAt(0)),
+								type: 'public-key',
+								transports: ["internal", "hybrid", "usb", "ble", "nfc"]
+							}]
+							<?php endif; ?>
 						}
 					};
 					
@@ -491,7 +554,7 @@ class Secure_Login_Settings_Manager {
 								},
 								success: function(response) {
 									if (response.success) {
-										alert('<?php echo esc_js( __( 'Passkey reset authorized! You can now register a new passkey.', 'secure-login-collector' ) ); ?>');
+										alert(response.data || '<?php echo esc_js( __( 'Passkey reset successfully! You can now register a new passkey.', 'secure-login-collector' ) ); ?>');
 										location.reload();
 									} else {
 										alert('<?php echo esc_js( __( 'Reset authorization failed:', 'secure-login-collector' ) ); ?> ' + response.data);
