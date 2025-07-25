@@ -678,7 +678,7 @@ class Secure_Login_Encryption_Handler {
 		// Set flag to allow re-registration.
 		set_transient( 'secure_login_force_passkey_reregister_' . get_current_user_id(), true, 300 );
 
-		wp_send_json_success( __( 'Passkey reset successfully. You will need to create a brand new passkey. Note: Your old passkey will remain in your password manager but will no longer work with this plugin.', 'secure-login-collector' ) );
+		wp_send_json_success( __( 'Passkey unlinked from the plugin. You can now register a new passkey. Remember to manually remove the old passkey from your browser/device settings or password manager.', 'secure-login-collector' ) );
 	}
 
 	/**

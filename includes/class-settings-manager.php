@@ -344,6 +344,11 @@ class Secure_Login_Settings_Manager {
 				echo '<button type="button" class="button button-secondary" id="test-passkey-encryption">' . esc_html__( 'Test Passkey Encryption', 'secure-login-collector' ) . '</button> ';
 				echo '<button type="button" class="button button-secondary" id="reset-passkey">' . esc_html__( 'Reset Passkey', 'secure-login-collector' ) . '</button>';
 				echo '</p>';
+				
+				echo '<p class="description">';
+				echo esc_html__( 'Note: Resetting only removes the passkey from this plugin. The passkey will remain in your browser/device.', 'secure-login-collector' ) . ' ';
+				echo '<a href="' . esc_url( plugin_dir_url( dirname( __FILE__ ) ) . 'passkey-removal-guide.html' ) . '" target="_blank">' . esc_html__( 'View manual removal guide', 'secure-login-collector' ) . '</a>';
+				echo '</p>';
 			} else {
 				echo '<div class="notice notice-warning inline"><p>';
 				echo '<strong>' . esc_html__( 'Passkey Status:', 'secure-login-collector' ) . '</strong> ';
@@ -519,60 +524,36 @@ class Secure_Login_Settings_Manager {
 				});
 				
 				$('#reset-passkey').on('click', function() {
-					if (!confirm('<?php echo esc_js( __( 'This will reset your passkey and invalidate all passkey-encrypted data. Continue?', 'secure-login-collector' ) ); ?>')) {
+					if (!confirm('<?php echo esc_js( __( 'This will remove the passkey registration from this plugin. Note: The passkey will remain in your browser/device and must be removed manually. Continue?', 'secure-login-collector' ) ); ?>')) {
 						return;
 					}
 					
 					var button = $(this);
-					button.prop('disabled', true).text('<?php echo esc_js( __( 'Authenticating...', 'secure-login-collector' ) ); ?>');
+					button.prop('disabled', true).text('<?php echo esc_js( __( 'Resetting...', 'secure-login-collector' ) ); ?>');
 					
-					// Generate challenge for authentication.
-					var challenge = new Uint8Array(32);
-					window.crypto.getRandomValues(challenge);
-					
-					var getCredentialDefaultArgs = {
-						publicKey: {
-							timeout: 60000,
-							challenge: challenge,
-							userVerification: "required"
+					// Direct reset without authentication
+					$.ajax({
+						url: ajaxurl,
+						type: 'POST',
+						data: {
+							action: 'reset_passkey',
+							nonce: '<?php echo esc_attr( wp_create_nonce( 'reset_passkey' ) ); ?>'
 						},
-					};
-					
-					navigator.credentials.get(getCredentialDefaultArgs)
-						.then((assertion) => {
-							// Send authentication data to server for reset authorization.
-							button.text('<?php echo esc_js( __( 'Authorizing reset...', 'secure-login-collector' ) ); ?>');
-							
-							$.ajax({
-								url: ajaxurl,
-								type: 'POST',
-								data: {
-									action: 'reset_passkey',
-									signature: btoa(String.fromCharCode(...new Uint8Array(assertion.response.signature))),
-									authenticator_data: btoa(String.fromCharCode(...new Uint8Array(assertion.response.authenticatorData))),
-									nonce: '<?php echo esc_attr( wp_create_nonce( 'reset_passkey' ) ); ?>'
-								},
-								success: function(response) {
-									if (response.success) {
-										alert(response.data || '<?php echo esc_js( __( 'Passkey reset successfully! You can now register a new passkey.', 'secure-login-collector' ) ); ?>');
-										location.reload();
-									} else {
-										alert('<?php echo esc_js( __( 'Reset authorization failed:', 'secure-login-collector' ) ); ?> ' + response.data);
-									}
-								},
-								error: function() {
-									alert('<?php echo esc_js( __( 'Network error occurred during reset authorization.', 'secure-login-collector' ) ); ?>');
-								},
-								complete: function() {
-									button.prop('disabled', false).text('<?php echo esc_js( __( 'Reset Passkey', 'secure-login-collector' ) ); ?>');
-								}
-							});
-						})
-						.catch((err) => {
-							console.error('Passkey authentication for reset failed:', err);
-							alert('<?php echo esc_js( __( 'Authentication failed:', 'secure-login-collector' ) ); ?> ' + err.message);
+						success: function(response) {
+							if (response.success) {
+								alert(response.data || '<?php echo esc_js( __( 'Passkey unlinked from the plugin. You can now register a new passkey. Remember to manually remove the old passkey from your browser/device.', 'secure-login-collector' ) ); ?>');
+								location.reload();
+							} else {
+								alert('<?php echo esc_js( __( 'Reset failed:', 'secure-login-collector' ) ); ?> ' + response.data);
+							}
+						},
+						error: function() {
+							alert('<?php echo esc_js( __( 'Network error occurred during reset.', 'secure-login-collector' ) ); ?>');
+						},
+						complete: function() {
 							button.prop('disabled', false).text('<?php echo esc_js( __( 'Reset Passkey', 'secure-login-collector' ) ); ?>');
-						});
+						}
+					});
 				});
 			});
 			</script>

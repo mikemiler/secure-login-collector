@@ -330,19 +330,19 @@ class Secure_Login_List_Table extends WP_List_Table
         switch ($encryption_type) {
             case 'aes-rsa-v2':
                 return array(
-                    'name'        => __('🔐 AES-256 + RSA', 'secure-login-collector'),
-                    'class'       => 'encryption-aes-rsa',
+                    'name'        => __('🔐 Secure', 'secure-login-collector'),
+                    'class'       => 'encryption-rsa',
                     'description' => __('AES-256-GCM encryption with RSA key protection.', 'secure-login-collector'),
                 );
             case 'aes-rsa-passkey-v2':
                 return array(
-                    'name'        => __('🔐 Ultra-Secure (Passkey)', 'secure-login-collector'),
+                    'name'        => __('🔐 Ultra-Secure', 'secure-login-collector'),
                     'class'       => 'encryption-ultra-secure',
                     'description' => __('AES-256-GCM + RSA with passkey authentication required for decryption.', 'secure-login-collector'),
                 );
             case 'passkey_derived':
                 return array(
-                    'name'        => __('🔐 Ultra-Secure (Passkey)', 'secure-login-collector'),
+                    'name'        => __('🔐 Ultra-Secure', 'secure-login-collector'),
                     'class'       => 'encryption-ultra-secure',
                     'description' => __('Passkey-derived encryption for maximum security.', 'secure-login-collector'),
                 );
