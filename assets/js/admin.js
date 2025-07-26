@@ -151,199 +151,21 @@ jQuery(document).ready(function ($) {
         });
     });
 
-    // Decrypt functionality
-    $('.decrypt-btn').on('click', function () {
-        var button = $(this);
-        var id = button.data('id');
-        var hostname = button.data('hostname');
-        var timestamp = button.data('timestamp');
-        var encryptionType = button.data('encryption-type');
-        var decryptedRow = $('#decrypted-row-' + id);
-
-        // Check if this is pro version and passkey is available
-        var isProVersion = window.secureLoginConfig.isProVersion;
-        var passkeyRegistered = window.secureLoginConfig.passkeyRegistered;
-
-        // SECURITY ENHANCEMENT: Pro version with passkey MUST use passkey authentication
-        if (isProVersion && passkeyRegistered) {
-            // Force passkey authentication - no choice given
-            button.prop('disabled', true).attr('title', secureLoginAjax.strings.requesting_passkey);
-
-            $.ajax({
-                url: secureLoginAjax.ajaxurl,
-                type: 'POST',
-                data: {
-                    action: 'decrypt_secure_login_data',
-                    decrypt_id: id,
-                    use_passkey: 'true',
-                    nonce: secureLoginAjax.nonce
-                },
-                success: function (response) {
-                    if (response.success && response.data.requires_passkey) {
-                        // Initiate passkey authentication
-                        authenticateWithPasskey(id, button, decryptedRow);
-                    } else {
-                        alert(secureLoginAjax.strings.passkey_setup_failed + (response.data || secureLoginAjax.strings.unknown_error));
-                        button.prop('disabled', false).attr('title', secureLoginAjax.strings.decrypt_data);
-                    }
-                },
-                error: function () {
-                    alert(secureLoginAjax.strings.network_error_passkey);
-                    button.prop('disabled', false).attr('title', secureLoginAjax.strings.decrypt_data);
-                }
-            });
-            return;
-        }
-
-        // For pro version without passkey or non-pro version, offer choice
-        if (isProVersion && !passkeyRegistered) {
-            // Pro version but no passkey registered - warn user and suggest registering passkey
-            if (!confirm(secureLoginAjax.strings.pro_no_passkey_continue)) {
-                return;
-            }
-        }
-
-        // Traditional decryption (for non-pro or pro without passkey registered)
-        try {
-            var encryptionKey = '';
-
-            // Check encryption type (RSA for all new entries, XOR only for legacy data)
-            if (encryptionType === 'rsa') {
-                // RSA encryption - no manual key needed, server handles decryption
-                encryptionKey = 'rsa'; // Just a placeholder to indicate RSA
-            } else if (hostname && timestamp) {
-                // Legacy XOR data - reconstruct key for backward compatibility
-                encryptionKey = hostname + timestamp;
-            } else {
-                // Very old legacy data - prompt user for manual key entry
-                encryptionKey = prompt(secureLoginAjax.strings.enter_encryption_key);
-                if (!encryptionKey) {
-                    return;
-                }
-            }
-
-            // Disable button and show loading.
-            button.prop('disabled', true).attr('title', secureLoginAjax.strings.decrypting);
-
-            // Make AJAX request to decrypt data.
-            $.ajax({
-                url: secureLoginAjax.ajaxurl,
-                type: 'POST',
-                data: {
-                    action: 'decrypt_secure_login_data',
-                    decrypt_id: id,
-                    encryption_key: encryptionKey,
-                    nonce: secureLoginAjax.nonce
-                },
-                success: function (response) {
-                    if (response.success) {
-                        // Store the decrypted data for export functionality
-                        decryptedRow.data('decrypted-data', response.data.data || response.data);
-
-                        // Format the data for better readability.
-                        var formattedData = formatDecryptedData(response.data.data || response.data, response.data.metadata);
-                        decryptedRow.find('.decrypted-json').html(formattedData);
-                        decryptedRow.show();
-                        button.attr('title', secureLoginAjax.strings.data_decrypted).addClass('button-secondary');
-                        button.find('.dashicons').removeClass('dashicons-unlock').addClass('dashicons-yes');
-                    } else {
-                        alert(secureLoginAjax.strings.decryption_failed + (response.data || secureLoginAjax.strings.unknown_error));
-                        button.prop('disabled', false).attr('title', secureLoginAjax.strings.decrypt_data);
-                    }
-                },
-                error: function () {
-                    alert(secureLoginAjax.strings.network_error_decryption);
-                    button.prop('disabled', false).attr('title', secureLoginAjax.strings.decrypt_data);
-                }
-            });
-
-        } catch (e) {
-            alert(secureLoginAjax.strings.error_processing_decryption + e.message);
-        }
-    });
-
-    // Passkey authentication function
-    function authenticateWithPasskey(id, button, decryptedRow) {
-        button.attr('title', secureLoginAjax.strings.authenticate_with_passkey);
-
-        // Check if WebAuthn is supported
-        if (!window.PublicKeyCredential) {
-            alert(secureLoginAjax.strings.webauthn_not_supported);
-            button.prop('disabled', false).attr('title', secureLoginAjax.strings.decrypt_data);
-            return;
-        }
-
-        // Generate challenge
-        var challenge = new Uint8Array(32);
-        window.crypto.getRandomValues(challenge);
-
-        var getCredentialDefaultArgs = {
-            publicKey: {
-                timeout: 60000,
-                challenge: challenge,
-                userVerification: "required"
-            },
-        };
-
-        navigator.credentials.get(getCredentialDefaultArgs)
-            .then((assertion) => {
-                // Send authentication data to server for passkey verification and decryption
-                button.attr('title', secureLoginAjax.strings.verifying_passkey);
-
-                $.ajax({
-                    url: secureLoginAjax.ajaxurl,
-                    type: 'POST',
-                    data: {
-                        action: 'decrypt_secure_login_data',
-                        decrypt_id: id,
-                        use_passkey: 'true',
-                        passkey_verified: 'true', // Flag that passkey auth was successful
-                        signature: btoa(String.fromCharCode(...new Uint8Array(assertion.response.signature))),
-                        authenticator_data: btoa(String.fromCharCode(...new Uint8Array(assertion.response.authenticatorData))),
-                        nonce: secureLoginAjax.nonce
-                    },
-                    success: function (response) {
-                        if (response.success) {
-                            // Store the decrypted data for export functionality
-                            decryptedRow.data('decrypted-data', response.data.data || response.data);
-
-                            // Format the data for better readability.
-                            var formattedData = formatDecryptedData(response.data.data || response.data, response.data.metadata);
-                            decryptedRow.find('.decrypted-json').html(formattedData);
-                            decryptedRow.show();
-                            button.attr('title', secureLoginAjax.strings.data_decrypted_passkey).addClass('button-secondary');
-                            button.find('.dashicons').removeClass('dashicons-unlock').addClass('dashicons-yes');
-                        } else {
-                            alert(secureLoginAjax.strings.passkey_decryption_failed + (response.data || secureLoginAjax.strings.unknown_error));
-                            button.prop('disabled', false).attr('title', secureLoginAjax.strings.decrypt_data);
-                        }
-                    },
-                    error: function () {
-                        alert(secureLoginAjax.strings.network_error_passkey_decrypt);
-                        button.prop('disabled', false).attr('title', secureLoginAjax.strings.decrypt_data);
-                    }
-                });
-            })
-            .catch((err) => {
-                console.error(secureLoginAjax.strings.passkey_auth_failed, err);
-                alert(secureLoginAjax.strings.passkey_auth_failed + ' ' + err.message);
-                button.prop('disabled', false).attr('title', secureLoginAjax.strings.decrypt_data);
-            });
-    }
 
     // Hide decrypted data
     $('.hide-decrypted').on('click', function () {
         var button = $(this);
         var id = button.data('id');
         var decryptedRow = $('#decrypted-row-' + id);
-        var decryptBtn = $('.decrypt-btn[data-id="' + id + '"]');
+        var decryptBtn = $('.decrypt-btn-v2[data-id="' + id + '"]');
 
-        // Clear stored decrypted data for security
-        decryptedRow.removeData('decrypted-data');
+        // Don't remove the decrypted data - just hide the display
+        // This allows the export button to still work after hiding
+        // decryptedRow.removeData('decrypted-data');
 
         decryptedRow.hide();
-        decryptBtn.prop('disabled', false).attr('title', secureLoginAjax.strings.decrypt_data).removeClass('button-secondary');
-        decryptBtn.find('.dashicons').removeClass('dashicons-yes').addClass('dashicons-unlock');
+        decryptBtn.prop('disabled', false).removeClass('button-success');
+        decryptBtn.html('<span class="dashicons dashicons-unlock"></span>');
     });
 
     // Extend functionality
@@ -425,6 +247,7 @@ jQuery(document).ready(function ($) {
 
         // Get the decrypted data from the current row
         var decryptedData = decryptedRow.data('decrypted-data');
+        
         if (!decryptedData) {
             alert(window.secureLoginMessages.noDecryptedData);
             return;

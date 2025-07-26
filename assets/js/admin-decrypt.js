@@ -231,6 +231,9 @@
                         response.data.rsaDecryptedKey
                     );
                     
+                    // Store the decrypted data for export functionality
+                    decryptedRow.data('decrypted-data', decryptedData);
+                    
                     // Display decrypted data
                     displayDecryptedData(decryptedRow, decryptedData, response.data.metadata);
                     

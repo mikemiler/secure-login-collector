@@ -257,7 +257,7 @@ class Secure_Login_List_Table extends WP_List_Table
     public function column_actions($item)
     {
         $metadata         = json_decode($item->metadata, true);
-        $encryption_type  = isset($metadata['encryption_type']) ? $metadata['encryption_type'] : 'xor';
+        $encryption_type  = isset($metadata['encryption_type']) ? $metadata['encryption_type'] : 'rsa';
         $hostname         = isset($metadata['key_hostname']) ? $metadata['key_hostname'] : '';
         $timestamp_suffix = isset($metadata['key_timestamp_suffix']) ? $metadata['key_timestamp_suffix'] : '';
 
@@ -283,15 +283,9 @@ class Secure_Login_List_Table extends WP_List_Table
             esc_attr__('Cancel editing', 'secure-login-collector')
         );
 
-        // Check if this is v2 format by looking at encrypted_data structure.
-        $encrypted_data = json_decode($item->encrypted_data, true);
-        $is_v2_format   = (is_array($encrypted_data) && isset($encrypted_data['version']) && $encrypted_data['version'] === 2);
-
-        // Decrypt button with icon - use different class for v2 format.
-        $decrypt_class = $is_v2_format ? 'decrypt-btn-v2' : 'decrypt-btn';
+        // Always use v2 decrypt button since we only support current encryption format
         $actions[] = sprintf(
-            '<button type="button" class="button %s" data-id="%s" data-hostname="%s" data-timestamp="%s" data-encryption-type="%s" title="%s"><span class="dashicons dashicons-unlock"></span></button>',
-            $decrypt_class,
+            '<button type="button" class="button decrypt-btn-v2" data-id="%s" data-hostname="%s" data-timestamp="%s" data-encryption-type="%s" title="%s"><span class="dashicons dashicons-unlock"></span></button>',
             $item->id,
             esc_attr($hostname),
             esc_attr($timestamp_suffix),
@@ -508,7 +502,7 @@ class Secure_Login_List_Table extends WP_List_Table
         echo '<h4>' . esc_html__('Decrypted Data:', 'secure-login-collector') . '</h4>';
         echo '<div class="decrypted-json"></div>';
         echo '<div style="margin-top: 10px;">';
-        echo '<button type="button" class="button button-primary export-to-password-manager" data-id="' . esc_attr($item->id) . '" title="' . esc_attr__('Export to Password Manager', 'secure-login-collector') . '"><span class="dashicons dashicons-download"></span> ' . esc_html__('Export', 'secure-login-collector') . '</button>';
+        echo '<button type="button" class="button button-primary export-to-password-manager" data-id="' . esc_attr($item->id) . '" title="' . esc_attr__('Export to Password Manager', 'secure-login-collector') . '"> ' . esc_html__('Export to Password Manager', 'secure-login-collector') . '</button>';
         echo '<button type="button" class="button hide-decrypted" data-id="' . esc_attr($item->id) . '" title="' . esc_attr__('Hide decrypted data', 'secure-login-collector') . '"><span class="dashicons dashicons-hidden"></span></button>';
         echo '</div>';
         echo '</div>';
@@ -580,7 +574,6 @@ class Secure_Login_Admin_Interface
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
 
         // Register AJAX handlers.
-        add_action('wp_ajax_decrypt_secure_login_data', array($this, 'handle_decrypt_ajax'));
         add_action('wp_ajax_decrypt_secure_login_data_v2', array($this, 'handle_decrypt_ajax_v2'));
         add_action('wp_ajax_get_encryption_info', array($this, 'handle_get_encryption_info'));
         add_action('wp_ajax_delete_secure_login_data', array($this, 'handle_delete_ajax'));
@@ -1156,166 +1149,6 @@ class Secure_Login_Admin_Interface
         );
     }
 
-    /**
-     * Handle decrypt AJAX request.
-     */
-    public function handle_decrypt_ajax()
-    {
-        // Verify nonce for security.
-        if (! wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'] ?? '')), 'secure_login_nonce')) {
-            wp_send_json_error(__('Invalid security token.', 'secure-login-collector'));
-            return;
-        }
-
-        // Check if user has admin capabilities.
-        if (! current_user_can('manage_options')) {
-            wp_send_json_error(__('Insufficient permissions.', 'secure-login-collector'));
-            return;
-        }
-
-        // Sanitize and validate input.
-        $decrypt_id       = intval(wp_unslash($_POST['decrypt_id'] ?? 0));
-        $encryption_key   = isset($_POST['encryption_key']) ? sanitize_text_field(wp_unslash($_POST['encryption_key'])) : null;
-        $use_passkey      = isset($_POST['use_passkey']) && sanitize_text_field(wp_unslash($_POST['use_passkey'])) === 'true';
-        $passkey_verified = isset($_POST['passkey_verified']) && sanitize_text_field(wp_unslash($_POST['passkey_verified'])) === 'true';
-
-        if (empty($decrypt_id)) {
-            wp_send_json_error(__('Missing required data.', 'secure-login-collector'));
-            return;
-        }
-
-        // SECURITY ENHANCEMENT: In Pro version with registered passkey, ONLY allow passkey authentication.
-        if ($this->is_pro_version) {
-            $passkey_registered = get_option('secure_login_passkey_registered', false);
-
-            if ($passkey_registered) {
-                // Passkey is registered - FORCE passkey authentication, no traditional decryption allowed.
-                if (! $use_passkey) {
-                    wp_send_json_error(__('Passkey authentication is required in Pro version. Traditional decryption is disabled for enhanced security.', 'secure-login-collector'));
-                    return;
-                }
-
-                // If passkey is not yet verified, store the decrypt request for passkey authentication.
-                if (! $passkey_verified) {
-                    set_transient('secure_login_decrypt_request_' . get_current_user_id(), $decrypt_id, 300); // 5 minutes.
-
-                    wp_send_json_success(
-                        array(
-                            'requires_passkey' => true,
-                            'message'          => __('Passkey authentication required. Please authenticate with your passkey.', 'secure-login-collector'),
-                        )
-                    );
-                    return;
-                }
-
-                // Passkey is verified, proceed with passkey decryption.
-                $signature = isset($_POST['signature']) ? sanitize_text_field(wp_unslash($_POST['signature'])) : '';
-                if (empty($signature)) {
-                    wp_send_json_error(__('Missing passkey signature.', 'secure-login-collector'));
-                    return;
-                }
-
-                // Set authentication flag that the encryption handler expects.
-                set_transient('secure_login_passkey_authenticated_' . get_current_user_id(), true, 300); // 5 minutes.
-
-                // Use the database manager to get entry data.
-                $row = $this->database_manager->get_entry($decrypt_id);
-
-                if (! $row) {
-                    wp_send_json_error(__('Data not found.', 'secure-login-collector'));
-                    return;
-                }
-
-                $metadata        = json_decode($row->metadata, true);
-                $encryption_type = isset($metadata['encryption_type']) ? $metadata['encryption_type'] : 'rsa';
-
-                // Decrypt using encryption handler with passkey authentication.
-                $decrypted_data = $this->encryption_handler->decrypt_data($row->encrypted_data, $encryption_type);
-
-                if (false === $decrypted_data) {
-                    // Clean up the authentication flag on failure.
-                    delete_transient('secure_login_passkey_authenticated_' . get_current_user_id());
-                    wp_send_json_error(__('Passkey decryption failed. Please check your passkey authentication.', 'secure-login-collector'));
-                    return;
-                }
-
-                // Clean up the authentication flag after successful decryption.
-                delete_transient('secure_login_passkey_authenticated_' . get_current_user_id());
-
-                wp_send_json_success(
-                    array(
-                        'data'     => $decrypted_data,
-                        'metadata' => $metadata,
-                    )
-                );
-                return;
-            } elseif ($use_passkey) {
-                // Pro version but no passkey registered - allow traditional decryption but warn user.
-                wp_send_json_error(__('Passkey not registered. Please register a passkey first or use traditional decryption.', 'secure-login-collector'));
-                return;
-            }
-        }
-
-        // Traditional decryption (for non-pro or pro without passkey registered).
-        if (empty($encryption_key)) {
-            wp_send_json_error(__('Missing encryption key.', 'secure-login-collector'));
-            return;
-        }
-
-        // Decrypt the data using the private decrypt_data method.
-        $decrypted_data = $this->decrypt_data($decrypt_id, $encryption_key);
-
-        if (false === $decrypted_data) {
-            wp_send_json_error(__('Decryption failed. Please check the encryption key.', 'secure-login-collector'));
-            return;
-        }
-
-        // Get metadata for the response using database manager.
-        $row      = $this->database_manager->get_entry($decrypt_id);
-        $metadata = $row ? json_decode($row->metadata, true) : array();
-
-        wp_send_json_success(
-            array(
-                'data'     => $decrypted_data,
-                'metadata' => $metadata,
-            )
-        );
-    }
-
-    /**
-     * Private method to decrypt data (moved from encryption handler for admin use).
-     *
-     * @param int    $id             Entry ID.
-     * @param string $encryption_key Encryption key (optional).
-     * @return array|false Decrypted data or false on failure.
-     */
-    private function decrypt_data($id, $encryption_key = null)
-    {
-        $row = $this->database_manager->get_entry($id);
-
-        if (! $row) {
-            return false;
-        }
-
-        try {
-            // Check if this is passkey-derived encrypted data.
-            $metadata        = json_decode($row->metadata, true);
-            $encryption_type = isset($metadata['encryption_type']) ? $metadata['encryption_type'] : 'rsa';
-
-            if ('passkey_derived' === $encryption_type) {
-                // For passkey-derived encryption, we need the passkey signature.
-                // This should be handled through the passkey authentication flow.
-                return $this->encryption_handler->decrypt_data($row->encrypted_data, $encryption_type, $encryption_key);
-            } elseif ('rsa' === $encryption_type) {
-                return $this->encryption_handler->decrypt_rsa_data($row->encrypted_data);
-            }
-
-
-            return false;
-        } catch (Exception $e) {
-            return false;
-        }
-    }
 
     /**
      * Get client IP address.
