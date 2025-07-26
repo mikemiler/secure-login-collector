@@ -508,8 +508,8 @@ class Secure_Login_List_Table extends WP_List_Table
         echo '<h4>' . esc_html__('Decrypted Data:', 'secure-login-collector') . '</h4>';
         echo '<div class="decrypted-json"></div>';
         echo '<div style="margin-top: 10px;">';
-        echo '<button type="button" class="button button-primary export-to-password-manager" data-id="' . esc_attr($item->id) . '">' . esc_html__('Export to Password Manager', 'secure-login-collector') . '</button>';
-        echo '<button type="button" class="button hide-decrypted" data-id="' . esc_attr($item->id) . '">' . esc_html__('Hide', 'secure-login-collector') . '</button>';
+        echo '<button type="button" class="button button-primary export-to-password-manager" data-id="' . esc_attr($item->id) . '" title="' . esc_attr__('Export to Password Manager', 'secure-login-collector') . '"><span class="dashicons dashicons-download"></span> ' . esc_html__('Export', 'secure-login-collector') . '</button>';
+        echo '<button type="button" class="button hide-decrypted" data-id="' . esc_attr($item->id) . '" title="' . esc_attr__('Hide decrypted data', 'secure-login-collector') . '"><span class="dashicons dashicons-hidden"></span></button>';
         echo '</div>';
         echo '</div>';
         echo '</td>';

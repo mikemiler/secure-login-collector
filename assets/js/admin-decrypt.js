@@ -185,7 +185,7 @@
         const decryptedRow = $('#decrypted-row-' + id);
         
         // Disable button during decryption
-        button.prop('disabled', true).text('Checking encryption type...');
+        button.prop('disabled', true).html('<span class="dashicons dashicons-update" style="animation: spin 1s linear infinite;"></span>');
         
         try {
             // First, get the encrypted package info to check if passkey is needed
@@ -207,10 +207,10 @@
             
             // If Pro encrypted, note that passkey will be required during decryption
             if (encryptionInfo.isProEncrypted && encryptionInfo.credentialId) {
-                button.text('Pro encrypted - passkey will be required...');
+                button.html('<span class="dashicons dashicons-shield" title="Pro encrypted - passkey required"></span>');
             }
             
-            button.text('Decrypting...');
+            button.html('<span class="dashicons dashicons-update" style="animation: spin 1s linear infinite;"></span>');
             
             // Now request decryption from server
             const response = await $.ajax({
@@ -234,15 +234,15 @@
                     // Display decrypted data
                     displayDecryptedData(decryptedRow, decryptedData, response.data.metadata);
                     
-                    button.text('Decrypted').addClass('button-success');
+                    button.html('<span class="dashicons dashicons-yes"></span>').addClass('button-success');
                 } catch (decryptError) {
                     console.error('Client-side decryption error:', decryptError);
                     alert('Decryption failed: ' + decryptError.message);
-                    button.prop('disabled', false).text('Decrypt');
+                    button.prop('disabled', false).html('<span class="dashicons dashicons-unlock"></span>');
                 }
             } else {
                 alert('Decryption failed: ' + response.data);
-                button.prop('disabled', false).text('Decrypt');
+                button.prop('disabled', false).html('<span class="dashicons dashicons-unlock"></span>');
             }
             
         } catch (error) {

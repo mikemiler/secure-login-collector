@@ -399,3 +399,9 @@ tr.selected {
 .export-to-password-manager {
     margin-right: 10px;
 }
+
+/* Spinning animation for loading icons */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
