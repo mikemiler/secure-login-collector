@@ -299,7 +299,6 @@ jQuery(document).ready(function ($) {
         var usernameEmail = $('#manual_username_email').val().trim();
         var password = $('#manual_password').val().trim();
         var additionalNotes = $('#manual_additional_notes').val().trim();
-        var encryptionMethod = $('#manual_encryption_method').val();
 
         // Validate required fields
         if (!email || !name || !loginUrl || !usernameEmail || !password) {
@@ -336,7 +335,6 @@ jQuery(document).ready(function ($) {
                 action: 'save_manual_login_data',
                 login_data: loginData,
                 metadata: JSON.stringify(metadata),
-                encryption_method: encryptionMethod,
                 nonce: secureLoginAjax.nonce
             },
             success: function (response) {

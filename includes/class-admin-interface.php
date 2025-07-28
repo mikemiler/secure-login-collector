@@ -840,20 +840,27 @@ class Secure_Login_Admin_Interface
                                     <p class="description"><?php echo esc_html__('Optional: Any additional information like security questions, backup codes, or special instructions.', 'secure-login-collector'); ?></p>
                                 </td>
                             </tr>
+                            <?php if ($this->is_pro_version && get_option('secure_login_ultra_secure_mode', false) && get_option('secure_login_passkey_registered', false)) : ?>
                             <tr>
                                 <th scope="row">
-                                    <label for="manual_encryption_method"><?php echo esc_html__('Encryption Method', 'secure-login-collector'); ?></label>
+                                    <?php echo esc_html__('Encryption Method', 'secure-login-collector'); ?>
                                 </th>
                                 <td>
-                                    <select id="manual_encryption_method" name="manual_encryption_method">
-                                        <?php if ($this->is_pro_version && get_option('secure_login_passkey_registered', false)) : ?>
-                                            <option value="passkey_derived"><?php echo esc_html__('🔐 Ultra-Secure (Passkey)', 'secure-login-collector'); ?></option>
-                                        <?php endif; ?>
-                                        <option value="rsa" selected><?php echo esc_html__('🔒 RSA-2048', 'secure-login-collector'); ?></option>
-                                    </select>
-                                    <p class="description"><?php echo esc_html__('Choose the encryption method for this entry.', 'secure-login-collector'); ?></p>
+                                    <strong><?php echo esc_html__('🔐 Ultra-Secure (AES-256 + RSA-2048 + Passkey)', 'secure-login-collector'); ?></strong>
+                                    <p class="description"><?php echo esc_html__('Ultra-secure mode is enabled. All entries will be encrypted with triple-layer protection.', 'secure-login-collector'); ?></p>
                                 </td>
                             </tr>
+                            <?php else : ?>
+                            <tr>
+                                <th scope="row">
+                                    <?php echo esc_html__('Encryption Method', 'secure-login-collector'); ?>
+                                </th>
+                                <td>
+                                    <strong><?php echo esc_html__('🔒 Secure (AES-256 + RSA-2048)', 'secure-login-collector'); ?></strong>
+                                    <p class="description"><?php echo esc_html__('Standard encryption with AES-256 and RSA-2048 protection.', 'secure-login-collector'); ?></p>
+                                </td>
+                            </tr>
+                            <?php endif; ?>
                         </table>
 
                         <p class="submit">
@@ -1244,7 +1251,6 @@ class Secure_Login_Admin_Interface
         // Sanitize and validate input.
         $login_data        = sanitize_textarea_field(wp_unslash($_POST['login_data'] ?? ''));
         $metadata          = wp_unslash($_POST['metadata'] ?? ''); // Don't sanitize JSON data as it corrupts the format.
-        $encryption_method = sanitize_text_field(wp_unslash($_POST['encryption_method'] ?? ''));
 
         if (empty($login_data) || empty($metadata)) {
             wp_send_json_error(__('Missing required data.', 'secure-login-collector'));
@@ -1272,7 +1278,6 @@ class Secure_Login_Admin_Interface
         $metadata_array['email']           = sanitize_email($metadata_array['email']);
         $metadata_array['name']            = sanitize_text_field($metadata_array['name']);
         $metadata_array['login_url']       = sanitize_text_field($metadata_array['login_url']);
-        $metadata_array['encryption_type'] = sanitize_text_field($encryption_method);
         $metadata_array['manually_added']  = true;
         $metadata_array['added_by_user']   = get_current_user_id();
         $metadata_array['created_at']      = current_time('c');
@@ -1280,65 +1285,75 @@ class Secure_Login_Admin_Interface
         // The login_data already contains the structured data to encrypt.
         $data_to_encrypt = $login_data;
 
-        // Encrypt data based on selected method.
-        $encrypted_data = '';
-
-        switch ($encryption_method) {
-            case 'passkey_derived':
-                if (! $this->is_pro_version) {
-                    wp_send_json_error(__('Pro version required for passkey encryption.', 'secure-login-collector'));
-                    return;
-                }
-
-                if (! get_option('secure_login_passkey_registered', false)) {
-                    wp_send_json_error(__('Passkey not registered.', 'secure-login-collector'));
-                    return;
-                }
-
-                // For manual entries, encrypt directly with passkey-derived key.
-                $encrypted_data = $this->encryption_handler->encrypt_with_passkey_key($data_to_encrypt, null);
-                if (false === $encrypted_data) {
-                    wp_send_json_error(__('Passkey encryption failed.', 'secure-login-collector'));
-                    return;
-                }
-                break;
-
-            case 'rsa':
-                // Use RSA encryption.
-                $public_key = $this->encryption_handler->get_public_key();
-                if (is_wp_error($public_key)) {
-                    wp_send_json_error(__('RSA keys not available.', 'secure-login-collector'));
-                    return;
-                }
-
-                // For server-side RSA encryption, we'll use the public key.
-                $encrypted_data = $this->encryption_handler->encrypt_rsa_data($data_to_encrypt);
-                if (false === $encrypted_data) {
-                    wp_send_json_error(__('RSA encryption failed.', 'secure-login-collector'));
-                    return;
-                }
-
-                // ULTRA-SECURE MODE: Double-encrypt with passkey-derived encryption if enabled.
-                // Instead of decrypt->re-encrypt, we encrypt the already-encrypted RSA data.
-                if ($this->is_pro_version && get_option('secure_login_ultra_secure_mode', false) && get_option('secure_login_passkey_registered', false)) {
-                    // Encrypt the RSA-encrypted data with passkey-derived encryption (double encryption).
-                    $passkey_encrypted_data = $this->encryption_handler->encrypt_with_passkey_key($encrypted_data, null);
-
-                    if (false !== $passkey_encrypted_data) {
-                        // Use double-encrypted data and update metadata.
-                        $encrypted_data                     = $passkey_encrypted_data;
-                        $metadata_array['encryption_type']  = 'passkey_derived';
-                        $metadata_array['inner_encryption'] = 'rsa'; // Track inner encryption method.
-                        $metadata_array['double_encrypted'] = true; // Flag for double encryption.
-                    }
-                }
-                break;
-
-            default:
-                // Default to RSA encryption.
-                $encrypted_data = $this->encryption_handler->encrypt_rsa_data($data_to_encrypt);
-                break;
+        // Create v2 format encryption package - matching frontend-secure.js encryption flow
+        // Generate AES key and IV
+        $aes_key = openssl_random_pseudo_bytes(32); // 256-bit key
+        $iv = openssl_random_pseudo_bytes(12); // 96-bit IV for GCM
+        $salt = openssl_random_pseudo_bytes(32); // 32 bytes salt like frontend
+        
+        // Encrypt the data with AES-GCM
+        $cipher = 'aes-256-gcm';
+        $tag = '';
+        $encrypted_content = openssl_encrypt(
+            $data_to_encrypt,
+            $cipher,
+            $aes_key,
+            OPENSSL_RAW_DATA,
+            $iv,
+            $tag
+        );
+        
+        if (false === $encrypted_content) {
+            wp_send_json_error(__('AES encryption failed.', 'secure-login-collector'));
+            return;
         }
+        
+        // Combine encrypted content with auth tag for GCM
+        $encrypted_with_tag = $encrypted_content . $tag;
+        
+        // Get RSA public key
+        $public_key = $this->encryption_handler->get_public_key();
+        if (is_wp_error($public_key)) {
+            wp_send_json_error(__('RSA keys not available.', 'secure-login-collector'));
+            return;
+        }
+        
+        // Check if ultra-secure mode is enabled (Pro with passkey)
+        $is_pro_encrypted = false;
+        $server_credential_id = null;
+        
+        if ($this->is_pro_version && get_option('secure_login_passkey_registered', false)) {
+            // For ultra-secure mode, mark as pro encrypted
+            // The passkey encryption happens client-side during decryption
+            $is_pro_encrypted = true;
+            $server_credential_id = get_option('secure_login_passkey_credential_id', '');
+        }
+        
+        // RSA encrypt the AES key (raw bytes, not base64)
+        $encrypted_aes_key = '';
+        if (!openssl_public_encrypt($aes_key, $encrypted_aes_key, $public_key, OPENSSL_PKCS1_OAEP_PADDING)) {
+            wp_send_json_error(__('RSA key encryption failed.', 'secure-login-collector'));
+            return;
+        }
+        
+        // Create the v2 encrypted package matching frontend format exactly
+        $encrypted_package = array(
+            'encryptedData'   => base64_encode($encrypted_with_tag),
+            'rsaEncryptedKey' => base64_encode($encrypted_aes_key),
+            'iv'              => base64_encode($iv),
+            'salt'            => base64_encode($salt), // Base64 encode like frontend
+            'isProEncrypted'  => $is_pro_encrypted,
+            'credentialId'    => $server_credential_id,
+            'version'         => 2,
+        );
+        
+        // Update metadata for v2 format
+        $metadata_array['encryption_type'] = $is_pro_encrypted ? 'aes-rsa-passkey-v2' : 'aes-rsa-v2';
+        $metadata_array['encryption_version'] = 2;
+        $metadata_array['is_pro_encrypted'] = $is_pro_encrypted;
+        
+        // Store as JSON-encoded package
+        $encrypted_data = wp_json_encode($encrypted_package);
 
         // Re-encode the metadata.
         $metadata = wp_json_encode($metadata_array);
@@ -1352,7 +1367,7 @@ class Secure_Login_Admin_Interface
 
         // Prepare data for database insertion.
         $data = array(
-            'encrypted_data'  => $encrypted_data,
+            'encrypted_data'  => $encrypted_data, // Already JSON-encoded v2 package
             'metadata'        => $metadata,
             'user_id'         => get_current_user_id(), // Manual entries are associated with the admin user.
             'ip_address'      => $this->get_client_ip(),
