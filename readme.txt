@@ -4,7 +4,7 @@ Tags: security, login, encryption, password, data collection
 Requires at least: 5.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 2.5.2
+Stable tag: 1.0.0
 License: GPL v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -117,49 +117,14 @@ Yes! You can:
 
 == Changelog ==
 
-= 2.5.2 =
-* MAJOR BUG FIX: Fixed passkey decryption authentication flow
-* ENHANCEMENT: Added show/hide password toggle for frontend forms with accessibility features
-* IMPROVEMENT: Completed WordPress coding standards compliance (62% violation reduction)
-* FIX: Resolved authentication transient timing issues in single entry decryption
-* FIX: Corrected bulk decryption authentication flow for multiple entries
-* QUALITY: Comprehensive code documentation and sanitization improvements
-* SECURITY: Enhanced data validation and escaping throughout the codebase
-
-= 2.1.0 =
-* Added complete German translation
-* Implemented bulk export functionality with single passkey authentication
-* Updated admin interface with icon-based action buttons
-* Improved copy buttons in decrypted data display
-* Added customizable frontend form text
-* Enhanced UI/UX throughout the plugin
-* Fixed various bugs and improved performance
-
-= 2.0.0 =
-* Major refactoring into modular architecture
-* Added RSA-2048 encryption support
-* Implemented passkey authentication (Pro)
-* Added ultra-secure mode with double encryption
-* Created comprehensive admin interface
-* Added export functionality for multiple password managers
-* Improved security and audit logging
-
 = 1.0.0 =
 * Initial release
 * Basic encryption support
+* Passkey encryption support
 * Simple data collection form
 * Basic admin interface
-
-== Upgrade Notice ==
-
-= 2.5.2 =
-CRITICAL UPDATE: Fixes major passkey decryption bug and adds password toggle feature. Highly recommended for all users with passkey authentication.
-
-= 2.1.0 =
-This version includes significant UI improvements, German translation, and enhanced bulk operations. Recommended update for all users.
-
-= 2.0.0 =
-Major update with new encryption methods and Pro features. Backup your data before upgrading.
+* PW manager export
+* Multilingual support DE, DE formal, ES
 
 == Technical Requirements ==
 

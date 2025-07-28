@@ -4,7 +4,7 @@
  * Plugin Name: Secure Login Collector
  * Plugin URI: https://wp-mike.com
  * Description: Securely collects and stores encrypted login credentials from clients via frontend form with email notifications.
- * Version: 2.5.2
+ * Version: 1.0.1
  * Author: Mike Miler
  * License: GPL v2 or later
  * Text Domain: secure-login-collector
@@ -24,7 +24,7 @@ if (! defined('ABSPATH')) {
 // Define plugin constants.
 define('SECURE_LOGIN_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('SECURE_LOGIN_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('SECURE_LOGIN_VERSION', '2.5.2');
+define('SECURE_LOGIN_VERSION', '1.0.1');
 
 // Initialize Freemius.
 if (! function_exists('slc_fs')) {
@@ -147,7 +147,6 @@ class SecureLoginCollector
         if (file_exists(SECURE_LOGIN_PLUGIN_DIR . 'includes/freemius-account-redirect.php')) {
             include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/freemius-account-redirect.php';
         }
-        
     }
 
     /**
