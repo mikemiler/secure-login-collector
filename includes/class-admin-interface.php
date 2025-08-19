@@ -160,7 +160,7 @@ class Secure_Login_List_Table extends WP_List_Table
      */
     public function column_email($item)
     {
-        $metadata = json_decode($item->metadata, true);
+        $metadata = $this->decrypt_metadata($item->metadata);
         $email    = $metadata['email'] ?? __('N/A', 'secure-login-collector');
 
         return sprintf(
@@ -178,7 +178,7 @@ class Secure_Login_List_Table extends WP_List_Table
      */
     public function column_name($item)
     {
-        $metadata = json_decode($item->metadata, true);
+        $metadata = $this->decrypt_metadata($item->metadata);
         $name     = $metadata['name'] ?? __('N/A', 'secure-login-collector');
 
         return sprintf(
@@ -196,7 +196,7 @@ class Secure_Login_List_Table extends WP_List_Table
      */
     public function column_login_url($item)
     {
-        $metadata  = json_decode($item->metadata, true);
+        $metadata  = $this->decrypt_metadata($item->metadata);
         $login_url = $metadata['login_url'] ?? $metadata['service_name'] ?? __('Not provided', 'secure-login-collector');
 
         return sprintf(
@@ -334,7 +334,7 @@ class Secure_Login_List_Table extends WP_List_Table
                     'class'       => 'encryption-ultra-secure',
                     'description' => __('AES-256-GCM + RSA with passkey authentication required for decryption.', 'secure-login-collector'),
                 );
-            case 'passkey_derived':
+            case 'rsa_passkey_protected':
                 return array(
                     'name'        => __('🔐 Ultra-Secure', 'secure-login-collector'),
                     'class'       => 'encryption-ultra-secure',
@@ -370,11 +370,11 @@ class Secure_Login_List_Table extends WP_List_Table
         $this->process_bulk_action();
 
         // Get search term.
-        $search = isset($_REQUEST['s']) ? sanitize_text_field(wp_unslash($_REQUEST['s'])) : '';
+        $search = isset($_GET['s']) ? sanitize_text_field(wp_unslash($_GET['s'])) : '';
 
         // Get sorting parameters.
-        $orderby = isset($_REQUEST['orderby']) ? sanitize_text_field(wp_unslash($_REQUEST['orderby'])) : 'created_at';
-        $order   = isset($_REQUEST['order']) ? sanitize_text_field(wp_unslash($_REQUEST['order'])) : 'desc';
+        $orderby = isset($_GET['orderby']) ? sanitize_text_field(wp_unslash($_GET['orderby'])) : 'created_at';
+        $order   = isset($_GET['order']) ? sanitize_text_field(wp_unslash($_GET['order'])) : 'desc';
 
         // Get pagination parameters.
         $per_page     = $this->get_items_per_page('login_entries_per_page', 20);
@@ -409,11 +409,11 @@ class Secure_Login_List_Table extends WP_List_Table
         }
 
         // Verify nonce.
-        if (! wp_verify_nonce(sanitize_text_field(wp_unslash($_REQUEST['_wpnonce'] ?? '')), 'bulk-login_entries')) {
+        if (! wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['_wpnonce'] ?? '')), 'bulk-login_entries')) {
             wp_die(esc_html__('Security check failed.', 'secure-login-collector'));
         }
 
-        $ids = isset($_REQUEST['login_entries']) ? array_map('intval', wp_unslash($_REQUEST['login_entries'])) : array();
+        $ids = isset($_POST['login_entries']) ? array_map('intval', wp_unslash($_POST['login_entries'])) : array();
 
         if (empty($ids)) {
             return;
@@ -463,22 +463,23 @@ class Secure_Login_List_Table extends WP_List_Table
      */
     public function search_box($text, $input_id)
     {
-        if (empty($_REQUEST['s']) && ! $this->has_items()) {
+        $search_term = isset($_GET['s']) ? sanitize_text_field(wp_unslash($_GET['s'])) : '';
+        if (empty($search_term) && ! $this->has_items()) {
             return;
         }
 
         $input_id = $input_id . '-search-input';
 
-        if (! empty($_REQUEST['orderby'])) {
-            echo '<input type="hidden" name="orderby" value="' . esc_attr(sanitize_text_field(wp_unslash($_REQUEST['orderby']))) . '" />';
+        if (! empty($_GET['orderby'])) {
+            echo '<input type="hidden" name="orderby" value="' . esc_attr(sanitize_text_field(wp_unslash($_GET['orderby']))) . '" />';
         }
-        if (! empty($_REQUEST['order'])) {
-            echo '<input type="hidden" name="order" value="' . esc_attr(sanitize_text_field(wp_unslash($_REQUEST['order']))) . '" />';
+        if (! empty($_GET['order'])) {
+            echo '<input type="hidden" name="order" value="' . esc_attr(sanitize_text_field(wp_unslash($_GET['order']))) . '" />';
         }
 ?>
         <p class="search-box">
             <label class="screen-reader-text" for="<?php echo esc_attr($input_id); ?>"><?php echo esc_html($text); ?>:</label>
-            <input type="search" id="<?php echo esc_attr($input_id); ?>" name="s" value="<?php echo esc_attr(sanitize_text_field(wp_unslash($_REQUEST['s'] ?? ''))); ?>" placeholder="<?php echo esc_attr__('Search in email, name, login URL...', 'secure-login-collector'); ?>" />
+            <input type="search" id="<?php echo esc_attr($input_id); ?>" name="s" value="<?php echo esc_attr(sanitize_text_field(wp_unslash($_GET['s'] ?? ''))); ?>" placeholder="<?php echo esc_attr__('Search in email, name, login URL...', 'secure-login-collector'); ?>" />
             <?php submit_button($text, '', '', false, array('id' => 'search-submit')); ?>
         </p>
     <?php
@@ -575,6 +576,8 @@ class Secure_Login_Admin_Interface
 
         // Register AJAX handlers.
         add_action('wp_ajax_decrypt_secure_login_data_v2', array($this, 'handle_decrypt_ajax_v2'));
+        add_action('wp_ajax_get_encrypted_entry', array($this, 'handle_get_encrypted_entry'));
+        add_action('wp_ajax_passkey_get_challenge', array($this, 'handle_passkey_challenge'));
         add_action('wp_ajax_get_encryption_info', array($this, 'handle_get_encryption_info'));
         add_action('wp_ajax_delete_secure_login_data', array($this, 'handle_delete_ajax'));
         add_action('wp_ajax_extend_secure_login_data', array($this, 'handle_extend_ajax'));
@@ -582,6 +585,7 @@ class Secure_Login_Admin_Interface
         add_action('wp_ajax_update_secure_login_metadata', array($this, 'handle_update_metadata_ajax'));
         add_action('wp_ajax_process_bulk_export', array($this, 'handle_bulk_export_ajax'));
         add_action('wp_ajax_bulk_decrypt_with_passkey', array($this, 'handle_bulk_decrypt_with_passkey_ajax'));
+        add_action('wp_ajax_authenticate_passkey_for_decrypt', array($this, 'handle_passkey_auth_for_decrypt'));
 
         // Add screen option for items per page.
         add_action('load-toplevel_page_secure-login-collector', array($this, 'add_screen_options'));
@@ -773,7 +777,7 @@ class Secure_Login_Admin_Interface
             <p><?php echo esc_html__('This page shows all encrypted login data collected from clients. Use the search box to filter entries and bulk actions for management.', 'secure-login-collector'); ?></p>
 
             <form method="get">
-                <input type="hidden" name="page" value="<?php echo esc_attr(sanitize_text_field(wp_unslash($_REQUEST['page'] ?? ''))); ?>" />
+                <input type="hidden" name="page" value="<?php echo esc_attr(sanitize_text_field(wp_unslash($_GET['page'] ?? ''))); ?>" />
                 <?php
                 $this->list_table->search_box(__('Search entries', 'secure-login-collector'), 'secure-login-entries');
                 $this->list_table->display();
@@ -899,7 +903,7 @@ class Secure_Login_Admin_Interface
                     'class'       => 'encryption-ultra-secure',
                     'description' => __('AES-256-GCM + RSA with passkey authentication required for decryption.', 'secure-login-collector'),
                 );
-            case 'passkey_derived':
+            case 'rsa_passkey_protected':
                 return array(
                     'name'        => __('🔐 Ultra-Secure (Passkey)', 'secure-login-collector'),
                     'class'       => 'encryption-ultra-secure',
@@ -1324,7 +1328,7 @@ class Secure_Login_Admin_Interface
         
         if ($this->is_pro_version && get_option('secure_login_passkey_registered', false)) {
             // For ultra-secure mode, mark as pro encrypted
-            // The passkey encryption happens client-side during decryption
+            // Passkey authentication required for decryption
             $is_pro_encrypted = true;
             $server_credential_id = get_option('secure_login_passkey_credential_id', '');
         }
@@ -1432,6 +1436,55 @@ class Secure_Login_Admin_Interface
     }
 
     /**
+     * Decrypt metadata for display in admin.
+     *
+     * @param string $metadata_json The encrypted metadata JSON.
+     * @return array Decrypted metadata array.
+     */
+    private function decrypt_metadata($metadata_json)
+    {
+        $metadata = json_decode($metadata_json, true);
+        
+        if (!$metadata) {
+            return array();
+        }
+        
+        // Check if metadata is encrypted
+        if (!isset($metadata['metadata_encrypted']) || !$metadata['metadata_encrypted']) {
+            // Old unencrypted format - return as is
+            return $metadata;
+        }
+        
+        // Decrypt sensitive fields
+        if (isset($metadata['encrypted_fields']) && is_array($metadata['encrypted_fields'])) {
+            $key = substr(hash('sha256', AUTH_KEY . SECURE_AUTH_KEY), 0, 32);
+            
+            foreach ($metadata['encrypted_fields'] as $field => $encrypted_value) {
+                $data = base64_decode($encrypted_value);
+                if (strlen($data) > 16) {
+                    $iv = substr($data, 0, 16);
+                    $encrypted = substr($data, 16);
+                    $decrypted = openssl_decrypt(
+                        $encrypted,
+                        'aes-256-cbc',
+                        $key,
+                        OPENSSL_RAW_DATA,
+                        $iv
+                    );
+                    if ($decrypted !== false) {
+                        $metadata[$field] = $decrypted;
+                    }
+                }
+            }
+            
+            // Remove encrypted fields from result
+            unset($metadata['encrypted_fields']);
+        }
+        
+        return $metadata;
+    }
+
+    /**
      * Handle AJAX request to get encryption info for an entry.
      * This is used to check if passkey authentication is needed before decryption.
      *
@@ -1517,20 +1570,212 @@ class Secure_Login_Admin_Interface
         // Get the RSA-encrypted key.
         $rsa_encrypted_key = $encrypted_package['rsaEncryptedKey'];
 
-        // Decrypt the RSA layer to get the AES key (or passkey-encrypted AES key).
-        $decrypted_key_data = $this->encryption_handler->decrypt_rsa_key($rsa_encrypted_key);
+        // Check if pro version with passkey protection
+        $mwk = null;
+        if ($this->is_pro_version) {
+            // Check if user has passkey setup
+            if (! class_exists('Master_Key_Manager')) {
+                require_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-master-key-manager.php';
+            }
+            $master_key_manager = new Master_Key_Manager();
+            $user_id = get_current_user_id();
+            
+            if ($master_key_manager->user_has_mwk($user_id)) {
+                // Passkey authentication required - check if MWK provided
+                $mwk = isset($_POST['mwk']) ? sanitize_text_field(wp_unslash($_POST['mwk'])) : null;
+                
+                if (!$mwk) {
+                    // Need passkey authentication first
+                    wp_send_json_error(array(
+                        'error' => 'passkey_required',
+                        'message' => __('Passkey authentication required for decryption.', 'secure-login-collector'),
+                    ));
+                    return;
+                }
+            }
+        }
+
+        // Decrypt the RSA layer to get the AES key (with MWK if pro version).
+        $decrypted_key_data = $this->encryption_handler->decrypt_rsa_key($rsa_encrypted_key, $mwk);
 
         if (false === $decrypted_key_data) {
-            wp_send_json_error(__('Failed to decrypt RSA layer.', 'secure-login-collector'));
+            wp_send_json_error(__('Failed to decrypt RSA layer. Please authenticate with your passkey.', 'secure-login-collector'));
             return;
         }
 
         // Return the encrypted package and RSA-decrypted key to frontend.
-        // The frontend will handle passkey decryption if needed.
+        // The frontend will handle AES decryption.
         wp_send_json_success(array(
             'encryptedPackage' => $encrypted_package,
             'rsaDecryptedKey'  => $decrypted_key_data,
             'metadata'         => json_decode($entry->metadata, true),
+            'isProVersion'     => $this->is_pro_version,
+        ));
+    }
+
+    /**
+     * Handle passkey authentication for decryption.
+     * Returns the MWK after successful passkey authentication.
+     */
+    public function handle_passkey_auth_for_decrypt()
+    {
+        // Check permissions and nonce.
+        if (
+            ! current_user_can('manage_options') ||
+            ! isset($_POST['nonce']) ||
+            ! wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'secure_login_nonce')
+        ) {
+            wp_send_json_error(__('Invalid security token or insufficient permissions.', 'secure-login-collector'));
+            return;
+        }
+
+        if (!$this->is_pro_version) {
+            wp_send_json_error(__('Pro version required for passkey authentication.', 'secure-login-collector'));
+            return;
+        }
+
+        // Get credential ID from passkey authentication
+        $credential_id = isset($_POST['credential_id']) ? sanitize_text_field(wp_unslash($_POST['credential_id'])) : '';
+        if (empty($credential_id)) {
+            wp_send_json_error(__('Missing credential ID.', 'secure-login-collector'));
+            return;
+        }
+
+        // Load Master Key Manager
+        if (! class_exists('Master_Key_Manager')) {
+            require_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-master-key-manager.php';
+        }
+        $master_key_manager = new Master_Key_Manager();
+        
+        // Load Passkey Manager for key derivation
+        if (! class_exists('Passkey_Manager')) {
+            require_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-passkey-manager.php';
+        }
+        $passkey_manager = new Passkey_Manager();
+
+        $user_id = get_current_user_id();
+        
+        // Derive wrapping key from passkey
+        $wrapping_key_method = new ReflectionMethod($passkey_manager, 'derive_wrapping_key');
+        $wrapping_key_method->setAccessible(true);
+        $wrapping_key = $wrapping_key_method->invoke($passkey_manager, $credential_id, $user_id);
+        
+        // Get wrapped MWK for this passkey
+        $wrapped_mwk = $master_key_manager->get_wrapped_key(
+            $user_id,
+            'mwk',
+            $credential_id
+        );
+        
+        if (! $wrapped_mwk) {
+            wp_send_json_error(__('No MWK found for this passkey.', 'secure-login-collector'));
+            return;
+        }
+        
+        // Unwrap MWK
+        $mwk = $master_key_manager->unwrap_mwk_with_passkey(
+            $wrapped_mwk,
+            $wrapping_key
+        );
+        
+        if (! $mwk) {
+            wp_send_json_error(__('Failed to unwrap MWK.', 'secure-login-collector'));
+            return;
+        }
+        
+        // Return MWK for immediate use
+        wp_send_json_success(array(
+            'mwk' => $mwk,
+            'message' => __('Passkey authenticated successfully.', 'secure-login-collector'),
+        ));
+    }
+
+    /**
+     * Handle getting encrypted entry for client-side decryption.
+     */
+    public function handle_get_encrypted_entry() {
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Insufficient permissions.', 'secure-login-collector'));
+            return;
+        }
+
+        // Verify nonce
+        if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'] ?? '')), 'secure_login_admin_nonce')) {
+            wp_send_json_error(__('Invalid security token.', 'secure-login-collector'));
+            return;
+        }
+
+        $entry_id = intval($_POST['id'] ?? 0);
+        if (!$entry_id) {
+            wp_send_json_error(__('Invalid entry ID.', 'secure-login-collector'));
+            return;
+        }
+
+        // Get encrypted data from database
+        $entry = $this->database_manager->get_entry($entry_id);
+        if (!$entry) {
+            wp_send_json_error(__('Entry not found.', 'secure-login-collector'));
+            return;
+        }
+
+        // Parse encrypted data
+        $encrypted_data = json_decode($entry['encrypted_data'], true);
+        if (!$encrypted_data) {
+            wp_send_json_error(__('Invalid encrypted data format.', 'secure-login-collector'));
+            return;
+        }
+
+        // Return encrypted package for client-side decryption
+        wp_send_json_success(array(
+            'encrypted_data' => $encrypted_data['encryptedData'] ?? '',
+            'encrypted_aes_key' => $encrypted_data['encryptedAESKey'] ?? '',
+            'iv' => $encrypted_data['iv'] ?? '',
+            'version' => $encrypted_data['version'] ?? 'v2',
+            'metadata' => json_decode($entry['metadata'], true),
+        ));
+    }
+
+    /**
+     * Handle passkey authentication challenge.
+     */
+    public function handle_passkey_challenge() {
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Insufficient permissions.', 'secure-login-collector'));
+            return;
+        }
+
+        // Verify nonce
+        if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'] ?? '')), 'secure_login_admin_nonce')) {
+            wp_send_json_error(__('Invalid security token.', 'secure-login-collector'));
+            return;
+        }
+
+        // Generate challenge
+        $challenge = base64_encode(random_bytes(32));
+        
+        // Store challenge in transient (expires in 5 minutes)
+        set_transient('passkey_challenge_' . get_current_user_id(), $challenge, 300);
+
+        // Get user's registered credentials
+        $user_id = get_current_user_id();
+        $credentials = get_user_meta($user_id, 'passkey_credentials', true) ?: array();
+
+        // Format credentials for client
+        $formatted_credentials = array();
+        foreach ($credentials as $cred) {
+            $formatted_credentials[] = array(
+                'id' => $cred['credential_id'] ?? '',
+                'type' => 'public-key',
+            );
+        }
+
+        wp_send_json_success(array(
+            'challenge' => $challenge,
+            'credentials' => $formatted_credentials,
+            'timeout' => 60000,
+            'userVerification' => 'required',
         ));
     }
 }

@@ -10,7 +10,7 @@ jQuery(document).ready(function ($) {
             html += '<div class="data-field">';
             html += '<strong>Login URL:</strong>';
             html += '<div class="field-row">';
-            html += '<button type="button" class="button button-primary copy-field-btn" onclick="copyFieldData(this, \'' + escapeHtml(loginUrl) + '\')">Copy</button>';
+            html += '<button type="button" class="button button-primary copy-field-btn" data-copy-value="' + escapeAttr(loginUrl) + '">Copy</button>';
             html += '<span class="field-value">' + escapeHtml(loginUrl) + '</span>';
             html += '</div>';
             html += '</div>';
@@ -21,7 +21,7 @@ jQuery(document).ready(function ($) {
             html += '<div class="data-field">';
             html += '<strong>Username/Email:</strong>';
             html += '<div class="field-row">';
-            html += '<button type="button" class="button button-primary copy-field-btn" onclick="copyFieldData(this, \'' + escapeHtml(data.username_email) + '\')">Copy</button>';
+            html += '<button type="button" class="button button-primary copy-field-btn" data-copy-value="' + escapeAttr(data.username_email) + '">Copy</button>';
             html += '<span class="field-value">' + escapeHtml(data.username_email) + '</span>';
             html += '</div>';
             html += '</div>';
@@ -32,7 +32,7 @@ jQuery(document).ready(function ($) {
             html += '<div class="data-field">';
             html += '<strong>Password:</strong>';
             html += '<div class="field-row">';
-            html += '<button type="button" class="button button-primary copy-field-btn" onclick="copyFieldData(this, \'' + escapeHtml(data.password) + '\')">Copy</button>';
+            html += '<button type="button" class="button button-primary copy-field-btn" data-copy-value="' + escapeAttr(data.password) + '">Copy</button>';
             html += '<span class="field-value password-content">' + escapeHtml(data.password) + '</span>';
             html += '</div>';
             html += '</div>';
@@ -43,7 +43,7 @@ jQuery(document).ready(function ($) {
             html += '<div class="data-field">';
             html += '<strong>Additional Notes:</strong>';
             html += '<div class="field-row">';
-            html += '<button type="button" class="button button-primary copy-field-btn" onclick="copyFieldData(this, \'' + escapeHtml(data.additional_notes) + '\')">Copy</button>';
+            html += '<button type="button" class="button button-primary copy-field-btn" data-copy-value="' + escapeAttr(data.additional_notes) + '">Copy</button>';
             html += '<span class="field-value notes-content">' + escapeHtml(data.additional_notes).replace(/\n/g, '<br>') + '</span>';
             html += '</div>';
             html += '</div>';
@@ -65,6 +65,33 @@ jQuery(document).ready(function ($) {
         };
         return text.replace(/[&<>"']/g, function (m) { return map[m]; });
     }
+
+    // Escape attribute values to prevent XSS in data attributes
+    function escapeAttr(text) {
+        // Escape quotes and HTML entities for safe use in attributes
+        return escapeHtml(text).replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+
+    // Event delegation for dynamically created copy buttons
+    $(document).on('click', '.copy-field-btn', function() {
+        var button = this;
+        var data = $(this).attr('data-copy-value');
+        
+        // Try modern clipboard API first
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(data).then(function () {
+                showCopyButtonFeedback(button);
+            }).catch(function () {
+                // Fallback to creating temporary input
+                copyToClipboardFallback(data);
+                showCopyButtonFeedback(button);
+            });
+        } else {
+            // Fallback for older browsers
+            copyToClipboardFallback(data);
+            showCopyButtonFeedback(button);
+        }
+    });
 
     // Edit functionality - FIXED: trim whitespace from field values
     $('.edit-btn').on('click', function () {
@@ -684,23 +711,7 @@ function copyLoginData(button) {
     });
 }
 
-// Function to copy individual field data
-function copyFieldData(button, data) {
-    // Try modern clipboard API first
-    if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(data).then(function () {
-            showCopyButtonFeedback(button);
-        }).catch(function () {
-            // Fallback to creating temporary input
-            copyToClipboardFallback(data);
-            showCopyButtonFeedback(button);
-        });
-    } else {
-        // Fallback for older browsers
-        copyToClipboardFallback(data);
-        showCopyButtonFeedback(button);
-    }
-}
+// Removed global copyFieldData function - now using event delegation
 
 // Fallback copy function
 function copyToClipboardFallback(text) {
@@ -901,12 +912,6 @@ function exportForPasswordManager(manager) {
     }
 }
 
-// Function to escape CSV values
-function escapeCSV(value) {
-    if (typeof value !== 'string') value = '';
-    return value.replace(/"/g, '""');
-}
-
 // Function to download CSV file
 function downloadCSVFile(content, filename) {
     var blob = new Blob([content], { type: 'text/csv' });
@@ -942,12 +947,4 @@ function getImportInstructions(manager) {
         default:
             return 'Import the CSV file using your password manager\'s import feature.';
     }
-}
-
-// Function to generate GUID for Firefox
-function generateGUID() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-    });
 } 

@@ -97,6 +97,13 @@ class SecureLoginCollector
     private $database_manager;
 
     /**
+     * Passkey manager instance (Pro version).
+     *
+     * @var Passkey_Manager|null
+     */
+    private $passkey_manager = null;
+
+    /**
      * Constructor - initializes the plugin.
      */
     public function __construct()
@@ -132,6 +139,11 @@ class SecureLoginCollector
         include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-frontend-handler.php';
         include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-settings-manager.php';
         include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-database-manager.php';
+        
+        // Load passkey manager for pro version
+        if ($this->is_pro_version) {
+            include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-passkey-manager.php';
+        }
 
         // Load Freemius hooks if available
         if (function_exists('slc_fs') && file_exists(SECURE_LOGIN_PLUGIN_DIR . 'includes/freemius-hooks.php')) {
@@ -154,11 +166,16 @@ class SecureLoginCollector
      */
     private function init_components()
     {
-        $this->encryption_handler = new Secure_Login_Encryption_Handler($this->is_pro_version);
+        $this->encryption_handler = new Secure_Login_Encryption_Handler();
         $this->database_manager   = new Secure_Login_Database_Manager($this->table_name);
         $this->admin_interface    = new Secure_Login_Admin_Interface($this->table_name, $this->is_pro_version, $this->encryption_handler, $this->database_manager);
         $this->frontend_handler   = new Secure_Login_Frontend_Handler($this->table_name, $this->is_pro_version, $this->encryption_handler, $this->database_manager);
         $this->settings_manager   = new Secure_Login_Settings_Manager($this->is_pro_version, $this->encryption_handler);
+        
+        // Initialize passkey manager for pro version
+        if ($this->is_pro_version && class_exists('Passkey_Manager')) {
+            $this->passkey_manager = new Passkey_Manager();
+        }
     }
 
     /**
@@ -205,7 +222,7 @@ class SecureLoginCollector
     {
         $this->database_manager->create_table();
         $this->database_manager->upgrade_database();
-        $this->encryption_handler->ensure_rsa_keys();
+        //$this->encryption_handler->ensure_rsa_keys();
         $this->database_manager->schedule_cleanup();
     }
 

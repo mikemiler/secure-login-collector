@@ -76,6 +76,10 @@ class Secure_Login_Frontend_Handler {
 		// Register v2 AJAX handlers for new encryption format.
 		add_action( 'wp_ajax_save_secure_login_data_v2', array( $this, 'handle_save_login_data_v2' ) );
 		add_action( 'wp_ajax_nopriv_save_secure_login_data_v2', array( $this, 'handle_save_login_data_v2' ) );
+		
+		// Add handler for public key retrieval (delegates to encryption handler)
+		add_action( 'wp_ajax_slc_get_public_key', array( $this->encryption_handler, 'handle_get_public_key' ) );
+		add_action( 'wp_ajax_nopriv_slc_get_public_key', array( $this->encryption_handler, 'handle_get_public_key' ) );
 	}
 
 	/**
@@ -163,7 +167,7 @@ class Secure_Login_Frontend_Handler {
 		// Validate metadata is valid JSON.
 		$metadata_array = json_decode( $metadata, true );
 		if ( JSON_ERROR_NONE !== json_last_error() ) {
-			wp_send_json_error( __( 'Invalid metadata format. JSON Error: ', 'secure-login-collector' ) . json_last_error_msg() );
+			wp_send_json_error( __( 'Invalid metadata format.', 'secure-login-collector' ) );
 			return;
 		}
 
@@ -186,24 +190,17 @@ class Secure_Login_Frontend_Handler {
 		$metadata_array['key_hostname']         = isset( $metadata_array['key_hostname'] ) ? sanitize_text_field( $metadata_array['key_hostname'] ) : '';
 		$metadata_array['key_timestamp_suffix'] = isset( $metadata_array['key_timestamp_suffix'] ) ? sanitize_text_field( $metadata_array['key_timestamp_suffix'] ) : '';
 
-		// Re-encode the sanitized metadata.
-		$metadata = wp_json_encode( $metadata_array );
+		// Encrypt sensitive metadata fields to prevent information disclosure
+		$metadata = $this->encrypt_metadata( $metadata_array );
 
-		// ULTRA-SECURE MODE: Double-encrypt with passkey-derived encryption if enabled.
-		// Instead of decrypt->re-encrypt, we encrypt the already-encrypted RSA data.
-		if ( $this->is_pro_version && get_option( 'secure_login_ultra_secure_mode', false ) && get_option( 'secure_login_passkey_registered', false ) ) {
-			// Encrypt the RSA-encrypted data with passkey-derived encryption (double encryption).
-			$passkey_encrypted_data = $this->encryption_handler->encrypt_with_passkey_key( $encrypted_data, null );
-
-			if ( false !== $passkey_encrypted_data ) {
-				// Use double-encrypted data and update metadata.
-				$encrypted_data                     = $passkey_encrypted_data;
-				$metadata_array['encryption_type']  = 'passkey_derived';
-				$metadata_array['inner_encryption'] = 'rsa'; // Track inner encryption method.
-				$metadata_array['double_encrypted'] = true; // Flag for double encryption.
-				$metadata                           = wp_json_encode( $metadata_array );
-			}
+		// Pro version uses same RSA encryption but requires passkey authentication for decryption
+		if ( $this->is_pro_version ) {
+			$metadata_array['requires_passkey'] = true;
+			$metadata_array['encryption_type'] = 'rsa_passkey_protected';
 		}
+		
+		// Re-encode metadata
+		$metadata = $this->encrypt_metadata( $metadata_array );
 
 		// Prepare data for database insertion.
 		$user_agent = '';
@@ -228,7 +225,7 @@ class Secure_Login_Frontend_Handler {
 		}
 
 		// Send email notification if enabled.
-		$this->database_manager->send_notification( $metadata_array['email'], $metadata_array['name'] );
+		$this->database_manager->send_notification( $metadata['email'], $metadata['name'] );
 
 		wp_send_json_success( __( 'Login data saved securely.', 'secure-login-collector' ) );
 	}
@@ -461,5 +458,49 @@ class Secure_Login_Frontend_Handler {
 		$this->database_manager->send_notification( $metadata['email'], $metadata['name'] );
 
 		wp_send_json_success( __( 'Login data saved securely with enhanced encryption.', 'secure-login-collector' ) );
+	}
+
+	/**
+	 * Encrypt metadata to prevent information disclosure.
+	 *
+	 * @param array $metadata The metadata array to encrypt.
+	 * @return string Encrypted metadata JSON.
+	 */
+	private function encrypt_metadata( $metadata ) {
+		// Keep non-sensitive fields in plaintext for searching/sorting
+		$public_metadata = array(
+			'created_at'      => $metadata['created_at'],
+			'encryption_type' => isset( $metadata['encryption_type'] ) ? $metadata['encryption_type'] : 'rsa',
+		);
+
+		// Encrypt sensitive fields
+		$sensitive_fields = array( 'email', 'name', 'login_url', 'encryption_key_hint', 'key_hostname', 'key_timestamp_suffix' );
+		$encrypted_fields = array();
+
+		// Use WordPress salts for metadata encryption (not as critical as login data)
+		$key = substr( hash( 'sha256', AUTH_KEY . SECURE_AUTH_KEY ), 0, 32 );
+
+		foreach ( $sensitive_fields as $field ) {
+			if ( isset( $metadata[ $field ] ) && ! empty( $metadata[ $field ] ) ) {
+				// Simple AES encryption for metadata
+				$iv = random_bytes( 16 );
+				$encrypted = openssl_encrypt( 
+					$metadata[ $field ], 
+					'aes-256-cbc', 
+					$key, 
+					OPENSSL_RAW_DATA, 
+					$iv 
+				);
+				$encrypted_fields[ $field ] = base64_encode( $iv . $encrypted );
+			}
+		}
+
+		// Add encrypted fields indicator
+		if ( ! empty( $encrypted_fields ) ) {
+			$public_metadata['encrypted_fields'] = $encrypted_fields;
+			$public_metadata['metadata_encrypted'] = true;
+		}
+
+		return wp_json_encode( $public_metadata );
 	}
 }

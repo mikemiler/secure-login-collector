@@ -1,382 +1,421 @@
 /**
- * Secure Login Collector - Admin Decryption Script
- * Handles passkey-based decryption for admin panel
+ * Secure Admin Decryption with Passkey-Unwrapping
+ * 
+ * Implements the complete decryption flow:
+ * 1. Get encrypted data and wrapped private key from server
+ * 2. Authenticate with passkey to derive unwrapping key
+ * 3. Unwrap RSA private key in browser
+ * 4. Decrypt data with unwrapped key
+ * 5. Auto-clear after timeout
  */
 
 (function($) {
     'use strict';
 
-    // Derive kPasskey using WebAuthn signature and HKDF
-    async function derivePasskeyKey(credentialId, salt) {
-        try {
-            // Create the deterministic challenge using salt
-            const challenge = "wcd-decrypt-login:" + salt;
-            const encoder = new TextEncoder();
-            const challengeBuffer = encoder.encode(challenge);
+    class SecureAdminDecryption {
+        constructor() {
+            this.decryptedData = new Map();
+            this.unwrappedKey = null;
+            this.autoClearTimeout = 60000; // 60 seconds
+            this.init();
+        }
 
-            console.log('Requesting passkey authentication for key derivation...');
+        init() {
+            // Bind decrypt buttons
+            $(document).on('click', '.decrypt-btn', (e) => this.handleDecrypt(e));
+            
+            // Auto-clear sensitive data
+            this.startAutoClear();
+        }
 
-            // Request passkey signature
+        /**
+         * Handle decrypt button click
+         */
+        async handleDecrypt(e) {
+            e.preventDefault();
+            const $btn = $(e.currentTarget);
+            const entryId = $btn.data('id');
+            
+            // Check if already decrypted
+            if (this.decryptedData.has(entryId)) {
+                this.displayDecryptedData(entryId);
+                return;
+            }
+
+            try {
+                $btn.prop('disabled', true).text('Authenticating...');
+                
+                // Step 1: Get encrypted data from server
+                const encryptedPackage = await this.getEncryptedData(entryId);
+                
+                // Step 2: Get wrapped private key (if not cached)
+                if (!this.unwrappedKey) {
+                    await this.unwrapPrivateKey();
+                }
+                
+                // Step 3: Decrypt the data
+                const decrypted = await this.decryptData(encryptedPackage);
+                
+                // Store and display
+                this.decryptedData.set(entryId, decrypted);
+                this.displayDecryptedData(entryId);
+                
+                $btn.text('Decrypted').addClass('success');
+                
+            } catch (error) {
+                console.error('Decryption failed:', error);
+                alert('Decryption failed: ' + error.message);
+                $btn.prop('disabled', false).text('Decrypt');
+            }
+        }
+
+        /**
+         * Get encrypted data from server
+         */
+        async getEncryptedData(entryId) {
+            const response = await $.ajax({
+                url: ajaxurl,
+                method: 'POST',
+                data: {
+                    action: 'get_encrypted_entry',
+                    id: entryId,
+                    nonce: secureLoginAdmin.nonce
+                }
+            });
+
+            if (!response.success) {
+                throw new Error(response.data || 'Failed to get encrypted data');
+            }
+
+            return response.data;
+        }
+
+        /**
+         * Unwrap the private key using passkey authentication
+         */
+        async unwrapPrivateKey() {
+            // Get wrapped key from server
+            const wrappedResponse = await $.ajax({
+                url: ajaxurl,
+                method: 'POST',
+                data: {
+                    action: 'slc_get_wrapped_private_key',
+                    nonce: secureLoginAdmin.nonce
+                }
+            });
+
+            if (!wrappedResponse.success) {
+                throw new Error('Failed to get wrapped private key');
+            }
+
+            const wrappedKey = wrappedResponse.data.wrapped_key;
+
+            // Authenticate with passkey to get unwrapping key
+            const unwrappingKey = await this.authenticateWithPasskey();
+
+            // Unwrap the private key
+            this.unwrappedKey = await this.unwrapKey(wrappedKey, unwrappingKey);
+        }
+
+        /**
+         * Authenticate with passkey and derive unwrapping key
+         */
+        async authenticateWithPasskey() {
+            // Check WebAuthn support
+            if (!window.PublicKeyCredential) {
+                throw new Error('WebAuthn not supported. Please use a modern browser.');
+            }
+
+            // Get challenge from server
+            const challengeResponse = await $.ajax({
+                url: ajaxurl,
+                method: 'POST',
+                data: {
+                    action: 'passkey_get_challenge',
+                    nonce: secureLoginAdmin.nonce
+                }
+            });
+
+            if (!challengeResponse.success) {
+                throw new Error('Failed to get authentication challenge');
+            }
+
+            const challenge = this.base64ToArrayBuffer(challengeResponse.data.challenge);
+            const allowCredentials = challengeResponse.data.credentials.map(cred => ({
+                type: 'public-key',
+                id: this.base64ToArrayBuffer(cred.id)
+            }));
+
+            // Authenticate with passkey
             const assertion = await navigator.credentials.get({
                 publicKey: {
-                    challenge: challengeBuffer,
-                    allowCredentials: [{
-                        id: base64ToArrayBuffer(credentialId),
-                        type: 'public-key'
-                    }],
-                    userVerification: "required",
+                    challenge: challenge,
+                    allowCredentials: allowCredentials,
+                    userVerification: 'required',
                     timeout: 60000
                 }
             });
 
-            // Use signature for key derivation
+            // Derive key from passkey authentication
+            // Using the signature as key material (this is a simplified version)
             const signature = new Uint8Array(assertion.response.signature);
-            
-            // Derive key using HKDF with SHA-256
-            const keyMaterial = await window.crypto.subtle.importKey(
-                "raw",
-                signature,
-                { name: "HKDF" },
+            const keyMaterial = await crypto.subtle.importKey(
+                'raw',
+                signature.slice(0, 32), // Use first 32 bytes of signature
+                'HKDF',
                 false,
-                ["deriveKey"]
+                ['deriveKey']
             );
 
-            // Derive the actual AES key
-            const derivedKey = await window.crypto.subtle.deriveKey(
+            // Derive AES key for unwrapping
+            const unwrappingKey = await crypto.subtle.deriveKey(
                 {
-                    name: "HKDF",
-                    salt: encoder.encode(salt),
-                    info: encoder.encode("wcd-passkey-encryption"),
-                    hash: "SHA-256"
+                    name: 'HKDF',
+                    hash: 'SHA-256',
+                    salt: new TextEncoder().encode('SLC-UNWRAP'),
+                    info: new TextEncoder().encode('passkey-unwrap')
                 },
                 keyMaterial,
-                { name: "AES-GCM", length: 256 },
-                true,
-                ["encrypt", "decrypt"]
+                { name: 'AES-GCM', length: 256 },
+                false,
+                ['decrypt']
             );
 
-            return derivedKey;
-        } catch (error) {
-            console.error('Passkey key derivation failed:', error);
-            throw error;
+            return unwrappingKey;
         }
-    }
 
+        /**
+         * Unwrap the RSA private key
+         */
+        async unwrapKey(wrappedKey, unwrappingKey) {
+            const iv = this.base64ToArrayBuffer(wrappedKey.iv);
+            const tag = this.base64ToArrayBuffer(wrappedKey.tag);
+            const encrypted = this.base64ToArrayBuffer(wrappedKey.encrypted);
 
-    // AES-GCM decryption
-    async function decryptWithAES(encryptedData, key, iv) {
-        try {
-            const decrypted = await window.crypto.subtle.decrypt(
+            // Combine encrypted data and tag for AES-GCM
+            const ciphertext = new Uint8Array(encrypted.byteLength + tag.byteLength);
+            ciphertext.set(new Uint8Array(encrypted), 0);
+            ciphertext.set(new Uint8Array(tag), encrypted.byteLength);
+
+            // Decrypt the private key
+            const decrypted = await crypto.subtle.decrypt(
+                { name: 'AES-GCM', iv: iv },
+                unwrappingKey,
+                ciphertext
+            );
+
+            // Convert to PEM format string
+            const privateKeyPem = new TextDecoder().decode(decrypted);
+            
+            // Import as CryptoKey for use
+            return await this.importRSAPrivateKey(privateKeyPem);
+        }
+
+        /**
+         * Import RSA private key from PEM
+         */
+        async importRSAPrivateKey(pem) {
+            // Remove PEM headers and decode base64
+            const pemContents = pem
+                .replace('-----BEGIN PRIVATE KEY-----', '')
+                .replace('-----END PRIVATE KEY-----', '')
+                .replace('-----BEGIN RSA PRIVATE KEY-----', '')
+                .replace('-----END RSA PRIVATE KEY-----', '')
+                .replace(/\s/g, '');
+            
+            const binaryDer = this.base64ToArrayBuffer(pemContents);
+
+            return await crypto.subtle.importKey(
+                'pkcs8',
+                binaryDer,
                 {
-                    name: "AES-GCM",
-                    iv: iv
+                    name: 'RSA-OAEP',
+                    hash: 'SHA-256'
                 },
-                key,
+                false,
+                ['decrypt']
+            );
+        }
+
+        /**
+         * Decrypt the actual data
+         */
+        async decryptData(encryptedPackage) {
+            // First: RSA decrypt the AES key
+            const encryptedAesKey = this.base64ToArrayBuffer(encryptedPackage.encrypted_aes_key);
+            const aesKeyBuffer = await crypto.subtle.decrypt(
+                { name: 'RSA-OAEP' },
+                this.unwrappedKey,
+                encryptedAesKey
+            );
+
+            // Import AES key
+            const aesKey = await crypto.subtle.importKey(
+                'raw',
+                aesKeyBuffer,
+                { name: 'AES-GCM', length: 256 },
+                false,
+                ['decrypt']
+            );
+
+            // Decrypt data with AES
+            const iv = this.base64ToArrayBuffer(encryptedPackage.iv);
+            const encryptedData = this.base64ToArrayBuffer(encryptedPackage.encrypted_data);
+            
+            const decrypted = await crypto.subtle.decrypt(
+                { name: 'AES-GCM', iv: iv },
+                aesKey,
                 encryptedData
             );
 
-            const decoder = new TextDecoder();
-            return decoder.decode(decrypted);
-        } catch (error) {
-            console.error('AES decryption failed:', error);
-            throw error;
+            return JSON.parse(new TextDecoder().decode(decrypted));
         }
-    }
 
-    // Import AES key from raw format
-    async function importAESKey(keyData) {
-        return await window.crypto.subtle.importKey(
-            "raw",
-            keyData,
-            { name: "AES-GCM", length: 256 },
-            false,
-            ["decrypt"]
-        );
-    }
+        /**
+         * Display decrypted data
+         */
+        displayDecryptedData(entryId) {
+            const data = this.decryptedData.get(entryId);
+            if (!data) return;
 
-    // Base64 to ArrayBuffer conversion
-    function base64ToArrayBuffer(base64) {
-        const binaryString = atob(base64);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-        }
-        return bytes.buffer;
-    }
-
-    // Main decryption function for admin
-    window.decryptLoginData = async function(encryptedPackage, rsaDecryptedKey) {
-        try {
-            console.log('Starting admin decryption process...');
+            const $row = $(`tr[data-id="${entryId}"]`);
+            const $container = $row.find('.decrypted-data-container');
             
-            // Parse the encrypted package
-            const encryptedData = base64ToArrayBuffer(encryptedPackage.encryptedData);
-            const iv = base64ToArrayBuffer(encryptedPackage.iv);
-            const salt = encryptedPackage.salt;
-            const isProEncrypted = encryptedPackage.isProEncrypted;
-            const credentialId = encryptedPackage.credentialId;
-            
-            let aesKey;
-            
-            if (isProEncrypted && credentialId) {
-                console.log('Pro encrypted data detected - applying passkey-derived encryption layer');
-                
-                // For Pro version, we need to validate the passkey by:
-                // 1. Getting the RSA-decrypted AES key
-                const aesKeyBytes = base64ToArrayBuffer(rsaDecryptedKey);
-                
-                // 2. Derive kPasskey using the stored salt and passkey
-                const kPasskey = await derivePasskeyKey(credentialId, salt);
-                
-                // 3. Create a validation test by encrypting and decrypting with kPasskey
-                // This proves we have the correct passkey
-                const validationIV = window.crypto.getRandomValues(new Uint8Array(12));
-                
-                // Encrypt the AES key with kPasskey
-                const encryptedValidation = await window.crypto.subtle.encrypt(
-                    {
-                        name: "AES-GCM",
-                        iv: validationIV
-                    },
-                    kPasskey,
-                    aesKeyBytes
-                );
-                
-                // Immediately decrypt to validate
-                try {
-                    const decryptedValidation = await window.crypto.subtle.decrypt(
-                        {
-                            name: "AES-GCM",
-                            iv: validationIV
-                        },
-                        kPasskey,
-                        encryptedValidation
-                    );
-                    
-                    // If we get here, passkey is valid
-                    console.log('Passkey validation successful');
-                    aesKey = await importAESKey(decryptedValidation);
-                } catch (validationError) {
-                    console.error('Passkey validation failed:', validationError);
-                    throw new Error('Invalid passkey - cannot decrypt Pro encrypted data');
-                }
+            if ($container.length === 0) {
+                // Create container if doesn't exist
+                const html = `
+                    <tr class="decrypted-row" data-entry-id="${entryId}">
+                        <td colspan="7">
+                            <div class="decrypted-data-container">
+                                <div class="decrypted-header">
+                                    <strong>Decrypted Data</strong>
+                                    <span class="auto-clear-warning">Auto-clears in 60 seconds</span>
+                                </div>
+                                <div class="decrypted-content">
+                                    <div class="field-group">
+                                        <label>Username/Email:</label>
+                                        <div class="field-value">
+                                            <input type="text" readonly value="${this.escapeHtml(data.username_email || '')}" />
+                                            <button class="copy-btn" data-value="${this.escapeHtml(data.username_email || '')}">Copy</button>
+                                        </div>
+                                    </div>
+                                    <div class="field-group">
+                                        <label>Password:</label>
+                                        <div class="field-value">
+                                            <input type="password" class="password-field" readonly value="${this.escapeHtml(data.password || '')}" />
+                                            <button class="toggle-password-btn">Show</button>
+                                            <button class="copy-btn" data-value="${this.escapeHtml(data.password || '')}">Copy</button>
+                                        </div>
+                                    </div>
+                                    ${data.additional_notes ? `
+                                    <div class="field-group">
+                                        <label>Notes:</label>
+                                        <div class="field-value">
+                                            <textarea readonly>${this.escapeHtml(data.additional_notes)}</textarea>
+                                        </div>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                $row.after(html);
             } else {
-                console.log('Standard encrypted data - no passkey required');
-                // RSA-decrypted key is base64 encoded AES key
-                const aesKeyBytes = base64ToArrayBuffer(rsaDecryptedKey);
-                aesKey = await importAESKey(aesKeyBytes);
+                $container.parent().parent().toggle();
             }
-            
-            // Decrypt the actual login data with the AES key
-            const decryptedData = await decryptWithAES(encryptedData, aesKey, iv);
-            
-            return JSON.parse(decryptedData);
-            
-        } catch (error) {
-            console.error('Decryption error:', error);
-            throw error;
-        }
-    };
 
-    // Enhanced decrypt button handler
-    $(document).on('click', '.decrypt-btn-v2', async function() {
-        const button = $(this);
-        const id = button.data('id');
-        const decryptedRow = $('#decrypted-row-' + id);
-        
-        // Disable button during decryption
-        button.prop('disabled', true).html('<span class="dashicons dashicons-update" style="animation: spin 1s linear infinite;"></span>');
-        
-        try {
-            // First, get the encrypted package info to check if passkey is needed
-            const infoResponse = await $.ajax({
-                url: secureLoginAjax.ajaxurl,
-                type: 'POST',
-                data: {
-                    action: 'get_encryption_info',
-                    entry_id: id,
-                    nonce: secureLoginAjax.nonce
+            // Bind copy buttons
+            this.bindCopyButtons(entryId);
+            
+            // Reset auto-clear timer
+            this.resetAutoClear();
+        }
+
+        /**
+         * Bind copy and toggle buttons
+         */
+        bindCopyButtons(entryId) {
+            const $row = $(`.decrypted-row[data-entry-id="${entryId}"]`);
+            
+            $row.find('.copy-btn').off('click').on('click', async function() {
+                const value = $(this).data('value');
+                try {
+                    await navigator.clipboard.writeText(value);
+                    $(this).text('Copied!');
+                    setTimeout(() => $(this).text('Copy'), 2000);
+                } catch (err) {
+                    alert('Failed to copy');
                 }
             });
-            
-            if (!infoResponse.success) {
-                throw new Error(infoResponse.data || 'Failed to get encryption info');
-            }
-            
-            const encryptionInfo = infoResponse.data;
-            
-            // If Pro encrypted, note that passkey will be required during decryption
-            if (encryptionInfo.isProEncrypted && encryptionInfo.credentialId) {
-                button.html('<span class="dashicons dashicons-shield" title="Pro encrypted - passkey required"></span>');
-            }
-            
-            button.html('<span class="dashicons dashicons-update" style="animation: spin 1s linear infinite;"></span>');
-            
-            // Now request decryption from server
-            const response = await $.ajax({
-                url: secureLoginAjax.ajaxurl,
-                type: 'POST',
-                data: {
-                    action: 'decrypt_secure_login_data_v2',
-                    entry_id: id,
-                    nonce: secureLoginAjax.nonce
+
+            $row.find('.toggle-password-btn').off('click').on('click', function() {
+                const $field = $(this).siblings('.password-field');
+                if ($field.attr('type') === 'password') {
+                    $field.attr('type', 'text');
+                    $(this).text('Hide');
+                } else {
+                    $field.attr('type', 'password');
+                    $(this).text('Show');
                 }
             });
+        }
+
+        /**
+         * Auto-clear sensitive data after timeout
+         */
+        startAutoClear() {
+            this.clearTimer = setTimeout(() => {
+                this.clearAllDecryptedData();
+            }, this.autoClearTimeout);
+        }
+
+        resetAutoClear() {
+            clearTimeout(this.clearTimer);
+            this.startAutoClear();
+        }
+
+        clearAllDecryptedData() {
+            // Clear decrypted data from memory
+            this.decryptedData.clear();
+            this.unwrappedKey = null;
             
-            if (response.success) {
-                try {
-                    // Decrypt the data using the appropriate method
-                    const decryptedData = await window.decryptLoginData(
-                        response.data.encryptedPackage,
-                        response.data.rsaDecryptedKey
-                    );
-                    
-                    // Store the decrypted data for export functionality
-                    decryptedRow.data('decrypted-data', decryptedData);
-                    
-                    // Display decrypted data
-                    displayDecryptedData(decryptedRow, decryptedData, response.data.metadata);
-                    
-                    button.html('<span class="dashicons dashicons-yes"></span>').addClass('button-success');
-                } catch (decryptError) {
-                    console.error('Client-side decryption error:', decryptError);
-                    alert('Decryption failed: ' + decryptError.message);
-                    button.prop('disabled', false).html('<span class="dashicons dashicons-unlock"></span>');
-                }
-            } else {
-                alert('Decryption failed: ' + response.data);
-                button.prop('disabled', false).html('<span class="dashicons dashicons-unlock"></span>');
+            // Remove from UI
+            $('.decrypted-row').remove();
+            $('.decrypt-btn').prop('disabled', false).text('Decrypt').removeClass('success');
+            
+            console.log('Sensitive data cleared from memory');
+        }
+
+        /**
+         * Utility functions
+         */
+        base64ToArrayBuffer(base64) {
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
             }
-            
-        } catch (error) {
-            console.error('Decryption error:', error);
-            alert('Decryption failed: ' + error.message);
-            button.prop('disabled', false).text('Decrypt');
+            return bytes.buffer;
+        }
+
+        escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+    }
+
+    // Initialize when document ready
+    $(document).ready(() => {
+        if ($('.secure-login-admin-table').length > 0) {
+            window.secureAdminDecryption = new SecureAdminDecryption();
         }
     });
-    
-    // Display decrypted data
-    function displayDecryptedData(row, data, metadata) {
-        let html = '<div class="decrypted-content">';
-        
-        if (metadata && metadata.login_url) {
-            html += '<div class="field-group">';
-            html += '<label>Login URL:</label>';
-            html += '<div class="field-value">' + escapeHtml(metadata.login_url) + '</div>';
-            html += '<button type="button" class="button button-small copy-btn" data-copy="' + escapeHtml(metadata.login_url) + '">Copy</button>';
-            html += '</div>';
-        }
-        
-        if (data.username_email) {
-            html += '<div class="field-group">';
-            html += '<label>Username/Email:</label>';
-            html += '<div class="field-value">' + escapeHtml(data.username_email) + '</div>';
-            html += '<button type="button" class="button button-small copy-btn" data-copy="' + escapeHtml(data.username_email) + '">Copy</button>';
-            html += '</div>';
-        }
-        
-        if (data.password) {
-            html += '<div class="field-group">';
-            html += '<label>Password:</label>';
-            html += '<div class="field-value password-field" data-password="' + escapeHtml(data.password) + '">••••••••</div>';
-            html += '<button type="button" class="button button-small copy-btn" data-copy="' + escapeHtml(data.password) + '">Copy</button>';
-            html += '<button type="button" class="button button-small show-btn">Show</button>';
-            html += '</div>';
-        }
-        
-        if (data.additional_notes) {
-            html += '<div class="field-group">';
-            html += '<label>Additional Notes:</label>';
-            html += '<div class="field-value">' + escapeHtml(data.additional_notes).replace(/\n/g, '<br>') + '</div>';
-            html += '</div>';
-        }
-        
-        html += '</div>';
-        
-        row.find('.decrypted-json').html(html);
-        row.show();
-        
-        // Attach event handlers to the newly created buttons
-        attachDecryptedDataHandlers(row);
-    }
-    
-    // Attach event handlers to decrypted data buttons
-    function attachDecryptedDataHandlers(row) {
-        // Copy button handlers
-        row.find('.copy-btn').off('click').on('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            const textToCopy = $(this).attr('data-copy');
-            copyToClipboard(textToCopy);
-        });
-        
-        // Show/Hide password button handlers
-        row.find('.show-btn').off('click').on('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            const passwordField = $(this).siblings('.password-field');
-            const password = passwordField.attr('data-password');
-            
-            if (passwordField.text() === '••••••••') {
-                passwordField.text(password);
-                $(this).text('Hide');
-            } else {
-                passwordField.text('••••••••');
-                $(this).text('Show');
-            }
-        });
-    }
-    
-    // Utility function to escape HTML
-    function escapeHtml(text) {
-        const map = {
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#039;'
-        };
-        return text.replace(/[&<>"']/g, m => map[m]);
-    }
-
-    // Copy to clipboard function
-    function copyToClipboard(text) {
-        if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard.writeText(text).then(() => {
-                showNotification('Copied to clipboard!');
-            }).catch(() => {
-                fallbackCopyToClipboard(text);
-            });
-        } else {
-            fallbackCopyToClipboard(text);
-        }
-    }
-
-    function fallbackCopyToClipboard(text) {
-        const textArea = document.createElement('textarea');
-        textArea.value = text;
-        textArea.style.position = 'fixed';
-        textArea.style.opacity = '0';
-        document.body.appendChild(textArea);
-        textArea.select();
-        try {
-            document.execCommand('copy');
-            showNotification('Copied to clipboard!');
-        } catch (err) {
-            console.error('Failed to copy:', err);
-        }
-        document.body.removeChild(textArea);
-    }
-
-    function showNotification(message) {
-        const notification = document.createElement('div');
-        notification.className = 'copy-notification';
-        notification.textContent = message;
-        notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #28a745; color: white; padding: 10px 20px; border-radius: 4px; z-index: 9999;';
-        document.body.appendChild(notification);
-        setTimeout(() => {
-            notification.remove();
-        }, 2000);
-    }
 
 })(jQuery);

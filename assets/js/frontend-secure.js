@@ -119,7 +119,7 @@ jQuery(document).ready(function ($) {
             bytes.buffer,
             {
                 name: 'RSA-OAEP',
-                hash: 'SHA-1'
+                hash: 'SHA-256'
             },
             false,
             ['encrypt']

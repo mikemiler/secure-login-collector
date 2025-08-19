@@ -404,7 +404,8 @@ class Secure_Login_Database_Manager {
 		} elseif ( 'expires' === $orderby ) {
 			$order_clause = 'retention_until';
 		} else {
-			$order_clause = $orderby;
+			// Additional validation - only allow created_at as fallback
+			$order_clause = 'created_at';
 		}
 
 		// Validate order parameter.

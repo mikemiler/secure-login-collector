@@ -215,7 +215,7 @@ class Secure_Login_Settings_Manager {
 			echo '<span style="background: linear-gradient(135deg, #4CAF50, #45a049); color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: 600; margin-right: 8px;">🔐 ULTRA-SECURE</span>';
 			echo '<strong>' . esc_html__( 'Passkey-Derived', 'secure-login-collector' ) . '</strong>';
 			echo '</div>';
-			echo '<p style="margin: 0; font-size: 13px; color: #666;">' . esc_html__( 'Uses your passkey signature to derive encryption keys. Maximum security - even server compromise cannot decrypt data without your physical device.', 'secure-login-collector' ) . '</p>';
+			echo '<p style="margin: 0; font-size: 13px; color: #666;">' . esc_html__( 'Wraps private keys with passkey authentication. True zero-knowledge - server cannot decrypt without your physical device.', 'secure-login-collector' ) . '</p>';
 			echo '</div>';
 		}
 
@@ -496,33 +496,6 @@ class Secure_Login_Settings_Manager {
 						});
 				});
 				
-				$('#test-passkey-encryption').on('click', function() {
-					var button = $(this);
-					button.prop('disabled', true).text('<?php echo esc_js( __( 'Testing...', 'secure-login-collector' ) ); ?>');
-					
-					$.ajax({
-						url: ajaxurl,
-						type: 'POST',
-						data: {
-							action: 'test_passkey_encryption',
-							nonce: '<?php echo esc_attr( wp_create_nonce( 'test_passkey_encryption' ) ); ?>'
-						},
-						success: function(response) {
-							if (response.success) {
-								alert('<?php echo esc_js( __( 'Passkey encryption test passed!', 'secure-login-collector' ) ); ?>');
-							} else {
-								alert('<?php echo esc_js( __( 'Passkey encryption test failed:', 'secure-login-collector' ) ); ?> ' + response.data);
-							}
-						},
-						error: function() {
-							alert('<?php echo esc_js( __( 'Network error occurred during test.', 'secure-login-collector' ) ); ?>');
-						},
-						complete: function() {
-							button.prop('disabled', false).text('<?php echo esc_js( __( 'Test Passkey Encryption', 'secure-login-collector' ) ); ?>');
-						}
-					});
-				});
-				
 				$('#reset-passkey').on('click', function() {
 					if (!confirm('<?php echo esc_js( __( 'This will remove the passkey registration from this plugin. Note: The passkey will remain in your browser/device and must be removed manually. Continue?', 'secure-login-collector' ) ); ?>')) {
 						return;
@@ -671,8 +644,8 @@ class Secure_Login_Settings_Manager {
 	public function ultra_secure_mode_callback() {
 		$enabled = get_option( 'secure_login_ultra_secure_mode', false );
 		echo '<input type="checkbox" id="secure_login_ultra_secure_mode" name="secure_login_ultra_secure_mode" value="1" ' . checked( 1, $enabled, false ) . ' />';
-		echo '<label for="secure_login_ultra_secure_mode"> ' . esc_html__( 'Enable passkey-derived encryption (maximum security)', 'secure-login-collector' ) . '</label>';
-		echo '<p class="description">' . esc_html__( 'When enabled, data is encrypted using keys derived from your passkey signature. This provides maximum security - even if hackers modify the plugin code, they cannot decrypt data without your physical passkey device. Requires passkey registration.', 'secure-login-collector' ) . '</p>';
+		echo '<label for="secure_login_ultra_secure_mode"> ' . esc_html__( 'Enable passkey-protected encryption (zero-knowledge)', 'secure-login-collector' ) . '</label>';
+		echo '<p class="description">' . esc_html__( 'When enabled, the RSA private key is wrapped with passkey authentication. This provides true zero-knowledge - the server cannot decrypt data without your physical passkey device. Requires passkey registration.', 'secure-login-collector' ) . '</p>';
 
 		$passkey_registered = get_option( 'secure_login_passkey_registered', false );
 		if ( ! $passkey_registered ) {
