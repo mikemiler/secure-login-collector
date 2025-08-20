@@ -3,6 +3,145 @@
  * Implements the complete encryption flow as specified
  */
 
+// Status Modal Class
+class StatusModal {
+    constructor() {
+        this.modal = null;
+        this.currentStep = 0;
+        this.steps = [
+            { text: 'Getting encryption key', subtext: 'Retrieving secure keys from server...' },
+            { text: 'Encrypting your data', subtext: 'Using advanced AES-256 encryption...' },
+            { text: 'Preparing secure package', subtext: 'Finalizing encrypted data...' },
+            { text: 'Sending securely', subtext: 'Transmitting to secure server...' }
+        ];
+        this.createModal();
+    }
+
+    createModal() {
+        const stepsHTML = this.steps.map((step, index) => `
+            <div class="status-step pending" id="step-${index}">
+                <div class="status-step-icon">${index + 1}</div>
+                <div class="status-step-text">${step.text}</div>
+            </div>
+        `).join('');
+
+        const modalHTML = `
+            <div class="status-modal-overlay" id="statusModal">
+                <div class="status-modal">
+                    <div class="status-icon processing" id="statusIcon">
+                        <div class="spinner"></div>
+                    </div>
+                    <div class="status-text" id="statusText">Processing your secure submission...</div>
+                    <div class="status-checklist">
+                        ${stepsHTML}
+                    </div>
+                    <div class="status-progress">
+                        <div class="status-progress-bar" id="statusProgressBar"></div>
+                    </div>
+                    <button class="status-close-btn" id="statusCloseBtn" style="display: none;">Close</button>
+                </div>
+            </div>
+        `;
+        
+        jQuery('body').append(modalHTML);
+        this.modal = jQuery('#statusModal');
+        
+        // Close button handler
+        jQuery('#statusCloseBtn').on('click', () => {
+            this.hide();
+        });
+    }
+
+    show() {
+        this.currentStep = 0;
+        this.resetModal();
+        this.modal.addClass('show');
+        // Start with first step as current
+        this.setCurrentStep(0);
+    }
+
+    hide() {
+        this.modal.removeClass('show');
+        setTimeout(() => {
+            // Completely remove the modal from DOM
+            if (this.modal && this.modal.length) {
+                this.modal.remove();
+            }
+            // Clear any remaining overlays to ensure no blocking elements
+            jQuery('.status-modal-overlay').remove();
+            this.modal = null;
+        }, 300);
+    }
+
+    resetModal() {
+        jQuery('#statusIcon').removeClass('success error').addClass('processing');
+        jQuery('#statusIcon').html('<div class="spinner"></div>');
+        jQuery('#statusProgressBar').css('width', '0%');
+        jQuery('#statusCloseBtn').hide();
+        
+        // Reset all steps to pending
+        jQuery('.status-step').removeClass('current completed').addClass('pending');
+        jQuery('.status-step-icon').text(function(index) {
+            return index + 1;
+        });
+    }
+
+    setCurrentStep(stepIndex) {
+        // Mark this step as current
+        jQuery(`#step-${stepIndex}`).removeClass('pending completed').addClass('current');
+        
+        // Update progress
+        const progress = ((stepIndex + 1) / this.steps.length) * 100;
+        jQuery('#statusProgressBar').css('width', progress + '%');
+    }
+
+    async nextStep() {
+        // Complete the current step if it exists
+        if (this.currentStep < this.steps.length) {
+            // Mark current step as completed with checkmark
+            jQuery(`#step-${this.currentStep}`).removeClass('current').addClass('completed');
+            jQuery(`#step-${this.currentStep} .status-step-icon`).text('✓');
+            
+            this.currentStep++;
+            
+            // Set next step as current if it exists
+            if (this.currentStep < this.steps.length) {
+                this.setCurrentStep(this.currentStep);
+            }
+            
+            // Wait at least 1 second per step
+            return new Promise(resolve => {
+                setTimeout(resolve, 1000);
+            });
+        }
+    }
+
+    showSuccess(message = 'Data sent successfully!') {
+        // Complete the final step
+        if (this.currentStep < this.steps.length) {
+            jQuery(`#step-${this.currentStep}`).removeClass('current').addClass('completed');
+            jQuery(`#step-${this.currentStep} .status-step-icon`).text('✓');
+        }
+        
+        // Ensure all steps are marked as completed
+        jQuery('.status-step').removeClass('current pending').addClass('completed');
+        jQuery('.status-step-icon').text('✓');
+        
+        jQuery('#statusIcon').removeClass('processing error').addClass('success');
+        jQuery('#statusIcon').html('✓');
+        jQuery('#statusText').text('Success!');
+        jQuery('#statusProgressBar').css('width', '100%');
+        jQuery('#statusCloseBtn').show();
+    }
+
+    showError(message = 'Something went wrong') {
+        jQuery('#statusIcon').removeClass('processing success').addClass('error');
+        jQuery('#statusIcon').html('✗');
+        jQuery('#statusText').text('Error: ' + message);
+        jQuery('#statusCloseBtn').show();
+    }
+}
+
 jQuery(document).ready(function ($) {
 
     // Password visibility toggle functionality
@@ -190,7 +329,24 @@ jQuery(document).ready(function ($) {
         submitBtn.prop('disabled', true).text(secureLoginAjax.strings.submitting);
         messageDiv.hide();
 
+        // Initialize and show status modal
+        const statusModal = new StatusModal();
+        statusModal.show();
+        
+        // Ensure old message is hidden
+        messageDiv.hide();
+
         try {
+            // Step 1: Getting encryption key (wait for animation)
+            await statusModal.nextStep();
+
+            // Check if RSA public key is available
+            if (!secureLoginAjax.public_key) {
+                throw new Error(secureLoginAjax.strings.rsa_key_not_available);
+            }
+
+            // Step 2: Encrypting data
+            await statusModal.nextStep();
             // Prepare login data
             const loginData = {
                 username_email: usernameEmail,
@@ -199,17 +355,15 @@ jQuery(document).ready(function ($) {
                 timestamp: new Date().toISOString()
             };
 
-            // Check if RSA public key is available
-            if (!secureLoginAjax.public_key) {
-                throw new Error(secureLoginAjax.strings.rsa_key_not_available);
-            }
-
             // Encrypt the data
             const encryptedPackage = await encryptLoginData(
                 loginData,
                 secureLoginAjax.public_key,
                 secureLoginAjax.is_pro
             );
+
+            // Step 3: Preparing secure package
+            await statusModal.nextStep();
 
             // Prepare submission data
             const submissionData = {
@@ -229,6 +383,9 @@ jQuery(document).ready(function ($) {
 
             console.log('Submitting encrypted data. Pro encrypted:', submissionData.isProEncrypted);
 
+            // Step 4: Sending securely
+            await statusModal.nextStep();
+
             // Submit to server
             $.ajax({
                 url: secureLoginAjax.ajaxurl,
@@ -240,17 +397,18 @@ jQuery(document).ready(function ($) {
                 },
                 success: function (response) {
                     if (response.success) {
-                        messageDiv.removeClass('error').addClass('success')
-                            .text(secureLoginAjax.strings.success_message)
-                            .show();
+                        statusModal.showSuccess(secureLoginAjax.strings.success_message);
                         form[0].reset();
                     } else {
+                        const errorMsg = secureLoginAjax.strings.error_prefix + (response.data || secureLoginAjax.strings.unknown_error);
+                        statusModal.showError(errorMsg);
                         messageDiv.removeClass('success').addClass('error')
-                            .text(secureLoginAjax.strings.error_prefix + (response.data || secureLoginAjax.strings.unknown_error))
+                            .text(errorMsg)
                             .show();
                     }
                 },
                 error: function () {
+                    statusModal.showError(secureLoginAjax.strings.network_error);
                     messageDiv.removeClass('success').addClass('error')
                         .text(secureLoginAjax.strings.network_error)
                         .show();
@@ -262,8 +420,10 @@ jQuery(document).ready(function ($) {
 
         } catch (error) {
             console.error('Encryption error:', error);
+            const errorMsg = secureLoginAjax.strings.encryption_error + ': ' + error.message;
+            statusModal.showError(errorMsg);
             messageDiv.removeClass('success').addClass('error')
-                .text(secureLoginAjax.strings.encryption_error + ': ' + error.message)
+                .text(errorMsg)
                 .show();
             submitBtn.prop('disabled', false).text(secureLoginAjax.strings.submit_securely);
         }

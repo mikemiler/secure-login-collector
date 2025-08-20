@@ -133,3 +133,194 @@
     color: #721c24;
     border: 1px solid #f5c6cb;
 }
+
+/* Status Modal Styles */
+.status-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.status-modal-overlay.show {
+    opacity: 1;
+}
+
+.status-modal {
+    background: #fff;
+    border-radius: 12px;
+    padding: 40px 30px;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    transform: scale(0.8);
+    transition: transform 0.3s ease;
+}
+
+.status-modal-overlay.show .status-modal {
+    transform: scale(1);
+}
+
+.status-icon {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    color: #fff;
+    position: relative;
+}
+
+.status-icon.processing {
+    background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+    animation: pulse 2s infinite;
+}
+
+.status-icon.success {
+    background: linear-gradient(45deg, #56ab2f 0%, #a8e6cf 100%);
+}
+
+.status-icon.error {
+    background: linear-gradient(45deg, #ff416c 0%, #ff4b2b 100%);
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.spinner {
+    width: 30px;
+    height: 30px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.status-text {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.status-checklist {
+    text-align: left;
+    margin-bottom: 20px;
+}
+
+.status-step {
+    display: flex;
+    align-items: center;
+    padding: 12px 0;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.status-step-icon {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #ddd;
+    border-radius: 50%;
+    margin-right: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.status-step.pending .status-step-icon {
+    border-color: #ddd;
+    color: #ddd;
+}
+
+.status-step.current .status-step-icon {
+    border-color: #667eea;
+    background: #667eea;
+    color: white;
+    animation: pulse-icon 2s infinite;
+}
+
+.status-step.completed .status-step-icon {
+    border-color: #56ab2f;
+    background: #56ab2f;
+    color: white;
+}
+
+.status-step-text {
+    color: #666;
+    transition: color 0.3s ease;
+}
+
+.status-step.current .status-step-text {
+    color: #333;
+    font-weight: 600;
+}
+
+.status-step.completed .status-step-text {
+    color: #56ab2f;
+    font-weight: 500;
+}
+
+@keyframes pulse-icon {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.status-progress {
+    width: 100%;
+    height: 4px;
+    background: #e0e0e0;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.status-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    border-radius: 2px;
+    width: 0%;
+    transition: width 1s ease;
+}
+
+.status-close-btn {
+    background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 25px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 10px;
+}
+
+.status-close-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
