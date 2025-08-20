@@ -51,24 +51,46 @@ class Secure_Login_Encryption_Handler {
 	public function initialize_keys_with_passkey( $passkey_derived_key ) {
 		// Check if keys already exist
 		$public_key = get_option( 'secure_login_public_key' );
-		if ( $public_key ) {
-			// Keys exist - check if already wrapped
-			$wrapped_key = get_option( 'secure_login_wrapped_private_key' );
-			if ( $wrapped_key ) {
+		$wrapped_key = get_option( 'secure_login_wrapped_private_key' );
+		
+		// If we have both public and wrapped keys, system is already initialized
+		if ( $public_key && $wrapped_key ) {
+			// Check if this is a valid wrapped key structure
+			// The wrapped key is stored as an array, not JSON
+			$wrapped_data = $wrapped_key;
+			// Check for 'encrypted' key (correct) not 'encrypted_key' (wrong)
+			if ( is_array( $wrapped_data ) && isset( $wrapped_data['encrypted'] ) ) {
 				return array( 'status' => 'already_initialized' );
 			}
-
-			// Wrap existing private key
+			// Invalid wrapped key, clear it and continue
+			delete_option( 'secure_login_wrapped_private_key' );
+		}
+		
+		if ( $public_key ) {
+			// We have a public key but no valid wrapped private key
+			// Try to migrate from old encrypted format
 			$encrypted_private = get_option( 'secure_login_private_key_encrypted' );
 			if ( $encrypted_private ) {
 				// Decrypt with old method first
 				$private_key = $this->decrypt_private_key_legacy( $encrypted_private );
 				if ( ! $private_key ) {
-					return new WP_Error( 'decrypt_failed', 'Failed to decrypt existing private key' );
+					// Can't decrypt old key - need to regenerate
+					delete_option( 'secure_login_public_key' );
+					delete_option( 'secure_login_private_key_encrypted' );
+					// Fall through to generate new keys
+				} else {
+					// Successfully decrypted - wrap with passkey
+					$wrap_result = $this->wrap_private_key( $private_key, $passkey_derived_key );
+					if ( ! is_wp_error( $wrap_result ) ) {
+						// Migration successful
+						return array( 'status' => 'migrated', 'message' => 'Existing keys migrated to passkey encryption' );
+					}
+					// Wrapping failed, fall through to generate new keys
 				}
-
-				// Wrap with passkey-derived key
-				return $this->wrap_private_key( $private_key, $passkey_derived_key );
+			} else {
+				// Have public key but no private key at all - inconsistent state
+				// Clear and regenerate
+				delete_option( 'secure_login_public_key' );
 			}
 		}
 
@@ -279,8 +301,10 @@ class Secure_Login_Encryption_Handler {
 			return;
 		}
 
-		// Verify nonce
-		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) ), 'slc_admin_nonce' ) ) {
+		// Verify nonce - accept both admin nonces
+		$nonce = sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) );
+		if ( ! wp_verify_nonce( $nonce, 'secure_login_admin_nonce' ) && 
+		     ! wp_verify_nonce( $nonce, 'slc_admin_nonce' ) ) {
 			wp_send_json_error( 'Invalid security token' );
 			return;
 		}
@@ -422,43 +446,12 @@ class Secure_Login_Encryption_Handler {
 
 	/**
 	 * Handle RSA key generation from settings page.
-	 * This generates keys but stores them with WordPress salt encryption temporarily.
-	 * Full security requires passkey setup.
+	 * DEPRECATED: This old method is no longer used.
+	 * Keys should be generated through passkey registration only.
 	 */
 	public function handle_generate_rsa_keys() {
-		// Check permissions
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( 'Insufficient permissions' );
-			return;
-		}
-
-		// Verify nonce
-		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) ), 'generate_rsa_keys' ) ) {
-			wp_send_json_error( 'Invalid security token' );
-			return;
-		}
-
-		// Generate RSA keypair
-		$keypair = $this->generate_rsa_keypair();
-		
-		if ( is_wp_error( $keypair ) ) {
-			wp_send_json_error( $keypair->get_error_message() );
-			return;
-		}
-
-		// Store public key
-		update_option( 'secure_login_public_key', $keypair['public'] );
-		
-		// Store private key with temporary encryption (WordPress salts)
-		$this->store_private_key_temporary( $keypair['private'] );
-		
-		// Mark keys as generated
-		update_option( 'secure_login_keys_generated', current_time( 'mysql' ) );
-
-		wp_send_json_success( array(
-			'message' => __( 'RSA keys generated successfully. Please set up a passkey for full security.', 'secure-login-collector' ),
-			'public_key' => $keypair['public'],
-			'warning' => __( 'Keys are temporarily encrypted. Register a passkey to enable full protection.', 'secure-login-collector' ),
-		) );
+		wp_send_json_error( 
+			__( 'Direct key generation is deprecated. Please register a passkey to initialize encryption keys. Visit the Passkeys Management page.', 'secure-login-collector' ) 
+		);
 	}
 }

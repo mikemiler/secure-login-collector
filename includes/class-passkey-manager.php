@@ -64,7 +64,15 @@ class Passkey_Manager {
 	 * Enqueue admin scripts for passkey management.
 	 */
 	public function enqueue_admin_scripts( $hook ) {
-		if ( 'secure-login-collector_page_secure-login-passkeys' !== $hook ) {
+		// Check both possible hook formats
+		if ( 'secure-login-collector_page_secure-login-passkeys' !== $hook && 
+		     'toplevel_page_secure-login-collector' !== $hook &&
+		     strpos( $hook, 'secure-login-passkeys' ) === false ) {
+			return;
+		}
+		
+		// Only load on the passkeys page
+		if ( ! isset( $_GET['page'] ) || $_GET['page'] !== 'secure-login-passkeys' ) {
 			return;
 		}
 
@@ -282,39 +290,51 @@ class Passkey_Manager {
 		$public_key     = wp_unslash( $_POST['public_key'] ?? '' );
 		$client_data    = wp_unslash( $_POST['client_data'] ?? '' );
 
-		if ( empty( $name ) || empty( $credential_id ) || empty( $public_key ) ) {
-			wp_send_json_error( 'Missing registration data' );
+		if ( empty( $name ) || empty( $credential_id ) ) {
+			wp_send_json_error( 'Missing required registration data (name or credential_id)' );
+		}
+		
+		// Public key might not be available in all browsers
+		if ( empty( $public_key ) || $public_key === 'not_available' ) {
+			// Use a placeholder - the actual public key is in the attestation object
+			// For our purposes, we mainly need the credential_id for identification
+			$public_key = 'stored_in_attestation';
 		}
 
 		// Verify challenge
 		$expected_challenge = get_transient( 'passkey_reg_challenge_' . get_current_user_id() );
 		if ( ! $expected_challenge ) {
-			wp_send_json_error( 'Registration challenge expired' );
+			wp_send_json_error( 'Registration challenge expired or not set. Please try again.' );
 		}
 
 		$client_data_array = json_decode( base64_decode( $client_data ), true );
-		if ( $client_data_array['challenge'] !== $expected_challenge ) {
-			wp_send_json_error( 'Challenge mismatch' );
+		if ( ! $client_data_array ) {
+			wp_send_json_error( 'Invalid client data format' );
+		}
+		
+		// Convert base64url to base64 for comparison (WebAuthn uses base64url)
+		$received_challenge = $client_data_array['challenge'] ?? '';
+		$received_challenge = str_replace( array( '-', '_' ), array( '+', '/' ), $received_challenge );
+		
+		// Also convert our challenge to base64url for comparison
+		$expected_challenge_url = str_replace( array( '+', '/', '=' ), array( '-', '_', '' ), $expected_challenge );
+		
+		if ( $received_challenge !== $expected_challenge && $received_challenge !== $expected_challenge_url ) {
+			wp_send_json_error( 'Challenge verification failed' );
 		}
 
 		$user_id = get_current_user_id();
 		
-		// Check if this is the first passkey (need to create MWK and RSA keys)
-		$is_first_passkey = ! $this->master_key_manager->user_has_mwk( $user_id );
+		// Check if we have existing passkeys (not MWK, as that's created in init_setup)
+		$existing_passkeys = $this->get_user_passkeys( $user_id );
+		$is_first_passkey = empty( $existing_passkeys );
 		
-		if ( $is_first_passkey ) {
-			// First passkey - initialize the entire system
-			// This should be done via handle_init_setup first
-			wp_send_json_error( 'Please initialize setup first' );
-			return;
-		}
-		
-		// Get the existing MWK (wrapped by an existing passkey)
-		// This requires authentication with an existing passkey
+		// For additional passkeys, we need the MWK passed from the client
+		// (after authenticating with an existing passkey)
 		$wrapped_mwk = isset( $_POST['wrapped_mwk'] ) ? 
 		               wp_unslash( $_POST['wrapped_mwk'] ) : '';
 		               
-		if ( empty( $wrapped_mwk ) && ! $is_first_passkey ) {
+		if ( ! $is_first_passkey && empty( $wrapped_mwk ) ) {
 			wp_send_json_error( 'MWK required for additional passkeys' );
 			return;
 		}
@@ -394,7 +414,25 @@ class Passkey_Manager {
 		// Also delete the wrapped MWK for this passkey
 		$this->master_key_manager->delete_wrapped_mwk( $user_id, $credential_id );
 
-		wp_send_json_success( 'Passkey deleted' );
+		// If this was the last passkey, delete the pro keys
+		if ( empty( $passkeys ) ) {
+			if ( ! class_exists( 'Secure_Login_Encryption_Handler_V2' ) ) {
+				require_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-encryption-handler-v2.php';
+			}
+			$encryption_handler = new Secure_Login_Encryption_Handler_V2();
+			$encryption_handler->delete_pro_keys();
+			
+			wp_send_json_success( array(
+				'message' => 'Last passkey deleted, pro keys removed',
+				'last_passkey' => true
+			) );
+			return;
+		}
+
+		wp_send_json_success( array(
+			'message' => 'Passkey deleted',
+			'last_passkey' => false
+		) );
 	}
 
 	/**
@@ -445,9 +483,18 @@ class Passkey_Manager {
 
 		$user_id = get_current_user_id();
 		
-		// Check if already initialized
+		// Check if passkeys already exist (not just MWK)
+		$existing_passkeys = $this->get_user_passkeys( $user_id );
+		if ( ! empty( $existing_passkeys ) ) {
+			wp_send_json_error( 'Passkeys already registered. Use additional passkey flow.' );
+		}
+		
+		// Check if MWK already exists
 		if ( $this->master_key_manager->user_has_mwk( $user_id ) ) {
-			wp_send_json_error( 'Already initialized' );
+			// MWK exists but no passkeys - this is an inconsistent state
+			// Could happen if previous registration failed
+			// For now, we'll continue with the setup
+			error_log( 'Warning: MWK exists but no passkeys registered for user ' . $user_id );
 		}
 
 		// Get passkey credential data from first registration
@@ -456,26 +503,44 @@ class Passkey_Manager {
 			wp_send_json_error( 'Missing credential ID' );
 		}
 
-		// Step 1: Initialize encryption handler
-		if ( ! class_exists( 'Secure_Login_Encryption_Handler' ) ) {
-			require_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-encryption-handler.php';
+		// Step 1: Initialize encryption handler V2 for dual-key system
+		if ( ! class_exists( 'Secure_Login_Encryption_Handler_V2' ) ) {
+			require_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-encryption-handler-v2.php';
 		}
-		$encryption_handler = new Secure_Login_Encryption_Handler();
+		$encryption_handler = new Secure_Login_Encryption_Handler_V2();
 		
-		// Step 2: Derive key from passkey for wrapping
+		// Step 2: Ensure free keys exist first
+		$free_result = $encryption_handler->initialize_free_keys();
+		if ( is_wp_error( $free_result ) ) {
+			wp_send_json_error( 'Failed to initialize free keys: ' . $free_result->get_error_message() );
+		}
+		
+		// Step 3: Derive key from passkey for wrapping
 		$passkey_derived_key = $this->derive_wrapping_key( $credential_id, $user_id );
 		
-		// Step 3: Initialize keys with passkey wrapping
-		$result = $encryption_handler->initialize_keys_with_passkey( $passkey_derived_key );
+		// Step 4: Initialize PRO keys with passkey wrapping
+		$pro_result = $encryption_handler->initialize_pro_keys( $passkey_derived_key );
 		
-		if ( is_wp_error( $result ) ) {
-			wp_send_json_error( $result->get_error_message() );
+		if ( is_wp_error( $pro_result ) ) {
+			wp_send_json_error( 'Failed to initialize pro keys: ' . $pro_result->get_error_message() );
+		}
+		
+		// Check if keys were already initialized
+		if ( is_array( $pro_result ) && isset( $pro_result['status'] ) && $pro_result['status'] === 'already_initialized' ) {
+			// Pro keys are already wrapped - this means we already have a working setup
+			// This shouldn't happen if we checked for existing passkeys correctly
+			// But we'll handle it gracefully
+			wp_send_json_success( array( 
+				'status' => 'already_initialized',
+				'message' => 'Pro encryption keys already initialized. Registration can continue.'
+			) );
+			return;
 		}
 
-		// Step 4: Generate Master Wrapping Key for additional passkeys
+		// Step 5: Generate Master Wrapping Key for additional passkeys
 		$mwk = $this->master_key_manager->generate_master_key();
 
-		// Step 5: Wrap MWK with passkey-derived key for future passkeys
+		// Step 6: Wrap MWK with passkey-derived key for future passkeys
 		$wrapped_mwk = $this->master_key_manager->wrap_mwk_with_passkey(
 			$mwk,
 			$passkey_derived_key
@@ -493,13 +558,14 @@ class Passkey_Manager {
 		// Clear the MWK from memory (keep only wrapped versions)
 		unset( $mwk );
 		
-		// Get the public key for response
-		$public_key = get_option( 'secure_login_public_key' );
+		// Get the pro public key for response
+		$public_key_pro = get_option( 'secure_login_public_key_pro' );
 
 		wp_send_json_success( array(
-			'message' => 'Passkey-wrapped encryption initialized successfully',
-			'public_key' => $public_key,
-			'status' => $result
+			'message' => 'Passkey-wrapped PRO encryption initialized successfully',
+			'public_key' => $public_key_pro,
+			'free_status' => $free_result,
+			'pro_status' => $pro_result
 		) );
 	}
 

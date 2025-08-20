@@ -249,46 +249,25 @@ class Secure_Login_Settings_Manager {
 			echo '</p></div>';
 		}
 
-		// Key management buttons.
+		// Key management info - replaced old button with proper guidance
+		echo '<div class="notice notice-info inline">';
+		echo '<p><strong>' . esc_html__( 'Key Management:', 'secure-login-collector' ) . '</strong></p>';
+		echo '<p>' . esc_html__( 'RSA keys are automatically generated when you register your first passkey.', 'secure-login-collector' ) . '</p>';
+		echo '<p>' . sprintf( 
+			esc_html__( 'To manage keys and passkeys, visit the %s page.', 'secure-login-collector' ),
+			'<a href="' . esc_url( admin_url( 'admin.php?page=secure-login-passkeys' ) ) . '">' . esc_html__( 'Passkeys Management', 'secure-login-collector' ) . '</a>'
+		) . '</p>';
+		echo '</div>';
+		
+		// Export button only
 		echo '<p>';
-		echo '<button type="button" class="button button-secondary" id="generate-rsa-keys">' . esc_html__( 'Generate New RSA Keys', 'secure-login-collector' ) . '</button> ';
 		echo '<button type="button" class="button button-secondary" id="export-public-key">' . esc_html__( 'Export Public Key', 'secure-login-collector' ) . '</button>';
 		echo '</p>';
 
-		// Add JavaScript for key management.
+		// Add JavaScript for export only
 		?>
 		<script>
 		jQuery(document).ready(function($) {
-			$('#generate-rsa-keys').on('click', function() {
-				if (!confirm('<?php echo esc_js( __( 'This will generate new RSA keys and invalidate all existing encrypted data. Continue?', 'secure-login-collector' ) ); ?>')) {
-					return;
-				}
-				
-				var button = $(this);
-				button.prop('disabled', true).text('<?php echo esc_js( __( 'Generating...', 'secure-login-collector' ) ); ?>');
-				
-				$.ajax({
-					url: ajaxurl,
-					type: 'POST',
-					data: {
-						action: 'generate_rsa_keys',
-						nonce: '<?php echo esc_attr( wp_create_nonce( 'generate_rsa_keys' ) ); ?>'
-					},
-					success: function(response) {
-						if (response.success) {
-							alert('<?php echo esc_js( __( 'RSA keys generated successfully!', 'secure-login-collector' ) ); ?>');
-							location.reload();
-						} else {
-							alert('<?php echo esc_js( __( 'Failed to generate keys:', 'secure-login-collector' ) ); ?> ' + response.data);
-						}
-						button.prop('disabled', false).text('<?php echo esc_js( __( 'Generate New RSA Keys', 'secure-login-collector' ) ); ?>');
-					},
-					error: function() {
-						alert('<?php echo esc_js( __( 'Network error occurred.', 'secure-login-collector' ) ); ?>');
-						button.prop('disabled', false).text('<?php echo esc_js( __( 'Generate New RSA Keys', 'secure-login-collector' ) ); ?>');
-					}
-				});
-			});
 			
 			$('#export-public-key').on('click', function() {
 				$.ajax({
@@ -325,212 +304,15 @@ class Secure_Login_Settings_Manager {
 	public function pro_section_callback() {
 		echo '<p>' . esc_html__( 'Advanced security settings for the pro version including passkey authentication.', 'secure-login-collector' ) . '</p>';
 
-		// Display passkey status if pro version.
+		// Display link to passkey management page
 		if ( $this->is_pro_version ) {
-			$passkey_registered    = get_option( 'secure_login_passkey_registered', false );
-			$passkey_user_id       = get_option( 'secure_login_passkey_user_id', 0 );
-			$passkey_registered_at = get_option( 'secure_login_passkey_registered_at', '' );
-
-			if ( $passkey_registered ) {
-				echo '<div class="notice notice-success inline"><p>';
-				echo '<strong>' . esc_html__( 'Passkey Status:', 'secure-login-collector' ) . '</strong> ';
-				echo esc_html__( 'Registered', 'secure-login-collector' ) . ' ';
-				if ( $passkey_registered_at ) {
-					echo '<em>(' . esc_html__( 'Registered:', 'secure-login-collector' ) . ' ' . esc_html( $passkey_registered_at ) . ')</em>';
-				}
-				echo '</p></div>';
-
-				echo '<p>';
-				echo '<button type="button" class="button button-secondary" id="test-passkey-encryption">' . esc_html__( 'Test Passkey Encryption', 'secure-login-collector' ) . '</button> ';
-				echo '<button type="button" class="button button-secondary" id="reset-passkey">' . esc_html__( 'Reset Passkey', 'secure-login-collector' ) . '</button>';
-				echo '</p>';
-				
-				echo '<p class="description">';
-				echo esc_html__( 'Note: Resetting only removes the passkey from this plugin. The passkey will remain in your browser/device.', 'secure-login-collector' ) . ' ';
-				echo '<a href="' . esc_url( plugin_dir_url( dirname( __FILE__ ) ) . 'passkey-removal-guide.html' ) . '" target="_blank">' . esc_html__( 'View manual removal guide', 'secure-login-collector' ) . '</a>';
-				echo '</p>';
-			} else {
-				echo '<div class="notice notice-warning inline"><p>';
-				echo '<strong>' . esc_html__( 'Passkey Status:', 'secure-login-collector' ) . '</strong> ';
-				echo esc_html__( 'Not registered', 'secure-login-collector' );
-				echo '</p></div>';
-
-				echo '<p>';
-				echo '<button type="button" class="button button-primary" id="register-passkey">' . esc_html__( 'Register Passkey', 'secure-login-collector' ) . '</button>';
-				echo '</p>';
-				
-				// Show additional help if old credential exists
-				$old_credential_id = get_transient( 'secure_login_old_passkey_credential_' . get_current_user_id() );
-				if ( $old_credential_id ) {
-					echo '<div class="notice notice-error inline">';
-					echo '<p><strong>' . esc_html__( 'CRITICAL - You MUST remove the old passkey first!', 'secure-login-collector' ) . '</strong></p>';
-					echo '<p>' . esc_html__( 'Your browser/password manager still has the old passkey saved and will not allow creating a new one until it is removed.', 'secure-login-collector' ) . '</p>';
-					echo '<h4>' . esc_html__( 'Required Steps:', 'secure-login-collector' ) . '</h4>';
-					echo '<ol>';
-					echo '<li><strong>' . esc_html__( 'Remove the old passkey from your browser/password manager', 'secure-login-collector' ) . '</strong> ';
-					echo esc_html__( '(see instructions below)', 'secure-login-collector' ) . '</li>';
-					echo '<li>' . esc_html__( 'Refresh this page', 'secure-login-collector' ) . '</li>';
-					echo '<li>' . esc_html__( 'Click "Register Passkey" again', 'secure-login-collector' ) . '</li>';
-					echo '</ol>';
-					echo '<p><a href="#" onclick="jQuery(\'#passkey-removal-instructions\').toggle(); return false;" class="button button-secondary">' . esc_html__( 'Show Removal Instructions', 'secure-login-collector' ) . '</a></p>';
-					echo '<div id="passkey-removal-instructions" style="display: none; margin-top: 15px; padding: 15px; background: #f9f9f9; border: 1px solid #ddd;">';
-					echo '<h4>' . esc_html__( 'Quick Removal Instructions:', 'secure-login-collector' ) . '</h4>';
-					echo '<p><strong>Chrome/Edge:</strong> ' . esc_html__( 'Go to Settings → Passwords → Manage passkeys → Find this site → Delete', 'secure-login-collector' ) . '</p>';
-					echo '<p><strong>Safari:</strong> ' . esc_html__( 'System Preferences → Passwords → Find this site → Delete', 'secure-login-collector' ) . '</p>';
-					echo '<p><strong>1Password/Bitwarden:</strong> ' . esc_html__( 'Open your password manager → Find passkey → Delete', 'secure-login-collector' ) . '</p>';
-					echo '</div>';
-					echo '</div>';
-				}
-			}
-
-			// Add JavaScript for passkey management.
-			?>
-			<script>
-			jQuery(document).ready(function($) {
-				$('#register-passkey').on('click', function() {
-					var button = $(this);
-					button.prop('disabled', true).text('<?php echo esc_js( __( 'Registering...', 'secure-login-collector' ) ); ?>');
-					
-					// Generate challenge
-					var challenge = new Uint8Array(32);
-					window.crypto.getRandomValues(challenge);
-					
-					var userId = <?php echo esc_attr( get_current_user_id() ); ?>;
-					var userIdBytes = new TextEncoder().encode(userId.toString());
-					
-					// Force a unique user ID after reset to bypass browser restrictions
-					<?php if ( get_transient( 'secure_login_old_passkey_credential_' . get_current_user_id() ) ) : ?>
-					// After reset, create a completely different user entity
-					var timestamp = Date.now();
-					userId = userId + '_reset_' + timestamp;
-					userIdBytes = new TextEncoder().encode(userId);
-					console.log('Creating passkey for new user ID:', userId);
-					<?php endif; ?>
-					
-					var createCredentialDefaultArgs = {
-						publicKey: {
-							rp: {
-								name: "<?php echo esc_js( get_bloginfo( 'name' ) ); ?><?php 
-								$version = get_option( 'secure_login_passkey_version', 0 );
-								if ( $version > 0 ) {
-									echo esc_js( ' (v' . ($version + 1) . ')' );
-								}
-								?>",
-								id: "<?php echo esc_js( wp_parse_url( home_url(), PHP_URL_HOST ) ); ?>",
-							},
-							user: {
-								id: userIdBytes,
-								name: "<?php echo esc_js( wp_get_current_user()->user_login ); ?><?php 
-								if ( get_transient( 'secure_login_old_passkey_credential_' . get_current_user_id() ) ) {
-									echo esc_js( '_' . time() );
-								}
-								?>",
-								displayName: "<?php echo esc_js( wp_get_current_user()->display_name ); ?><?php 
-								if ( get_transient( 'secure_login_old_passkey_credential_' . get_current_user_id() ) ) {
-									echo esc_js( ' (New)' );
-								}
-								?>"
-							},
-							pubKeyCredParams: [{alg: -7, type: "public-key"}],
-							authenticatorSelection: {
-								<?php if ( get_transient( 'secure_login_old_passkey_credential_' . get_current_user_id() ) ) : ?>
-								// After reset, don't require platform authenticator to allow more options
-								authenticatorAttachment: "cross-platform",
-								requireResidentKey: false,
-								residentKey: "discouraged",
-								<?php else : ?>
-								authenticatorAttachment: "platform",
-								<?php endif; ?>
-								userVerification: "required"
-							},
-							timeout: 60000,
-							challenge: challenge,
-							<?php 
-							// Exclude old credential if it exists (after reset)
-							$old_credential_id = get_transient( 'secure_login_old_passkey_credential_' . get_current_user_id() );
-							if ( $old_credential_id ) : 
-							?>
-							excludeCredentials: [{
-								id: Uint8Array.from(atob("<?php echo esc_js( $old_credential_id ); ?>"), c => c.charCodeAt(0)),
-								type: 'public-key',
-								transports: ["internal", "hybrid", "usb", "ble", "nfc"]
-							}]
-							<?php endif; ?>
-						}
-					};
-					
-					navigator.credentials.create(createCredentialDefaultArgs)
-						.then((credential) => {
-							// Send credential to server
-							button.text('<?php echo esc_js( __( 'Saving registration...', 'secure-login-collector' ) ); ?>');
-							
-							$.ajax({
-								url: ajaxurl,
-								type: 'POST',
-								data: {
-									action: 'register_passkey',
-									credential_id: btoa(String.fromCharCode(...new Uint8Array(credential.rawId))),
-									public_key: btoa(String.fromCharCode(...new Uint8Array(credential.response.getPublicKey()))),
-									nonce: '<?php echo esc_attr( wp_create_nonce( 'register_passkey' ) ); ?>'
-								},
-								success: function(response) {
-									if (response.success) {
-										alert('<?php echo esc_js( __( 'Passkey registered successfully!', 'secure-login-collector' ) ); ?>');
-										location.reload();
-									} else {
-										alert('<?php echo esc_js( __( 'Registration failed:', 'secure-login-collector' ) ); ?> ' + response.data);
-									}
-								},
-								error: function() {
-									alert('<?php echo esc_js( __( 'Network error occurred during registration.', 'secure-login-collector' ) ); ?>');
-								},
-								complete: function() {
-									button.prop('disabled', false).text('<?php echo esc_js( __( 'Register Passkey', 'secure-login-collector' ) ); ?>');
-								}
-							});
-						})
-						.catch((err) => {
-							console.error('Passkey creation failed:', err);
-							alert('<?php echo esc_js( __( 'Passkey creation failed:', 'secure-login-collector' ) ); ?> ' + err.message);
-							button.prop('disabled', false).text('<?php echo esc_js( __( 'Register Passkey', 'secure-login-collector' ) ); ?>');
-						});
-				});
-				
-				$('#reset-passkey').on('click', function() {
-					if (!confirm('<?php echo esc_js( __( 'This will remove the passkey registration from this plugin. Note: The passkey will remain in your browser/device and must be removed manually. Continue?', 'secure-login-collector' ) ); ?>')) {
-						return;
-					}
-					
-					var button = $(this);
-					button.prop('disabled', true).text('<?php echo esc_js( __( 'Resetting...', 'secure-login-collector' ) ); ?>');
-					
-					// Direct reset without authentication
-					$.ajax({
-						url: ajaxurl,
-						type: 'POST',
-						data: {
-							action: 'reset_passkey',
-							nonce: '<?php echo esc_attr( wp_create_nonce( 'reset_passkey' ) ); ?>'
-						},
-						success: function(response) {
-							if (response.success) {
-								alert(response.data || '<?php echo esc_js( __( 'Passkey unlinked from the plugin. You can now register a new passkey. Remember to manually remove the old passkey from your browser/device.', 'secure-login-collector' ) ); ?>');
-								location.reload();
-							} else {
-								alert('<?php echo esc_js( __( 'Reset failed:', 'secure-login-collector' ) ); ?> ' + response.data);
-							}
-						},
-						error: function() {
-							alert('<?php echo esc_js( __( 'Network error occurred during reset.', 'secure-login-collector' ) ); ?>');
-						},
-						complete: function() {
-							button.prop('disabled', false).text('<?php echo esc_js( __( 'Reset Passkey', 'secure-login-collector' ) ); ?>');
-						}
-					});
-				});
-			});
-			</script>
-			<?php
+			echo '<div class="notice notice-info inline"><p>';
+			echo '<strong>' . esc_html__( 'Passkey Management:', 'secure-login-collector' ) . '</strong> ';
+			echo sprintf( 
+				esc_html__( 'To register and manage your passkeys, please visit the %s page.', 'secure-login-collector' ),
+				'<a href="' . esc_url( admin_url( 'admin.php?page=secure-login-passkeys' ) ) . '">' . esc_html__( 'Passkeys Management', 'secure-login-collector' ) . '</a>'
+			);
+			echo '</p></div>';
 		}
 	}
 
@@ -555,6 +337,7 @@ class Secure_Login_Settings_Manager {
 		echo '<input type="email" id="secure_login_notification_email" name="secure_login_notification_email" value="' . esc_attr( $email ) . '" class="regular-text" />';
 		echo '<p class="description">' . esc_html__( 'Email address to receive notifications. Defaults to site admin email.', 'secure-login-collector' ) . '</p>';
 	}
+
 
 	/**
 	 * Frontend form text field callback.

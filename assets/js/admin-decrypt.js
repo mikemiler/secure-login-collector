@@ -21,8 +21,8 @@
         }
 
         init() {
-            // Bind decrypt buttons
-            $(document).on('click', '.decrypt-btn', (e) => this.handleDecrypt(e));
+            // Bind decrypt buttons (both old and new class names)
+            $(document).on('click', '.decrypt-btn, .decrypt-btn-v2', (e) => this.handleDecrypt(e));
             
             // Auto-clear sensitive data
             this.startAutoClear();
@@ -36,22 +36,29 @@
             const $btn = $(e.currentTarget);
             const entryId = $btn.data('id');
             
+            console.log('Decrypt button clicked for entry:', entryId);
+            
             // Check if already decrypted
             if (this.decryptedData.has(entryId)) {
+                console.log('Data already decrypted, displaying...');
                 this.displayDecryptedData(entryId);
                 return;
             }
 
             try {
                 $btn.prop('disabled', true).text('Authenticating...');
+                console.log('Starting decryption process...');
                 
                 // Step 1: Get encrypted data from server
                 const encryptedPackage = await this.getEncryptedData(entryId);
-                
+                console.log('Encrypted package:', encryptedPackage);
                 // Step 2: Get wrapped private key (if not cached)
                 if (!this.unwrappedKey) {
+                    console.log('Unwrapping private key...');
                     await this.unwrapPrivateKey();
                 }
+
+                console.log('Unwrapped key:', this.unwrappedKey);
                 
                 // Step 3: Decrypt the data
                 const decrypted = await this.decryptData(encryptedPackage);
@@ -74,7 +81,7 @@
          */
         async getEncryptedData(entryId) {
             const response = await $.ajax({
-                url: ajaxurl,
+                url: secureLoginAdmin.ajaxurl,
                 method: 'POST',
                 data: {
                     action: 'get_encrypted_entry',
@@ -96,20 +103,20 @@
         async unwrapPrivateKey() {
             // Get wrapped key from server
             const wrappedResponse = await $.ajax({
-                url: ajaxurl,
+                url: secureLoginAdmin.ajaxurl,
                 method: 'POST',
                 data: {
                     action: 'slc_get_wrapped_private_key',
                     nonce: secureLoginAdmin.nonce
                 }
             });
-
+            console.log('Wrapped response:', wrappedResponse);
             if (!wrappedResponse.success) {
                 throw new Error('Failed to get wrapped private key');
             }
 
             const wrappedKey = wrappedResponse.data.wrapped_key;
-
+            console.log('Wrapped key:', wrappedKey);
             // Authenticate with passkey to get unwrapping key
             const unwrappingKey = await this.authenticateWithPasskey();
 
@@ -128,7 +135,7 @@
 
             // Get challenge from server
             const challengeResponse = await $.ajax({
-                url: ajaxurl,
+                url: secureLoginAdmin.ajaxurl,
                 method: 'POST',
                 data: {
                     action: 'passkey_get_challenge',

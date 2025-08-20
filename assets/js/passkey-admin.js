@@ -77,10 +77,35 @@
             });
 
             if (!initResponse.success) {
-                throw new Error(initResponse.data || 'Failed to initialize encryption');
+                // Check if it's an "already initialized" error which might be from old keys
+                if (typeof initResponse.data === 'string' && initResponse.data.includes('Already initialized')) {
+                    console.warn('Keys already initialized, continuing with registration');
+                } else {
+                    throw new Error(initResponse.data || 'Failed to initialize encryption');
+                }
+            }
+            
+            // Check for already initialized or migrated status (non-error case)
+            if (initResponse.data && initResponse.data.status) {
+                if (initResponse.data.status === 'already_initialized') {
+                    console.log('Using existing encryption keys');
+                } else if (initResponse.data.status === 'migrated') {
+                    console.log('Successfully migrated existing keys to passkey encryption');
+                }
             }
 
             // Step 3: Complete passkey registration
+            // Note: publicKey might be getPublicKey() in some browsers
+            let publicKeyData;
+            if (credential.response.publicKey) {
+                publicKeyData = this.arrayBufferToBase64(credential.response.publicKey);
+            } else if (credential.response.getPublicKey) {
+                publicKeyData = this.arrayBufferToBase64(credential.response.getPublicKey());
+            } else {
+                // Fallback - extract from attestation object if needed
+                publicKeyData = 'not_available';
+            }
+            
             const completeResponse = await $.ajax({
                 url: passkeyAdmin.ajaxurl,
                 type: 'POST',
@@ -89,7 +114,7 @@
                     nonce: passkeyAdmin.nonce,
                     name: name,
                     credential_id: this.arrayBufferToBase64(credential.rawId),
-                    public_key: this.arrayBufferToBase64(credential.response.publicKey),
+                    public_key: publicKeyData,
                     client_data: this.arrayBufferToBase64(credential.response.clientDataJSON),
                     attestation: this.arrayBufferToBase64(credential.response.attestationObject)
                 }
@@ -113,6 +138,16 @@
             const credential = await this.createPasskeyCredential();
 
             // Step 3: Complete registration with wrapped MWK
+            // Note: publicKey might be getPublicKey() in some browsers
+            let publicKeyData;
+            if (credential.response.publicKey) {
+                publicKeyData = this.arrayBufferToBase64(credential.response.publicKey);
+            } else if (credential.response.getPublicKey) {
+                publicKeyData = this.arrayBufferToBase64(credential.response.getPublicKey());
+            } else {
+                publicKeyData = 'not_available';
+            }
+            
             const completeResponse = await $.ajax({
                 url: passkeyAdmin.ajaxurl,
                 type: 'POST',
@@ -121,7 +156,7 @@
                     nonce: passkeyAdmin.nonce,
                     name: name,
                     credential_id: this.arrayBufferToBase64(credential.rawId),
-                    public_key: this.arrayBufferToBase64(credential.response.publicKey),
+                    public_key: publicKeyData,
                     client_data: this.arrayBufferToBase64(credential.response.clientDataJSON),
                     attestation: this.arrayBufferToBase64(credential.response.attestationObject),
                     wrapped_mwk: mwk // Pass the MWK to wrap with new passkey
