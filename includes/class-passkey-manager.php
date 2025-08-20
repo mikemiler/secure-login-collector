@@ -44,6 +44,8 @@ class Passkey_Manager {
 		add_action( 'wp_ajax_passkey_test_auth', array( $this, 'handle_test_authentication' ) );
 		add_action( 'wp_ajax_passkey_init_setup', array( $this, 'handle_init_setup' ) );
 		add_action( 'wp_ajax_passkey_unwrap_mwk', array( $this, 'handle_unwrap_mwk' ) );
+		add_action( 'wp_ajax_get_current_user_id', array( $this, 'handle_get_current_user_id' ) );
+		add_action( 'wp_ajax_derive_passkey_unwrapping_key', array( $this, 'handle_derive_passkey_unwrapping_key' ) );
 	}
 
 	/**
@@ -375,6 +377,15 @@ class Passkey_Manager {
 			'public_key' => $public_key,
 			'user_id'    => $user_id,
 		) );
+		
+		// Set global passkey registered flag if this is the first passkey
+		if ( $is_first_passkey ) {
+			update_option( 'secure_login_passkey_registered', true );
+			update_option( 'secure_login_passkey_registered_at', current_time( 'mysql' ) );
+			
+			// Also ensure pro keys active flag is set for consistency with V2 handler
+			update_option( 'secure_login_pro_keys_active', true );
+		}
 
 		// Clear challenge
 		delete_transient( 'passkey_reg_challenge_' . $user_id );
@@ -414,13 +425,18 @@ class Passkey_Manager {
 		// Also delete the wrapped MWK for this passkey
 		$this->master_key_manager->delete_wrapped_mwk( $user_id, $credential_id );
 
-		// If this was the last passkey, delete the pro keys
+		// If this was the last passkey, delete the pro keys and clear the global flag
 		if ( empty( $passkeys ) ) {
 			if ( ! class_exists( 'Secure_Login_Encryption_Handler_V2' ) ) {
 				require_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-encryption-handler-v2.php';
 			}
 			$encryption_handler = new Secure_Login_Encryption_Handler_V2();
 			$encryption_handler->delete_pro_keys();
+			
+			// Clear global passkey registered flag and pro keys active flag
+			update_option( 'secure_login_passkey_registered', false );
+			delete_option( 'secure_login_passkey_registered_at' );
+			update_option( 'secure_login_pro_keys_active', false );
 			
 			wp_send_json_success( array(
 				'message' => 'Last passkey deleted, pro keys removed',
@@ -637,5 +653,57 @@ class Passkey_Manager {
 		
 		// Derive 256-bit key using PBKDF2
 		return hash_pbkdf2( 'sha256', $key_material, $salt, 100000, 32, true );
+	}
+
+	/**
+	 * Handle AJAX request to get current user ID.
+	 */
+	public function handle_get_current_user_id() {
+		// Accept both admin nonces
+		$nonce = sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) );
+		if ( ! wp_verify_nonce( $nonce, 'secure_login_admin_nonce' ) && 
+		     ! wp_verify_nonce( $nonce, 'passkey_admin_nonce' ) ) {
+			wp_send_json_error( 'Invalid security token' );
+			return;
+		}
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( 'Insufficient permissions' );
+		}
+
+		wp_send_json_success( array(
+			'user_id' => get_current_user_id()
+		) );
+	}
+
+	/**
+	 * Handle AJAX request to derive passkey unwrapping key.
+	 */
+	public function handle_derive_passkey_unwrapping_key() {
+		// Accept both admin nonces
+		$nonce = sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) );
+		if ( ! wp_verify_nonce( $nonce, 'secure_login_admin_nonce' ) && 
+		     ! wp_verify_nonce( $nonce, 'passkey_admin_nonce' ) ) {
+			wp_send_json_error( 'Invalid security token' );
+			return;
+		}
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( 'Insufficient permissions' );
+		}
+
+		$credential_id = sanitize_text_field( wp_unslash( $_POST['credential_id'] ?? '' ) );
+		$user_id = intval( $_POST['user_id'] ?? 0 );
+
+		if ( empty( $credential_id ) || ! $user_id ) {
+			wp_send_json_error( 'Missing credential ID or user ID' );
+		}
+
+		// Derive the same key as server-side wrapping
+		$key = $this->derive_wrapping_key( $credential_id, $user_id );
+
+		wp_send_json_success( array(
+			'key' => base64_encode( $key )
+		) );
 	}
 }

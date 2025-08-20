@@ -635,6 +635,7 @@ class Secure_Login_Admin_Interface
         add_action('wp_ajax_process_bulk_export', array($this, 'handle_bulk_export_ajax'));
         add_action('wp_ajax_bulk_decrypt_with_passkey', array($this, 'handle_bulk_decrypt_with_passkey_ajax'));
         add_action('wp_ajax_authenticate_passkey_for_decrypt', array($this, 'handle_passkey_auth_for_decrypt'));
+        add_action('wp_ajax_fix_passkey_flag', array($this, 'handle_fix_passkey_flag'));
 
         // Add screen option for items per page.
         add_action('load-toplevel_page_secure-login-collector', array($this, 'add_screen_options'));
@@ -834,6 +835,32 @@ class Secure_Login_Admin_Interface
             <hr class="wp-header-end">
 
             <p><?php echo esc_html__('This page shows all encrypted login data collected from clients. Use the search box to filter entries and bulk actions for management.', 'secure-login-collector'); ?></p>
+
+            <?php
+            // Show diagnostic info and fix button if needed
+            $passkey_registered = get_option('secure_login_passkey_registered', false);
+            $pro_keys_active = get_option('secure_login_pro_keys_active', false);
+            if ($this->is_pro_version && (!$passkey_registered || !$pro_keys_active)) {
+                // Check if passkeys actually exist
+                global $wpdb;
+                $passkey_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->usermeta} WHERE meta_key = 'secure_login_passkeys' AND meta_value != ''");
+                
+                if ($passkey_count > 0) {
+                    ?>
+                    <div class="notice notice-warning">
+                        <h3><?php echo esc_html__('Pro Encryption Issue Detected', 'secure-login-collector'); ?></h3>
+                        <p><?php echo esc_html__('You have pro version enabled and passkeys registered, but new data is not being pro-encrypted due to a missing flag.', 'secure-login-collector'); ?></p>
+                        <p>
+                            <button type="button" class="button button-primary" id="fix-passkey-flag-btn">
+                                <?php echo esc_html__('Fix Pro Encryption Status', 'secure-login-collector'); ?>
+                            </button>
+                            <span id="fix-passkey-flag-result"></span>
+                        </p>
+                    </div>
+                    <?php
+                }
+            }
+            ?>
 
             <form method="get" class="secure-login-admin-table">
                 <input type="hidden" name="page" value="<?php echo esc_attr(sanitize_text_field(wp_unslash($_GET['page'] ?? ''))); ?>" />
@@ -1650,5 +1677,66 @@ class Secure_Login_Admin_Interface
             'timeout' => 60000,
             'userVerification' => 'required',
         ));
+    }
+
+    /**
+     * Handle fix passkey flag AJAX request.
+     * One-time fix for installations where passkeys are registered but flag wasn't set.
+     */
+    public function handle_fix_passkey_flag()
+    {
+        check_ajax_referer('secure_login_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Insufficient permissions');
+        }
+
+        global $wpdb;
+        
+        // Check if anyone has passkeys registered
+        $users_with_passkeys = $wpdb->get_results("
+            SELECT user_id, meta_value 
+            FROM {$wpdb->usermeta} 
+            WHERE meta_key = 'secure_login_passkeys' 
+            AND meta_value != ''
+        ");
+
+        $total_passkeys = 0;
+        $users_count = 0;
+        foreach ($users_with_passkeys as $user_meta) {
+            $passkeys = maybe_unserialize($user_meta->meta_value);
+            if (is_array($passkeys) && !empty($passkeys)) {
+                $total_passkeys += count($passkeys);
+                $users_count++;
+            }
+        }
+
+        // Check current flag status
+        $passkey_flag = get_option('secure_login_passkey_registered', false);
+        $pro_keys_flag = get_option('secure_login_pro_keys_active', false);
+        
+        $message = "Found $total_passkeys passkey(s) across $users_count user(s). ";
+        $message .= "Passkey flag: " . ($passkey_flag ? 'true' : 'false') . ", ";
+        $message .= "Pro keys flag: " . ($pro_keys_flag ? 'true' : 'false') . ". ";
+
+        if ($total_passkeys > 0 && (!$passkey_flag || !$pro_keys_flag)) {
+            if (!$passkey_flag) {
+                update_option('secure_login_passkey_registered', true);
+                update_option('secure_login_passkey_registered_at', current_time('mysql'));
+            }
+            if (!$pro_keys_flag) {
+                update_option('secure_login_pro_keys_active', true);
+            }
+            $message .= "✅ Missing flags updated successfully!";
+            wp_send_json_success($message);
+        } elseif ($total_passkeys > 0 && $passkey_flag && $pro_keys_flag) {
+            $message .= "✅ All flags already set correctly!";
+            wp_send_json_success($message);
+        } elseif ($total_passkeys === 0) {
+            $message .= "ℹ️ No passkeys found - flag should remain false.";
+            wp_send_json_success($message);
+        } else {
+            wp_send_json_error($message);
+        }
     }
 }

@@ -695,6 +695,42 @@ jQuery(document).ready(function ($) {
             return v.toString(16);
         });
     }
+
+    
+// Handle fix passkey flag button
+$(document).on('click', '#fix-passkey-flag-btn', function() {
+    const button = $(this);
+    const resultSpan = $('#fix-passkey-flag-result');
+    
+    button.prop('disabled', true).text('Fixing...');
+    resultSpan.html('<span style="color: #666;">Processing...</span>');
+    
+    $.ajax({
+        url: ajaxurl,
+        type: 'POST',
+        data: {
+            action: 'fix_passkey_flag',
+            nonce: secureLoginAdmin.nonce
+        },
+        success: function(response) {
+            if (response.success) {
+                resultSpan.html('<span style="color: #4CAF50;">✅ ' + response.data + '</span>');
+                // Hide the warning notice after a delay
+                setTimeout(function() {
+                    button.closest('.notice').fadeOut();
+                }, 3000);
+            } else {
+                resultSpan.html('<span style="color: #f44336;">❌ Error: ' + response.data + '</span>');
+            }
+        },
+        error: function() {
+            resultSpan.html('<span style="color: #f44336;">❌ Network error occurred</span>');
+        },
+        complete: function() {
+            button.prop('disabled', false).text('Fix Pro Encryption Status');
+        }
+    });
+}); 
 });
 
 // Global functions for password manager export (must be outside jQuery ready)
@@ -947,4 +983,4 @@ function getImportInstructions(manager) {
         default:
             return 'Import the CSV file using your password manager\'s import feature.';
     }
-} 
+}

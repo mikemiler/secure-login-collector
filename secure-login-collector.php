@@ -135,6 +135,7 @@ class SecureLoginCollector
     private function load_dependencies()
     {
         include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-encryption-handler.php';
+        include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-encryption-handler-v2.php';
         include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-admin-interface.php';
         include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-frontend-handler.php';
         include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-settings-manager.php';
@@ -166,7 +167,7 @@ class SecureLoginCollector
      */
     private function init_components()
     {
-        $this->encryption_handler = new Secure_Login_Encryption_Handler();
+        $this->encryption_handler = new Secure_Login_Encryption_Handler_V2();
         $this->database_manager   = new Secure_Login_Database_Manager($this->table_name);
         $this->admin_interface    = new Secure_Login_Admin_Interface($this->table_name, $this->is_pro_version, $this->encryption_handler, $this->database_manager);
         $this->frontend_handler   = new Secure_Login_Frontend_Handler($this->table_name, $this->is_pro_version, $this->encryption_handler, $this->database_manager);

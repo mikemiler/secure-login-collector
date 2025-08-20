@@ -15,7 +15,7 @@
     class SecureAdminDecryption {
         constructor() {
             this.decryptedData = new Map();
-            this.unwrappedKey = null;
+            this.unwrappedKeys = { pro: null, free: null }; // Cache both key types separately
             this.autoClearTimeout = 60000; // 60 seconds
             this.init();
         }
@@ -37,11 +37,13 @@
             const entryId = $btn.data('id');
             
             console.log('Decrypt button clicked for entry:', entryId);
+            console.log('Button element:', $btn[0]);
+            console.log('Button parent row:', $btn.closest('tr')[0]);
             
             // Check if already decrypted
             if (this.decryptedData.has(entryId)) {
                 console.log('Data already decrypted, displaying...');
-                this.displayDecryptedData(entryId);
+                this.displayDecryptedData(entryId, $btn);
                 return;
             }
 
@@ -52,20 +54,25 @@
                 // Step 1: Get encrypted data from server
                 const encryptedPackage = await this.getEncryptedData(entryId);
                 console.log('Encrypted package:', encryptedPackage);
-                // Step 2: Get wrapped private key (if not cached)
-                if (!this.unwrappedKey) {
-                    console.log('Unwrapping private key...');
-                    await this.unwrapPrivateKey();
+                // Step 2: Get wrapped private key (determine type first)
+                const keyInfo = await this.getKeyType(entryId);
+                const keyType = keyInfo.type;
+                
+                // Check if we have the right key cached
+                if (!this.unwrappedKeys[keyType]) {
+                    console.log(`Unwrapping ${keyType} private key...`);
+                    await this.unwrapPrivateKey(entryId, keyType);
                 }
 
-                console.log('Unwrapped key:', this.unwrappedKey);
+                const privateKey = this.unwrappedKeys[keyType];
+                console.log(`Using ${keyType} private key:`, privateKey);
                 
                 // Step 3: Decrypt the data
-                const decrypted = await this.decryptData(encryptedPackage);
+                const decrypted = await this.decryptData(encryptedPackage, privateKey);
                 
                 // Store and display
                 this.decryptedData.set(entryId, decrypted);
-                this.displayDecryptedData(entryId);
+                this.displayDecryptedData(entryId, $btn);
                 
                 $btn.text('Decrypted').addClass('success');
                 
@@ -98,15 +105,37 @@
         }
 
         /**
+         * Get key type for an entry (determines if pro or free key is needed)
+         */
+        async getKeyType(entryId) {
+            const response = await $.ajax({
+                url: secureLoginAdmin.ajaxurl,
+                method: 'POST',
+                data: {
+                    action: 'slc_get_wrapped_private_key',
+                    entry_id: entryId,
+                    nonce: secureLoginAdmin.nonce
+                }
+            });
+
+            if (!response.success) {
+                throw new Error('Failed to get key type information');
+            }
+
+            return { type: response.data.type || 'free' };
+        }
+
+        /**
          * Unwrap the private key using passkey authentication
          */
-        async unwrapPrivateKey() {
-            // Get wrapped key from server
+        async unwrapPrivateKey(entryId, keyType) {
+            // Get wrapped key from server (pass entry ID to determine pro vs free key)
             const wrappedResponse = await $.ajax({
                 url: secureLoginAdmin.ajaxurl,
                 method: 'POST',
                 data: {
                     action: 'slc_get_wrapped_private_key',
+                    entry_id: entryId,
                     nonce: secureLoginAdmin.nonce
                 }
             });
@@ -114,14 +143,30 @@
             if (!wrappedResponse.success) {
                 throw new Error('Failed to get wrapped private key');
             }
-
-            const wrappedKey = wrappedResponse.data.wrapped_key;
-            console.log('Wrapped key:', wrappedKey);
-            // Authenticate with passkey to get unwrapping key
-            const unwrappingKey = await this.authenticateWithPasskey();
-
-            // Unwrap the private key
-            this.unwrappedKey = await this.unwrapKey(wrappedKey, unwrappingKey);
+            console.log('Wrapped response data:', wrappedResponse.data);
+            
+            // Handle different key types (pro vs free)
+            if (wrappedResponse.data.type === 'pro') {
+                // Pro key requires passkey authentication
+                const wrappedKey = wrappedResponse.data.wrapped_key;
+                console.log('Pro wrapped key:', wrappedKey);
+                
+                // Authenticate with passkey to get unwrapping key
+                const unwrappingKey = await this.authenticateWithPasskey();
+                
+                // Unwrap the private key
+                console.log('Unwrapping key:', unwrappingKey);
+                console.log('Wrapped key:', wrappedKey);
+                this.unwrappedKeys.pro = await this.unwrapKey(wrappedKey, unwrappingKey);
+                console.log('Unwrapped key:', this.unwrappedKeys[keyType]);
+            } else {
+                // Free key is already decrypted, just decode it
+                const privateKeyB64 = wrappedResponse.data.private_key;
+                console.log('Free private key (base64):', privateKeyB64);
+                
+                // Import the private key directly (it's already in PEM format)
+                this.unwrappedKeys.free = await this.importRSAPrivateKey(atob(privateKeyB64));
+            }
         }
 
         /**
@@ -163,26 +208,49 @@
                 }
             });
 
-            // Derive key from passkey authentication
-            // Using the signature as key material (this is a simplified version)
-            const signature = new Uint8Array(assertion.response.signature);
-            const keyMaterial = await crypto.subtle.importKey(
+            // Derive key using same method as server
+            // Get credential ID from assertion
+            const credentialId = new Uint8Array(assertion.rawId);
+            const credentialIdB64 = btoa(String.fromCharCode(...credentialId));
+            
+            // Get user ID (we'll need to get this from server or session)
+            const userResponse = await $.ajax({
+                url: secureLoginAdmin.ajaxurl,
+                method: 'POST',
+                data: {
+                    action: 'get_current_user_id',
+                    nonce: secureLoginAdmin.nonce
+                }
+            });
+            
+            if (!userResponse.success) {
+                throw new Error('Failed to get user ID for key derivation');
+            }
+            
+            const userId = userResponse.data.user_id;
+            
+            // Match server-side key derivation: credential_id + user_id + salt
+            // Note: We can't access wp_salt() from client, so we'll ask server to derive the key
+            const keyResponse = await $.ajax({
+                url: secureLoginAdmin.ajaxurl,
+                method: 'POST',
+                data: {
+                    action: 'derive_passkey_unwrapping_key',
+                    credential_id: credentialIdB64,
+                    user_id: userId,
+                    nonce: secureLoginAdmin.nonce
+                }
+            });
+            
+            if (!keyResponse.success) {
+                throw new Error('Failed to derive unwrapping key');
+            }
+            
+            // Import the derived key as AES-GCM key
+            const keyBytes = this.base64ToArrayBuffer(keyResponse.data.key);
+            const unwrappingKey = await crypto.subtle.importKey(
                 'raw',
-                signature.slice(0, 32), // Use first 32 bytes of signature
-                'HKDF',
-                false,
-                ['deriveKey']
-            );
-
-            // Derive AES key for unwrapping
-            const unwrappingKey = await crypto.subtle.deriveKey(
-                {
-                    name: 'HKDF',
-                    hash: 'SHA-256',
-                    salt: new TextEncoder().encode('SLC-UNWRAP'),
-                    info: new TextEncoder().encode('passkey-unwrap')
-                },
-                keyMaterial,
+                keyBytes,
                 { name: 'AES-GCM', length: 256 },
                 false,
                 ['decrypt']
@@ -199,18 +267,26 @@
             const tag = this.base64ToArrayBuffer(wrappedKey.tag);
             const encrypted = this.base64ToArrayBuffer(wrappedKey.encrypted);
 
-            // Combine encrypted data and tag for AES-GCM
+            // For AES-GCM, concatenate encrypted data and tag
             const ciphertext = new Uint8Array(encrypted.byteLength + tag.byteLength);
             ciphertext.set(new Uint8Array(encrypted), 0);
             ciphertext.set(new Uint8Array(tag), encrypted.byteLength);
-
-            // Decrypt the private key
+            console.log('Ciphertext:', ciphertext);
+            console.log('IV:', iv);
+            console.log('Tag length:', tag.byteLength);
+            
+            // Decrypt the private key - AES-GCM with proper tag length
             const decrypted = await crypto.subtle.decrypt(
-                { name: 'AES-GCM', iv: iv },
+                { 
+                    name: 'AES-GCM', 
+                    iv: iv,
+                    tagLength: tag.byteLength * 8 // Convert bytes to bits (should be 128)
+                },
                 unwrappingKey,
                 ciphertext
             );
 
+            console.log('Decrypted:', decrypted);
             // Convert to PEM format string
             const privateKeyPem = new TextDecoder().decode(decrypted);
             
@@ -247,12 +323,12 @@
         /**
          * Decrypt the actual data
          */
-        async decryptData(encryptedPackage) {
+        async decryptData(encryptedPackage, privateKey) {
             // First: RSA decrypt the AES key
             const encryptedAesKey = this.base64ToArrayBuffer(encryptedPackage.encrypted_aes_key);
             const aesKeyBuffer = await crypto.subtle.decrypt(
                 { name: 'RSA-OAEP' },
-                this.unwrappedKey,
+                privateKey,
                 encryptedAesKey
             );
 
@@ -281,12 +357,50 @@
         /**
          * Display decrypted data
          */
-        displayDecryptedData(entryId) {
+        displayDecryptedData(entryId, $btn = null) {
             const data = this.decryptedData.get(entryId);
-            if (!data) return;
+            console.log('Displaying decrypted data for entry:', entryId, 'Data:', data);
+            if (!data) {
+                console.log('No decrypted data found for entry:', entryId);
+                return;
+            }
 
-            const $row = $(`tr[data-id="${entryId}"]`);
+            let $row;
+            
+            // If we have the button reference, use it to find the row
+            if ($btn && $btn.length > 0) {
+                $row = $btn.closest('tr');
+                console.log('Found row via provided button:', $row.length, 'elements');
+            } else {
+                // Try multiple selectors to find the table row
+                $row = $(`tr[data-id="${entryId}"]`);
+                console.log('Found row selector tr[data-id="' + entryId + '"]:', $row.length, 'elements');
+                
+                if ($row.length === 0) {
+                    // Try alternative selectors
+                    $row = $(`tr[data-entry-id="${entryId}"]`);
+                    console.log('Found row selector tr[data-entry-id="' + entryId + '"]:', $row.length, 'elements');
+                }
+                
+                if ($row.length === 0) {
+                    // Try finding by button data attribute
+                    const $foundBtn = $(`.decrypt-btn[data-id="${entryId}"], .decrypt-btn-v2[data-id="${entryId}"]`);
+                    console.log('Found button:', $foundBtn.length, 'elements');
+                    if ($foundBtn.length > 0) {
+                        $row = $foundBtn.closest('tr');
+                        console.log('Found row via button:', $row.length, 'elements');
+                    }
+                }
+            }
+            
+            if ($row.length === 0) {
+                console.log('Could not find table row for entry:', entryId);
+                console.log('Available table rows:', $('table tr').length);
+                return;
+            }
+            
             const $container = $row.find('.decrypted-data-container');
+            console.log('Found container:', $container.length, 'elements');
             
             if ($container.length === 0) {
                 // Create container if doesn't exist
@@ -345,7 +459,8 @@
         bindCopyButtons(entryId) {
             const $row = $(`.decrypted-row[data-entry-id="${entryId}"]`);
             
-            $row.find('.copy-btn').off('click').on('click', async function() {
+            $row.find('.copy-btn').off('click').on('click', async function(e) {
+                e.preventDefault();
                 const value = $(this).data('value');
                 try {
                     await navigator.clipboard.writeText(value);
@@ -356,7 +471,8 @@
                 }
             });
 
-            $row.find('.toggle-password-btn').off('click').on('click', function() {
+            $row.find('.toggle-password-btn').off('click').on('click', function(e) {
+                e.preventDefault();
                 const $field = $(this).siblings('.password-field');
                 if ($field.attr('type') === 'password') {
                     $field.attr('type', 'text');
@@ -385,7 +501,7 @@
         clearAllDecryptedData() {
             // Clear decrypted data from memory
             this.decryptedData.clear();
-            this.unwrappedKey = null;
+            this.unwrappedKeys = { pro: null, free: null };
             
             // Remove from UI
             $('.decrypted-row').remove();

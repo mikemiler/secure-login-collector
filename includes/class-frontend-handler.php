@@ -315,13 +315,14 @@ class Secure_Login_Frontend_Handler {
 		$metadata['login_url']  = sanitize_text_field( $metadata['login_url'] );
 		$metadata['created_at'] = isset( $metadata['created_at'] ) ? sanitize_text_field( $metadata['created_at'] ) : current_time( 'c' );
 
-		// Check if Pro version with passkey is available on the server
+		// Check if Pro version with pro keys is available on the server
+		// Use same logic as V2 encryption handler for consistency
 		$is_pro_encrypted = false;
 		$server_credential_id = null;
 		
-		if ( $this->is_pro_version && get_option( 'secure_login_passkey_registered', false ) ) {
-			// Mark as Pro encrypted, but don't actually add passkey encryption on server
-			// The passkey encryption happens on the client side during decryption
+		if ( $this->is_pro_version && get_option( 'secure_login_pro_keys_active', false ) ) {
+			// Mark as Pro encrypted - data will be encrypted with pro public key
+			// The passkey decryption happens on the admin side during decryption
 			$is_pro_encrypted = true;
 			$server_credential_id = get_option( 'secure_login_passkey_credential_id' );
 		}
