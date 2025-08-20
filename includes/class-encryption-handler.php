@@ -32,13 +32,7 @@ class Secure_Login_Encryption_Handler {
 		}
 		$this->master_key_manager = new Master_Key_Manager();
 
-		// AJAX handlers - DISABLED: V2 handler now handles these endpoints
-		// add_action( 'wp_ajax_slc_get_public_key', array( $this, 'handle_get_public_key' ) );
-		// add_action( 'wp_ajax_nopriv_slc_get_public_key', array( $this, 'handle_get_public_key' ) );
-		// add_action( 'wp_ajax_slc_initialize_keys', array( $this, 'handle_initialize_keys' ) );
-		// add_action( 'wp_ajax_slc_get_wrapped_private_key', array( $this, 'handle_get_wrapped_private_key' ) );
-		// Legacy handler for settings page
-		add_action( 'wp_ajax_generate_rsa_keys', array( $this, 'handle_generate_rsa_keys' ) );
+		// Note: This class is kept for compatibility but V2 handler is used in main plugin
 	}
 
 	/**

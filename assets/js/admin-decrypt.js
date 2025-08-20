@@ -36,36 +36,34 @@
             const $btn = $(e.currentTarget);
             const entryId = $btn.data('id');
             
-            console.log('Decrypt button clicked for entry:', entryId);
-            console.log('Button element:', $btn[0]);
-            console.log('Button parent row:', $btn.closest('tr')[0]);
+
             
             // Check if already decrypted
             if (this.decryptedData.has(entryId)) {
-                console.log('Data already decrypted, displaying...');
+
                 this.displayDecryptedData(entryId, $btn);
                 return;
             }
 
             try {
                 $btn.prop('disabled', true).text('Authenticating...');
-                console.log('Starting decryption process...');
+
                 
                 // Step 1: Get encrypted data from server
                 const encryptedPackage = await this.getEncryptedData(entryId);
-                console.log('Encrypted package:', encryptedPackage);
+
                 // Step 2: Get wrapped private key (determine type first)
                 const keyInfo = await this.getKeyType(entryId);
                 const keyType = keyInfo.type;
                 
                 // Check if we have the right key cached
                 if (!this.unwrappedKeys[keyType]) {
-                    console.log(`Unwrapping ${keyType} private key...`);
+
                     await this.unwrapPrivateKey(entryId, keyType);
                 }
 
                 const privateKey = this.unwrappedKeys[keyType];
-                console.log(`Using ${keyType} private key:`, privateKey);
+
                 
                 // Step 3: Decrypt the data
                 const decrypted = await this.decryptData(encryptedPackage, privateKey);
@@ -139,30 +137,29 @@
                     nonce: secureLoginAdmin.nonce
                 }
             });
-            console.log('Wrapped response:', wrappedResponse);
+
             if (!wrappedResponse.success) {
                 throw new Error('Failed to get wrapped private key');
             }
-            console.log('Wrapped response data:', wrappedResponse.data);
+            
             
             // Handle different key types (pro vs free)
             if (wrappedResponse.data.type === 'pro') {
                 // Pro key requires passkey authentication
                 const wrappedKey = wrappedResponse.data.wrapped_key;
-                console.log('Pro wrapped key:', wrappedKey);
+
                 
                 // Authenticate with passkey to get unwrapping key
                 const unwrappingKey = await this.authenticateWithPasskey();
                 
                 // Unwrap the private key
-                console.log('Unwrapping key:', unwrappingKey);
-                console.log('Wrapped key:', wrappedKey);
+
                 this.unwrappedKeys.pro = await this.unwrapKey(wrappedKey, unwrappingKey);
-                console.log('Unwrapped key:', this.unwrappedKeys[keyType]);
+
             } else {
                 // Free key is already decrypted, just decode it
                 const privateKeyB64 = wrappedResponse.data.private_key;
-                console.log('Free private key (base64):', privateKeyB64);
+
                 
                 // Import the private key directly (it's already in PEM format)
                 this.unwrappedKeys.free = await this.importRSAPrivateKey(atob(privateKeyB64));
@@ -271,9 +268,7 @@
             const ciphertext = new Uint8Array(encrypted.byteLength + tag.byteLength);
             ciphertext.set(new Uint8Array(encrypted), 0);
             ciphertext.set(new Uint8Array(tag), encrypted.byteLength);
-            console.log('Ciphertext:', ciphertext);
-            console.log('IV:', iv);
-            console.log('Tag length:', tag.byteLength);
+
             
             // Decrypt the private key - AES-GCM with proper tag length
             const decrypted = await crypto.subtle.decrypt(
@@ -286,7 +281,7 @@
                 ciphertext
             );
 
-            console.log('Decrypted:', decrypted);
+
             // Convert to PEM format string
             const privateKeyPem = new TextDecoder().decode(decrypted);
             
@@ -359,9 +354,7 @@
          */
         displayDecryptedData(entryId, $btn = null) {
             const data = this.decryptedData.get(entryId);
-            console.log('Displaying decrypted data for entry:', entryId, 'Data:', data);
             if (!data) {
-                console.log('No decrypted data found for entry:', entryId);
                 return;
             }
 
@@ -370,37 +363,34 @@
             // If we have the button reference, use it to find the row
             if ($btn && $btn.length > 0) {
                 $row = $btn.closest('tr');
-                console.log('Found row via provided button:', $row.length, 'elements');
+
             } else {
                 // Try multiple selectors to find the table row
                 $row = $(`tr[data-id="${entryId}"]`);
-                console.log('Found row selector tr[data-id="' + entryId + '"]:', $row.length, 'elements');
+
                 
                 if ($row.length === 0) {
                     // Try alternative selectors
                     $row = $(`tr[data-entry-id="${entryId}"]`);
-                    console.log('Found row selector tr[data-entry-id="' + entryId + '"]:', $row.length, 'elements');
+
                 }
                 
                 if ($row.length === 0) {
                     // Try finding by button data attribute
                     const $foundBtn = $(`.decrypt-btn[data-id="${entryId}"], .decrypt-btn-v2[data-id="${entryId}"]`);
-                    console.log('Found button:', $foundBtn.length, 'elements');
                     if ($foundBtn.length > 0) {
                         $row = $foundBtn.closest('tr');
-                        console.log('Found row via button:', $row.length, 'elements');
                     }
                 }
             }
             
             if ($row.length === 0) {
-                console.log('Could not find table row for entry:', entryId);
-                console.log('Available table rows:', $('table tr').length);
+                console.error('Could not find table row for entry:', entryId);
                 return;
             }
             
             const $container = $row.find('.decrypted-data-container');
-            console.log('Found container:', $container.length, 'elements');
+
             
             if ($container.length === 0) {
                 // Create container if doesn't exist
@@ -507,7 +497,7 @@
             $('.decrypted-row').remove();
             $('.decrypt-btn').prop('disabled', false).text('Decrypt').removeClass('success');
             
-            console.log('Sensitive data cleared from memory');
+
         }
 
         /**
