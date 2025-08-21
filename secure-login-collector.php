@@ -134,17 +134,13 @@ class SecureLoginCollector
      */
     private function load_dependencies()
     {
-        include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-encryption-handler.php';
         include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-encryption-handler-v2.php';
         include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-admin-interface.php';
         include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-frontend-handler.php';
         include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-settings-manager.php';
         include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-database-manager.php';
-        
-        // Load passkey manager for pro version
-        if ($this->is_pro_version) {
-            include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-passkey-manager.php';
-        }
+        include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-passkey-manager.php';
+        include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-master-key-manager.php';
 
         // Load Freemius hooks if available
         if (function_exists('slc_fs') && file_exists(SECURE_LOGIN_PLUGIN_DIR . 'includes/freemius-hooks.php')) {
@@ -173,8 +169,8 @@ class SecureLoginCollector
         $this->frontend_handler   = new Secure_Login_Frontend_Handler($this->table_name, $this->is_pro_version, $this->encryption_handler, $this->database_manager);
         $this->settings_manager   = new Secure_Login_Settings_Manager($this->is_pro_version, $this->encryption_handler);
         
-        // Initialize passkey manager for pro version
-        if ($this->is_pro_version && class_exists('Passkey_Manager')) {
+        // Initialize passkey manager (available for all users)
+        if (class_exists('Passkey_Manager')) {
             $this->passkey_manager = new Passkey_Manager();
         }
     }

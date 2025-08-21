@@ -60,33 +60,13 @@ class Secure_Login_Settings_Manager {
 		}
 		
 		// Check if we're on the settings page
-		if ( ! isset( $_GET['page'] ) || $_GET['page'] !== 'secure-login-settings' ) {
+		// The actual page slug is 'secure-login-collector-settings'
+		if ( ! isset( $_GET['page'] ) || $_GET['page'] !== 'secure-login-collector-settings' ) {
 			return;
 		}
 		
-		// Enqueue passkey scripts if pro version
-		if ( $this->is_pro_version ) {
-			wp_enqueue_script(
-				'passkey-admin',
-				SECURE_LOGIN_PLUGIN_URL . 'assets/js/passkey-admin.js',
-				array( 'jquery' ),
-				SECURE_LOGIN_VERSION,
-				true
-			);
-
-			wp_localize_script( 'passkey-admin', 'passkeyAdmin', array(
-				'ajaxurl' => admin_url( 'admin-ajax.php' ),
-				'nonce'   => wp_create_nonce( 'passkey_admin_nonce' ),
-				'user_id' => get_current_user_id(),
-				'strings' => array(
-					'register_success'     => __( 'Passkey registered successfully!', 'secure-login-collector' ),
-					'register_failed'      => __( 'Failed to register passkey.', 'secure-login-collector' ),
-					'delete_confirm'       => __( 'Are you sure you want to delete this passkey?', 'secure-login-collector' ),
-					'delete_success'       => __( 'Passkey deleted successfully.', 'secure-login-collector' ),
-					'browser_not_supported'=> __( 'Your browser does not support WebAuthn.', 'secure-login-collector' ),
-				)
-			) );
-		}
+		// Passkey functionality is now handled inline in class-passkey-manager.php
+		// No need to load external JavaScript file anymore
 	}
 
 	/**
@@ -368,14 +348,13 @@ class Secure_Login_Settings_Manager {
 		}
 		echo '</p>';
 
-		// Add Passkey Management Section for Pro Version
-		if ( $this->is_pro_version ) {
-			if ( ! class_exists( 'Passkey_Manager' ) ) {
-				require_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-passkey-manager.php';
-			}
-			$passkey_manager = new Passkey_Manager();
-			$passkey_manager->render_passkey_section();
+		// Add Passkey Management Section (available for all users)
+		// Passkeys provide enhanced security for all users
+		if ( ! class_exists( 'Passkey_Manager' ) ) {
+			require_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-passkey-manager.php';
 		}
+		$passkey_manager = new Passkey_Manager();
+		$passkey_manager->render_passkey_section();
 
 		// Add JavaScript for key management
 		?>
