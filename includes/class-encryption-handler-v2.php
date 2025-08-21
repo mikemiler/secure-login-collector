@@ -31,6 +31,9 @@ class Secure_Login_Encryption_Handler_V2 {
 		}
 		$this->master_key_manager = new Master_Key_Manager();
 
+		// Clean up old V1 keys if they exist (no backward compatibility needed)
+		$this->cleanup_v1_keys();
+
 		// AJAX handlers
 		add_action( 'wp_ajax_slc_get_public_key', array( $this, 'handle_get_public_key' ) );
 		add_action( 'wp_ajax_nopriv_slc_get_public_key', array( $this, 'handle_get_public_key' ) );
@@ -38,6 +41,18 @@ class Secure_Login_Encryption_Handler_V2 {
 		add_action( 'wp_ajax_slc_initialize_free_keys', array( $this, 'handle_initialize_free_keys' ) );
 		add_action( 'wp_ajax_slc_initialize_pro_keys', array( $this, 'handle_initialize_pro_keys' ) );
 		add_action( 'wp_ajax_slc_delete_pro_keys', array( $this, 'handle_delete_pro_keys' ) );
+		add_action( 'wp_ajax_slc_export_public_key', array( $this, 'handle_export_public_key' ) );
+	}
+
+	/**
+	 * Clean up old V1 single-key system options if they exist.
+	 */
+	private function cleanup_v1_keys() {
+		// Remove old V1 keys if they exist
+		delete_option( 'secure_login_public_key' );
+		delete_option( 'secure_login_wrapped_private_key' );
+		delete_option( 'secure_login_private_key_encrypted' );
+		delete_option( 'secure_login_keys_generated' );
 	}
 
 	/**
@@ -375,25 +390,6 @@ class Secure_Login_Encryption_Handler_V2 {
 	}
 
 	/**
-	 * Handle AJAX to initialize free keys.
-	 */
-	public function handle_initialize_free_keys() {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( 'Insufficient permissions' );
-			return;
-		}
-
-		$result = $this->initialize_free_keys();
-		
-		if ( is_wp_error( $result ) ) {
-			wp_send_json_error( $result->get_error_message() );
-			return;
-		}
-
-		wp_send_json_success( $result );
-	}
-
-	/**
 	 * Handle AJAX to initialize pro keys.
 	 */
 	public function handle_initialize_pro_keys() {
@@ -553,52 +549,65 @@ class Secure_Login_Encryption_Handler_V2 {
 	}
 
 	/**
-	 * Migrate from old single-key system to dual-key system.
-	 *
-	 * @return array Migration result.
+	 * Handle AJAX request to initialize free keys.
 	 */
-	public function migrate_from_single_key() {
-		// Check for old keys
-		$old_public = get_option( 'secure_login_public_key' );
-		$old_wrapped = get_option( 'secure_login_wrapped_private_key' );
-		$old_encrypted = get_option( 'secure_login_private_key_encrypted' );
+	public function handle_initialize_free_keys() {
+		// Check admin permissions
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( 'Insufficient permissions' );
+			return;
+		}
+
+		// Verify nonce
+		$nonce = sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) );
+		if ( ! wp_verify_nonce( $nonce, 'slc_admin_nonce' ) ) {
+			wp_send_json_error( 'Invalid security token' );
+			return;
+		}
+
+		$result = $this->initialize_free_keys();
 		
-		if ( ! $old_public ) {
-			return array( 'status' => 'nothing_to_migrate' );
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( $result->get_error_message() );
+		} else {
+			wp_send_json_success( $result );
 		}
-
-		$migrated = array();
-
-		// If we have wrapped key, it becomes pro key
-		if ( $old_wrapped ) {
-			update_option( 'secure_login_public_key_pro', $old_public );
-			update_option( 'secure_login_wrapped_private_key_pro', $old_wrapped );
-			update_option( 'secure_login_pro_keys_active', true );
-			$migrated[] = 'pro';
-			
-			// Also initialize free keys for fallback
-			$this->initialize_free_keys();
-			$migrated[] = 'free';
-		} 
-		// If we only have encrypted key, it becomes free key
-		elseif ( $old_encrypted ) {
-			update_option( 'secure_login_public_key_free', $old_public );
-			update_option( 'secure_login_private_key_free_encrypted', $old_encrypted );
-			$migrated[] = 'free';
-		}
-
-		// Clean up old keys after successful migration
-		if ( ! empty( $migrated ) ) {
-			delete_option( 'secure_login_public_key' );
-			delete_option( 'secure_login_wrapped_private_key' );
-			delete_option( 'secure_login_private_key_encrypted' );
-			
-			$this->log_key_operation( 'migrated_to_dual_key' );
-		}
-
-		return array( 
-			'status' => 'migrated',
-			'migrated' => $migrated,
-		);
 	}
+
+	/**
+	 * Handle AJAX request to export public key.
+	 */
+	public function handle_export_public_key() {
+		// Check admin permissions
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( 'Insufficient permissions' );
+			return;
+		}
+
+		// Verify nonce
+		$nonce = sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) );
+		if ( ! wp_verify_nonce( $nonce, 'slc_admin_nonce' ) ) {
+			wp_send_json_error( 'Invalid security token' );
+			return;
+		}
+
+		$key_type = sanitize_text_field( wp_unslash( $_POST['key_type'] ?? 'free' ) );
+		
+		if ( $key_type === 'pro' ) {
+			$public_key = get_option( 'secure_login_public_key_pro' );
+		} else {
+			$public_key = get_option( 'secure_login_public_key_free' );
+		}
+
+		if ( ! $public_key ) {
+			wp_send_json_error( 'No public key found for type: ' . $key_type );
+			return;
+		}
+
+		wp_send_json_success( array(
+			'public_key' => $public_key,
+			'type' => $key_type,
+		) );
+	}
+
 }

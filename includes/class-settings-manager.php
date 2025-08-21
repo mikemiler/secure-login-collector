@@ -46,6 +46,47 @@ class Secure_Login_Settings_Manager {
 		// Register hooks.
 		add_action( 'admin_menu', array( $this, 'add_settings_menu' ), 20 );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_scripts' ) );
+	}
+
+	/**
+	 * Enqueue admin scripts for settings page.
+	 */
+	public function enqueue_admin_scripts( $hook ) {
+		// Only load on our settings page
+		if ( 'secure-login-collector_page_secure-login-settings' !== $hook &&
+		     'toplevel_page_secure-login-collector' !== $hook ) {
+			return;
+		}
+		
+		// Check if we're on the settings page
+		if ( ! isset( $_GET['page'] ) || $_GET['page'] !== 'secure-login-settings' ) {
+			return;
+		}
+		
+		// Enqueue passkey scripts if pro version
+		if ( $this->is_pro_version ) {
+			wp_enqueue_script(
+				'passkey-admin',
+				SECURE_LOGIN_PLUGIN_URL . 'assets/js/passkey-admin.js',
+				array( 'jquery' ),
+				SECURE_LOGIN_VERSION,
+				true
+			);
+
+			wp_localize_script( 'passkey-admin', 'passkeyAdmin', array(
+				'ajaxurl' => admin_url( 'admin-ajax.php' ),
+				'nonce'   => wp_create_nonce( 'passkey_admin_nonce' ),
+				'user_id' => get_current_user_id(),
+				'strings' => array(
+					'register_success'     => __( 'Passkey registered successfully!', 'secure-login-collector' ),
+					'register_failed'      => __( 'Failed to register passkey.', 'secure-login-collector' ),
+					'delete_confirm'       => __( 'Are you sure you want to delete this passkey?', 'secure-login-collector' ),
+					'delete_success'       => __( 'Passkey deleted successfully.', 'secure-login-collector' ),
+					'browser_not_supported'=> __( 'Your browser does not support WebAuthn.', 'secure-login-collector' ),
+				)
+			) );
+		}
 	}
 
 	/**
@@ -232,59 +273,185 @@ class Secure_Login_Settings_Manager {
 		echo '</div>';
 		echo '</div>';
 
-		// Display key status.
-		$public_key     = get_option( 'secure_login_public_key' );
-		$keys_generated = get_option( 'secure_login_keys_generated' );
+		// Display key status for both free and pro versions.
+		$free_public_key = get_option( 'secure_login_public_key_free' );
+		$free_private_key = get_option( 'secure_login_private_key_free_encrypted' );
+		$pro_public_key = get_option( 'secure_login_public_key_pro' );
+		$pro_private_key = get_option( 'secure_login_wrapped_private_key_pro' );
+		$pro_keys_active = get_option( 'secure_login_pro_keys_active', false );
+		$passkey_registered = get_option( 'secure_login_passkey_registered', false );
 
-		if ( $public_key && $keys_generated ) {
-			echo '<div class="notice notice-success inline"><p>';
-			echo '<strong>' . esc_html__( 'RSA Keys Status:', 'secure-login-collector' ) . '</strong> ';
-			echo esc_html__( 'Active', 'secure-login-collector' ) . ' ';
-			echo '<em>(' . esc_html__( 'Generated:', 'secure-login-collector' ) . ' ' . esc_html( $keys_generated ) . ')</em>';
-			echo '</p></div>';
-		} else {
-			echo '<div class="notice notice-warning inline"><p>';
-			echo '<strong>' . esc_html__( 'RSA Keys Status:', 'secure-login-collector' ) . '</strong> ';
-			echo esc_html__( 'Not generated', 'secure-login-collector' );
-			echo '</p></div>';
-		}
-
-		// Key management info - replaced old button with proper guidance
-		echo '<div class="notice notice-info inline">';
-		echo '<p><strong>' . esc_html__( 'Key Management:', 'secure-login-collector' ) . '</strong></p>';
-		echo '<p>' . esc_html__( 'RSA keys are automatically generated when you register your first passkey.', 'secure-login-collector' ) . '</p>';
-		echo '<p>' . sprintf( 
-			esc_html__( 'To manage keys and passkeys, visit the %s page.', 'secure-login-collector' ),
-			'<a href="' . esc_url( admin_url( 'admin.php?page=secure-login-passkeys' ) ) . '">' . esc_html__( 'Passkeys Management', 'secure-login-collector' ) . '</a>'
-		) . '</p>';
+		// Display RSA Keys Status in a more comprehensive way
+		echo '<div class="rsa-keys-status" style="margin: 20px 0;">';
+		echo '<h4 style="margin-bottom: 15px;">' . esc_html__( 'RSA Keys Status', 'secure-login-collector' ) . '</h4>';
+		
+		// Free RSA Keys Status
+		echo '<div style="background: white; border: 1px solid #c3c4c7; border-radius: 4px; padding: 15px; margin-bottom: 15px;">';
+		echo '<div style="display: flex; justify-content: space-between; align-items: center;">';
+		echo '<div>';
+		echo '<strong style="font-size: 14px;">🔒 ' . esc_html__( 'Free Version RSA Keys', 'secure-login-collector' ) . '</strong>';
+		echo '<p style="margin: 5px 0 0; color: #666; font-size: 12px;">' . esc_html__( 'Standard RSA-2048 encryption for all users', 'secure-login-collector' ) . '</p>';
 		echo '</div>';
 		
-		// Export button only
+		if ( $free_public_key && $free_private_key ) {
+			echo '<div style="text-align: right;">';
+			echo '<span style="background: #d4edda; color: #155724; padding: 4px 12px; border-radius: 3px; font-size: 12px; font-weight: 600;">✅ ' . esc_html__( 'ACTIVE', 'secure-login-collector' ) . '</span>';
+			echo '</div>';
+		} else {
+			echo '<div style="text-align: right;">';
+			echo '<span style="background: #fff3cd; color: #856404; padding: 4px 12px; border-radius: 3px; font-size: 12px; font-weight: 600;">⚠️ ' . esc_html__( 'NOT INITIALIZED', 'secure-login-collector' ) . '</span>';
+			echo '<p style="margin: 5px 0 0; font-size: 11px; color: #666;">' . esc_html__( 'Will be created on first use', 'secure-login-collector' ) . '</p>';
+			echo '</div>';
+		}
+		echo '</div>';
+		echo '</div>';
+
+		// Pro RSA Keys Status (only show if pro version is enabled)
+		if ( $this->is_pro_version ) {
+			echo '<div style="background: white; border: 1px solid #c3c4c7; border-radius: 4px; padding: 15px;">';
+			echo '<div style="display: flex; justify-content: space-between; align-items: center;">';
+			echo '<div>';
+			echo '<strong style="font-size: 14px;">🔐 ' . esc_html__( 'Pro Version RSA Keys', 'secure-login-collector' ) . '</strong>';
+			echo '<p style="margin: 5px 0 0; color: #666; font-size: 12px;">' . esc_html__( 'Passkey-protected RSA-2048 for ultra-secure encryption', 'secure-login-collector' ) . '</p>';
+			echo '</div>';
+			
+			if ( $pro_public_key && $pro_private_key && $pro_keys_active ) {
+				echo '<div style="text-align: right;">';
+				echo '<span style="background: #d1ecf1; color: #0c5460; padding: 4px 12px; border-radius: 3px; font-size: 12px; font-weight: 600;">🔐 ' . esc_html__( 'ACTIVE', 'secure-login-collector' ) . '</span>';
+				echo '<p style="margin: 5px 0 0; font-size: 11px; color: #666;">' . esc_html__( 'Using passkey protection', 'secure-login-collector' ) . '</p>';
+				echo '</div>';
+			} elseif ( $passkey_registered ) {
+				echo '<div style="text-align: right;">';
+				echo '<span style="background: #fff3cd; color: #856404; padding: 4px 12px; border-radius: 3px; font-size: 12px; font-weight: 600;">⚠️ ' . esc_html__( 'NEEDS INITIALIZATION', 'secure-login-collector' ) . '</span>';
+				echo '<p style="margin: 5px 0 0; font-size: 11px; color: #666;">' . esc_html__( 'Passkey registered but keys not initialized', 'secure-login-collector' ) . '</p>';
+				echo '</div>';
+			} else {
+				echo '<div style="text-align: right;">';
+				echo '<span style="background: #f8f9fa; color: #6c757d; padding: 4px 12px; border-radius: 3px; font-size: 12px; font-weight: 600;">➖ ' . esc_html__( 'NOT AVAILABLE', 'secure-login-collector' ) . '</span>';
+				echo '<p style="margin: 5px 0 0; font-size: 11px; color: #666;">' . esc_html__( 'Register passkey to enable', 'secure-login-collector' ) . '</p>';
+				echo '</div>';
+			}
+			echo '</div>';
+			echo '</div>';
+		}
+		
+		echo '</div>';
+
+		// Key management section
+		echo '<div class="notice notice-info inline">';
+		echo '<p><strong>' . esc_html__( 'Key Management:', 'secure-login-collector' ) . '</strong></p>';
+		
+		// Show different messages based on key status
+		if ( ! $free_public_key ) {
+			echo '<p>' . esc_html__( 'Free RSA keys will be automatically initialized on first form submission.', 'secure-login-collector' ) . '</p>';
+			echo '<p><button type="button" class="button button-primary" id="initialize-free-keys">' . esc_html__( 'Initialize Free Keys Now', 'secure-login-collector' ) . '</button></p>';
+		}
+		
+		if ( $this->is_pro_version ) {
+			if ( ! $pro_public_key && $passkey_registered ) {
+				echo '<p>' . esc_html__( 'Pro RSA keys need to be initialized with your passkey.', 'secure-login-collector' ) . '</p>';
+			} elseif ( ! $passkey_registered ) {
+				echo '<p>' . esc_html__( 'To enable Pro encryption, register a passkey below.', 'secure-login-collector' ) . '</p>';
+			} else {
+				echo '<p>' . esc_html__( 'Pro RSA keys are active and ready for use.', 'secure-login-collector' ) . '</p>';
+			}
+		}
+		echo '</div>';
+		
+		// Export buttons based on available keys
 		echo '<p>';
-		echo '<button type="button" class="button button-secondary" id="export-public-key">' . esc_html__( 'Export Public Key', 'secure-login-collector' ) . '</button>';
+		if ( $free_public_key ) {
+			echo '<button type="button" class="button button-secondary" id="export-free-public-key">' . esc_html__( 'Export Free Public Key', 'secure-login-collector' ) . '</button> ';
+		}
+		if ( $pro_public_key ) {
+			echo '<button type="button" class="button button-secondary" id="export-pro-public-key">' . esc_html__( 'Export Pro Public Key', 'secure-login-collector' ) . '</button>';
+		}
 		echo '</p>';
 
-		// Add JavaScript for export only
+		// Add Passkey Management Section for Pro Version
+		if ( $this->is_pro_version ) {
+			if ( ! class_exists( 'Passkey_Manager' ) ) {
+				require_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-passkey-manager.php';
+			}
+			$passkey_manager = new Passkey_Manager();
+			$passkey_manager->render_passkey_section();
+		}
+
+		// Add JavaScript for key management
 		?>
 		<script>
 		jQuery(document).ready(function($) {
-			
-			$('#export-public-key').on('click', function() {
+			// Initialize free keys
+			$('#initialize-free-keys').on('click', function() {
+				var button = $(this);
+				button.prop('disabled', true).text('<?php echo esc_js( __( 'Initializing...', 'secure-login-collector' ) ); ?>');
+				
 				$.ajax({
 					url: ajaxurl,
 					type: 'POST',
 					data: {
-						action: 'export_public_key',
-						nonce: '<?php echo esc_attr( wp_create_nonce( 'export_public_key' ) ); ?>'
+						action: 'slc_initialize_free_keys',
+						nonce: '<?php echo esc_attr( wp_create_nonce( 'slc_admin_nonce' ) ); ?>'
 					},
 					success: function(response) {
 						if (response.success) {
-							// Create download
+							alert('<?php echo esc_js( __( 'Free RSA keys initialized successfully!', 'secure-login-collector' ) ); ?>');
+							location.reload();
+						} else {
+							alert('<?php echo esc_js( __( 'Failed to initialize keys:', 'secure-login-collector' ) ); ?> ' + response.data);
+							button.prop('disabled', false).text('<?php echo esc_js( __( 'Initialize Free Keys Now', 'secure-login-collector' ) ); ?>');
+						}
+					},
+					error: function() {
+						alert('<?php echo esc_js( __( 'Network error occurred.', 'secure-login-collector' ) ); ?>');
+						button.prop('disabled', false).text('<?php echo esc_js( __( 'Initialize Free Keys Now', 'secure-login-collector' ) ); ?>');
+					}
+				});
+			});
+			
+			// Export free public key
+			$('#export-free-public-key').on('click', function() {
+				$.ajax({
+					url: ajaxurl,
+					type: 'POST',
+					data: {
+						action: 'slc_export_public_key',
+						key_type: 'free',
+						nonce: '<?php echo esc_attr( wp_create_nonce( 'slc_admin_nonce' ) ); ?>'
+					},
+					success: function(response) {
+						if (response.success) {
 							var blob = new Blob([response.data.public_key], {type: 'text/plain'});
 							var url = window.URL.createObjectURL(blob);
 							var a = document.createElement('a');
 							a.href = url;
-							a.download = 'secure-login-public-key.pem';
+							a.download = 'secure-login-free-public-key.pem';
+							a.click();
+							window.URL.revokeObjectURL(url);
+						} else {
+							alert('<?php echo esc_js( __( 'Failed to export public key:', 'secure-login-collector' ) ); ?> ' + response.data);
+						}
+					}
+				});
+			});
+			
+			// Export pro public key
+			$('#export-pro-public-key').on('click', function() {
+				$.ajax({
+					url: ajaxurl,
+					type: 'POST',
+					data: {
+						action: 'slc_export_public_key',
+						key_type: 'pro',
+						nonce: '<?php echo esc_attr( wp_create_nonce( 'slc_admin_nonce' ) ); ?>'
+					},
+					success: function(response) {
+						if (response.success) {
+							var blob = new Blob([response.data.public_key], {type: 'text/plain'});
+							var url = window.URL.createObjectURL(blob);
+							var a = document.createElement('a');
+							a.href = url;
+							a.download = 'secure-login-pro-public-key.pem';
 							a.click();
 							window.URL.revokeObjectURL(url);
 						} else {

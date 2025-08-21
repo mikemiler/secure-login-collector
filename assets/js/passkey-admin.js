@@ -22,8 +22,7 @@
 
         bindEvents() {
             $('#register-passkey-btn').on('click', () => this.registerPasskey());
-            $(document).on('click', '.delete-passkey', (e) => this.deletePasskey(e));
-            $('#test-passkey-btn').on('click', () => this.testAuthentication());
+            $('#delete-passkey-btn').on('click', () => this.deletePasskey());
         },
 
         async registerPasskey() {
@@ -37,21 +36,22 @@
             this.clearStatus();
 
             try {
-                // Check if this is the first passkey
-                const passkeys = await this.getPasskeysList();
-                const isFirstPasskey = !passkeys || passkeys.length === 0;
-
-                if (isFirstPasskey) {
-                    // First passkey - need to initialize MWK and RSA keys
-                    await this.registerFirstPasskey(name);
-                } else {
-                    // Additional passkey - need to authenticate with existing passkey first
-                    await this.registerAdditionalPasskey(name);
+                // Check if a passkey already exists
+                const status = await this.getPasskeyStatus();
+                if (status.has_passkey) {
+                    this.showError('A passkey is already registered. Please delete it first to register a new one.');
+                    return;
                 }
+
+                // Register the single passkey
+                await this.registerSinglePasskey(name);
 
                 this.showSuccess(passkeyAdmin.strings.register_success);
                 $('#passkey-name').val('');
-                this.loadPasskeys();
+                // Reload page after successful registration
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
 
             } catch (error) {
                 console.error('Registration error:', error);
@@ -61,7 +61,7 @@
             }
         },
 
-        async registerFirstPasskey(name) {
+        async registerSinglePasskey(name) {
             // Step 1: Create the passkey credential
             const credential = await this.createPasskeyCredential();
             
@@ -102,7 +102,7 @@
             } else if (credential.response.getPublicKey) {
                 publicKeyData = this.arrayBufferToBase64(credential.response.getPublicKey());
             } else {
-                // Fallback - extract from attestation object if needed
+                // Fallback - not available in all browsers
                 publicKeyData = 'not_available';
             }
             
@@ -125,48 +125,6 @@
             }
         },
 
-        async registerAdditionalPasskey(name) {
-            // Step 1: Authenticate with existing passkey to get MWK
-            this.showStatus('Please authenticate with an existing passkey to add a new one...');
-            
-            const mwk = await this.authenticateForMWK();
-            if (!mwk) {
-                throw new Error('Failed to authenticate with existing passkey');
-            }
-
-            // Step 2: Create new passkey credential
-            const credential = await this.createPasskeyCredential();
-
-            // Step 3: Complete registration with wrapped MWK
-            // Note: publicKey might be getPublicKey() in some browsers
-            let publicKeyData;
-            if (credential.response.publicKey) {
-                publicKeyData = this.arrayBufferToBase64(credential.response.publicKey);
-            } else if (credential.response.getPublicKey) {
-                publicKeyData = this.arrayBufferToBase64(credential.response.getPublicKey());
-            } else {
-                publicKeyData = 'not_available';
-            }
-            
-            const completeResponse = await $.ajax({
-                url: passkeyAdmin.ajaxurl,
-                type: 'POST',
-                data: {
-                    action: 'passkey_complete_registration',
-                    nonce: passkeyAdmin.nonce,
-                    name: name,
-                    credential_id: this.arrayBufferToBase64(credential.rawId),
-                    public_key: publicKeyData,
-                    client_data: this.arrayBufferToBase64(credential.response.clientDataJSON),
-                    attestation: this.arrayBufferToBase64(credential.response.attestationObject),
-                    wrapped_mwk: mwk // Pass the MWK to wrap with new passkey
-                }
-            });
-
-            if (!completeResponse.success) {
-                throw new Error(completeResponse.data || 'Failed to complete registration');
-            }
-        },
 
         async createPasskeyCredential() {
             // Start registration to get challenge
@@ -195,99 +153,33 @@
             });
         },
 
-        async authenticateForMWK() {
-            try {
-                // Get list of existing passkeys
-                const passkeys = await this.getPasskeysList();
-                if (!passkeys || passkeys.length === 0) {
-                    throw new Error('No existing passkeys found');
-                }
-
-                // Get authentication challenge
-                const challengeResponse = await $.ajax({
-                    url: passkeyAdmin.ajaxurl,
-                    type: 'POST',
-                    data: {
-                        action: 'passkey_test_auth',
-                        nonce: passkeyAdmin.nonce
-                    }
-                });
-
-                if (!challengeResponse.success) {
-                    throw new Error('Failed to get challenge');
-                }
-
-                // Allow user to authenticate with any existing passkey
-                const allowCredentials = passkeys.map(pk => ({
-                    id: this.base64ToArrayBuffer(pk.credential_id),
-                    type: 'public-key'
-                }));
-
-                // Authenticate
-                const assertion = await navigator.credentials.get({
-                    publicKey: {
-                        challenge: this.base64ToArrayBuffer(challengeResponse.data.challenge),
-                        allowCredentials: allowCredentials,
-                        timeout: challengeResponse.data.timeout,
-                        userVerification: 'required'
-                    }
-                });
-
-                if (!assertion) {
-                    throw new Error('Authentication cancelled');
-                }
-
-                // Get MWK from server (unwrapped using the authenticated passkey)
-                const mwkResponse = await $.ajax({
-                    url: passkeyAdmin.ajaxurl,
-                    type: 'POST',
-                    data: {
-                        action: 'passkey_unwrap_mwk',
-                        nonce: passkeyAdmin.nonce,
-                        credential_id: this.arrayBufferToBase64(assertion.rawId)
-                    }
-                });
-
-                if (!mwkResponse.success) {
-                    throw new Error('Failed to retrieve MWK');
-                }
-
-                // Return the MWK (it will be re-wrapped with the new passkey)
-                return mwkResponse.data.mwk;
-
-            } catch (error) {
-                console.error('MWK authentication error:', error);
-                return null;
-            }
-        },
-
-        async getPasskeysList() {
+        async getPasskeyStatus() {
             try {
                 const response = await $.ajax({
                     url: passkeyAdmin.ajaxurl,
                     type: 'POST',
                     data: {
-                        action: 'passkey_list',
+                        action: 'passkey_get_status',
                         nonce: passkeyAdmin.nonce
                     }
                 });
 
-                return response.success ? response.data : [];
+                return response.success ? response.data : { has_passkey: false, passkey: null };
             } catch (error) {
-                console.error('Failed to get passkeys list:', error);
-                return [];
+                console.error('Failed to get passkey status:', error);
+                return { has_passkey: false, passkey: null };
             }
         },
 
-        async deletePasskey(e) {
-            const $button = $(e.currentTarget);
+        async deletePasskey() {
+            const $button = $('#delete-passkey-btn');
             const credentialId = $button.data('credential-id');
 
             if (!confirm(passkeyAdmin.strings.delete_confirm)) {
                 return;
             }
 
-            $button.prop('disabled', true);
+            $button.prop('disabled', true).text('Deleting...');
 
             try {
                 const response = await $.ajax({
@@ -301,23 +193,23 @@
                 });
 
                 if (response.success) {
-                    $(`tr[data-credential-id="${credentialId}"]`).fadeOut(() => {
-                        $(this).remove();
-                        this.loadPasskeys();
-                    });
                     this.showSuccess(passkeyAdmin.strings.delete_success);
+                    // Reload page after successful deletion
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
                 } else {
                     throw new Error(response.data || 'Failed to delete passkey');
                 }
             } catch (error) {
                 console.error('Delete error:', error);
                 this.showError(error.message || 'Failed to delete passkey');
-            } finally {
-                $button.prop('disabled', false);
+                $button.prop('disabled', false).text('Delete Passkey');
             }
         },
 
-        async testAuthentication() {
+        /* Removed test authentication - no longer needed */
+        /*async testAuthentication() {
             const $button = $('#test-passkey-btn');
             const $result = $('#test-result');
             
@@ -363,9 +255,10 @@
             } finally {
                 $button.prop('disabled', false);
             }
-        },
+        },*/
 
-        async loadPasskeys() {
+        /* Removed loadPasskeys - using page reload instead */
+        /*async loadPasskeys() {
             try {
                 const response = await $.ajax({
                     url: passkeyAdmin.ajaxurl,
@@ -388,30 +281,29 @@
             const $tbody = $('#passkey-list');
             
             if (!passkeys || passkeys.length === 0) {
-                $tbody.html('<tr><td colspan="5">No passkeys registered yet.</td></tr>');
+                $tbody.html('<tr><td colspan="5">No passkey registered yet.</td></tr>');
                 return;
             }
 
-            let html = '';
-            passkeys.forEach(passkey => {
-                html += `
-                    <tr data-credential-id="${this.escapeHtml(passkey.credential_id)}">
-                        <td>${this.escapeHtml(passkey.name)}</td>
-                        <td><code>${this.escapeHtml(passkey.credential_id.substring(0, 20))}...</code></td>
-                        <td>${this.escapeHtml(passkey.registered_at)}</td>
-                        <td>${this.escapeHtml(passkey.last_used || 'Never')}</td>
-                        <td>
-                            <button class="button button-small delete-passkey" 
-                                    data-credential-id="${this.escapeHtml(passkey.credential_id)}">
-                                Delete
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            });
+            // Since we only support single passkey, just render the first one
+            const passkey = passkeys[0];
+            const html = `
+                <tr data-credential-id="${this.escapeHtml(passkey.credential_id)}">
+                    <td>${this.escapeHtml(passkey.name)}</td>
+                    <td><code>${this.escapeHtml(passkey.credential_id.substring(0, 20))}...</code></td>
+                    <td>${this.escapeHtml(passkey.registered_at)}</td>
+                    <td>${this.escapeHtml(passkey.last_used || 'Never')}</td>
+                    <td>
+                        <button class="button button-small delete-passkey" 
+                                data-credential-id="${this.escapeHtml(passkey.credential_id)}">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+            `;
             
             $tbody.html(html);
-        },
+        },*/
 
         // Utility functions
         base64ToArrayBuffer(base64) {
@@ -453,25 +345,25 @@
         },
 
         showSuccess(message) {
-            $('#registration-status').html(
-                `<div class="notice notice-success inline"><p>${message}</p></div>`
+            $('#passkey-status-message').html(
+                `<div class="notice notice-success inline" style="margin-top: 10px;"><p>${message}</p></div>`
             );
         },
 
         showError(message) {
-            $('#registration-status').html(
-                `<div class="notice notice-error inline"><p>${message}</p></div>`
+            $('#passkey-status-message').html(
+                `<div class="notice notice-error inline" style="margin-top: 10px;"><p>${message}</p></div>`
             );
         },
 
         showStatus(message) {
-            $('#registration-status').html(
-                `<div class="notice notice-info inline"><p>${message}</p></div>`
+            $('#passkey-status-message').html(
+                `<div class="notice notice-info inline" style="margin-top: 10px;"><p>${message}</p></div>`
             );
         },
 
         clearStatus() {
-            $('#registration-status').empty();
+            $('#passkey-status-message').empty();
         }
     };
 

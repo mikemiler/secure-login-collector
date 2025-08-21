@@ -157,6 +157,9 @@ class Master_Key_Manager {
 	public function store_wrapped_key( $user_id, $key_type, $identifier, $wrapped_data, $credential_id = null ) {
 		global $wpdb;
 		
+		// Ensure table exists before storing
+		$this->maybe_create_table();
+		
 		// Check if key already exists
 		$existing = $wpdb->get_var( $wpdb->prepare(
 			"SELECT id FROM {$this->table_name} 
@@ -201,6 +204,9 @@ class Master_Key_Manager {
 	public function get_wrapped_key( $user_id, $key_type, $identifier ) {
 		global $wpdb;
 		
+		// Ensure table exists before querying
+		$this->maybe_create_table();
+		
 		$row = $wpdb->get_row( $wpdb->prepare(
 			"SELECT * FROM {$this->table_name} 
 			 WHERE user_id = %d AND key_type = %s AND key_identifier = %s",
@@ -231,6 +237,9 @@ class Master_Key_Manager {
 	 */
 	public function get_user_wrapped_mwks( $user_id ) {
 		global $wpdb;
+		
+		// Ensure table exists before querying
+		$this->maybe_create_table();
 		
 		$results = $wpdb->get_results( $wpdb->prepare(
 			"SELECT passkey_credential_id, wrapped_data, created_at, last_used 
@@ -263,6 +272,9 @@ class Master_Key_Manager {
 	public function delete_wrapped_mwk( $user_id, $credential_id ) {
 		global $wpdb;
 		
+		// Ensure table exists before deleting
+		$this->maybe_create_table();
+		
 		return false !== $wpdb->delete(
 			$this->table_name,
 			array(
@@ -282,6 +294,9 @@ class Master_Key_Manager {
 	public function user_has_mwk( $user_id ) {
 		global $wpdb;
 		
+		// Ensure table exists before checking
+		$this->maybe_create_table();
+		
 		$count = $wpdb->get_var( $wpdb->prepare(
 			"SELECT COUNT(*) FROM {$this->table_name} 
 			 WHERE user_id = %d AND key_type = 'mwk'",
@@ -289,6 +304,27 @@ class Master_Key_Manager {
 		) );
 		
 		return $count > 0;
+	}
+
+	/**
+	 * Delete all wrapped MWKs for a user.
+	 *
+	 * @param int $user_id User ID.
+	 * @return bool Success status.
+	 */
+	public function delete_all_user_mwks( $user_id ) {
+		global $wpdb;
+		
+		// Ensure table exists before deleting
+		$this->maybe_create_table();
+		
+		return false !== $wpdb->delete(
+			$this->table_name,
+			array(
+				'user_id'  => $user_id,
+				'key_type' => 'mwk'
+			)
+		);
 	}
 
 	/**

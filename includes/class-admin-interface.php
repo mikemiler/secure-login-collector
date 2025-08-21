@@ -1599,8 +1599,10 @@ class Secure_Login_Admin_Interface
             return;
         }
 
-        // Verify nonce
-        if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'] ?? '')), 'secure_login_admin_nonce')) {
+        // Verify nonce - accept both admin nonces (from admin.js and admin-decrypt.js)
+        $nonce = sanitize_text_field(wp_unslash($_POST['nonce'] ?? ''));
+        if (!wp_verify_nonce($nonce, 'secure_login_admin_nonce') && 
+            !wp_verify_nonce($nonce, 'secure_login_nonce')) {
             wp_send_json_error(__('Invalid security token.', 'secure-login-collector'));
             return;
         }
@@ -1646,8 +1648,10 @@ class Secure_Login_Admin_Interface
             return;
         }
 
-        // Verify nonce
-        if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'] ?? '')), 'secure_login_admin_nonce')) {
+        // Verify nonce - accept both admin nonces (from admin.js and admin-decrypt.js)
+        $nonce = sanitize_text_field(wp_unslash($_POST['nonce'] ?? ''));
+        if (!wp_verify_nonce($nonce, 'secure_login_admin_nonce') && 
+            !wp_verify_nonce($nonce, 'secure_login_nonce')) {
             wp_send_json_error(__('Invalid security token.', 'secure-login-collector'));
             return;
         }
@@ -1658,15 +1662,15 @@ class Secure_Login_Admin_Interface
         // Store challenge in transient (expires in 5 minutes)
         set_transient('passkey_challenge_' . get_current_user_id(), $challenge, 300);
 
-        // Get user's registered credentials (use correct meta key)
+        // Get user's registered credential (single passkey)
         $user_id = get_current_user_id();
-        $credentials = get_user_meta($user_id, 'secure_login_passkeys', true) ?: array();
+        $passkey = get_user_meta($user_id, 'secure_login_passkey', true);
 
-        // Format credentials for client
+        // Format credential for client
         $formatted_credentials = array();
-        foreach ($credentials as $cred) {
+        if (!empty($passkey) && isset($passkey['credential_id'])) {
             $formatted_credentials[] = array(
-                'id' => $cred['credential_id'] ?? '',
+                'id' => $passkey['credential_id'],
                 'type' => 'public-key',
             );
         }
@@ -1693,20 +1697,20 @@ class Secure_Login_Admin_Interface
 
         global $wpdb;
         
-        // Check if anyone has passkeys registered
-        $users_with_passkeys = $wpdb->get_results("
+        // Check if anyone has passkey registered (single passkey)
+        $users_with_passkey = $wpdb->get_results("
             SELECT user_id, meta_value 
             FROM {$wpdb->usermeta} 
-            WHERE meta_key = 'secure_login_passkeys' 
+            WHERE meta_key = 'secure_login_passkey' 
             AND meta_value != ''
         ");
 
         $total_passkeys = 0;
         $users_count = 0;
-        foreach ($users_with_passkeys as $user_meta) {
-            $passkeys = maybe_unserialize($user_meta->meta_value);
-            if (is_array($passkeys) && !empty($passkeys)) {
-                $total_passkeys += count($passkeys);
+        foreach ($users_with_passkey as $user_meta) {
+            $passkey = maybe_unserialize($user_meta->meta_value);
+            if (is_array($passkey) && !empty($passkey)) {
+                $total_passkeys++;
                 $users_count++;
             }
         }

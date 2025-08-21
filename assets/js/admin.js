@@ -457,6 +457,16 @@ jQuery(document).ready(function ($) {
         });
     }
 
+    // Helper function to convert base64 to ArrayBuffer
+    function base64ToArrayBuffer(base64) {
+        var binaryString = window.atob(base64);
+        var bytes = new Uint8Array(binaryString.length);
+        for (var i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        return bytes.buffer;
+    }
+
     // Show passkey authentication modal for bulk decrypt
     function showPasskeyBulkDecryptModal(data) {
         // Remove any existing modal
@@ -508,20 +518,47 @@ jQuery(document).ready(function ($) {
             return;
         }
 
-        // Generate challenge
-        var challenge = new Uint8Array(32);
-        window.crypto.getRandomValues(challenge);
-
-        var getCredentialDefaultArgs = {
-            publicKey: {
-                timeout: 60000,
-                challenge: challenge,
-                userVerification: "required"
+        // First, get the passkey challenge and credentials from server
+        $.ajax({
+            url: secureLoginAjax.ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'passkey_get_challenge',
+                nonce: secureLoginAjax.nonce
             },
-        };
+            success: function(challengeResponse) {
+                if (!challengeResponse.success) {
+                    alert('Failed to get passkey challenge: ' + (challengeResponse.data || 'Unknown error'));
+                    button.prop('disabled', false).text('Authenticate with Passkey to Decrypt All');
+                    return;
+                }
 
-        navigator.credentials.get(getCredentialDefaultArgs)
-            .then((assertion) => {
+                // Convert base64 challenge to ArrayBuffer
+                var challengeData = challengeResponse.data.challenge;
+                var challenge = base64ToArrayBuffer(challengeData);
+
+                // Prepare credentials array
+                var allowCredentials = [];
+                if (challengeResponse.data.credentials && challengeResponse.data.credentials.length > 0) {
+                    allowCredentials = challengeResponse.data.credentials.map(function(cred) {
+                        return {
+                            type: 'public-key',
+                            id: base64ToArrayBuffer(cred.id)
+                        };
+                    });
+                }
+
+                var getCredentialDefaultArgs = {
+                    publicKey: {
+                        timeout: 60000,
+                        challenge: challenge,
+                        allowCredentials: allowCredentials,
+                        userVerification: "required"
+                    },
+                };
+
+                navigator.credentials.get(getCredentialDefaultArgs)
+                    .then((assertion) => {
                 // Send authentication data to server for bulk decryption
                 console.log('Sending bulk passkey authentication request...');
 
@@ -571,12 +608,19 @@ jQuery(document).ready(function ($) {
                         button.prop('disabled', false).text('Authenticate with Passkey to Decrypt All');
                     }
                 });
-            })
-            .catch((err) => {
-                console.error('Bulk passkey authentication failed:', err);
-                alert(secureLoginAjax.strings.passkey_auth_failed + ' ' + err.message);
+                    })
+                    .catch((err) => {
+                        console.error('Bulk passkey authentication failed:', err);
+                        alert(secureLoginAjax.strings.passkey_auth_failed + ' ' + err.message);
+                        button.prop('disabled', false).text('Authenticate with Passkey to Decrypt All');
+                    });
+            },
+            error: function(xhr, status, error) {
+                console.error('Failed to get passkey challenge:', error);
+                alert('Failed to get passkey challenge. Please try again.');
                 button.prop('disabled', false).text('Authenticate with Passkey to Decrypt All');
-            });
+            }
+        });
     }
 
     // Process bulk decrypted data and generate CSV

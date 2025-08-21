@@ -221,6 +221,16 @@ class SecureLoginCollector
      */
     public function activate()
     {
+        // Load required classes if not already loaded
+        if ( ! class_exists( 'Master_Key_Manager' ) ) {
+            require_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-master-key-manager.php';
+        }
+        
+        // Create wrapped keys table for passkey functionality
+        $master_key_manager = new Master_Key_Manager();
+        $master_key_manager->maybe_create_table();
+        
+        // Create main data table and perform other activation tasks
         $this->database_manager->create_table();
         $this->database_manager->upgrade_database();
         //$this->encryption_handler->ensure_rsa_keys();
