@@ -420,52 +420,28 @@ jQuery(document).ready(function ($) {
 
     // Handle bulk export with passkey authentication
     function handleBulkExportWithPasskey(entryIds, manager) {
-        // Show confirmation modal
-        var managerName = getManagerDisplayName(manager);
-        var message = 'You have selected ' + entryIds.length + ' entries for bulk export to ' + managerName + '.\n\n';
-        message += 'All selected entries will be decrypted using your passkey and then exported.\n\n';
-        message += 'Continue?';
-
-        if (!confirm(message)) {
-            return;
-        }
-
-        // Start the bulk decrypt process
-        $.ajax({
-            url: secureLoginAjax.ajaxurl,
-            type: 'POST',
-            data: {
-                action: 'bulk_decrypt_with_passkey',
-                entry_ids: entryIds,
-                manager: manager,
-                nonce: secureLoginAjax.nonce
-            },
-            success: function (response) {
-                if (response.success && response.data.requires_passkey) {
-                    // Show passkey authentication modal
-                    showPasskeyBulkDecryptModal(response.data);
-                } else if (response.success) {
-                    // Direct success (shouldn't happen in first call)
-                    processBulkDecryptedData(response.data);
-                } else {
-                    alert('Bulk export setup failed: ' + (response.data || 'Unknown error'));
-                }
-            },
-            error: function () {
-                alert('Network error occurred during bulk export setup.');
-            }
+        // Show passkey authentication modal directly with entry IDs
+        showPasskeyBulkDecryptModal({
+            entry_ids: entryIds,
+            entry_count: entryIds.length,
+            manager: manager,
+            message: 'You have selected ' + entryIds.length + ' entries for bulk export. All selected entries will be decrypted using your passkey and then exported to ' + manager + ' format.'
         });
     }
 
-    // Helper function to convert base64 to ArrayBuffer
-    function base64ToArrayBuffer(base64) {
-        var binaryString = window.atob(base64);
-        var bytes = new Uint8Array(binaryString.length);
-        for (var i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-        }
-        return bytes.buffer;
+    // Use the global base64ToArrayBuffer function if not already defined
+    if (typeof window.base64ToArrayBuffer === 'undefined') {
+        window.base64ToArrayBuffer = function(base64) {
+            var binaryString = window.atob(base64);
+            var bytes = new Uint8Array(binaryString.length);
+            for (var i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        };
     }
+    
+    // Local reference is now global, no need for duplicate
 
     // Show passkey authentication modal for bulk decrypt
     function showPasskeyBulkDecryptModal(data) {
@@ -535,7 +511,7 @@ jQuery(document).ready(function ($) {
 
                 // Convert base64 challenge to ArrayBuffer
                 var challengeData = challengeResponse.data.challenge;
-                var challenge = base64ToArrayBuffer(challengeData);
+                var challenge = window.base64ToArrayBuffer(challengeData);
 
                 // Prepare credentials array
                 var allowCredentials = [];
@@ -543,7 +519,7 @@ jQuery(document).ready(function ($) {
                     allowCredentials = challengeResponse.data.credentials.map(function(cred) {
                         return {
                             type: 'public-key',
-                            id: base64ToArrayBuffer(cred.id)
+                            id: window.base64ToArrayBuffer(cred.id)
                         };
                     });
                 }
@@ -558,56 +534,125 @@ jQuery(document).ready(function ($) {
                 };
 
                 navigator.credentials.get(getCredentialDefaultArgs)
-                    .then((assertion) => {
-                // Send authentication data to server for bulk decryption
-                console.log('Sending bulk passkey authentication request...');
-
-                var requestData = {
-                    action: 'bulk_decrypt_with_passkey',
-                    entry_ids: [], // Will be retrieved from transient
-                    manager: data.manager,
-                    passkey_verified: 'true',
-                    nonce: secureLoginAjax.nonce
-                };
-
-                // Only add signature data if assertion is valid
-                if (assertion && assertion.response) {
-                    try {
-                        requestData.signature = btoa(String.fromCharCode(...new Uint8Array(assertion.response.signature)));
-                        requestData.authenticator_data = btoa(String.fromCharCode(...new Uint8Array(assertion.response.authenticatorData)));
-                    } catch (e) {
-                        console.error('Error encoding passkey data:', e);
-                        alert('Error encoding passkey data: ' + e.message);
-                        button.prop('disabled', false).text('Authenticate with Passkey to Decrypt All');
-                        return;
-                    }
-                }
-
-                $.ajax({
-                    url: secureLoginAjax.ajaxurl,
-                    type: 'POST',
-                    data: requestData,
-                    success: function (response) {
-                        console.log('Bulk passkey authentication response:', response);
-                        if (response.success) {
-                            $('#bulk-passkey-modal').remove();
-                            processBulkDecryptedData(response.data);
-                        } else {
-                            alert('Bulk passkey decryption failed: ' + (response.data || 'Unknown error'));
+                    .then(async (assertion) => {
+                        // After successful passkey authentication, perform client-side bulk decryption
+                        console.log('Passkey authenticated, starting client-side bulk decryption...');
+                        
+                        try {
+                            button.text('Initializing decryption...');
+                            
+                            // Store the entry IDs and manager for processing
+                            const entryIds = data.entry_ids || [];
+                            const manager = data.manager;
+                            
+                            // Use existing SecureAdminDecryption for bulk decryption
+                            let decryptedEntries = [];
+                            
+                            // Check if SecureAdminDecryption is available
+                            if (!window.secureAdminDecryption && window.SecureAdminDecryption) {
+                                window.secureAdminDecryption = new SecureAdminDecryption();
+                            }
+                            
+                            if (!window.secureAdminDecryption) {
+                                throw new Error('Decryption module not available. Please refresh the page.');
+                            }
+                            
+                            const decryptor = window.secureAdminDecryption;
+                            
+                            // Derive the unwrapping key from the assertion ONCE
+                            button.text('Deriving decryption key...');
+                            const derivedKey = await decryptor.deriveUnwrappingKeyFromAssertion(assertion);
+                            const preAuthData = { derivedKey: derivedKey };
+                            
+                            let processed = 0;
+                            
+                            // Decrypt each entry using existing decrypt logic
+                            for (const entryId of entryIds) {
+                                processed++;
+                                button.text('Decrypting entry ' + processed + ' of ' + entryIds.length + '...');
+                                
+                                try {
+                                    // Check if already decrypted
+                                    if (decryptor.decryptedData.has(entryId)) {
+                                        const decrypted = decryptor.decryptedData.get(entryId);
+                                        const $row = $('tr').filter(function() {
+                                            return $(this).find('.decrypt-btn[data-id="' + entryId + '"], .decrypt-btn-v2[data-id="' + entryId + '"]').length > 0;
+                                        });
+                                        
+                                        decryptedEntries.push({
+                                            name: $row.find('[data-field="name"]').text() || 'Entry ' + entryId,
+                                            website: $row.find('[data-field="login_url"]').text() || '',
+                                            username: decrypted.username_email || '',
+                                            password: decrypted.password || '',
+                                            notes: decrypted.additional_notes || ''
+                                        });
+                                        continue;
+                                    }
+                                    
+                                    // Get encrypted data
+                                    const encryptedPackage = await decryptor.getEncryptedData(entryId);
+                                    
+                                    // Get key type
+                                    const keyInfo = await decryptor.getKeyType(entryId);
+                                    const keyType = keyInfo.type;
+                                    
+                                    // Unwrap key if needed (once per key type) - pass preAuthData to avoid re-authentication
+                                    if (!decryptor.unwrappedKeys[keyType]) {
+                                        await decryptor.unwrapPrivateKey(entryId, keyType, preAuthData);
+                                    }
+                                    
+                                    const privateKey = decryptor.unwrappedKeys[keyType];
+                                    
+                                    // Decrypt the data
+                                    const decrypted = await decryptor.decryptData(encryptedPackage, privateKey);
+                                    
+                                    // Store in cache
+                                    decryptor.decryptedData.set(entryId, decrypted);
+                                    
+                                    // Get metadata from table
+                                    const $row = $('tr').filter(function() {
+                                        return $(this).find('.decrypt-btn[data-id="' + entryId + '"], .decrypt-btn-v2[data-id="' + entryId + '"]').length > 0;
+                                    });
+                                    
+                                    const name = $row.find('[data-field="name"]').text() || 
+                                                encryptedPackage.metadata?.name || 
+                                                'Entry ' + entryId;
+                                    const website = $row.find('[data-field="login_url"]').text() || 
+                                                   encryptedPackage.metadata?.login_url || 
+                                                   '';
+                                    
+                                    // Add to results
+                                    decryptedEntries.push({
+                                        name: name,
+                                        website: website,
+                                        username: decrypted.username_email || '',
+                                        password: decrypted.password || '',
+                                        notes: decrypted.additional_notes || ''
+                                    });
+                                    
+                                } catch (error) {
+                                    console.error('Failed to decrypt entry ' + entryId + ':', error);
+                                }
+                            }
+                            
+                            if (decryptedEntries.length > 0) {
+                                $('#bulk-passkey-modal').remove();
+                                
+                                // Generate CSV with actual decrypted data
+                                const csvContent = generateCSVForManager(manager, decryptedEntries);
+                                const filename = 'bulk_export_' + manager + '_decrypted_' + new Date().getTime() + '.csv';
+                                downloadCSVFile(csvContent, filename);
+                                
+                               
+                            } else {
+                                alert('Failed to decrypt any entries.');
+                                button.prop('disabled', false).text('Authenticate with Passkey to Decrypt All');
+                            }
+                        } catch (error) {
+                            console.error('Bulk decryption error:', error);
+                            alert('Bulk decryption failed: ' + error.message);
                             button.prop('disabled', false).text('Authenticate with Passkey to Decrypt All');
                         }
-                    },
-                    error: function (xhr, status, error) {
-                        console.error('AJAX error during bulk passkey decryption:', {
-                            status: status,
-                            error: error,
-                            responseText: xhr.responseText,
-                            xhr: xhr
-                        });
-                        alert('Network error occurred during bulk passkey decryption. Check console for details.');
-                        button.prop('disabled', false).text('Authenticate with Passkey to Decrypt All');
-                    }
-                });
                     })
                     .catch((err) => {
                         console.error('Bulk passkey authentication failed:', err);
@@ -623,41 +668,54 @@ jQuery(document).ready(function ($) {
         });
     }
 
-    // Process bulk decrypted data and generate CSV
-    function processBulkDecryptedData(data) {
-        alert(data.message);
-
-        if (data.csv_data && data.csv_data.length > 0) {
-            // Generate and download CSV
-            var csvContent = generateCSVForManager(data.manager, data.csv_data);
-            var filename = 'bulk_export_' + data.manager + '_' + new Date().getTime() + '.csv';
-            downloadCSVFile(csvContent, filename);
-
-            // Show completion message
-            setTimeout(function () {
-                alert(window.secureLoginMessages.bulkDecryptionCompleted || 'Bulk decryption completed. CSV file downloaded.');
-            }, 500);
-        }
-    }
-
     // Handle traditional bulk export (fallback)
     function handleTraditionalBulkExport(entryIds, manager) {
-        alert('Traditional bulk export is not implemented. Please decrypt entries individually first.');
-    }
-
-    // Get manager display name
-    function getManagerDisplayName(manager) {
-        var names = {
-            'bitwarden': 'Bitwarden',
-            '1password': '1Password',
-            'lastpass': 'LastPass',
-            'chrome': 'Chrome',
-            'firefox': 'Firefox',
-            'safari': 'Safari',
-            'dashlane': 'Dashlane',
-            'keepass': 'KeePass'
-        };
-        return names[manager] || manager;
+        // First, submit the form to create the transient
+        var form = $('#posts-filter');
+        form.off('submit'); // Remove our handler temporarily
+        
+        // Submit form via AJAX to set up the transient
+        $.ajax({
+            url: form.attr('action'),
+            type: 'POST',
+            data: form.serialize(),
+            success: function() {
+                // Now call the process_bulk_export AJAX action
+                $.ajax({
+                    url: secureLoginAjax.ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'process_bulk_export',
+                        nonce: secureLoginAjax.nonce
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            // Process the exported data
+                            var csvData = response.data.data;
+                            if (csvData && csvData.length > 0) {
+                                // Generate and download CSV
+                                var csvContent = generateCSVForManager(response.data.manager, csvData);
+                                var filename = 'export_' + response.data.manager + '_' + new Date().getTime() + '.csv';
+                                downloadCSVFile(csvContent, filename);
+                                
+                                // Show completion message
+                                setTimeout(function () {
+                                    alert('Export completed. CSV file downloaded.\n\nNote: Login credentials are encrypted and marked as "[ENCRYPTED - Decrypt client-side]".\nTo export with decrypted data, decrypt individual entries first.');
+                                }, 500);
+                            }
+                        } else {
+                            alert('Export failed: ' + (response.data || 'Unknown error'));
+                        }
+                    },
+                    error: function () {
+                        alert('Network error occurred during export.');
+                    }
+                });
+            },
+            error: function() {
+                alert('Failed to initiate export.');
+            }
+        });
     }
 
     // Generate CSV content for specific manager

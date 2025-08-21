@@ -125,8 +125,11 @@
 
         /**
          * Unwrap the private key using passkey authentication
+         * @param {string} entryId - The entry ID
+         * @param {string} keyType - The key type (pro or free)
+         * @param {object} preAuthData - Optional pre-authenticated data {credentialId, userId, derivedKey}
          */
-        async unwrapPrivateKey(entryId, keyType) {
+        async unwrapPrivateKey(entryId, keyType, preAuthData = null) {
             // Get wrapped key from server (pass entry ID to determine pro vs free key)
             const wrappedResponse = await $.ajax({
                 url: secureLoginAdmin.ajaxurl,
@@ -139,6 +142,8 @@
             });
 
             if (!wrappedResponse.success) {
+                console.error('Failed to get wrapped private key:', wrappedResponse);
+                
                 throw new Error('Failed to get wrapped private key');
             }
             
@@ -148,9 +153,15 @@
                 // Pro key requires passkey authentication
                 const wrappedKey = wrappedResponse.data.wrapped_key;
 
+                let unwrappingKey;
                 
-                // Authenticate with passkey to get unwrapping key
-                const unwrappingKey = await this.authenticateWithPasskey();
+                // Check if we have pre-authenticated data (from bulk export)
+                if (preAuthData && preAuthData.derivedKey) {
+                    unwrappingKey = preAuthData.derivedKey;
+                } else {
+                    // Authenticate with passkey to get unwrapping key
+                    unwrappingKey = await this.authenticateWithPasskey();
+                }
                 
                 // Unwrap the private key
 
@@ -205,7 +216,16 @@
                 }
             });
 
-            // Derive key using same method as server
+            // Derive the unwrapping key from the assertion
+            return this.deriveUnwrappingKeyFromAssertion(assertion);
+        }
+
+        /**
+         * Derive unwrapping key from passkey assertion
+         * @param {PublicKeyCredential} assertion - The passkey assertion
+         * @returns {CryptoKey} The derived unwrapping key
+         */
+        async deriveUnwrappingKeyFromAssertion(assertion) {
             // Get credential ID from assertion
             const credentialId = new Uint8Array(assertion.rawId);
             const credentialIdB64 = btoa(String.fromCharCode(...credentialId));

@@ -297,7 +297,9 @@ class Passkey_Manager {
 
 		// Verify this is the correct passkey
 		if ( empty( $passkey ) || $passkey['credential_id'] !== $credential_id ) {
-			wp_send_json_error( 'Passkey not found' );
+			error_log( 'Passkey mismatch - stored: ' . ( $passkey['credential_id'] ?? 'none' ) . ', requested: ' . $credential_id );
+			wp_send_json_error( 'Passkey not found or mismatch' );
+			return;
 		}
 
 		// Delete the passkey
@@ -315,12 +317,13 @@ class Passkey_Manager {
 		$encryption_handler->delete_pro_keys();
 		
 		// Clear global passkey registered flag and pro keys active flag
-		update_option( 'secure_login_passkey_registered', false );
+		delete_option( 'secure_login_passkey_registered' );
 		delete_option( 'secure_login_passkey_registered_at' );
-		update_option( 'secure_login_pro_keys_active', false );
+		delete_option( 'secure_login_pro_keys_active' );
 		
 		wp_send_json_success( array(
-			'message' => 'Passkey deleted and encryption keys removed'
+			'message' => 'Passkey deleted and encryption keys removed',
+			'success' => true
 		) );
 	}
 

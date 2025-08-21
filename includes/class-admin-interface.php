@@ -1013,13 +1013,18 @@ class Secure_Login_Admin_Interface
 
             $metadata = json_decode($row->metadata, true);
 
-            // For bulk export, we'll include a note that this needs to be decrypted.
+            // For bulk export, we need to pass encrypted data to be decrypted client-side
             $csv_data[] = array(
-                'name'     => $metadata['name'] ?? 'Unknown',
-                'website'  => $metadata['login_url'] ?? $metadata['service_name'] ?? '',
-                'username' => '[ENCRYPTED - DECRYPT FIRST]',
-                'password' => '[ENCRYPTED - DECRYPT FIRST]',
-                'notes'    => 'Entry ID: ' . $id . ' - Please decrypt individual entries before export',
+                'id'              => $id,
+                'name'            => $metadata['name'] ?? 'Unknown',
+                'website'         => $metadata['login_url'] ?? $metadata['service_name'] ?? '',
+                'username'        => '[ENCRYPTED - Decrypt client-side]',
+                'password'        => '[ENCRYPTED - Decrypt client-side]',
+                'notes'           => 'Entry ID: ' . $id . ' - Requires client-side decryption',
+                'encrypted_data'  => $row->encrypted_data,
+                'encrypted_aes_key' => $row->encrypted_aes_key ?? null,
+                'iv'              => $row->iv ?? null,
+                'encryption_type' => $row->encryption_type ?? 'standard'
             );
         }
 

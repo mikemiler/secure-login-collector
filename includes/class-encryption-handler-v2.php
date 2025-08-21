@@ -324,10 +324,11 @@ class Secure_Login_Encryption_Handler_V2 {
 			return;
 		}
 
-		// Verify nonce
+		// Verify nonce (accept multiple nonce names for compatibility)
 		$nonce = sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) );
 		if ( ! wp_verify_nonce( $nonce, 'secure_login_admin_nonce' ) && 
-		     ! wp_verify_nonce( $nonce, 'slc_admin_nonce' ) ) {
+		     ! wp_verify_nonce( $nonce, 'slc_admin_nonce' ) &&
+		     ! wp_verify_nonce( $nonce, 'secure_login_nonce' ) ) {
 			wp_send_json_error( 'Invalid security token' );
 			return;
 		}

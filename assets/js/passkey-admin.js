@@ -12,7 +12,7 @@
             }
 
             this.bindEvents();
-            this.loadPasskeys();
+            // loadPasskeys removed - using server-side rendering
         },
 
         isWebAuthnSupported() {
@@ -23,6 +23,13 @@
         bindEvents() {
             $('#register-passkey-btn').on('click', () => this.registerPasskey());
             $('#delete-passkey-btn').on('click', () => this.deletePasskey());
+            
+            // Debug - check if delete button exists
+            if ($('#delete-passkey-btn').length > 0) {
+                console.log('Delete passkey button found and event bound');
+            } else {
+                console.log('Delete passkey button not found on page');
+            }
         },
 
         async registerPasskey() {
@@ -172,8 +179,17 @@
         },
 
         async deletePasskey() {
+            console.log('Delete passkey triggered');
             const $button = $('#delete-passkey-btn');
             const credentialId = $button.data('credential-id');
+            
+            console.log('Credential ID to delete:', credentialId);
+
+            if (!credentialId) {
+                console.error('No credential ID found');
+                this.showError('No credential ID found');
+                return;
+            }
 
             if (!confirm(passkeyAdmin.strings.delete_confirm)) {
                 return;
@@ -182,6 +198,12 @@
             $button.prop('disabled', true).text('Deleting...');
 
             try {
+                console.log('Sending delete request with:', {
+                    action: 'passkey_delete',
+                    nonce: passkeyAdmin.nonce,
+                    credential_id: credentialId
+                });
+                
                 const response = await $.ajax({
                     url: passkeyAdmin.ajaxurl,
                     type: 'POST',
@@ -191,6 +213,8 @@
                         credential_id: credentialId
                     }
                 });
+
+                console.log('Delete response:', response);
 
                 if (response.success) {
                     this.showSuccess(passkeyAdmin.strings.delete_success);
@@ -202,8 +226,13 @@
                     throw new Error(response.data || 'Failed to delete passkey');
                 }
             } catch (error) {
-                console.error('Delete error:', error);
-                this.showError(error.message || 'Failed to delete passkey');
+                console.error('Delete error details:', error);
+                if (error.responseJSON) {
+                    console.error('Server response:', error.responseJSON);
+                    this.showError(error.responseJSON.data || 'Failed to delete passkey');
+                } else {
+                    this.showError(error.message || 'Failed to delete passkey');
+                }
                 $button.prop('disabled', false).text('Delete Passkey');
             }
         },
