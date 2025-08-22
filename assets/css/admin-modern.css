@@ -1,0 +1,990 @@
+/**
+ * Modern Admin Styles for Secure Login Collector
+ * Following WordPress coding standards and modern design principles
+ */
+
+/* ==========================================================================
+   Base Variables and Reusable Classes
+   ========================================================================== */
+
+:root {
+	--slc-primary: #2271b1;
+	--slc-primary-hover: #135e96;
+	--slc-success: #00a32a;
+	--slc-warning: #dba617;
+	--slc-danger: #d63638;
+	--slc-danger-hover: #b32d2e;
+	--slc-info: #2196f3;
+	--slc-border: #c3c4c7;
+	--slc-border-light: #e0e0e0;
+	--slc-bg-light: #f6f7f7;
+	--slc-bg-white: #ffffff;
+	--slc-text-primary: #1d2327;
+	--slc-text-secondary: #50575e;
+	--slc-text-muted: #8c8f94;
+	--slc-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+	--slc-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
+	--slc-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.1);
+	--slc-radius-sm: 4px;
+	--slc-radius-md: 8px;
+	--slc-radius-lg: 12px;
+}
+
+/* ==========================================================================
+   Card Components
+   ========================================================================== */
+
+.slc-card {
+	background: var(--slc-bg-white);
+	border: 1px solid var(--slc-border-light);
+	border-radius: var(--slc-radius-md);
+	box-shadow: var(--slc-shadow-sm);
+	padding: 24px;
+	margin-bottom: 24px;
+	transition: box-shadow 0.2s ease;
+}
+
+.slc-card:hover {
+	box-shadow: var(--slc-shadow-md);
+}
+
+.slc-card-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 20px;
+	padding-bottom: 16px;
+	border-bottom: 1px solid var(--slc-border-light);
+}
+
+.slc-card-title {
+	font-size: 18px;
+	font-weight: 600;
+	color: var(--slc-text-primary);
+	margin: 0;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.slc-card-title-icon {
+	font-size: 24px;
+	line-height: 1;
+}
+
+.slc-card-body {
+	color: var(--slc-text-secondary);
+	line-height: 1.6;
+}
+
+.slc-card-footer {
+	margin-top: 20px;
+	padding-top: 16px;
+	border-top: 1px solid var(--slc-border-light);
+}
+
+/* ==========================================================================
+   Alert/Notice Components
+   ========================================================================== */
+
+.slc-alert {
+	padding: 16px 20px;
+	border-radius: var(--slc-radius-sm);
+	margin-bottom: 20px;
+	border-left: 4px solid;
+	background: var(--slc-bg-white);
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+	from {
+		opacity: 0;
+		transform: translateY(-10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.slc-alert-icon {
+	font-size: 20px;
+	line-height: 1;
+	flex-shrink: 0;
+	margin-top: 2px;
+}
+
+.slc-alert-content {
+	flex: 1;
+}
+
+.slc-alert-title {
+	font-weight: 600;
+	margin-bottom: 4px;
+	color: var(--slc-text-primary);
+}
+
+.slc-alert-message {
+	color: var(--slc-text-secondary);
+	line-height: 1.5;
+}
+
+.slc-alert-message ul {
+	margin: 8px 0 0 20px;
+	list-style: disc;
+}
+
+/* Alert Variants */
+.slc-alert-danger {
+	border-left-color: var(--slc-danger);
+	background: #fef2f2;
+}
+
+.slc-alert-danger .slc-alert-icon {
+	color: var(--slc-danger);
+}
+
+.slc-alert-warning {
+	border-left-color: var(--slc-warning);
+	background: #fffdf0;
+}
+
+.slc-alert-warning .slc-alert-icon {
+	color: var(--slc-warning);
+}
+
+.slc-alert-info {
+	border-left-color: var(--slc-info);
+	background: #f0f9ff;
+}
+
+.slc-alert-info .slc-alert-icon {
+	color: var(--slc-info);
+}
+
+.slc-alert-success {
+	border-left-color: var(--slc-success);
+	background: #f0fdf4;
+}
+
+.slc-alert-success .slc-alert-icon {
+	color: var(--slc-success);
+}
+
+/* ==========================================================================
+   Button Styles
+   ========================================================================== */
+
+.slc-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 20px;
+	font-size: 14px;
+	font-weight: 500;
+	border-radius: var(--slc-radius-sm);
+	border: 1px solid transparent;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	text-decoration: none;
+	line-height: 1.4;
+	white-space: nowrap;
+}
+
+.slc-btn:focus {
+	outline: 2px solid var(--slc-primary);
+	outline-offset: 2px;
+}
+
+.slc-btn:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* Button Variants */
+.slc-btn-primary {
+	background: var(--slc-primary);
+	color: white;
+	border-color: var(--slc-primary);
+}
+
+.slc-btn-primary:hover:not(:disabled) {
+	background: var(--slc-primary-hover);
+	border-color: var(--slc-primary-hover);
+	color: white;
+}
+
+.slc-btn-danger {
+	background: var(--slc-danger);
+	color: white;
+	border-color: var(--slc-danger);
+}
+
+.slc-btn-danger:hover:not(:disabled) {
+	background: var(--slc-danger-hover);
+	border-color: var(--slc-danger-hover);
+	color: white;
+}
+
+.slc-btn-secondary {
+	background: var(--slc-bg-white);
+	color: var(--slc-text-primary);
+	border-color: var(--slc-border);
+}
+
+.slc-btn-secondary:hover:not(:disabled) {
+	background: var(--slc-bg-light);
+	border-color: var(--slc-text-secondary);
+}
+
+.slc-btn-success {
+	background: var(--slc-success);
+	color: white;
+	border-color: var(--slc-success);
+}
+
+.slc-btn-success:hover:not(:disabled) {
+	background: #008a20;
+	border-color: #008a20;
+	color: white;
+}
+
+/* Button Sizes */
+.slc-btn-sm {
+	padding: 6px 12px;
+	font-size: 13px;
+}
+
+.slc-btn-lg {
+	padding: 12px 28px;
+	font-size: 16px;
+}
+
+/* ==========================================================================
+   Badge Component
+   ========================================================================== */
+
+.slc-badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 4px 10px;
+	font-size: 12px;
+	font-weight: 500;
+	border-radius: 12px;
+	line-height: 1;
+	white-space: nowrap;
+}
+
+.slc-badge-success {
+	background: #dcfce7;
+	color: #166534;
+}
+
+.slc-badge-danger {
+	background: #fee2e2;
+	color: #991b1b;
+}
+
+.slc-badge-warning {
+	background: #fef3c7;
+	color: #92400e;
+}
+
+.slc-badge-info {
+	background: #dbeafe;
+	color: #1e40af;
+}
+
+.slc-badge-pro {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	color: white;
+	font-weight: 600;
+}
+
+/* ==========================================================================
+   Status Indicators
+   ========================================================================== */
+
+.slc-status {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.slc-status-dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	display: inline-block;
+}
+
+.slc-status-dot-active {
+	background: var(--slc-success);
+	box-shadow: 0 0 0 3px rgba(0, 163, 42, 0.2);
+	animation: pulse 2s infinite;
+}
+
+.slc-status-dot-inactive {
+	background: var(--slc-text-muted);
+}
+
+.slc-status-dot-warning {
+	background: var(--slc-warning);
+	box-shadow: 0 0 0 3px rgba(219, 166, 23, 0.2);
+}
+
+@keyframes pulse {
+	0% {
+		box-shadow: 0 0 0 3px rgba(0, 163, 42, 0.2);
+	}
+	50% {
+		box-shadow: 0 0 0 6px rgba(0, 163, 42, 0);
+	}
+	100% {
+		box-shadow: 0 0 0 3px rgba(0, 163, 42, 0.2);
+	}
+}
+
+/* ==========================================================================
+   Passkey Specific Styles
+   ========================================================================== */
+
+.slc-passkey-container {
+	max-width: 800px;
+}
+
+.slc-passkey-status {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	color: white;
+	padding: 20px;
+	border-radius: var(--slc-radius-md);
+	margin-bottom: 24px;
+	box-shadow: var(--slc-shadow-md);
+}
+
+.slc-passkey-status-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 12px;
+}
+
+.slc-passkey-status-title {
+	font-size: 16px;
+	font-weight: 600;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.slc-passkey-status-details {
+	font-size: 13px;
+	opacity: 0.95;
+	line-height: 1.5;
+}
+
+.slc-passkey-status-details strong {
+	font-weight: 600;
+}
+
+.slc-passkey-benefits {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+	gap: 16px;
+	margin-top: 20px;
+}
+
+.slc-passkey-benefit {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	padding: 12px;
+	background: var(--slc-bg-white);
+	border: 1px solid var(--slc-border-light);
+	border-radius: var(--slc-radius-sm);
+}
+
+.slc-passkey-benefit-icon {
+	color: var(--slc-success);
+	font-size: 20px;
+	flex-shrink: 0;
+	margin-top: 2px;
+}
+
+.slc-passkey-benefit-text {
+	flex: 1;
+	line-height: 1.4;
+}
+
+.slc-passkey-benefit-title {
+	font-weight: 600;
+	color: var(--slc-text-primary);
+	margin-bottom: 4px;
+}
+
+.slc-passkey-benefit-desc {
+	font-size: 13px;
+	color: var(--slc-text-secondary);
+}
+
+/* ==========================================================================
+   Table Enhancements
+   ========================================================================== */
+
+.slc-table-container {
+	background: var(--slc-bg-white);
+	border: 1px solid var(--slc-border-light);
+	border-radius: var(--slc-radius-md);
+	overflow: hidden;
+	box-shadow: var(--slc-shadow-sm);
+}
+
+.slc-table-header {
+	padding: 16px 20px;
+	background: var(--slc-bg-light);
+	border-bottom: 1px solid var(--slc-border-light);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.wp-list-table.slc-modern {
+	border: none;
+	box-shadow: none;
+}
+
+.wp-list-table.slc-modern thead {
+	background: var(--slc-bg-light);
+}
+
+.wp-list-table.slc-modern th {
+	font-weight: 600;
+	color: var(--slc-text-primary);
+	border-bottom: 2px solid var(--slc-border);
+}
+
+.wp-list-table.slc-modern tbody tr:hover {
+	background: #f9fafb;
+}
+
+.wp-list-table.slc-modern tbody td {
+	vertical-align: middle;
+}
+
+/* Table Column Widths and Styles */
+.wp-list-table .column-actions {
+	width: 200px;
+	white-space: nowrap;
+}
+
+.wp-list-table td.column-actions {
+	padding: 8px 10px;
+}
+
+.wp-list-table .column-actions .button {
+	padding: 3px 8px;
+	margin: 0 2px;
+	height: auto;
+	min-height: 28px;
+}
+
+.wp-list-table .button {
+	margin-right: 5px;
+	margin-bottom: 2px;
+	padding: 3px 8px;
+	height: auto;
+	min-height: 28px;
+	transition: all 0.2s ease;
+}
+
+.wp-list-table .button:last-child {
+	margin-right: 0;
+}
+
+.wp-list-table td:last-child {
+	white-space: nowrap;
+}
+
+/* ==========================================================================
+   Form Enhancements
+   ========================================================================== */
+
+.slc-form-group {
+	margin-bottom: 20px;
+}
+
+.slc-form-label {
+	display: block;
+	font-weight: 500;
+	color: var(--slc-text-primary);
+	margin-bottom: 8px;
+}
+
+.slc-form-input {
+	width: 100%;
+	padding: 10px 12px;
+	border: 1px solid var(--slc-border);
+	border-radius: var(--slc-radius-sm);
+	font-size: 14px;
+	transition: border-color 0.2s ease;
+}
+
+.slc-form-input:focus {
+	outline: none;
+	border-color: var(--slc-primary);
+	box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.1);
+}
+
+.slc-form-help {
+	margin-top: 6px;
+	font-size: 13px;
+	color: var(--slc-text-muted);
+}
+
+/* ==========================================================================
+   Loading States
+   ========================================================================== */
+
+.slc-loading {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.slc-spinner {
+	width: 16px;
+	height: 16px;
+	border: 2px solid var(--slc-border-light);
+	border-top-color: var(--slc-primary);
+	border-radius: 50%;
+	animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+/* ==========================================================================
+   Responsive Adjustments
+   ========================================================================== */
+
+@media (max-width: 782px) {
+	.slc-card {
+		padding: 16px;
+	}
+	
+	.slc-passkey-benefits {
+		grid-template-columns: 1fr;
+	}
+	
+	.slc-btn {
+		width: 100%;
+		justify-content: center;
+	}
+}
+
+/* ==========================================================================
+   WordPress Admin Integration
+   ========================================================================== */
+
+.wrap.slc-admin-wrap {
+	max-width: 1200px;
+}
+
+.wrap.slc-admin-wrap h1 {
+	font-size: 24px;
+	font-weight: 600;
+	color: var(--slc-text-primary);
+	margin-bottom: 24px;
+}
+
+.wrap.slc-admin-wrap .page-title-action {
+	background: var(--slc-primary);
+	color: white;
+	border: none;
+	padding: 6px 16px;
+	border-radius: var(--slc-radius-sm);
+	text-decoration: none;
+	font-weight: 500;
+	transition: background 0.2s ease;
+}
+
+.wrap.slc-admin-wrap .page-title-action:hover {
+	background: var(--slc-primary-hover);
+	color: white;
+}
+
+/* Override WordPress default notice styles within our containers */
+.slc-card .notice,
+.slc-passkey-container .notice {
+	box-shadow: none;
+	margin: 16px 0;
+}
+
+/* ==========================================================================
+   Settings Page Specific
+   ========================================================================== */
+
+/* Settings form sections */
+.slc-settings-form h2 {
+	display: none; /* Hide default WP section titles as we use cards */
+}
+
+.slc-settings-form .form-table {
+	margin-top: 0;
+}
+
+.slc-settings-form .slc-card + h2 {
+	margin-top: 0;
+}
+
+/* Ensure cards wrap settings properly */
+.slc-card + .form-table {
+	background: var(--slc-bg-white);
+	padding: 20px;
+	border: 1px solid var(--slc-border-light);
+	border-radius: 0 0 var(--slc-radius-md) var(--slc-radius-md);
+	margin-top: -1px;
+	box-shadow: var(--slc-shadow-sm);
+}
+
+/* Settings section spacing */
+.slc-settings-sections {
+	margin-top: 24px;
+}
+
+/* Make form fields look better */
+.slc-settings-form input[type="text"],
+.slc-settings-form input[type="email"],
+.slc-settings-form input[type="number"],
+.slc-settings-form textarea,
+.slc-settings-form select {
+	border: 1px solid var(--slc-border);
+	border-radius: var(--slc-radius-sm);
+	padding: 8px 12px;
+	transition: border-color 0.2s ease;
+}
+
+.slc-settings-form input[type="text"]:focus,
+.slc-settings-form input[type="email"]:focus,
+.slc-settings-form input[type="number"]:focus,
+.slc-settings-form textarea:focus,
+.slc-settings-form select:focus {
+	border-color: var(--slc-primary);
+	outline: none;
+	box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.1);
+}
+
+/* Checkbox and radio styling */
+.slc-settings-form input[type="checkbox"],
+.slc-settings-form input[type="radio"] {
+	margin-right: 8px;
+}
+
+/* Submit button styling */
+.slc-settings-form .submit {
+	padding: 20px 0;
+	margin: 0;
+	border-top: 1px solid var(--slc-border-light);
+	background: var(--slc-bg-light);
+}
+
+.slc-settings-form .submit .button-primary {
+	background: var(--slc-primary);
+	border: none;
+	padding: 10px 24px;
+	font-size: 14px;
+	font-weight: 500;
+	border-radius: var(--slc-radius-sm);
+	box-shadow: var(--slc-shadow-sm);
+	transition: all 0.2s ease;
+}
+
+.slc-settings-form .submit .button-primary:hover {
+	background: var(--slc-primary-hover);
+	box-shadow: var(--slc-shadow-md);
+	transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   Decrypted Data Display
+   ========================================================================== */
+
+.decrypted-data-row {
+	background-color: var(--slc-bg-light);
+}
+
+.decrypted-content {
+	padding: 25px;
+	background: linear-gradient(135deg, var(--slc-bg-white) 0%, var(--slc-bg-light) 100%);
+	border: 1px solid var(--slc-border-light);
+	border-radius: var(--slc-radius-lg);
+	margin: 15px;
+	box-shadow: var(--slc-shadow-md);
+}
+
+.decrypted-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 20px;
+	padding-bottom: 15px;
+	border-bottom: 2px solid var(--slc-border-light);
+}
+
+.decrypted-header strong {
+	font-size: 16px;
+	color: var(--slc-text-primary);
+	font-weight: 600;
+}
+
+.auto-clear-warning {
+	color: #996800;
+	background: #fff8e5;
+	padding: 6px 12px;
+	border-radius: var(--slc-radius-sm);
+	font-size: 12px;
+	font-weight: 500;
+	border: 1px solid #f0e4c3;
+}
+
+/* Field Groups for Decrypted Data */
+.field-group {
+	margin-bottom: 20px;
+	padding: 16px 20px;
+	background: var(--slc-bg-white);
+	border: 1px solid var(--slc-border-light);
+	border-radius: var(--slc-radius-md);
+	display: flex;
+	align-items: center;
+	gap: 20px;
+	transition: all 0.2s ease;
+}
+
+.field-group:hover {
+	border-color: var(--slc-border);
+	box-shadow: var(--slc-shadow-sm);
+}
+
+.field-group:last-child {
+	margin-bottom: 0;
+}
+
+.field-group label {
+	font-weight: 600;
+	color: var(--slc-text-primary);
+	min-width: 150px;
+	margin: 0;
+	font-size: 14px;
+}
+
+.field-value {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.field-value input[type="text"],
+.field-value input[type="password"] {
+	flex: 1;
+	font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Courier New', monospace;
+	font-size: 14px;
+	padding: 10px 14px;
+	border: 1px solid var(--slc-border);
+	border-radius: var(--slc-radius-sm);
+	background: var(--slc-bg-light);
+	color: var(--slc-text-primary);
+	transition: all 0.2s ease;
+}
+
+.field-value input[type="text"]:focus,
+.field-value input[type="password"]:focus {
+	outline: none;
+	border-color: var(--slc-primary);
+	background: var(--slc-bg-white);
+	box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.08);
+}
+
+.field-value textarea {
+	flex: 1;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, sans-serif;
+	font-size: 14px;
+	padding: 10px 14px;
+	border: 1px solid var(--slc-border);
+	border-radius: var(--slc-radius-sm);
+	background: var(--slc-bg-light);
+	color: var(--slc-text-primary);
+	min-height: 80px;
+	resize: vertical;
+	transition: all 0.2s ease;
+}
+
+.field-value textarea:focus {
+	outline: none;
+	border-color: var(--slc-primary);
+	background: var(--slc-bg-white);
+	box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.08);
+}
+
+.field-value .button,
+.field-value button {
+	padding: 8px 16px;
+	height: 40px;
+	border-radius: var(--slc-radius-sm);
+	font-weight: 500;
+	transition: all 0.2s ease;
+	cursor: pointer;
+}
+
+.field-value .copy-btn {
+	background: var(--slc-primary);
+	color: white;
+	border: none;
+	min-width: 70px;
+}
+
+.field-value .copy-btn:hover {
+	background: var(--slc-primary-hover);
+	transform: translateY(-1px);
+	box-shadow: var(--slc-shadow-sm);
+}
+
+.field-value .toggle-password-btn {
+	background: var(--slc-bg-light);
+	color: var(--slc-text-primary);
+	border: 1px solid var(--slc-border);
+	min-width: 70px;
+}
+
+.field-value .toggle-password-btn:hover {
+	background: #e8e8e9;
+	border-color: var(--slc-text-muted);
+}
+
+.password-field {
+	font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+	letter-spacing: 2px;
+}
+
+/* ==========================================================================
+   Encryption Method Badges
+   ========================================================================== */
+
+.encryption-method {
+	display: inline-block;
+	padding: 4px 8px;
+	border-radius: var(--slc-radius-sm);
+	font-size: 12px;
+	font-weight: 600;
+	text-align: center;
+	min-width: 120px;
+	cursor: help;
+	transition: all 0.2s ease;
+}
+
+.encryption-ultra-secure {
+	background: linear-gradient(135deg, #1a551c, #45a049);
+	color: white;
+	box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
+}
+
+.encryption-rsa {
+	background: linear-gradient(135deg, var(--slc-primary), var(--slc-primary-hover));
+	color: white;
+	box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3);
+}
+
+.encryption-method:hover {
+	transform: translateY(-1px);
+	box-shadow: var(--slc-shadow-md);
+}
+
+/* ==========================================================================
+   Delete Button Styles
+   ========================================================================== */
+
+.delete-btn {
+	border-color: var(--slc-danger) !important;
+	color: var(--slc-danger) !important;
+	transition: all 0.2s ease;
+}
+
+.delete-btn:hover {
+	border-color: var(--slc-danger-hover) !important;
+	color: var(--slc-danger-hover) !important;
+	background: rgba(214, 54, 56, 0.05);
+}
+
+.delete-btn:focus {
+	box-shadow: 0 0 0 3px rgba(214, 54, 56, 0.2) !important;
+}
+
+/* ==========================================================================
+   Editable Fields
+   ========================================================================== */
+
+.editable-field {
+	cursor: pointer;
+	padding: 2px 4px;
+	border-radius: var(--slc-radius-sm);
+	transition: background-color 0.2s ease;
+}
+
+.editable-field:hover {
+	background-color: var(--slc-bg-light);
+}
+
+/* ==========================================================================
+   Formatted Data Display
+   ========================================================================== */
+
+.formatted-data {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.formatted-data .data-field {
+	margin-bottom: 15px;
+	padding: 10px;
+	background: var(--slc-bg-light);
+	border: 1px solid var(--slc-border-light);
+	border-radius: var(--slc-radius-sm);
+}
+
+.formatted-data .data-field:last-child {
+	margin-bottom: 0;
+}
+
+.formatted-data .data-field strong {
+	display: block;
+	margin-bottom: 5px;
+	color: var(--slc-text-primary);
+	font-size: 14px;
+}
+
+.formatted-data .field-row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.formatted-data .copy-field-btn {
+	padding: 4px 8px;
+	font-size: 12px;
+	background: var(--slc-primary);
+	color: white;
+	border: none;
+	border-radius: var(--slc-radius-sm);
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.formatted-data .copy-field-btn:hover {
+	background: var(--slc-primary-hover);
+	transform: translateY(-1px);
+}
