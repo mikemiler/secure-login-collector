@@ -111,6 +111,7 @@ class Secure_Login_Settings_Manager {
 		register_setting( 'secure_login_settings', 'secure_login_ultra_secure_mode' );
 		register_setting( 'secure_login_settings', 'secure_login_frontend_form_text', array( $this, 'sanitize_frontend_form_text' ) );
 		register_setting( 'secure_login_settings', 'secure_login_frontend_text_type' );
+		register_setting( 'secure_login_settings', 'secure_login_delete_on_uninstall' );
 
 		add_settings_section(
 			'secure_login_notification_section',
@@ -133,14 +134,6 @@ class Secure_Login_Settings_Manager {
 			'secure_login_settings'
 		);
 
-		// Add encryption settings section (for all users now).
-		add_settings_section(
-			'secure_login_encryption_section',
-			__( 'Encryption Settings', 'secure-login-collector' ),
-			array( $this, 'encryption_section_callback' ),
-			'secure_login_settings'
-		);
-
 		// Add pro version settings section.
 		if ( $this->is_pro_version ) {
 			add_settings_section(
@@ -158,6 +151,30 @@ class Secure_Login_Settings_Manager {
 				'secure_login_pro_section'
 			);
 		}
+
+		// Add encryption settings section (for all users now).
+		add_settings_section(
+			'secure_login_encryption_section',
+			__( 'Encryption Settings', 'secure-login-collector' ),
+			array( $this, 'encryption_section_callback' ),
+			'secure_login_settings'
+		);
+
+		// Add plugin management section.
+		add_settings_section(
+			'secure_login_plugin_management_section',
+			__( 'Plugin Management', 'secure-login-collector' ),
+			array( $this, 'plugin_management_section_callback' ),
+			'secure_login_settings'
+		);
+
+		add_settings_field(
+			'secure_login_delete_on_uninstall',
+			__( 'Delete Data on Uninstall', 'secure-login-collector' ),
+			array( $this, 'delete_on_uninstall_callback' ),
+			'secure_login_settings',
+			'secure_login_plugin_management_section'
+		);
 
 		add_settings_field(
 			'secure_login_enable_notifications',
@@ -628,6 +645,34 @@ class Secure_Login_Settings_Manager {
 			echo '</div>';
 			echo '</div>';
 		}
+	}
+
+	/**
+	 * Plugin management section callback.
+	 */
+	public function plugin_management_section_callback() {
+		echo '<div class="slc-card" style="margin-top: 20px;">';
+		echo '<div class="slc-card-header">';
+		echo '<h3 class="slc-card-title">';
+		echo esc_html__( 'Plugin Management', 'secure-login-collector' );
+		echo '</h3>';
+		echo '</div>';
+		echo '<div class="slc-card-body">';
+		echo '<p>' . esc_html__( 'Configure how the plugin handles data when it is uninstalled.', 'secure-login-collector' ) . '</p>';
+		// Don't close the card-body div here - let the form-table be inside it
+	}
+
+	/**
+	 * Delete on uninstall field callback.
+	 */
+	public function delete_on_uninstall_callback() {
+		$enabled = get_option( 'secure_login_delete_on_uninstall', false );
+		echo '<input type="checkbox" id="secure_login_delete_on_uninstall" name="secure_login_delete_on_uninstall" value="1" ' . checked( 1, $enabled, false ) . ' />';
+		echo '<label for="secure_login_delete_on_uninstall"> ' . esc_html__( 'Completely remove all plugin data when uninstalling', 'secure-login-collector' ) . '</label>';
+		echo '<p class="description">' . esc_html__( 'When checked, all login data, encryption keys, settings, and database tables will be permanently deleted when the plugin is uninstalled. This action cannot be undone.', 'secure-login-collector' ) . '</p>';
+		echo '<div class="notice notice-warning inline" style="margin-top: 10px;">';
+		echo '<p><strong>' . esc_html__( 'Warning:', 'secure-login-collector' ) . '</strong> ' . esc_html__( 'If you enable this option, all encrypted login data will be permanently lost when you uninstall the plugin. Make sure to export any important data before uninstalling.', 'secure-login-collector' ) . '</p>';
+		echo '</div>';
 	}
 
 	/**

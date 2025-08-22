@@ -680,15 +680,7 @@ class Secure_Login_Admin_Interface {
 			return;
 		}
 
-		// Enqueue CSS files.
-		wp_enqueue_style(
-			'secure-login-admin-css',
-			plugin_dir_url( __FILE__ ) . '../assets/css/admin.css',
-			array(),
-			'1.0.0'
-		);
-
-		// Enqueue modern admin CSS.
+		// Enqueue modern admin CSS (includes all necessary styles).
 		wp_enqueue_style(
 			'secure-login-admin-modern-css',
 			plugin_dir_url( __FILE__ ) . '../assets/css/admin-modern.css',
