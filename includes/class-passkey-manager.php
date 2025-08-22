@@ -33,7 +33,10 @@ class Passkey_Manager {
 			require_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-master-key-manager.php';
 		}
 		$this->master_key_manager = new Master_Key_Manager();
-		
+
+		// Enqueue admin styles
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_styles' ) );
+
 		// AJAX handlers
 		add_action( 'wp_ajax_passkey_start_registration', array( $this, 'handle_start_registration' ) );
 		add_action( 'wp_ajax_passkey_complete_registration', array( $this, 'handle_complete_registration' ) );
@@ -44,7 +47,28 @@ class Passkey_Manager {
 		add_action( 'wp_ajax_derive_passkey_unwrapping_key', array( $this, 'handle_derive_passkey_unwrapping_key' ) );
 	}
 
+	/**
+	 * Enqueue admin styles.
+	 *
+	 * @param string $hook Current admin page hook.
+	 */
+	public function enqueue_admin_styles( $hook ) {
+		// Load CSS on all Secure Login Collector admin pages.
+		if ( strpos( $hook, 'secure-login-collector' ) === false &&
+			'toplevel_page_secure-login-collector' !== $hook ) {
+			return;
+		}
 
+		// Enqueue modern admin CSS if not already enqueued.
+		if ( ! wp_style_is( 'secure-login-admin-modern-css', 'enqueued' ) ) {
+			wp_enqueue_style(
+				'secure-login-admin-modern-css',
+				plugin_dir_url( __FILE__ ) . '../assets/css/admin-modern.css',
+				array(),
+				filemtime( plugin_dir_path( __FILE__ ) . '../assets/css/admin-modern.css' )
+			);
+		}
+	}
 
 	/**
 	 * Render passkey section for settings page.
@@ -53,54 +77,152 @@ class Passkey_Manager {
 	public function render_passkey_section() {
 		$user_id = get_current_user_id();
 		$passkey = $this->get_user_passkey( $user_id );
-		
+
+		// Check if there are any encrypted entries.
+		global $wpdb;
+		$table_name = esc_sql( $wpdb->prefix . 'secure_login_data' );
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$has_encrypted_data = $wpdb->get_var( "SELECT COUNT(*) FROM {$table_name}" ) > 0;
+
 		?>
-		<div class="passkey-settings-section">
+		<div class="slc-passkey-container">
 			<?php if ( ! $this->is_https() ) : ?>
-				<div class="notice notice-error inline">
-					<p><?php esc_html_e( 'WebAuthn requires HTTPS. Please enable SSL on your site to use passkeys.', 'secure-login-collector' ); ?></p>
+				<div class="slc-alert slc-alert-danger">
+					<span class="slc-alert-icon">⚠️</span>
+					<div class="slc-alert-content">
+						<div class="slc-alert-title"><?php esc_html_e( 'HTTPS Required', 'secure-login-collector' ); ?></div>
+						<div class="slc-alert-message"><?php esc_html_e( 'WebAuthn requires HTTPS. Please enable SSL on your site to use passkeys.', 'secure-login-collector' ); ?></div>
+					</div>
 				</div>
 			<?php endif; ?>
 			
-			<div style="background: white; border: 1px solid #c3c4c7; border-radius: 4px; padding: 15px; margin-top: 20px;">
-				<h3 style="margin-top: 0;">🔐 <?php esc_html_e( 'Passkey Authentication', 'secure-login-collector' ); ?></h3>
+			<div class="slc-card">
+				<div class="slc-card-header">
+					<h3 class="slc-card-title">
+						<span class="slc-card-title-icon">🔐</span>
+						<?php esc_html_e( 'Passkey Authentication', 'secure-login-collector' ); ?>
+					</h3>
+					<?php if ( $passkey ) : ?>
+						<span class="slc-badge slc-badge-success"><?php esc_html_e( 'Active', 'secure-login-collector' ); ?></span>
+					<?php endif; ?>
+				</div>
 				
-				<?php if ( $passkey ) : ?>
-					<div style="background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 3px; padding: 10px; margin-bottom: 15px;">
-						<strong><?php esc_html_e( 'Passkey Registered:', 'secure-login-collector' ); ?></strong> 
-						<?php echo esc_html( $passkey['name'] ); ?><br>
-						<small><?php esc_html_e( 'Registered:', 'secure-login-collector' ); ?> <?php echo esc_html( $passkey['registered_at'] ); ?></small><br>
-						<small><?php esc_html_e( 'ID:', 'secure-login-collector' ); ?> <?php echo esc_html( substr( $passkey['credential_id'], 0, 20 ) . '...' ); ?></small>
-					</div>
-					
-					<button type="button" class="button button-secondary" id="delete-passkey-btn" 
-					        data-credential-id="<?php echo esc_attr( $passkey['credential_id'] ); ?>">
-						<?php esc_html_e( 'Delete Passkey', 'secure-login-collector' ); ?>
-					</button>
-				<?php else : ?>
-					<p><?php esc_html_e( 'Register a hardware security key or platform authenticator for ultra-secure encryption.', 'secure-login-collector' ); ?></p>
-					
-					<div class="passkey-registration-form" style="margin: 15px 0;">
-						<button type="button" 
-						        id="register-passkey-btn" 
-						        class="button button-primary">
-							<?php esc_html_e( 'Register Passkey', 'secure-login-collector' ); ?>
-						</button>
+				<div class="slc-card-body">
+					<?php if ( $passkey ) : ?>
+						<div class="slc-passkey-status">
+							<div class="slc-passkey-status-header">
+								<div class="slc-passkey-status-title">
+									<span>✅</span>
+									<?php esc_html_e( 'Passkey Registered', 'secure-login-collector' ); ?>
+								</div>
+							</div>
+							<div class="slc-passkey-status-details">
+								<strong><?php esc_html_e( 'Name:', 'secure-login-collector' ); ?></strong> <?php echo esc_html( $passkey['name'] ); ?><br>
+								<strong><?php esc_html_e( 'Registered:', 'secure-login-collector' ); ?></strong> <?php echo esc_html( $passkey['registered_at'] ); ?><br>
+								<strong><?php esc_html_e( 'ID:', 'secure-login-collector' ); ?></strong> <?php echo esc_html( substr( $passkey['credential_id'], 0, 20 ) . '...' ); ?>
+							</div>
+						</div>
 						
-						<span class="spinner" style="float: none; margin-left: 10px;"></span>
-					</div>
-				<?php endif; ?>
-				
-				<div id="passkey-status-message"></div>
+						<?php if ( $has_encrypted_data ) : ?>
+							<div class="slc-alert slc-alert-danger" style="margin-top: 20px;">
+								<span class="slc-alert-icon">⚠️</span>
+								<div class="slc-alert-content">
+									<div class="slc-alert-title"><?php esc_html_e( 'CRITICAL WARNING: Data Loss Risk', 'secure-login-collector' ); ?></div>
+									<div class="slc-alert-message">
+										<p><strong><?php esc_html_e( 'Deleting this passkey will permanently prevent decryption of:', 'secure-login-collector' ); ?></strong></p>
+										<ul>
+											<li><?php esc_html_e( 'All existing login data encrypted with this passkey', 'secure-login-collector' ); ?></li>
+											<li><?php esc_html_e( 'Any future data encrypted before registering a new passkey', 'secure-login-collector' ); ?></li>
+										</ul>
+										<p><strong><?php esc_html_e( 'This action CANNOT be undone. There is NO recovery method.', 'secure-login-collector' ); ?></strong></p>
+									</div>
+								</div>
+							</div>
+						<?php endif; ?>
+						
+						<div style="margin-top: 20px;">
+							<button type="button" class="slc-btn slc-btn-danger" id="delete-passkey-btn" 
+									data-credential-id="<?php echo esc_attr( $passkey['credential_id'] ); ?>">
+								<span>🗑️</span>
+								<?php esc_html_e( 'Delete Passkey', 'secure-login-collector' ); ?>
+							</button>
+							<p class="slc-form-help" style="margin-top: 8px;">
+								<?php esc_html_e( 'Only delete if you understand the consequences above.', 'secure-login-collector' ); ?>
+							</p>
+						</div>
+					<?php else : ?>
+						<p><?php esc_html_e( 'Register a hardware security key or platform authenticator for ultra-secure encryption.', 'secure-login-collector' ); ?></p>
+						
+						<div class="passkey-registration-form" style="margin: 20px 0;">
+							<button type="button" 
+									id="register-passkey-btn" 
+									class="slc-btn slc-btn-primary slc-btn-lg">
+								<span>🔑</span>
+								<?php esc_html_e( 'Register Passkey', 'secure-login-collector' ); ?>
+							</button>
+							
+							<span class="spinner" style="float: none; margin-left: 10px;"></span>
+						</div>
+					<?php endif; ?>
+					
+					<div id="passkey-status-message"></div>
+				</div>
 			</div>
 			
-			<div class="notice notice-info inline" style="margin-top: 20px;">
-				<p><strong><?php esc_html_e( 'Why use a Passkey?', 'secure-login-collector' ); ?></strong></p>
-				<ul style="list-style: disc; margin-left: 20px;">
-					<li><?php esc_html_e( 'Phishing-resistant authentication', 'secure-login-collector' ); ?></li>
-					<li><?php esc_html_e( 'Private keys never leave your device', 'secure-login-collector' ); ?></li>
-					<li><?php esc_html_e( 'Zero-knowledge: Server cannot decrypt without your passkey', 'secure-login-collector' ); ?></li>
-				</ul>
+			<!-- Critical Warning About Passkey Loss -->
+			<div class="slc-alert slc-alert-warning">
+				<span class="slc-alert-icon">⚠️</span>
+				<div class="slc-alert-content">
+					<div class="slc-alert-title"><?php esc_html_e( 'Important: No Recovery Options', 'secure-login-collector' ); ?></div>
+					<div class="slc-alert-message">
+						<p><?php esc_html_e( 'If you lose access to your passkey:', 'secure-login-collector' ); ?></p>
+						<ul>
+							<li><?php esc_html_e( 'All data encrypted with that passkey becomes permanently inaccessible', 'secure-login-collector' ); ?></li>
+							<li><?php esc_html_e( 'There is NO recovery mechanism or master password', 'secure-login-collector' ); ?></li>
+							<li><?php esc_html_e( 'Even site administrators cannot decrypt the data', 'secure-login-collector' ); ?></li>
+						</ul>
+						<p><strong><?php esc_html_e( 'Keep your passkey device secure and consider having a backup authentication method.', 'secure-login-collector' ); ?></strong></p>
+					</div>
+				</div>
+			</div>
+			
+			<!-- Benefits Section -->
+			<div class="slc-card">
+				<div class="slc-card-header">
+					<h3 class="slc-card-title"><?php esc_html_e( 'Why Use Passkeys?', 'secure-login-collector' ); ?></h3>
+				</div>
+				<div class="slc-card-body">
+					<div class="slc-passkey-benefits">
+						<div class="slc-passkey-benefit">
+							<span class="slc-passkey-benefit-icon">🛡️</span>
+							<div class="slc-passkey-benefit-text">
+								<div class="slc-passkey-benefit-title"><?php esc_html_e( 'Phishing-Resistant', 'secure-login-collector' ); ?></div>
+								<div class="slc-passkey-benefit-desc"><?php esc_html_e( 'Passkeys cannot be phished or stolen through fake websites', 'secure-login-collector' ); ?></div>
+							</div>
+						</div>
+						<div class="slc-passkey-benefit">
+							<span class="slc-passkey-benefit-icon">🔒</span>
+							<div class="slc-passkey-benefit-text">
+								<div class="slc-passkey-benefit-title"><?php esc_html_e( 'Hardware Security', 'secure-login-collector' ); ?></div>
+								<div class="slc-passkey-benefit-desc"><?php esc_html_e( 'Keys stored in secure hardware, never exposed to software', 'secure-login-collector' ); ?></div>
+							</div>
+						</div>
+						<div class="slc-passkey-benefit">
+							<span class="slc-passkey-benefit-icon">👆</span>
+							<div class="slc-passkey-benefit-text">
+								<div class="slc-passkey-benefit-title"><?php esc_html_e( 'Biometric Protection', 'secure-login-collector' ); ?></div>
+								<div class="slc-passkey-benefit-desc"><?php esc_html_e( 'Use fingerprint, face recognition, or PIN for authentication', 'secure-login-collector' ); ?></div>
+							</div>
+						</div>
+						<div class="slc-passkey-benefit">
+							<span class="slc-passkey-benefit-icon">✨</span>
+							<div class="slc-passkey-benefit-text">
+								<div class="slc-passkey-benefit-title"><?php esc_html_e( 'Zero-Knowledge', 'secure-login-collector' ); ?></div>
+								<div class="slc-passkey-benefit-desc"><?php esc_html_e( 'Server cannot decrypt without your passkey', 'secure-login-collector' ); ?></div>
+							</div>
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 		
@@ -123,18 +245,24 @@ class Passkey_Manager {
 					return;
 				}
 				
-				if (!confirm('<?php echo esc_js( __( 'Are you sure you want to delete this passkey?', 'secure-login-collector' ) ); ?>')) {
+				<?php if ( $has_encrypted_data ) : ?>
+				var warningMessage = '<?php echo esc_js( __( 'WARNING: Deleting this passkey will make ALL existing encrypted data permanently inaccessible!\n\nThis action CANNOT be undone. There is NO recovery method.\n\nAre you absolutely sure you want to proceed?', 'secure-login-collector' ) ); ?>';
+				<?php else : ?>
+				var warningMessage = '<?php echo esc_js( __( 'Are you sure you want to delete this passkey?\n\nYou can register a new passkey afterward.', 'secure-login-collector' ) ); ?>';
+				<?php endif; ?>
+				
+				if (!confirm(warningMessage)) {
 					return;
 				}
 				
 				$button.prop('disabled', true).text('<?php echo esc_js( __( 'Deleting...', 'secure-login-collector' ) ); ?>');
 				
 				$.ajax({
-					url: '<?php echo admin_url( 'admin-ajax.php' ); ?>',
+					url: '<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>',
 					type: 'POST',
 					data: {
 						action: 'passkey_delete',
-						nonce: '<?php echo wp_create_nonce( 'passkey_admin_nonce' ); ?>',
+						nonce: '<?php echo esc_attr( wp_create_nonce( 'passkey_admin_nonce' ) ); ?>',
 						credential_id: credentialId
 					},
 					success: function(response) {
@@ -181,11 +309,11 @@ class Passkey_Manager {
 				try {
 					// Start registration to get challenge
 					const startResponse = await $.ajax({
-						url: '<?php echo admin_url( 'admin-ajax.php' ); ?>',
+						url: '<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>',
 						type: 'POST',
 						data: {
 							action: 'passkey_start_registration',
-							nonce: '<?php echo wp_create_nonce( 'passkey_admin_nonce' ); ?>'
+							nonce: '<?php echo esc_attr( wp_create_nonce( 'passkey_admin_nonce' ) ); ?>'
 						}
 					});
 					
@@ -206,11 +334,11 @@ class Passkey_Manager {
 					
 					// Initialize the zero-knowledge setup
 					const initResponse = await $.ajax({
-						url: '<?php echo admin_url( 'admin-ajax.php' ); ?>',
+						url: '<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>',
 						type: 'POST',
 						data: {
 							action: 'passkey_init_setup',
-							nonce: '<?php echo wp_create_nonce( 'passkey_admin_nonce' ); ?>',
+							nonce: '<?php echo esc_attr( wp_create_nonce( 'passkey_admin_nonce' ) ); ?>',
 							credential_id: arrayBufferToBase64(credential.rawId)
 						}
 					});
@@ -235,11 +363,11 @@ class Passkey_Manager {
 					}
 					
 					const completeResponse = await $.ajax({
-						url: '<?php echo admin_url( 'admin-ajax.php' ); ?>',
+						url: '<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>',
 						type: 'POST',
 						data: {
 							action: 'passkey_complete_registration',
-							nonce: '<?php echo wp_create_nonce( 'passkey_admin_nonce' ); ?>',
+							nonce: '<?php echo esc_attr( wp_create_nonce( 'passkey_admin_nonce' ) ); ?>',
 							name: 'Passkey ' + new Date().toLocaleDateString(), // Auto-generate name
 							credential_id: arrayBufferToBase64(credential.rawId),
 							public_key: publicKeyData,
@@ -330,28 +458,36 @@ class Passkey_Manager {
 
 		$user = wp_get_current_user();
 
-		wp_send_json_success( array(
-			'challenge' => $challenge,
-			'rp' => array(
-				'name' => get_bloginfo( 'name' ),
-				'id'   => parse_url( home_url(), PHP_URL_HOST ),
-			),
-			'user' => array(
-				'id'          => base64_encode( (string) $user->ID ),
-				'name'        => $user->user_login,
-				'displayName' => $user->display_name,
-			),
-			'pubKeyCredParams' => array(
-				array( 'alg' => -7, 'type' => 'public-key' ),  // ES256
-				array( 'alg' => -257, 'type' => 'public-key' ), // RS256
-			),
-			'authenticatorSelection' => array(
-				'authenticatorAttachment' => 'cross-platform',
-				'userVerification'        => 'required',
-				'requireResidentKey'      => false,
-			),
-			'timeout' => 60000,
-		) );
+		wp_send_json_success(
+			array(
+				'challenge'              => $challenge,
+				'rp'                     => array(
+					'name' => get_bloginfo( 'name' ),
+					'id'   => parse_url( home_url(), PHP_URL_HOST ),
+				),
+				'user'                   => array(
+					'id'          => base64_encode( (string) $user->ID ),
+					'name'        => $user->user_login,
+					'displayName' => $user->display_name,
+				),
+				'pubKeyCredParams'       => array(
+					array(
+						'alg'  => -7,
+						'type' => 'public-key',
+					),  // ES256
+					array(
+						'alg'  => -257,
+						'type' => 'public-key',
+					), // RS256
+				),
+				'authenticatorSelection' => array(
+					'authenticatorAttachment' => 'cross-platform',
+					'userVerification'        => 'required',
+					'requireResidentKey'      => false,
+				),
+				'timeout'                => 60000,
+			)
+		);
 	}
 
 	/**
@@ -364,10 +500,10 @@ class Passkey_Manager {
 			wp_send_json_error( 'Insufficient permissions' );
 		}
 
-		$name           = sanitize_text_field( wp_unslash( $_POST['name'] ?? '' ) );
-		$credential_id  = sanitize_text_field( wp_unslash( $_POST['credential_id'] ?? '' ) );
-		$public_key     = wp_unslash( $_POST['public_key'] ?? '' );
-		$client_data    = wp_unslash( $_POST['client_data'] ?? '' );
+		$name          = sanitize_text_field( wp_unslash( $_POST['name'] ?? '' ) );
+		$credential_id = sanitize_text_field( wp_unslash( $_POST['credential_id'] ?? '' ) );
+		$public_key    = wp_unslash( $_POST['public_key'] ?? '' );
+		$client_data   = wp_unslash( $_POST['client_data'] ?? '' );
 
 		// Auto-generate name if not provided
 		if ( empty( $name ) ) {
@@ -377,7 +513,7 @@ class Passkey_Manager {
 		if ( empty( $credential_id ) ) {
 			wp_send_json_error( 'Missing required registration data (credential_id)' );
 		}
-		
+
 		// Public key might not be available in all browsers
 		if ( empty( $public_key ) || $public_key === 'not_available' ) {
 			// Use a placeholder - the actual public key is in the attestation object
@@ -395,14 +531,14 @@ class Passkey_Manager {
 		if ( ! $client_data_array ) {
 			wp_send_json_error( 'Invalid client data format' );
 		}
-		
+
 		// Convert base64url to base64 for comparison (WebAuthn uses base64url)
 		$received_challenge = $client_data_array['challenge'] ?? '';
-		
+
 		// Normalize both challenges to base64url format for comparison
 		// Remove padding from expected challenge and convert to base64url
 		$expected_challenge_url = rtrim( strtr( $expected_challenge, '+/', '-_' ), '=' );
-		
+
 		// The received challenge is already in base64url format
 		// Compare the normalized values
 		if ( $received_challenge !== $expected_challenge_url ) {
@@ -413,20 +549,20 @@ class Passkey_Manager {
 			if ( $pad ) {
 				$received_as_base64 .= str_repeat( '=', 4 - $pad );
 			}
-			
+
 			if ( $received_as_base64 !== $expected_challenge ) {
 				wp_send_json_error( 'Challenge verification failed' );
 			}
 		}
 
 		$user_id = get_current_user_id();
-		
+
 		// Check if user already has a passkey
 		if ( $this->has_passkey( $user_id ) ) {
 			wp_send_json_error( 'A passkey is already registered. Please delete it first to register a new one.' );
 			return;
 		}
-		
+
 		// Store passkey metadata (single passkey)
 		// Note: The wrapping key derivation happens in passkey_init_setup handler
 		$passkey_data = array(
@@ -439,24 +575,29 @@ class Passkey_Manager {
 		update_user_meta( $user_id, 'secure_login_passkey', $passkey_data );
 
 		// Store globally for verification
-		update_option( 'passkey_credential_' . $credential_id, array(
-			'public_key' => $public_key,
-			'user_id'    => $user_id,
-		) );
-		
+		update_option(
+			'passkey_credential_' . $credential_id,
+			array(
+				'public_key' => $public_key,
+				'user_id'    => $user_id,
+			)
+		);
+
 		// Set global passkey registered flag
 		update_option( 'secure_login_passkey_registered', true );
 		update_option( 'secure_login_passkey_registered_at', current_time( 'mysql' ) );
-		
+
 		// Also ensure pro keys active flag is set for consistency with V2 handler
 		update_option( 'secure_login_pro_keys_active', true );
 
 		// Clear challenge
 		delete_transient( 'passkey_reg_challenge_' . $user_id );
 
-		wp_send_json_success( array(
-			'message' => 'Passkey registered successfully'
-		) );
+		wp_send_json_success(
+			array(
+				'message' => 'Passkey registered successfully',
+			)
+		);
 	}
 
 	/**
@@ -486,7 +627,7 @@ class Passkey_Manager {
 		// Delete the passkey
 		delete_user_meta( $user_id, 'secure_login_passkey' );
 		delete_option( 'passkey_credential_' . $credential_id );
-		
+
 		// Delete all wrapped MWKs for this user
 		if ( $this->master_key_manager ) {
 			$this->master_key_manager->delete_all_user_mwks( $user_id );
@@ -498,16 +639,18 @@ class Passkey_Manager {
 		}
 		$encryption_handler = new Secure_Login_Encryption_Handler_V2();
 		$encryption_handler->delete_pro_keys();
-		
+
 		// Clear global passkey registered flag and pro keys active flag
 		delete_option( 'secure_login_passkey_registered' );
 		delete_option( 'secure_login_passkey_registered_at' );
 		delete_option( 'secure_login_pro_keys_active' );
-		
-		wp_send_json_success( array(
-			'message' => 'Passkey deleted and encryption keys removed',
-			'success' => true
-		) );
+
+		wp_send_json_success(
+			array(
+				'message' => 'Passkey deleted and encryption keys removed',
+				'success' => true,
+			)
+		);
 	}
 
 	/**
@@ -523,10 +666,12 @@ class Passkey_Manager {
 		$user_id = get_current_user_id();
 		$passkey = $this->get_user_passkey( $user_id );
 
-		wp_send_json_success( array(
-			'has_passkey' => ! empty( $passkey ),
-			'passkey' => $passkey
-		) );
+		wp_send_json_success(
+			array(
+				'has_passkey' => ! empty( $passkey ),
+				'passkey'     => $passkey,
+			)
+		);
 	}
 
 
@@ -541,12 +686,11 @@ class Passkey_Manager {
 		}
 
 		$user_id = get_current_user_id();
-		
+
 		// Check if passkey already exists
 		if ( $this->has_passkey( $user_id ) ) {
 			wp_send_json_error( 'A passkey is already registered.' );
 		}
-		
 
 		// Get passkey credential data from registration
 		$credential_id = sanitize_text_field( wp_unslash( $_POST['credential_id'] ?? '' ) );
@@ -559,35 +703,36 @@ class Passkey_Manager {
 			require_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-encryption-handler-v2.php';
 		}
 		$encryption_handler = new Secure_Login_Encryption_Handler_V2();
-		
+
 		// Step 2: Ensure free keys exist first
 		$free_result = $encryption_handler->initialize_free_keys();
 		if ( is_wp_error( $free_result ) ) {
 			wp_send_json_error( 'Failed to initialize free keys: ' . $free_result->get_error_message() );
 		}
-		
+
 		// Step 3: Derive key from passkey for wrapping
 		$passkey_derived_key = $this->derive_wrapping_key( $credential_id, $user_id );
-		
+
 		// Step 4: Initialize PRO keys with passkey wrapping
 		$pro_result = $encryption_handler->initialize_pro_keys( $passkey_derived_key );
-		
+
 		if ( is_wp_error( $pro_result ) ) {
 			wp_send_json_error( 'Failed to initialize pro keys: ' . $pro_result->get_error_message() );
 		}
-		
 
 		// The passkey-derived key directly wraps the PRO private key
-		
+
 		// Get the pro public key for response
 		$public_key_pro = get_option( 'secure_login_public_key_pro' );
 
-		wp_send_json_success( array(
-			'message' => 'Passkey-wrapped PRO encryption initialized successfully',
-			'public_key' => $public_key_pro,
-			'free_status' => $free_result,
-			'pro_status' => $pro_result
-		) );
+		wp_send_json_success(
+			array(
+				'message'     => 'Passkey-wrapped PRO encryption initialized successfully',
+				'public_key'  => $public_key_pro,
+				'free_status' => $free_result,
+				'pro_status'  => $pro_result,
+			)
+		);
 	}
 
 
@@ -601,9 +746,9 @@ class Passkey_Manager {
 	private function derive_wrapping_key( $credential_id, $user_id ) {
 		// Use credential ID + user ID + salt for key derivation
 		// This is deterministic but unique per passkey
-		$salt = wp_salt( 'auth' ) . 'passkey_wrap';
+		$salt         = wp_salt( 'auth' ) . 'passkey_wrap';
 		$key_material = $credential_id . '|' . $user_id . '|' . $salt;
-		
+
 		// Derive 256-bit key using PBKDF2
 		return hash_pbkdf2( 'sha256', $key_material, $salt, 100000, 32, true );
 	}
@@ -614,8 +759,8 @@ class Passkey_Manager {
 	public function handle_get_current_user_id() {
 		// Accept both admin nonces
 		$nonce = sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) );
-		if ( ! wp_verify_nonce( $nonce, 'secure_login_admin_nonce' ) && 
-		     ! wp_verify_nonce( $nonce, 'passkey_admin_nonce' ) ) {
+		if ( ! wp_verify_nonce( $nonce, 'secure_login_admin_nonce' ) &&
+			! wp_verify_nonce( $nonce, 'passkey_admin_nonce' ) ) {
 			wp_send_json_error( 'Invalid security token' );
 			return;
 		}
@@ -624,9 +769,11 @@ class Passkey_Manager {
 			wp_send_json_error( 'Insufficient permissions' );
 		}
 
-		wp_send_json_success( array(
-			'user_id' => get_current_user_id()
-		) );
+		wp_send_json_success(
+			array(
+				'user_id' => get_current_user_id(),
+			)
+		);
 	}
 
 	/**
@@ -635,8 +782,8 @@ class Passkey_Manager {
 	public function handle_derive_passkey_unwrapping_key() {
 		// Accept both admin nonces
 		$nonce = sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) );
-		if ( ! wp_verify_nonce( $nonce, 'secure_login_admin_nonce' ) && 
-		     ! wp_verify_nonce( $nonce, 'passkey_admin_nonce' ) ) {
+		if ( ! wp_verify_nonce( $nonce, 'secure_login_admin_nonce' ) &&
+			! wp_verify_nonce( $nonce, 'passkey_admin_nonce' ) ) {
 			wp_send_json_error( 'Invalid security token' );
 			return;
 		}
@@ -646,7 +793,7 @@ class Passkey_Manager {
 		}
 
 		$credential_id = sanitize_text_field( wp_unslash( $_POST['credential_id'] ?? '' ) );
-		$user_id = intval( $_POST['user_id'] ?? 0 );
+		$user_id       = intval( $_POST['user_id'] ?? 0 );
 
 		if ( empty( $credential_id ) || ! $user_id ) {
 			wp_send_json_error( 'Missing credential ID or user ID' );
@@ -655,8 +802,10 @@ class Passkey_Manager {
 		// Derive the same key as server-side wrapping
 		$key = $this->derive_wrapping_key( $credential_id, $user_id );
 
-		wp_send_json_success( array(
-			'key' => base64_encode( $key )
-		) );
+		wp_send_json_success(
+			array(
+				'key' => base64_encode( $key ),
+			)
+		);
 	}
 }

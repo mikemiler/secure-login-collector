@@ -1,7 +1,7 @@
 <?php
 /**
  * Master Key Manager
- * 
+ *
  * Manages the Master Wrapping Key (MWK) that protects the RSA private key.
  * The MWK is wrapped by each registered passkey, allowing multiple passkeys
  * to unlock the same private key.
@@ -33,7 +33,7 @@ class Master_Key_Manager {
 	public function __construct() {
 		global $wpdb;
 		$this->table_name = $wpdb->prefix . 'secure_login_wrapped_keys';
-		
+
 		// Create table if needed
 		add_action( 'init', array( $this, 'maybe_create_table' ) );
 	}
@@ -43,9 +43,9 @@ class Master_Key_Manager {
 	 */
 	public function maybe_create_table() {
 		global $wpdb;
-		
+
 		$charset_collate = $wpdb->get_charset_collate();
-		
+
 		$sql = "CREATE TABLE IF NOT EXISTS {$this->table_name} (
 			id bigint(20) NOT NULL AUTO_INCREMENT,
 			user_id bigint(20) NOT NULL,
@@ -61,7 +61,7 @@ class Master_Key_Manager {
 			KEY user_id (user_id),
 			KEY passkey_credential_id (passkey_credential_id)
 		) $charset_collate;";
-		
+
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		dbDelta( $sql );
 	}
@@ -86,12 +86,12 @@ class Master_Key_Manager {
 	 */
 	public function wrap_private_key_with_mwk( $private_key, $master_key ) {
 		$mwk = base64_decode( $master_key );
-		
+
 		// Generate random IV
 		$iv = random_bytes( 16 );
-		
+
 		// Encrypt with AES-256-GCM for authenticated encryption
-		$tag = '';
+		$tag       = '';
 		$encrypted = openssl_encrypt(
 			$private_key,
 			'aes-256-gcm',
@@ -100,17 +100,17 @@ class Master_Key_Manager {
 			$iv,
 			$tag
 		);
-		
+
 		if ( false === $encrypted ) {
 			return false;
 		}
-		
+
 		return array(
 			'wrapped_key' => base64_encode( $encrypted ),
 			'iv'          => base64_encode( $iv ),
 			'tag'         => base64_encode( $tag ),
 			'algorithm'   => 'AES-256-GCM',
-			'version'     => '1.0'
+			'version'     => '1.0',
 		);
 	}
 
@@ -125,12 +125,12 @@ class Master_Key_Manager {
 		if ( ! isset( $wrapped_data['wrapped_key'], $wrapped_data['iv'], $wrapped_data['tag'] ) ) {
 			return false;
 		}
-		
-		$mwk = base64_decode( $master_key );
+
+		$mwk       = base64_decode( $master_key );
 		$encrypted = base64_decode( $wrapped_data['wrapped_key'] );
-		$iv = base64_decode( $wrapped_data['iv'] );
-		$tag = base64_decode( $wrapped_data['tag'] );
-		
+		$iv        = base64_decode( $wrapped_data['iv'] );
+		$tag       = base64_decode( $wrapped_data['tag'] );
+
 		// Decrypt with AES-256-GCM
 		$decrypted = openssl_decrypt(
 			$encrypted,
@@ -140,7 +140,7 @@ class Master_Key_Manager {
 			$iv,
 			$tag
 		);
-		
+
 		return $decrypted;
 	}
 
@@ -156,28 +156,30 @@ class Master_Key_Manager {
 	 */
 	public function store_wrapped_key( $user_id, $key_type, $identifier, $wrapped_data, $credential_id = null ) {
 		global $wpdb;
-		
+
 		// Ensure table exists before storing
 		$this->maybe_create_table();
-		
+
 		// Check if key already exists
-		$existing = $wpdb->get_var( $wpdb->prepare(
-			"SELECT id FROM {$this->table_name} 
+		$existing = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT id FROM {$this->table_name} 
 			 WHERE user_id = %d AND key_type = %s AND key_identifier = %s",
-			$user_id,
-			$key_type,
-			$identifier
-		) );
-		
-		$data = array(
-			'user_id'              => $user_id,
-			'key_type'             => $key_type,
-			'key_identifier'       => $identifier,
-			'wrapped_data'         => wp_json_encode( $wrapped_data ),
-			'passkey_credential_id' => $credential_id,
-			'algorithm'            => $wrapped_data['algorithm'] ?? 'AES-256-GCM'
+				$user_id,
+				$key_type,
+				$identifier
+			)
 		);
-		
+
+		$data = array(
+			'user_id'               => $user_id,
+			'key_type'              => $key_type,
+			'key_identifier'        => $identifier,
+			'wrapped_data'          => wp_json_encode( $wrapped_data ),
+			'passkey_credential_id' => $credential_id,
+			'algorithm'             => $wrapped_data['algorithm'] ?? 'AES-256-GCM',
+		);
+
 		if ( $existing ) {
 			// Update existing
 			$result = $wpdb->update(
@@ -185,11 +187,11 @@ class Master_Key_Manager {
 				$data,
 				array( 'id' => $existing )
 			);
-			return $result !== false ? $existing : false;
+			return false !== $result ? $existing : false;
 		} else {
 			// Insert new
 			$result = $wpdb->insert( $this->table_name, $data );
-			return $result !== false ? $wpdb->insert_id : false;
+			return false !== $result ? $wpdb->insert_id : false;
 		}
 	}
 
@@ -203,29 +205,31 @@ class Master_Key_Manager {
 	 */
 	public function get_wrapped_key( $user_id, $key_type, $identifier ) {
 		global $wpdb;
-		
+
 		// Ensure table exists before querying
 		$this->maybe_create_table();
-		
-		$row = $wpdb->get_row( $wpdb->prepare(
-			"SELECT * FROM {$this->table_name} 
+
+		$row = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT * FROM {$this->table_name} 
 			 WHERE user_id = %d AND key_type = %s AND key_identifier = %s",
-			$user_id,
-			$key_type,
-			$identifier
-		) );
-		
+				$user_id,
+				$key_type,
+				$identifier
+			)
+		);
+
 		if ( ! $row ) {
 			return false;
 		}
-		
+
 		// Update last used timestamp
 		$wpdb->update(
 			$this->table_name,
 			array( 'last_used' => current_time( 'mysql' ) ),
 			array( 'id' => $row->id )
 		);
-		
+
 		return json_decode( $row->wrapped_data, true );
 	}
 
@@ -237,28 +241,30 @@ class Master_Key_Manager {
 	 */
 	public function get_user_wrapped_mwks( $user_id ) {
 		global $wpdb;
-		
+
 		// Ensure table exists before querying
 		$this->maybe_create_table();
-		
-		$results = $wpdb->get_results( $wpdb->prepare(
-			"SELECT passkey_credential_id, wrapped_data, created_at, last_used 
+
+		$results = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT passkey_credential_id, wrapped_data, created_at, last_used 
 			 FROM {$this->table_name} 
 			 WHERE user_id = %d AND key_type = 'mwk' 
 			 ORDER BY created_at DESC",
-			$user_id
-		) );
-		
+				$user_id
+			)
+		);
+
 		$wrapped_mwks = array();
 		foreach ( $results as $row ) {
 			$wrapped_mwks[] = array(
 				'credential_id' => $row->passkey_credential_id,
 				'wrapped_data'  => json_decode( $row->wrapped_data, true ),
 				'created_at'    => $row->created_at,
-				'last_used'     => $row->last_used
+				'last_used'     => $row->last_used,
 			);
 		}
-		
+
 		return $wrapped_mwks;
 	}
 
@@ -271,16 +277,16 @@ class Master_Key_Manager {
 	 */
 	public function delete_wrapped_mwk( $user_id, $credential_id ) {
 		global $wpdb;
-		
+
 		// Ensure table exists before deleting
 		$this->maybe_create_table();
-		
+
 		return false !== $wpdb->delete(
 			$this->table_name,
 			array(
 				'user_id'               => $user_id,
 				'key_type'              => 'mwk',
-				'passkey_credential_id' => $credential_id
+				'passkey_credential_id' => $credential_id,
 			)
 		);
 	}
@@ -293,16 +299,18 @@ class Master_Key_Manager {
 	 */
 	public function user_has_mwk( $user_id ) {
 		global $wpdb;
-		
+
 		// Ensure table exists before checking
 		$this->maybe_create_table();
-		
-		$count = $wpdb->get_var( $wpdb->prepare(
-			"SELECT COUNT(*) FROM {$this->table_name} 
+
+		$count = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$this->table_name} 
 			 WHERE user_id = %d AND key_type = 'mwk'",
-			$user_id
-		) );
-		
+				$user_id
+			)
+		);
+
 		return $count > 0;
 	}
 
@@ -314,15 +322,15 @@ class Master_Key_Manager {
 	 */
 	public function delete_all_user_mwks( $user_id ) {
 		global $wpdb;
-		
+
 		// Ensure table exists before deleting
 		$this->maybe_create_table();
-		
+
 		return false !== $wpdb->delete(
 			$this->table_name,
 			array(
 				'user_id'  => $user_id,
-				'key_type' => 'mwk'
+				'key_type' => 'mwk',
 			)
 		);
 	}
@@ -337,9 +345,9 @@ class Master_Key_Manager {
 	public function wrap_mwk_with_passkey( $master_key, $wrapping_key ) {
 		// Generate random IV
 		$iv = random_bytes( 16 );
-		
+
 		// Encrypt MWK with passkey-derived key
-		$tag = '';
+		$tag       = '';
 		$encrypted = openssl_encrypt(
 			$master_key,
 			'aes-256-gcm',
@@ -348,17 +356,17 @@ class Master_Key_Manager {
 			$iv,
 			$tag
 		);
-		
+
 		if ( false === $encrypted ) {
 			return false;
 		}
-		
+
 		return array(
 			'wrapped_mwk' => base64_encode( $encrypted ),
 			'iv'          => base64_encode( $iv ),
 			'tag'         => base64_encode( $tag ),
 			'algorithm'   => 'AES-256-GCM',
-			'version'     => '1.0'
+			'version'     => '1.0',
 		);
 	}
 
@@ -373,11 +381,11 @@ class Master_Key_Manager {
 		if ( ! isset( $wrapped_data['wrapped_mwk'], $wrapped_data['iv'], $wrapped_data['tag'] ) ) {
 			return false;
 		}
-		
+
 		$encrypted = base64_decode( $wrapped_data['wrapped_mwk'] );
-		$iv = base64_decode( $wrapped_data['iv'] );
-		$tag = base64_decode( $wrapped_data['tag'] );
-		
+		$iv        = base64_decode( $wrapped_data['iv'] );
+		$tag       = base64_decode( $wrapped_data['tag'] );
+
 		// Decrypt MWK
 		$decrypted = openssl_decrypt(
 			$encrypted,
@@ -387,7 +395,7 @@ class Master_Key_Manager {
 			$iv,
 			$tag
 		);
-		
+
 		return $decrypted;
 	}
 }

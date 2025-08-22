@@ -416,7 +416,7 @@
                 // Create container if doesn't exist
                 const html = `
                     <tr class="decrypted-row" data-entry-id="${entryId}">
-                        <td colspan="7">
+                        <td colspan="8">
                             <div class="decrypted-data-container">
                                 <div class="decrypted-header">
                                     <strong>Decrypted Data</strong>
@@ -438,14 +438,12 @@
                                             <button class="copy-btn" data-value="${this.escapeHtml(data.password || '')}">Copy</button>
                                         </div>
                                     </div>
-                                    ${data.additional_notes ? `
                                     <div class="field-group">
                                         <label>Notes:</label>
                                         <div class="field-value">
-                                            <textarea readonly>${this.escapeHtml(data.additional_notes)}</textarea>
+                                            <textarea readonly placeholder="No additional notes">${this.escapeHtml(data.additional_notes || '')}</textarea>
                                         </div>
                                     </div>
-                                    ` : ''}
                                 </div>
                             </div>
                         </td>

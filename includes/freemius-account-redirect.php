@@ -18,12 +18,12 @@ function slc_handle_freemius_account_redirect() {
 	if ( ! isset( $_GET['page'] ) || 'secure-login-collector-account' !== $_GET['page'] ) {
 		return;
 	}
-	
+
 	// Check permissions
 	if ( ! current_user_can( 'manage_options' ) ) {
-		wp_die( __( 'Sorry, you are not allowed to access this page.', 'secure-login-collector' ) );
+		wp_die( esc_html__( 'Sorry, you are not allowed to access this page.', 'secure-login-collector' ) );
 	}
-	
+
 	// Don't render via admin_init - let the page callback handle it
 }
 // add_action( 'admin_init', 'slc_handle_freemius_account_redirect', 1 ); // Disabled - let Freemius handle redirects
@@ -43,7 +43,7 @@ function slc_freemius_account_page() {
 		<?php
 		return;
 	}
-	
+
 	// Check if user has completed opt-in
 	if ( ! slc_fs()->is_registered() ) {
 		?>
@@ -63,7 +63,7 @@ function slc_freemius_account_page() {
 		<?php
 		return;
 	}
-	
+
 	// Try to render account page
 	try {
 		slc_fs()->_account_page_render();
@@ -95,15 +95,15 @@ function slc_fix_freemius_urls() {
 	if ( ! isset( $_GET['page'] ) ) {
 		return;
 	}
-	
+
 	// Redirect old URLs to new ones
 	$redirects = array(
-		'secure-login-data' => 'secure-login-collector',
+		'secure-login-data'     => 'secure-login-collector',
 		'secure-login-settings' => 'secure-login-collector-settings',
-		'secure-login-pricing' => 'secure-login-collector-pricing',
-		'secure-login-debug' => 'secure-login-collector-debug',
+		'secure-login-pricing'  => 'secure-login-collector-pricing',
+		'secure-login-debug'    => 'secure-login-collector-debug',
 	);
-	
+
 	if ( isset( $redirects[ $_GET['page'] ] ) ) {
 		wp_redirect( admin_url( 'admin.php?page=' . $redirects[ $_GET['page'] ] ) );
 		exit;

@@ -101,10 +101,9 @@ function slc_simple_account_page() {
 				<tr>
 					<th><?php esc_html_e( 'Pro Features', 'secure-login-collector' ); ?></th>
 					<td>
-						<?php 
-						$pro_enabled = ( function_exists( 'slc_fs' ) && slc_fs() && slc_fs()->is_paying() ) || 
-						               ( defined( 'SECURE_LOGIN_PRO' ) && SECURE_LOGIN_PRO );
-						
+						<?php
+						$pro_enabled = ( function_exists( 'slc_fs' ) && slc_fs() && slc_fs()->is_paying() );
+
 						if ( $pro_enabled ) {
 							echo '<span style="color: #46b450;">✓ ' . esc_html__( 'Enabled', 'secure-login-collector' ) . '</span>';
 						} else {

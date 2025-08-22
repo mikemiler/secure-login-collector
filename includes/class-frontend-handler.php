@@ -72,7 +72,7 @@ class Secure_Login_Frontend_Handler {
 		// Register v2 AJAX handlers for new encryption format (only v2 supported now).
 		add_action( 'wp_ajax_save_secure_login_data_v2', array( $this, 'handle_save_login_data_v2' ) );
 		add_action( 'wp_ajax_nopriv_save_secure_login_data_v2', array( $this, 'handle_save_login_data_v2' ) );
-		
+
 		// Add handler for public key retrieval (delegates to encryption handler)
 		add_action( 'wp_ajax_slc_get_public_key', array( $this->encryption_handler, 'handle_get_public_key' ) );
 		add_action( 'wp_ajax_nopriv_slc_get_public_key', array( $this->encryption_handler, 'handle_get_public_key' ) );
@@ -109,20 +109,20 @@ class Secure_Login_Frontend_Handler {
 				'nonce'   => wp_create_nonce( 'secure_login_nonce' ),
 				'is_pro'  => $this->is_pro_version,
 				'strings' => array(
-					'required_fields_error'     => __( 'Please fill in all required fields (Email Address, Name, Login URL, Username/Email, and Password).', 'secure-login-collector' ),
-					'submitting'                => __( 'Submitting...', 'secure-login-collector' ),
-					'submit_securely'           => __( 'Submit Securely', 'secure-login-collector' ),
-					'success_message'           => __( 'Login data saved securely! Thank you for your submission.', 'secure-login-collector' ),
-					'error_prefix'              => __( 'Error saving data: ', 'secure-login-collector' ),
-					'unknown_error'             => __( 'Unknown error', 'secure-login-collector' ),
-					'network_error'             => __( 'Network error occurred while saving data. Please try again.', 'secure-login-collector' ),
-					'encryption_error'          => __( 'Encryption failed. Please try again.', 'secure-login-collector' ),
-					'show_password'             => __( 'Show password', 'secure-login-collector' ),
-					'hide_password'             => __( 'Hide password', 'secure-login-collector' ),
-					'encryption_failed'         => __( 'Encryption failed', 'secure-login-collector' ),
-					'no_encryption_available'   => __( 'No encryption method available', 'secure-login-collector' ),
-					'rsa_key_not_available'     => __( 'RSA public key not available. Please contact administrator.', 'secure-login-collector' ),
-					'encryption_retry_failed'   => __( 'Encryption failed. Please try again or contact administrator.', 'secure-login-collector' ),
+					'required_fields_error'   => __( 'Please fill in all required fields (Email Address, Name, Login URL, Username/Email, and Password).', 'secure-login-collector' ),
+					'submitting'              => __( 'Submitting...', 'secure-login-collector' ),
+					'submit_securely'         => __( 'Submit Securely', 'secure-login-collector' ),
+					'success_message'         => __( 'Login data saved securely! Thank you for your submission.', 'secure-login-collector' ),
+					'error_prefix'            => __( 'Error saving data: ', 'secure-login-collector' ),
+					'unknown_error'           => __( 'Unknown error', 'secure-login-collector' ),
+					'network_error'           => __( 'Network error occurred while saving data. Please try again.', 'secure-login-collector' ),
+					'encryption_error'        => __( 'Encryption failed. Please try again.', 'secure-login-collector' ),
+					'show_password'           => __( 'Show password', 'secure-login-collector' ),
+					'hide_password'           => __( 'Hide password', 'secure-login-collector' ),
+					'encryption_failed'       => __( 'Encryption failed', 'secure-login-collector' ),
+					'no_encryption_available' => __( 'No encryption method available', 'secure-login-collector' ),
+					'rsa_key_not_available'   => __( 'RSA public key not available. Please contact administrator.', 'secure-login-collector' ),
+					'encryption_retry_failed' => __( 'Encryption failed. Please try again or contact administrator.', 'secure-login-collector' ),
 				),
 			);
 
@@ -275,7 +275,7 @@ class Secure_Login_Frontend_Handler {
 
 		// Get submission data.
 		$submission_json = isset( $_POST['submission'] ) ? wp_unslash( $_POST['submission'] ) : '';
-		
+
 		if ( empty( $submission_json ) ) {
 			wp_send_json_error( __( 'Missing submission data.', 'secure-login-collector' ) );
 			return;
@@ -299,7 +299,7 @@ class Secure_Login_Frontend_Handler {
 		}
 
 		// Validate metadata.
-		$metadata = $submission['metadata'];
+		$metadata          = $submission['metadata'];
 		$required_metadata = array( 'email', 'name', 'login_url' );
 		foreach ( $required_metadata as $field ) {
 			if ( ! isset( $metadata[ $field ] ) || empty( $metadata[ $field ] ) ) {
@@ -317,16 +317,16 @@ class Secure_Login_Frontend_Handler {
 
 		// Check if Pro version with pro keys is available on the server
 		// Use same logic as V2 encryption handler for consistency
-		$is_pro_encrypted = false;
+		$is_pro_encrypted     = false;
 		$server_credential_id = null;
-		
+
 		if ( $this->is_pro_version && get_option( 'secure_login_pro_keys_active', false ) ) {
 			// Mark as Pro encrypted - data will be encrypted with pro public key
 			// The passkey decryption happens on the admin side during decryption
-			$is_pro_encrypted = true;
+			$is_pro_encrypted     = true;
 			$server_credential_id = get_option( 'secure_login_passkey_credential_id' );
 		}
-		
+
 		// Create encrypted package for storage.
 		$encrypted_package = array(
 			'encryptedData'   => sanitize_text_field( $submission['encryptedData'] ),
@@ -370,5 +370,4 @@ class Secure_Login_Frontend_Handler {
 
 		wp_send_json_success( __( 'Login data saved securely with enhanced encryption.', 'secure-login-collector' ) );
 	}
-
 }
