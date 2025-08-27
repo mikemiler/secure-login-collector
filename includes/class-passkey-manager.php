@@ -80,9 +80,9 @@ class Passkey_Manager {
 
 		// Check if there are any encrypted entries.
 		global $wpdb;
-		$table_name = esc_sql( $wpdb->prefix . 'secure_login_data' );
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$has_encrypted_data = $wpdb->get_var( "SELECT COUNT(*) FROM {$table_name}" ) > 0;
+		$table_name = $wpdb->prefix . 'secure_login_data';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$has_encrypted_data = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i", $table_name ) ) > 0;
 
 		?>
 		<div class="slc-passkey-container">
@@ -184,61 +184,19 @@ class Passkey_Manager {
 						<p><strong><?php esc_html_e( 'Keep your passkey device secure and consider having a backup authentication method.', 'secure-login-collector' ); ?></strong></p>
 					</div>
 				</div>
-			</div>
-			
-			<!-- Benefits Section -->
-			<div class="slc-card">
-				<div class="slc-card-header">
-					<h3 class="slc-card-title"><?php esc_html_e( 'Why Use Passkeys?', 'secure-login-collector' ); ?></h3>
-				</div>
-				<div class="slc-card-body">
-					<div class="slc-passkey-benefits">
-						<div class="slc-passkey-benefit">
-							<span class="slc-passkey-benefit-icon">🛡️</span>
-							<div class="slc-passkey-benefit-text">
-								<div class="slc-passkey-benefit-title"><?php esc_html_e( 'Phishing-Resistant', 'secure-login-collector' ); ?></div>
-								<div class="slc-passkey-benefit-desc"><?php esc_html_e( 'Passkeys cannot be phished or stolen through fake websites', 'secure-login-collector' ); ?></div>
-							</div>
-						</div>
-						<div class="slc-passkey-benefit">
-							<span class="slc-passkey-benefit-icon">🔒</span>
-							<div class="slc-passkey-benefit-text">
-								<div class="slc-passkey-benefit-title"><?php esc_html_e( 'Hardware Security', 'secure-login-collector' ); ?></div>
-								<div class="slc-passkey-benefit-desc"><?php esc_html_e( 'Keys stored in secure hardware, never exposed to software', 'secure-login-collector' ); ?></div>
-							</div>
-						</div>
-						<div class="slc-passkey-benefit">
-							<span class="slc-passkey-benefit-icon">👆</span>
-							<div class="slc-passkey-benefit-text">
-								<div class="slc-passkey-benefit-title"><?php esc_html_e( 'Biometric Protection', 'secure-login-collector' ); ?></div>
-								<div class="slc-passkey-benefit-desc"><?php esc_html_e( 'Use fingerprint, face recognition, or PIN for authentication', 'secure-login-collector' ); ?></div>
-							</div>
-						</div>
-						<div class="slc-passkey-benefit">
-							<span class="slc-passkey-benefit-icon">✨</span>
-							<div class="slc-passkey-benefit-text">
-								<div class="slc-passkey-benefit-title"><?php esc_html_e( 'Zero-Knowledge', 'secure-login-collector' ); ?></div>
-								<div class="slc-passkey-benefit-desc"><?php esc_html_e( 'Server cannot decrypt without your passkey', 'secure-login-collector' ); ?></div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
+			</div>			
 		</div>
 		
 		<script type="text/javascript">
 		jQuery(document).ready(function($) {
-			console.log('Passkey manager inline script loaded');
 			
 			// Direct delete button handler
 			$('#delete-passkey-btn').on('click', function(e) {
 				e.preventDefault();
-				console.log('Delete passkey button clicked (inline handler)');
 				
 				var $button = $(this);
 				var credentialId = $button.data('credential-id');
 				
-				console.log('Credential ID:', credentialId);
 				
 				if (!credentialId) {
 					alert('No credential ID found. Please refresh the page and try again.');
@@ -266,7 +224,6 @@ class Passkey_Manager {
 						credential_id: credentialId
 					},
 					success: function(response) {
-						console.log('Delete response:', response);
 						if (response.success) {
 							$('#passkey-status-message').html('<div class="notice notice-success inline"><p><?php echo esc_js( __( 'Passkey deleted successfully!', 'secure-login-collector' ) ); ?></p></div>');
 							setTimeout(function() {
@@ -288,7 +245,6 @@ class Passkey_Manager {
 			// Handle register button inline with full implementation
 			$('#register-passkey-btn').on('click', async function(e) {
 				e.preventDefault();
-				console.log('Register passkey button clicked (inline handler)');
 				
 				var $button = $(this);
 				var $spinner = $('.passkey-registration-form .spinner');

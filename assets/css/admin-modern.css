@@ -476,7 +476,7 @@
 
 /* Table Column Widths and Styles */
 .wp-list-table .column-actions {
-	width: 200px;
+	width: 250px;
 	white-space: nowrap;
 }
 
@@ -593,7 +593,7 @@
    ========================================================================== */
 
 .wrap.slc-admin-wrap {
-	max-width: 1200px;
+	max-width: 1440px;
 }
 
 .wrap.slc-admin-wrap h1 {
@@ -691,7 +691,7 @@
 	padding: 20px 0;
 	margin: 0;
 	border-top: 1px solid var(--slc-border-light);
-	background: var(--slc-bg-light);
+	
 }
 
 .slc-settings-form .submit .button-primary {

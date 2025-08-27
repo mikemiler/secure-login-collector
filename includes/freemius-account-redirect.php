@@ -105,7 +105,7 @@ function slc_fix_freemius_urls() {
 	);
 
 	if ( isset( $redirects[ $_GET['page'] ] ) ) {
-		wp_redirect( admin_url( 'admin.php?page=' . $redirects[ $_GET['page'] ] ) );
+		wp_safe_redirect( admin_url( 'admin.php?page=' . $redirects[ $_GET['page'] ] ) );
 		exit;
 	}
 }

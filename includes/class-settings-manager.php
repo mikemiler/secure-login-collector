@@ -698,7 +698,7 @@ class Secure_Login_Settings_Manager {
 						[secure_login_form]
 					</div>
 					<div style="margin-top: 12px;">
-						<button type="button" class="slc-btn slc-btn-secondary" onclick="navigator.clipboard.writeText('[secure_login_form]'); this.innerHTML = '<?php echo esc_js( __( 'Copied!', 'secure-login-collector' ) ); ?>'; setTimeout(() => { this.innerHTML = '<?php echo esc_js( __( 'Copy Shortcode', 'secure-login-collector' ) ); ?>'; }, 2000);">
+						<button type="button" class="button" onclick="navigator.clipboard.writeText('[secure_login_form]'); this.innerHTML = '<?php echo esc_js( __( 'Copied!', 'secure-login-collector' ) ); ?>'; setTimeout(() => { this.innerHTML = '<?php echo esc_js( __( 'Copy Shortcode', 'secure-login-collector' ) ); ?>'; }, 2000);">
 							<?php echo esc_html__( 'Copy Shortcode', 'secure-login-collector' ); ?>
 						</button>
 					</div>

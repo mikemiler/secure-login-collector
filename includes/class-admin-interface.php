@@ -844,7 +844,7 @@ class Secure_Login_Admin_Interface {
 
 			<div class="slc-card">
 				<div class="slc-card-body">
-					<form method="get" class="secure-login-admin-table">
+					<form method="post" class="secure-login-admin-table">
 						<input type="hidden" name="page" value="<?php echo esc_attr( sanitize_text_field( wp_unslash( $_GET['page'] ?? '' ) ) ); ?>" />
 						<?php
 						$this->list_table->search_box( __( 'Search entries', 'secure-login-collector' ), 'secure-login-entries' );
