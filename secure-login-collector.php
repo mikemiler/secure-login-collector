@@ -195,9 +195,6 @@ class SecureLoginCollector {
 				// phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch
 			}
 		}
-
-		// Fallback to constant check for development/testing
-		return defined( 'SECURE_LOGIN_PRO' ) && SECURE_LOGIN_PRO === true;
 	}
 
 	/**
