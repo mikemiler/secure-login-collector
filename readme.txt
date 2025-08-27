@@ -4,7 +4,7 @@ Tags: security, login, encryption, password, agency, client management, credenti
 Requires at least: 5.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPL v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -290,6 +290,9 @@ The plugin supports export to: Bitwarden, 1Password, LastPass, Dashlane, KeePass
 8. **Export Options** - Choose from 8+ password manager formats
 
 == Changelog ==
+
+= 1.1.0 =
+* Improved passkey security
 
 = 1.0.0 =
 * Initial public release
