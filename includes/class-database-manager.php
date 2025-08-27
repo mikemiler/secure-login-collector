@@ -91,16 +91,17 @@ class Secure_Login_Database_Manager {
 
 		if ( empty( $column_exists ) ) {
 			// Add retention_until column.
-			// Note: Table names cannot be prepared in WordPress, but this is safe as table name is controlled.
-			$wpdb->query( "ALTER TABLE {$this->table_name} ADD COLUMN retention_until datetime DEFAULT NULL AFTER created_at" );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query( $wpdb->prepare( "ALTER TABLE %i ADD COLUMN retention_until datetime DEFAULT NULL AFTER created_at", $this->table_name ) );
 
 			// Set retention_until for existing records based on created_at + expiration days.
 			$expiration_days = get_option( 'secure_login_expiration_days', 30 );
 			if ( $expiration_days > 0 ) {
-				// Note: Table names cannot be prepared in WordPress, but this is safe as table name is controlled.
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 				$wpdb->query(
 					$wpdb->prepare(
-						"UPDATE {$this->table_name} SET retention_until = DATE_ADD(created_at, INTERVAL %d DAY) WHERE retention_until IS NULL",
+						"UPDATE %i SET retention_until = DATE_ADD(created_at, INTERVAL %d DAY) WHERE retention_until IS NULL",
+						$this->table_name,
 						$expiration_days
 					)
 				);
@@ -162,8 +163,8 @@ class Secure_Login_Database_Manager {
 	 */
 	public function get_all_entries() {
 		global $wpdb;
-		// Note: Table names cannot be prepared in WordPress, but this is safe as table name is controlled.
-		return $wpdb->get_results( "SELECT * FROM {$this->table_name} ORDER BY created_at DESC" );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		return $wpdb->get_results( $wpdb->prepare( "SELECT * FROM %i ORDER BY created_at DESC", $this->table_name ) );
 	}
 
 	/**
@@ -175,7 +176,8 @@ class Secure_Login_Database_Manager {
 	public function get_entry( $id ) {
 		global $wpdb;
 		// Note: Table names cannot be prepared in WordPress, but this is safe as table name is controlled.
-		return $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$this->table_name} WHERE id = %d", $id ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		return $wpdb->get_row( $wpdb->prepare( "SELECT * FROM %i WHERE id = %d", $this->table_name, $id ) );
 	}
 
 	/**
@@ -320,7 +322,7 @@ class Secure_Login_Database_Manager {
 
 		$site_name = get_bloginfo( 'name' );
 		$site_url  = get_site_url();
-		$admin_url = admin_url( 'admin.php?page=secure-login-data' );
+		$admin_url = admin_url( 'admin.php?page=secure-login-collector' );
 
 		// translators: %s is the site name.
 		$subject = sprintf( __( '[%s] New Secure Login Data Received', 'secure-login-collector' ), $site_name );
@@ -404,7 +406,8 @@ class Secure_Login_Database_Manager {
 		} elseif ( 'expires' === $orderby ) {
 			$order_clause = 'retention_until';
 		} else {
-			$order_clause = $orderby;
+			// Additional validation - only allow created_at as fallback
+			$order_clause = 'created_at';
 		}
 
 		// Validate order parameter.

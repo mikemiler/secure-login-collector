@@ -44,22 +44,61 @@ class Secure_Login_Settings_Manager {
 		$this->encryption_handler = $encryption_handler;
 
 		// Register hooks.
-		add_action( 'admin_menu', array( $this, 'add_settings_menu' ) );
+		add_action( 'admin_menu', array( $this, 'add_settings_menu' ), 20 );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_scripts' ) );
+	}
+
+	/**
+	 * Enqueue admin scripts for settings page.
+	 */
+	public function enqueue_admin_scripts( $hook ) {
+		// Load CSS on all Secure Login Collector admin pages.
+		// Check if we're on any page that starts with our plugin slug.
+		if ( strpos( $hook, 'secure-login-collector' ) === false &&
+			'toplevel_page_secure-login-collector' !== $hook ) {
+			return;
+		}
+
+		// Enqueue modern admin CSS.
+		wp_enqueue_style(
+			'secure-login-admin-modern-css',
+			plugin_dir_url( __FILE__ ) . '../assets/css/admin-modern.css',
+			array(),
+			'1.0.0'
+		);
+
+		// Passkey functionality is now handled inline in class-passkey-manager.php
+		// No need to load external JavaScript file anymore
 	}
 
 	/**
 	 * Add settings submenu.
 	 */
 	public function add_settings_menu() {
+		// Add to the plugin's own menu
 		add_submenu_page(
-			'secure-login-data',
+			'secure-login-collector',
 			__( 'Settings', 'secure-login-collector' ),
 			__( 'Settings', 'secure-login-collector' ),
 			'manage_options',
-			'secure-login-settings',
+			'secure-login-collector-settings',
 			array( $this, 'settings_page' )
 		);
+
+		// Add custom account page - Disabled to use Freemius account page instead
+		// if ( file_exists( SECURE_LOGIN_PLUGIN_DIR . 'includes/account-page-simple.php' ) ) {
+		//  require_once SECURE_LOGIN_PLUGIN_DIR . 'includes/account-page-simple.php';
+		// }
+
+		// add_submenu_page(
+		//  'secure-login-collector',
+		//  __( 'Account', 'secure-login-collector' ),
+		//  __( 'Account', 'secure-login-collector' ),
+		//  'manage_options',
+		//  'secure-login-collector-account',
+		//  'slc_simple_account_page'
+		// );
 	}
 
 	/**
@@ -72,6 +111,7 @@ class Secure_Login_Settings_Manager {
 		register_setting( 'secure_login_settings', 'secure_login_ultra_secure_mode' );
 		register_setting( 'secure_login_settings', 'secure_login_frontend_form_text', array( $this, 'sanitize_frontend_form_text' ) );
 		register_setting( 'secure_login_settings', 'secure_login_frontend_text_type' );
+		register_setting( 'secure_login_settings', 'secure_login_delete_on_uninstall' );
 
 		add_settings_section(
 			'secure_login_notification_section',
@@ -94,14 +134,6 @@ class Secure_Login_Settings_Manager {
 			'secure_login_settings'
 		);
 
-		// Add encryption settings section (for all users now).
-		add_settings_section(
-			'secure_login_encryption_section',
-			__( 'Encryption Settings', 'secure-login-collector' ),
-			array( $this, 'encryption_section_callback' ),
-			'secure_login_settings'
-		);
-
 		// Add pro version settings section.
 		if ( $this->is_pro_version ) {
 			add_settings_section(
@@ -119,6 +151,30 @@ class Secure_Login_Settings_Manager {
 				'secure_login_pro_section'
 			);
 		}
+
+		// Add encryption settings section (for all users now).
+		add_settings_section(
+			'secure_login_encryption_section',
+			__( 'Encryption Settings', 'secure-login-collector' ),
+			array( $this, 'encryption_section_callback' ),
+			'secure_login_settings'
+		);
+
+		// Add plugin management section.
+		add_settings_section(
+			'secure_login_plugin_management_section',
+			__( 'Plugin Management', 'secure-login-collector' ),
+			array( $this, 'plugin_management_section_callback' ),
+			'secure_login_settings'
+		);
+
+		add_settings_field(
+			'secure_login_delete_on_uninstall',
+			__( 'Delete Data on Uninstall', 'secure-login-collector' ),
+			array( $this, 'delete_on_uninstall_callback' ),
+			'secure_login_settings',
+			'secure_login_plugin_management_section'
+		);
 
 		add_settings_field(
 			'secure_login_enable_notifications',
@@ -165,140 +221,274 @@ class Secure_Login_Settings_Manager {
 	 * Notification settings section callback.
 	 */
 	public function notification_section_callback() {
+		echo '<div class="slc-card" style="margin-top: 20px;">';
+		echo '<div class="slc-card-header">';
+		echo '<h3 class="slc-card-title">';
+		echo esc_html__( 'Email Notifications', 'secure-login-collector' );
+		echo '</h3>';
+		echo '</div>';
+		echo '<div class="slc-card-body">';
 		echo '<p>' . esc_html__( 'Configure email notifications for new login data submissions.', 'secure-login-collector' ) . '</p>';
+		// Don't close the card-body div here - let the form-table be inside it
 	}
 
 	/**
 	 * Frontend settings section callback.
 	 */
 	public function frontend_section_callback() {
+		echo '<div class="slc-card" style="margin-top: 20px;">';
+		echo '<div class="slc-card-header">';
+		echo '<h3 class="slc-card-title">';
+		echo esc_html__( 'Frontend Form Settings', 'secure-login-collector' );
+		echo '</h3>';
+		echo '</div>';
+		echo '<div class="slc-card-body">';
 		echo '<p>' . esc_html__( 'Customize the frontend form appearance and text.', 'secure-login-collector' ) . '</p>';
+		// Don't close the card-body div here - let the form-table be inside it
 	}
 
 	/**
 	 * Expiration settings section callback.
 	 */
 	public function expiration_section_callback() {
+		echo '<div class="slc-card" style="margin-top: 20px;">';
+		echo '<div class="slc-card-header">';
+		echo '<h3 class="slc-card-title">';
+		echo esc_html__( 'Data Retention Settings', 'secure-login-collector' );
+		echo '</h3>';
+		echo '</div>';
+		echo '<div class="slc-card-body">';
 		echo '<p>' . esc_html__( 'Configure automatic deletion of old login data.', 'secure-login-collector' ) . '</p>';
+		// Don't close the card-body div here - let the form-table be inside it
 	}
 
 	/**
 	 * Encryption settings section callback.
 	 */
 	public function encryption_section_callback() {
+		echo '<div class="slc-card" style="margin-top: 20px;">';
+		echo '<div class="slc-card-header">';
+		echo '<h3 class="slc-card-title">' . esc_html__( 'Encryption Settings', 'secure-login-collector' ) . '</h3>';
+		echo '</div>';
+		echo '<div class="slc-card-body">';
 		echo '<p>' . esc_html__( 'Manage RSA encryption keys for secure data transmission.', 'secure-login-collector' ) . '</p>';
-
-		// Display encryption methods information.
-		echo '<div class="encryption-methods-info" style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 15px; margin-bottom: 20px;">';
-		echo '<h4>' . esc_html__( 'Available Encryption Methods:', 'secure-login-collector' ) . '</h4>';
-		echo '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-top: 10px;">';
+		
+		// Output all the encryption content inline
+		$this->display_encryption_content();
+		// Don't close the card-body div here - handled by the custom renderer
+	}
+	
+	/**
+	 * Display encryption content inside the card
+	 */
+	private function display_encryption_content() {
+		echo '<div class="slc-passkey-benefits">';
 
 		// Ultra-Secure (Passkey-derived).
 		if ( $this->is_pro_version ) {
-			echo '<div style="background: white; border: 1px solid #4CAF50; border-radius: 4px; padding: 12px;">';
-			echo '<div style="display: flex; align-items: center; margin-bottom: 8px;">';
-			echo '<span style="background: linear-gradient(135deg, #4CAF50, #45a049); color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: 600; margin-right: 8px;">🔐 ULTRA-SECURE</span>';
-			echo '<strong>' . esc_html__( 'Passkey-Derived', 'secure-login-collector' ) . '</strong>';
+			echo '<div class="slc-passkey-benefit" style="border-color: var(--slc-success);">';
+			echo '<span class="slc-passkey-benefit-icon"></span>';
+			echo '<div class="slc-passkey-benefit-text">';
+			echo '<div class="slc-passkey-benefit-title">';
+			echo '<span class="slc-badge slc-badge-pro">ULTRA-SECURE</span> ';
+			echo esc_html__( 'Passkey-Derived', 'secure-login-collector' );
 			echo '</div>';
-			echo '<p style="margin: 0; font-size: 13px; color: #666;">' . esc_html__( 'Uses your passkey signature to derive encryption keys. Maximum security - even server compromise cannot decrypt data without your physical device.', 'secure-login-collector' ) . '</p>';
+			echo '<div class="slc-passkey-benefit-desc">' . esc_html__( 'Wraps private keys with passkey authentication. True zero-knowledge - server cannot decrypt without your physical device.', 'secure-login-collector' ) . '</div>';
+			echo '</div>';
 			echo '</div>';
 		}
 
 		// RSA-2048.
-		echo '<div style="background: white; border: 1px solid #2196F3; border-radius: 4px; padding: 12px;">';
-		echo '<div style="display: flex; align-items: center; margin-bottom: 8px;">';
-		echo '<span style="background: linear-gradient(135deg, #2196F3, #1976D2); color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: 600; margin-right: 8px;">🔒 SECURE</span>';
-		echo '<strong>' . esc_html__( 'RSA-2048', 'secure-login-collector' ) . '</strong>';
+		echo '<div class="slc-passkey-benefit" style="border-color: var(--slc-info);">';
+		echo '<span class="slc-passkey-benefit-icon"></span>';
+		echo '<div class="slc-passkey-benefit-text">';
+		echo '<div class="slc-passkey-benefit-title">';
+		echo '<span class="slc-badge slc-badge-info">SECURE</span> ';
+		echo esc_html__( 'RSA-2048', 'secure-login-collector' );
 		echo '</div>';
-		echo '<p style="margin: 0; font-size: 13px; color: #666;">' . esc_html__( 'Industry-standard RSA encryption with 2048-bit keys. Secure for most use cases and available for all users.', 'secure-login-collector' ) . '</p>';
+		echo '<div class="slc-passkey-benefit-desc">' . esc_html__( 'Industry-standard RSA encryption with 2048-bit keys. Secure for most use cases and available for all users.', 'secure-login-collector' ) . '</div>';
+		echo '</div>';
+		echo '</div>'; // Close slc-passkey-benefit
+		echo '</div>'; // Close slc-passkey-benefits
+
+		// Display key status for both free and pro versions.
+		$free_public_key    = get_option( 'secure_login_public_key_free' );
+		$free_private_key   = get_option( 'secure_login_private_key_free_encrypted' );
+		$pro_public_key     = get_option( 'secure_login_public_key_pro' );
+		$pro_private_key    = get_option( 'secure_login_wrapped_private_key_pro' );
+		$pro_keys_active    = get_option( 'secure_login_pro_keys_active', false );
+		$passkey_registered = get_option( 'secure_login_passkey_registered', false );
+
+		// Display RSA Keys Status in a more comprehensive way
+		echo '<div class="rsa-keys-status" style="margin: 20px 0;">';
+		echo '<h4 style="margin-bottom: 15px;">' . esc_html__( 'RSA Keys Status', 'secure-login-collector' ) . '</h4>';
+
+		// Free RSA Keys Status
+		echo '<div style="background: white; border: 1px solid #c3c4c7; border-radius: 4px; padding: 15px; margin-bottom: 15px;">';
+		echo '<div style="display: flex; justify-content: space-between; align-items: center;">';
+		echo '<div>';
+		echo '<strong style="font-size: 14px;">' . esc_html__( 'Free Version RSA Keys', 'secure-login-collector' ) . '</strong>';
+		echo '<p style="margin: 5px 0 0; color: #666; font-size: 12px;">' . esc_html__( 'Standard RSA-2048 encryption for all users', 'secure-login-collector' ) . '</p>';
 		echo '</div>';
 
-		// XOR (Legacy).
-		echo '<div style="background: white; border: 1px solid #FF9800; border-radius: 4px; padding: 12px;">';
-		echo '<div style="display: flex; align-items: center; margin-bottom: 8px;">';
-		echo '<span style="background: linear-gradient(135deg, #FF9800, #F57C00); color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: 600; margin-right: 8px;">🔓 LEGACY</span>';
-		echo '<strong>' . esc_html__( 'XOR (Legacy)', 'secure-login-collector' ) . '</strong>';
-		echo '</div>';
-		echo '<p style="margin: 0; font-size: 13px; color: #666;">' . esc_html__( 'Simple XOR encryption for backward compatibility. Used by older entries before RSA was implemented.', 'secure-login-collector' ) . '</p>';
-		echo '</div>';
-
-		echo '</div>';
-		echo '</div>';
-
-		// Display key status.
-		$public_key     = get_option( 'secure_login_public_key' );
-		$keys_generated = get_option( 'secure_login_keys_generated' );
-
-		if ( $public_key && $keys_generated ) {
-			echo '<div class="notice notice-success inline"><p>';
-			echo '<strong>' . esc_html__( 'RSA Keys Status:', 'secure-login-collector' ) . '</strong> ';
-			echo esc_html__( 'Active', 'secure-login-collector' ) . ' ';
-			echo '<em>(' . esc_html__( 'Generated:', 'secure-login-collector' ) . ' ' . esc_html( $keys_generated ) . ')</em>';
-			echo '</p></div>';
+		if ( $free_public_key && $free_private_key ) {
+			echo '<div style="text-align: right;">';
+			echo '<span style="background: #d4edda; color: #155724; padding: 4px 12px; border-radius: 3px; font-size: 12px; font-weight: 600;">' . esc_html__( 'ACTIVE', 'secure-login-collector' ) . '</span>';
+			echo '</div>';
 		} else {
-			echo '<div class="notice notice-warning inline"><p>';
-			echo '<strong>' . esc_html__( 'RSA Keys Status:', 'secure-login-collector' ) . '</strong> ';
-			echo esc_html__( 'Not generated', 'secure-login-collector' );
-			echo '</p></div>';
+			echo '<div style="text-align: right;">';
+			echo '<span style="background: #fff3cd; color: #856404; padding: 4px 12px; border-radius: 3px; font-size: 12px; font-weight: 600;">' . esc_html__( 'NOT INITIALIZED', 'secure-login-collector' ) . '</span>';
+			echo '<p style="margin: 5px 0 0; font-size: 11px; color: #666;">' . esc_html__( 'Will be created on first use', 'secure-login-collector' ) . '</p>';
+			echo '</div>';
+		}
+		echo '</div>';
+		echo '</div>';
+
+		// Pro RSA Keys Status (only show if pro version is enabled)
+		if ( $this->is_pro_version ) {
+			echo '<div style="background: white; border: 1px solid #c3c4c7; border-radius: 4px; padding: 15px;">';
+			echo '<div style="display: flex; justify-content: space-between; align-items: center;">';
+			echo '<div>';
+			echo '<strong style="font-size: 14px;">' . esc_html__( 'Pro Version RSA Keys', 'secure-login-collector' ) . '</strong>';
+			echo '<p style="margin: 5px 0 0; color: #666; font-size: 12px;">' . esc_html__( 'Passkey-protected RSA-2048 for ultra-secure encryption', 'secure-login-collector' ) . '</p>';
+			echo '</div>';
+
+			if ( $pro_public_key && $pro_private_key && $pro_keys_active ) {
+				echo '<div style="text-align: right;">';
+				echo '<span style="background: #d1ecf1; color: #0c5460; padding: 4px 12px; border-radius: 3px; font-size: 12px; font-weight: 600;">' . esc_html__( 'ACTIVE', 'secure-login-collector' ) . '</span>';
+				echo '<p style="margin: 5px 0 0; font-size: 11px; color: #666;">' . esc_html__( 'Using passkey protection', 'secure-login-collector' ) . '</p>';
+				echo '</div>';
+			} elseif ( $passkey_registered ) {
+				echo '<div style="text-align: right;">';
+				echo '<span style="background: #fff3cd; color: #856404; padding: 4px 12px; border-radius: 3px; font-size: 12px; font-weight: 600;">' . esc_html__( 'NEEDS INITIALIZATION', 'secure-login-collector' ) . '</span>';
+				echo '<p style="margin: 5px 0 0; font-size: 11px; color: #666;">' . esc_html__( 'Passkey registered but keys not initialized', 'secure-login-collector' ) . '</p>';
+				echo '</div>';
+			} else {
+				echo '<div style="text-align: right;">';
+				echo '<span style="background: #f8f9fa; color: #6c757d; padding: 4px 12px; border-radius: 3px; font-size: 12px; font-weight: 600;">' . esc_html__( 'NOT AVAILABLE', 'secure-login-collector' ) . '</span>';
+				echo '<p style="margin: 5px 0 0; font-size: 11px; color: #666;">' . esc_html__( 'Register passkey to enable', 'secure-login-collector' ) . '</p>';
+				echo '</div>';
+			}
+			echo '</div>';
+			echo '</div>';
 		}
 
-		// Key management buttons.
+		echo '</div>';
+
+		// Key management section
+		echo '<div class="notice notice-info inline">';
+		echo '<p><strong>' . esc_html__( 'Key Management:', 'secure-login-collector' ) . '</strong></p>';
+
+		// Show different messages based on key status
+		if ( ! $free_public_key ) {
+			echo '<p>' . esc_html__( 'Free RSA keys will be automatically initialized on first form submission.', 'secure-login-collector' ) . '</p>';
+			echo '<p><button type="button" class="button button-primary" id="initialize-free-keys">' . esc_html__( 'Initialize Free Keys Now', 'secure-login-collector' ) . '</button></p>';
+		}
+
+		if ( $this->is_pro_version ) {
+			if ( ! $pro_public_key && $passkey_registered ) {
+				echo '<p>' . esc_html__( 'Pro RSA keys need to be initialized with your passkey.', 'secure-login-collector' ) . '</p>';
+			} elseif ( ! $passkey_registered ) {
+				echo '<p>' . esc_html__( 'To enable Pro encryption, register a passkey below.', 'secure-login-collector' ) . '</p>';
+			} else {
+				echo '<p>' . esc_html__( 'Pro RSA keys are active and ready for use.', 'secure-login-collector' ) . '</p>';
+			}
+		}
+		echo '</div>';
+
+		// Export buttons based on available keys
 		echo '<p>';
-		echo '<button type="button" class="button button-secondary" id="generate-rsa-keys">' . esc_html__( 'Generate New RSA Keys', 'secure-login-collector' ) . '</button> ';
-		echo '<button type="button" class="button button-secondary" id="export-public-key">' . esc_html__( 'Export Public Key', 'secure-login-collector' ) . '</button>';
+		if ( $free_public_key ) {
+			echo '<button type="button" class="button button-secondary" id="export-free-public-key">' . esc_html__( 'Export Free Public Key', 'secure-login-collector' ) . '</button> ';
+		}
+		if ( $pro_public_key ) {
+			echo '<button type="button" class="button button-secondary" id="export-pro-public-key">' . esc_html__( 'Export Pro Public Key', 'secure-login-collector' ) . '</button>';
+		}
 		echo '</p>';
 
-		// Add JavaScript for key management.
+		// Add Passkey Management Section (available for all users)
+		// Passkeys provide enhanced security for all users
+		if ( ! class_exists( 'Passkey_Manager' ) ) {
+			require_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-passkey-manager.php';
+		}
+		$passkey_manager = new Passkey_Manager();
+		$passkey_manager->render_passkey_section();
+
+		// Add JavaScript for key management
 		?>
 		<script>
 		jQuery(document).ready(function($) {
-			$('#generate-rsa-keys').on('click', function() {
-				if (!confirm('<?php echo esc_js( __( 'This will generate new RSA keys and invalidate all existing encrypted data. Continue?', 'secure-login-collector' ) ); ?>')) {
-					return;
-				}
-				
+			// Initialize free keys
+			$('#initialize-free-keys').on('click', function() {
 				var button = $(this);
-				button.prop('disabled', true).text('<?php echo esc_js( __( 'Generating...', 'secure-login-collector' ) ); ?>');
+				button.prop('disabled', true).text('<?php echo esc_js( __( 'Initializing...', 'secure-login-collector' ) ); ?>');
 				
 				$.ajax({
 					url: ajaxurl,
 					type: 'POST',
 					data: {
-						action: 'generate_rsa_keys',
-						nonce: '<?php echo esc_attr( wp_create_nonce( 'generate_rsa_keys' ) ); ?>'
+						action: 'slc_initialize_free_keys',
+						nonce: '<?php echo esc_attr( wp_create_nonce( 'slc_admin_nonce' ) ); ?>'
 					},
 					success: function(response) {
 						if (response.success) {
-							alert('<?php echo esc_js( __( 'RSA keys generated successfully!', 'secure-login-collector' ) ); ?>');
+							alert('<?php echo esc_js( __( 'Free RSA keys initialized successfully!', 'secure-login-collector' ) ); ?>');
 							location.reload();
 						} else {
-							alert('<?php echo esc_js( __( 'Failed to generate keys:', 'secure-login-collector' ) ); ?> ' + response.data);
+							alert('<?php echo esc_js( __( 'Failed to initialize keys:', 'secure-login-collector' ) ); ?> ' + response.data);
+							button.prop('disabled', false).text('<?php echo esc_js( __( 'Initialize Free Keys Now', 'secure-login-collector' ) ); ?>');
 						}
-						button.prop('disabled', false).text('<?php echo esc_js( __( 'Generate New RSA Keys', 'secure-login-collector' ) ); ?>');
 					},
 					error: function() {
 						alert('<?php echo esc_js( __( 'Network error occurred.', 'secure-login-collector' ) ); ?>');
-						button.prop('disabled', false).text('<?php echo esc_js( __( 'Generate New RSA Keys', 'secure-login-collector' ) ); ?>');
+						button.prop('disabled', false).text('<?php echo esc_js( __( 'Initialize Free Keys Now', 'secure-login-collector' ) ); ?>');
 					}
 				});
 			});
 			
-			$('#export-public-key').on('click', function() {
+			// Export free public key
+			$('#export-free-public-key').on('click', function() {
 				$.ajax({
 					url: ajaxurl,
 					type: 'POST',
 					data: {
-						action: 'export_public_key',
-						nonce: '<?php echo esc_attr( wp_create_nonce( 'export_public_key' ) ); ?>'
+						action: 'slc_export_public_key',
+						key_type: 'free',
+						nonce: '<?php echo esc_attr( wp_create_nonce( 'slc_admin_nonce' ) ); ?>'
 					},
 					success: function(response) {
 						if (response.success) {
-							// Create download
 							var blob = new Blob([response.data.public_key], {type: 'text/plain'});
 							var url = window.URL.createObjectURL(blob);
 							var a = document.createElement('a');
 							a.href = url;
-							a.download = 'secure-login-public-key.pem';
+							a.download = 'secure-login-free-public-key.pem';
+							a.click();
+							window.URL.revokeObjectURL(url);
+						} else {
+							alert('<?php echo esc_js( __( 'Failed to export public key:', 'secure-login-collector' ) ); ?> ' + response.data);
+						}
+					}
+				});
+			});
+			
+			// Export pro public key
+			$('#export-pro-public-key').on('click', function() {
+				$.ajax({
+					url: ajaxurl,
+					type: 'POST',
+					data: {
+						action: 'slc_export_public_key',
+						key_type: 'pro',
+						nonce: '<?php echo esc_attr( wp_create_nonce( 'slc_admin_nonce' ) ); ?>'
+					},
+					success: function(response) {
+						if (response.success) {
+							var blob = new Blob([response.data.public_key], {type: 'text/plain'});
+							var url = window.URL.createObjectURL(blob);
+							var a = document.createElement('a');
+							a.href = url;
+							a.download = 'secure-login-pro-public-key.pem';
 							a.click();
 							window.URL.revokeObjectURL(url);
 						} else {
@@ -316,198 +506,18 @@ class Secure_Login_Settings_Manager {
 	 * Pro version settings section callback.
 	 */
 	public function pro_section_callback() {
+		echo '<div class="slc-card" style="margin-top: 20px;">';
+		echo '<div class="slc-card-header">';
+		echo '<h3 class="slc-card-title">';
+		echo esc_html__( 'Pro Version Features', 'secure-login-collector' );
+		echo '</h3>';
+		echo '<span class="slc-badge slc-badge-pro">PRO</span>';
+		echo '</div>';
+		echo '<div class="slc-card-body">';
 		echo '<p>' . esc_html__( 'Advanced security settings for the pro version including passkey authentication.', 'secure-login-collector' ) . '</p>';
 
-		// Display passkey status if pro version.
-		if ( $this->is_pro_version ) {
-			$passkey_registered    = get_option( 'secure_login_passkey_registered', false );
-			$passkey_user_id       = get_option( 'secure_login_passkey_user_id', 0 );
-			$passkey_registered_at = get_option( 'secure_login_passkey_registered_at', '' );
-
-			if ( $passkey_registered ) {
-				echo '<div class="notice notice-success inline"><p>';
-				echo '<strong>' . esc_html__( 'Passkey Status:', 'secure-login-collector' ) . '</strong> ';
-				echo esc_html__( 'Registered', 'secure-login-collector' ) . ' ';
-				if ( $passkey_registered_at ) {
-					echo '<em>(' . esc_html__( 'Registered:', 'secure-login-collector' ) . ' ' . esc_html( $passkey_registered_at ) . ')</em>';
-				}
-				echo '</p></div>';
-
-				echo '<p>';
-				echo '<button type="button" class="button button-secondary" id="test-passkey-encryption">' . esc_html__( 'Test Passkey Encryption', 'secure-login-collector' ) . '</button> ';
-				echo '<button type="button" class="button button-secondary" id="reset-passkey">' . esc_html__( 'Reset Passkey', 'secure-login-collector' ) . '</button>';
-				echo '</p>';
-			} else {
-				echo '<div class="notice notice-warning inline"><p>';
-				echo '<strong>' . esc_html__( 'Passkey Status:', 'secure-login-collector' ) . '</strong> ';
-				echo esc_html__( 'Not registered', 'secure-login-collector' );
-				echo '</p></div>';
-
-				echo '<p>';
-				echo '<button type="button" class="button button-primary" id="register-passkey">' . esc_html__( 'Register Passkey', 'secure-login-collector' ) . '</button>';
-				echo '</p>';
-			}
-
-			// Add JavaScript for passkey management.
-			?>
-			<script>
-			jQuery(document).ready(function($) {
-				$('#register-passkey').on('click', function() {
-					var button = $(this);
-					button.prop('disabled', true).text('<?php echo esc_js( __( 'Registering...', 'secure-login-collector' ) ); ?>');
-					
-					// Generate challenge
-					var challenge = new Uint8Array(32);
-					window.crypto.getRandomValues(challenge);
-					
-					var userId = <?php echo esc_attr( get_current_user_id() ); ?>;
-					var userIdBytes = new TextEncoder().encode(userId.toString());
-					
-					var createCredentialDefaultArgs = {
-						publicKey: {
-							rp: {
-								name: "<?php echo esc_js( get_bloginfo( 'name' ) ); ?>",
-								id: "<?php echo esc_js( wp_parse_url( home_url(), PHP_URL_HOST ) ); ?>",
-							},
-							user: {
-								id: userIdBytes,
-								name: "<?php echo esc_js( wp_get_current_user()->user_login ); ?>",
-								displayName: "<?php echo esc_js( wp_get_current_user()->display_name ); ?>"
-							},
-							pubKeyCredParams: [{alg: -7, type: "public-key"}],
-							authenticatorSelection: {
-								authenticatorAttachment: "platform",
-								userVerification: "required"
-							},
-							timeout: 60000,
-							challenge: challenge
-						}
-					};
-					
-					navigator.credentials.create(createCredentialDefaultArgs)
-						.then((credential) => {
-							// Send credential to server
-							button.text('<?php echo esc_js( __( 'Saving registration...', 'secure-login-collector' ) ); ?>');
-							
-							$.ajax({
-								url: ajaxurl,
-								type: 'POST',
-								data: {
-									action: 'register_passkey',
-									credential_id: btoa(String.fromCharCode(...new Uint8Array(credential.rawId))),
-									public_key: btoa(String.fromCharCode(...new Uint8Array(credential.response.getPublicKey()))),
-									nonce: '<?php echo esc_attr( wp_create_nonce( 'register_passkey' ) ); ?>'
-								},
-								success: function(response) {
-									if (response.success) {
-										alert('<?php echo esc_js( __( 'Passkey registered successfully!', 'secure-login-collector' ) ); ?>');
-										location.reload();
-									} else {
-										alert('<?php echo esc_js( __( 'Registration failed:', 'secure-login-collector' ) ); ?> ' + response.data);
-									}
-								},
-								error: function() {
-									alert('<?php echo esc_js( __( 'Network error occurred during registration.', 'secure-login-collector' ) ); ?>');
-								},
-								complete: function() {
-									button.prop('disabled', false).text('<?php echo esc_js( __( 'Register Passkey', 'secure-login-collector' ) ); ?>');
-								}
-							});
-						})
-						.catch((err) => {
-							console.error('Passkey creation failed:', err);
-							alert('<?php echo esc_js( __( 'Passkey creation failed:', 'secure-login-collector' ) ); ?> ' + err.message);
-							button.prop('disabled', false).text('<?php echo esc_js( __( 'Register Passkey', 'secure-login-collector' ) ); ?>');
-						});
-				});
-				
-				$('#test-passkey-encryption').on('click', function() {
-					var button = $(this);
-					button.prop('disabled', true).text('<?php echo esc_js( __( 'Testing...', 'secure-login-collector' ) ); ?>');
-					
-					$.ajax({
-						url: ajaxurl,
-						type: 'POST',
-						data: {
-							action: 'test_passkey_encryption',
-							nonce: '<?php echo esc_attr( wp_create_nonce( 'test_passkey_encryption' ) ); ?>'
-						},
-						success: function(response) {
-							if (response.success) {
-								alert('<?php echo esc_js( __( 'Passkey encryption test passed!', 'secure-login-collector' ) ); ?>');
-							} else {
-								alert('<?php echo esc_js( __( 'Passkey encryption test failed:', 'secure-login-collector' ) ); ?> ' + response.data);
-							}
-						},
-						error: function() {
-							alert('<?php echo esc_js( __( 'Network error occurred during test.', 'secure-login-collector' ) ); ?>');
-						},
-						complete: function() {
-							button.prop('disabled', false).text('<?php echo esc_js( __( 'Test Passkey Encryption', 'secure-login-collector' ) ); ?>');
-						}
-					});
-				});
-				
-				$('#reset-passkey').on('click', function() {
-					if (!confirm('<?php echo esc_js( __( 'This will reset your passkey and invalidate all passkey-encrypted data. Continue?', 'secure-login-collector' ) ); ?>')) {
-						return;
-					}
-					
-					var button = $(this);
-					button.prop('disabled', true).text('<?php echo esc_js( __( 'Authenticating...', 'secure-login-collector' ) ); ?>');
-					
-					// Generate challenge for authentication.
-					var challenge = new Uint8Array(32);
-					window.crypto.getRandomValues(challenge);
-					
-					var getCredentialDefaultArgs = {
-						publicKey: {
-							timeout: 60000,
-							challenge: challenge,
-							userVerification: "required"
-						},
-					};
-					
-					navigator.credentials.get(getCredentialDefaultArgs)
-						.then((assertion) => {
-							// Send authentication data to server for reset authorization.
-							button.text('<?php echo esc_js( __( 'Authorizing reset...', 'secure-login-collector' ) ); ?>');
-							
-							$.ajax({
-								url: ajaxurl,
-								type: 'POST',
-								data: {
-									action: 'reset_passkey',
-									signature: btoa(String.fromCharCode(...new Uint8Array(assertion.response.signature))),
-									authenticator_data: btoa(String.fromCharCode(...new Uint8Array(assertion.response.authenticatorData))),
-									nonce: '<?php echo esc_attr( wp_create_nonce( 'reset_passkey' ) ); ?>'
-								},
-								success: function(response) {
-									if (response.success) {
-										alert('<?php echo esc_js( __( 'Passkey reset authorized! You can now register a new passkey.', 'secure-login-collector' ) ); ?>');
-										location.reload();
-									} else {
-										alert('<?php echo esc_js( __( 'Reset authorization failed:', 'secure-login-collector' ) ); ?> ' + response.data);
-									}
-								},
-								error: function() {
-									alert('<?php echo esc_js( __( 'Network error occurred during reset authorization.', 'secure-login-collector' ) ); ?>');
-								},
-								complete: function() {
-									button.prop('disabled', false).text('<?php echo esc_js( __( 'Reset Passkey', 'secure-login-collector' ) ); ?>');
-								}
-							});
-						})
-						.catch((err) => {
-							console.error('Passkey authentication for reset failed:', err);
-							alert('<?php echo esc_js( __( 'Authentication failed:', 'secure-login-collector' ) ); ?> ' + err.message);
-							button.prop('disabled', false).text('<?php echo esc_js( __( 'Reset Passkey', 'secure-login-collector' ) ); ?>');
-						});
-				});
-			});
-			</script>
-			<?php
-		}
+		
+		// Don't close the card-body div here - let the form-table be inside it
 	}
 
 	/**
@@ -531,6 +541,7 @@ class Secure_Login_Settings_Manager {
 		echo '<input type="email" id="secure_login_notification_email" name="secure_login_notification_email" value="' . esc_attr( $email ) . '" class="regular-text" />';
 		echo '<p class="description">' . esc_html__( 'Email address to receive notifications. Defaults to site admin email.', 'secure-login-collector' ) . '</p>';
 	}
+
 
 	/**
 	 * Frontend form text field callback.
@@ -620,13 +631,48 @@ class Secure_Login_Settings_Manager {
 	public function ultra_secure_mode_callback() {
 		$enabled = get_option( 'secure_login_ultra_secure_mode', false );
 		echo '<input type="checkbox" id="secure_login_ultra_secure_mode" name="secure_login_ultra_secure_mode" value="1" ' . checked( 1, $enabled, false ) . ' />';
-		echo '<label for="secure_login_ultra_secure_mode"> ' . esc_html__( 'Enable passkey-derived encryption (maximum security)', 'secure-login-collector' ) . '</label>';
-		echo '<p class="description">' . esc_html__( 'When enabled, data is encrypted using keys derived from your passkey signature. This provides maximum security - even if hackers modify the plugin code, they cannot decrypt data without your physical passkey device. Requires passkey registration.', 'secure-login-collector' ) . '</p>';
+		echo '<label for="secure_login_ultra_secure_mode"> ' . esc_html__( 'Enable passkey-protected encryption (zero-knowledge)', 'secure-login-collector' ) . '</label>';
+		echo '<p class="description">' . esc_html__( 'When enabled, the RSA private key is wrapped with passkey authentication. This provides true zero-knowledge - the server cannot decrypt data without your physical passkey device. Requires passkey registration.', 'secure-login-collector' ) . '</p>';
 
 		$passkey_registered = get_option( 'secure_login_passkey_registered', false );
 		if ( ! $passkey_registered ) {
-			echo '<div class="notice notice-warning inline"><p><strong>' . esc_html__( 'Warning:', 'secure-login-collector' ) . '</strong> ' . esc_html__( 'You must register a passkey before enabling ultra-secure mode.', 'secure-login-collector' ) . '</p></div>';
+			echo '<div class="slc-alert slc-alert-warning" style="margin-top: 12px;">';
+			echo '<span class="slc-alert-icon"></span>';
+			echo '<div class="slc-alert-content">';
+			echo '<div class="slc-alert-message">';
+			echo '<strong>' . esc_html__( 'Warning:', 'secure-login-collector' ) . '</strong> ' . esc_html__( 'You must register a passkey before enabling ultra-secure mode.', 'secure-login-collector' );
+			echo '</div>';
+			echo '</div>';
+			echo '</div>';
 		}
+	}
+
+	/**
+	 * Plugin management section callback.
+	 */
+	public function plugin_management_section_callback() {
+		echo '<div class="slc-card" style="margin-top: 20px;">';
+		echo '<div class="slc-card-header">';
+		echo '<h3 class="slc-card-title">';
+		echo esc_html__( 'Plugin Management', 'secure-login-collector' );
+		echo '</h3>';
+		echo '</div>';
+		echo '<div class="slc-card-body">';
+		echo '<p>' . esc_html__( 'Configure how the plugin handles data when it is uninstalled.', 'secure-login-collector' ) . '</p>';
+		// Don't close the card-body div here - let the form-table be inside it
+	}
+
+	/**
+	 * Delete on uninstall field callback.
+	 */
+	public function delete_on_uninstall_callback() {
+		$enabled = get_option( 'secure_login_delete_on_uninstall', false );
+		echo '<input type="checkbox" id="secure_login_delete_on_uninstall" name="secure_login_delete_on_uninstall" value="1" ' . checked( 1, $enabled, false ) . ' />';
+		echo '<label for="secure_login_delete_on_uninstall"> ' . esc_html__( 'Completely remove all plugin data when uninstalling', 'secure-login-collector' ) . '</label>';
+		echo '<p class="description">' . esc_html__( 'When checked, all login data, encryption keys, settings, and database tables will be permanently deleted when the plugin is uninstalled. This action cannot be undone.', 'secure-login-collector' ) . '</p>';
+		echo '<div class="notice notice-warning inline" style="margin-top: 10px;">';
+		echo '<p><strong>' . esc_html__( 'Warning:', 'secure-login-collector' ) . '</strong> ' . esc_html__( 'If you enable this option, all encrypted login data will be permanently lost when you uninstall the plugin. Make sure to export any important data before uninstalling.', 'secure-login-collector' ) . '</p>';
+		echo '</div>';
 	}
 
 	/**
@@ -634,14 +680,68 @@ class Secure_Login_Settings_Manager {
 	 */
 	public function settings_page() {
 		?>
-		<div class="wrap">
+		<div class="wrap slc-admin-wrap">
 			<h1><?php echo esc_html__( 'Secure Login Collector Settings', 'secure-login-collector' ); ?></h1>
-			<form method="post" action="options.php">
-				<?php
-				settings_fields( 'secure_login_settings' );
-				do_settings_sections( 'secure_login_settings' );
-				submit_button();
-				?>
+			
+			<!-- Shortcode Display Section -->
+			<div class="slc-card">
+				<div class="slc-card-header">
+					<h3 class="slc-card-title">
+						
+						<?php echo esc_html__( 'Frontend Form Shortcode', 'secure-login-collector' ); ?>
+					</h3>
+					<span class="slc-badge slc-badge-info"><?php echo esc_html__( 'Required', 'secure-login-collector' ); ?></span>
+				</div>
+				<div class="slc-card-body">
+					<p><?php echo esc_html__( 'Use this shortcode to display the secure login form on any page or post:', 'secure-login-collector' ); ?></p>
+					<div style="background: var(--slc-bg-light); padding: 12px 16px; border-radius: var(--slc-radius-sm); display: inline-block; font-family: 'Monaco', 'Menlo', monospace; font-size: 16px; border: 2px solid var(--slc-border); font-weight: 500;">
+						[secure_login_form]
+					</div>
+					<div style="margin-top: 12px;">
+						<button type="button" class="button" onclick="navigator.clipboard.writeText('[secure_login_form]'); this.innerHTML = '<?php echo esc_js( __( 'Copied!', 'secure-login-collector' ) ); ?>'; setTimeout(() => { this.innerHTML = '<?php echo esc_js( __( 'Copy Shortcode', 'secure-login-collector' ) ); ?>'; }, 2000);">
+							<?php echo esc_html__( 'Copy Shortcode', 'secure-login-collector' ); ?>
+						</button>
+					</div>
+					<p class="slc-form-help" style="margin-top: 16px;">
+						<?php echo esc_html__( 'Simply paste this shortcode into any page or post where you want clients to submit their login credentials.', 'secure-login-collector' ); ?>
+					</p>
+				</div>
+			</div>
+			
+			<form method="post" action="options.php" class="slc-settings-form">
+				<div class="slc-settings-sections">
+					<?php
+					settings_fields( 'secure_login_settings' );
+					
+					// Custom rendering of settings sections to properly wrap in cards
+					global $wp_settings_sections, $wp_settings_fields;
+					$page = 'secure_login_settings';
+					
+					if ( ! isset( $wp_settings_sections[ $page ] ) ) {
+						return;
+					}
+					
+					foreach ( (array) $wp_settings_sections[ $page ] as $section ) {
+						// Call the section callback to render the card opening
+						if ( $section['callback'] ) {
+							call_user_func( $section['callback'], $section );
+						}
+						
+						// Render the fields inside the card
+						if ( ! isset( $wp_settings_fields ) || ! isset( $wp_settings_fields[ $page ] ) || ! isset( $wp_settings_fields[ $page ][ $section['id'] ] ) ) {
+							echo '</div></div>'; // Close card-body and card if no fields
+							continue;
+						}
+						
+						echo '<table class="form-table" role="presentation">';
+						do_settings_fields( $page, $section['id'] );
+						echo '</table>';
+						echo '</div></div>'; // Close card-body and card
+					}
+					
+					submit_button();
+					?>
+				</div>
 			</form>
 		</div>
 		<?php
@@ -655,6 +755,7 @@ class Secure_Login_Settings_Manager {
 	 */
 	public function sanitize_frontend_form_text( $text ) {
 		// Get the text type selection.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled by WordPress settings API.
 		$text_type = isset( $_POST['secure_login_frontend_text_type'] ) ? sanitize_text_field( wp_unslash( $_POST['secure_login_frontend_text_type'] ) ) : 'default';
 
 		// If "default" is selected, don't save any custom text (save empty string).

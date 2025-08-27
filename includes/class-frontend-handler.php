@@ -69,9 +69,13 @@ class Secure_Login_Frontend_Handler {
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_frontend_scripts' ) );
 		add_shortcode( 'secure_login_form', array( $this, 'frontend_form_shortcode' ) );
 
-		// Register AJAX handlers.
-		add_action( 'wp_ajax_save_secure_login_data', array( $this, 'handle_save_login_data' ) );
-		add_action( 'wp_ajax_nopriv_save_secure_login_data', array( $this, 'handle_save_login_data' ) );
+		// Register v2 AJAX handlers for new encryption format (only v2 supported now).
+		add_action( 'wp_ajax_save_secure_login_data_v2', array( $this, 'handle_save_login_data_v2' ) );
+		add_action( 'wp_ajax_nopriv_save_secure_login_data_v2', array( $this, 'handle_save_login_data_v2' ) );
+
+		// Add handler for public key retrieval (delegates to encryption handler)
+		add_action( 'wp_ajax_slc_get_public_key', array( $this->encryption_handler, 'handle_get_public_key' ) );
+		add_action( 'wp_ajax_nopriv_slc_get_public_key', array( $this->encryption_handler, 'handle_get_public_key' ) );
 	}
 
 	/**
@@ -96,9 +100,8 @@ class Secure_Login_Frontend_Handler {
 				SECURE_LOGIN_VERSION
 			);
 
-			// Always use RSA encryption on frontend.
-			// Server will handle passkey re-encryption if ultra-secure mode is enabled.
-			wp_enqueue_script( 'secure-login-frontend', SECURE_LOGIN_PLUGIN_URL . 'assets/js/frontend-ultra-secure.js', array( 'jquery' ), SECURE_LOGIN_VERSION, true );
+			// Use the new secure frontend script with proper encryption flow.
+			wp_enqueue_script( 'secure-login-frontend', SECURE_LOGIN_PLUGIN_URL . 'assets/js/frontend-secure.js', array( 'jquery' ), SECURE_LOGIN_VERSION, true );
 
 			// Prepare localization data.
 			$localize_data = array(
@@ -106,16 +109,20 @@ class Secure_Login_Frontend_Handler {
 				'nonce'   => wp_create_nonce( 'secure_login_nonce' ),
 				'is_pro'  => $this->is_pro_version,
 				'strings' => array(
-					'required_fields_error' => __( 'Please fill in all required fields (Email Address, Name, Login URL, Username/Email, and Password).', 'secure-login-collector' ),
-					'submitting'            => __( 'Submitting...', 'secure-login-collector' ),
-					'submit_securely'       => __( 'Submit Securely', 'secure-login-collector' ),
-					'success_message'       => __( 'Login data saved securely! Thank you for your submission.', 'secure-login-collector' ),
-					'error_prefix'          => __( 'Error saving data: ', 'secure-login-collector' ),
-					'unknown_error'         => __( 'Unknown error', 'secure-login-collector' ),
-					'network_error'         => __( 'Network error occurred while saving data. Please try again.', 'secure-login-collector' ),
-					'encryption_error'      => __( 'Encryption failed. Please try again.', 'secure-login-collector' ),
-					'show_password'         => __( 'Show password', 'secure-login-collector' ),
-					'hide_password'         => __( 'Hide password', 'secure-login-collector' ),
+					'required_fields_error'   => __( 'Please fill in all required fields (Email Address, Name, Login URL, Username/Email, and Password).', 'secure-login-collector' ),
+					'submitting'              => __( 'Submitting...', 'secure-login-collector' ),
+					'submit_securely'         => __( 'Submit Securely', 'secure-login-collector' ),
+					'success_message'         => __( 'Login data saved securely! Thank you for your submission.', 'secure-login-collector' ),
+					'error_prefix'            => __( 'Error saving data: ', 'secure-login-collector' ),
+					'unknown_error'           => __( 'Unknown error', 'secure-login-collector' ),
+					'network_error'           => __( 'Network error occurred while saving data. Please try again.', 'secure-login-collector' ),
+					'encryption_error'        => __( 'Encryption failed. Please try again.', 'secure-login-collector' ),
+					'show_password'           => __( 'Show password', 'secure-login-collector' ),
+					'hide_password'           => __( 'Hide password', 'secure-login-collector' ),
+					'encryption_failed'       => __( 'Encryption failed', 'secure-login-collector' ),
+					'no_encryption_available' => __( 'No encryption method available', 'secure-login-collector' ),
+					'rsa_key_not_available'   => __( 'RSA public key not available. Please contact administrator.', 'secure-login-collector' ),
+					'encryption_retry_failed' => __( 'Encryption failed. Please try again or contact administrator.', 'secure-login-collector' ),
 				),
 			);
 
@@ -125,104 +132,13 @@ class Secure_Login_Frontend_Handler {
 				$localize_data['public_key'] = $public_key;
 			}
 
+			// No need to send passkey info to frontend - clients don't have passkeys
+
 			// Localize script with data.
 			wp_localize_script( 'secure-login-frontend', 'secureLoginAjax', $localize_data );
 		}
 	}
 
-	/**
-	 * Handle AJAX request to save encrypted login data.
-	 *
-	 * @return void
-	 */
-	public function handle_save_login_data() {
-		// Verify nonce for security.
-		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'secure_login_nonce' ) ) {
-			wp_send_json_error( __( 'Invalid security token.', 'secure-login-collector' ) );
-			return;
-		}
-
-		// Sanitize and validate input.
-		$encrypted_data = isset( $_POST['encrypted_data'] ) ? sanitize_textarea_field( wp_unslash( $_POST['encrypted_data'] ) ) : '';
-		$metadata       = isset( $_POST['metadata'] ) ? wp_unslash( $_POST['metadata'] ) : ''; // Don't sanitize JSON data as it corrupts the format.
-
-		if ( empty( $encrypted_data ) || empty( $metadata ) ) {
-			wp_send_json_error( __( 'Missing required data.', 'secure-login-collector' ) );
-			return;
-		}
-
-		// Validate metadata is valid JSON.
-		$metadata_array = json_decode( $metadata, true );
-		if ( JSON_ERROR_NONE !== json_last_error() ) {
-			wp_send_json_error( __( 'Invalid metadata format. JSON Error: ', 'secure-login-collector' ) . json_last_error_msg() );
-			return;
-		}
-
-		// Validate required metadata fields.
-		$required_fields = array( 'email', 'name', 'login_url' );
-		foreach ( $required_fields as $field ) {
-			if ( ! isset( $metadata_array[ $field ] ) || empty( $metadata_array[ $field ] ) ) {
-				// translators: %s is the name of the missing field.
-				wp_send_json_error( sprintf( __( 'Missing %s in metadata.', 'secure-login-collector' ), $field ) );
-				return;
-			}
-		}
-
-		// Sanitize individual metadata fields after JSON decode.
-		$metadata_array['email']                = sanitize_email( $metadata_array['email'] );
-		$metadata_array['name']                 = sanitize_text_field( $metadata_array['name'] );
-		$metadata_array['login_url']            = sanitize_text_field( $metadata_array['login_url'] );
-		$metadata_array['created_at']           = isset( $metadata_array['created_at'] ) ? sanitize_text_field( $metadata_array['created_at'] ) : current_time( 'c' );
-		$metadata_array['encryption_key_hint']  = isset( $metadata_array['encryption_key_hint'] ) ? sanitize_text_field( $metadata_array['encryption_key_hint'] ) : '';
-		$metadata_array['key_hostname']         = isset( $metadata_array['key_hostname'] ) ? sanitize_text_field( $metadata_array['key_hostname'] ) : '';
-		$metadata_array['key_timestamp_suffix'] = isset( $metadata_array['key_timestamp_suffix'] ) ? sanitize_text_field( $metadata_array['key_timestamp_suffix'] ) : '';
-
-		// Re-encode the sanitized metadata.
-		$metadata = wp_json_encode( $metadata_array );
-
-		// ULTRA-SECURE MODE: Double-encrypt with passkey-derived encryption if enabled.
-		// Instead of decrypt->re-encrypt, we encrypt the already-encrypted RSA data.
-		if ( $this->is_pro_version && get_option( 'secure_login_ultra_secure_mode', false ) && get_option( 'secure_login_passkey_registered', false ) ) {
-			// Encrypt the RSA-encrypted data with passkey-derived encryption (double encryption).
-			$passkey_encrypted_data = $this->encryption_handler->encrypt_with_passkey_key( $encrypted_data, null );
-
-			if ( false !== $passkey_encrypted_data ) {
-				// Use double-encrypted data and update metadata.
-				$encrypted_data                     = $passkey_encrypted_data;
-				$metadata_array['encryption_type']  = 'passkey_derived';
-				$metadata_array['inner_encryption'] = 'rsa'; // Track inner encryption method.
-				$metadata_array['double_encrypted'] = true; // Flag for double encryption.
-				$metadata                           = wp_json_encode( $metadata_array );
-			}
-		}
-
-		// Prepare data for database insertion.
-		$user_agent = '';
-		if ( isset( $_SERVER['HTTP_USER_AGENT'] ) ) {
-			$user_agent = sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) );
-		}
-
-		$data = array(
-			'encrypted_data' => $encrypted_data,
-			'metadata'       => $metadata,
-			'user_id'        => 0, // Anonymous frontend submissions.
-			'ip_address'     => SecureLoginCollector::get_client_ip(),
-			'user_agent'     => $user_agent,
-		);
-
-		// Insert into database.
-		$result = $this->database_manager->insert_entry( $data );
-
-		if ( false === $result ) {
-			wp_send_json_error( __( 'Failed to save data to database.', 'secure-login-collector' ) );
-			return;
-		}
-
-		// Send email notification if enabled.
-		$this->database_manager->send_notification( $metadata_array['email'], $metadata_array['name'] );
-
-		wp_send_json_success( __( 'Login data saved securely.', 'secure-login-collector' ) );
-	}
 
 	/**
 	 * Frontend form shortcode.
@@ -342,5 +258,116 @@ class Secure_Login_Frontend_Handler {
 		</div>
 		<?php
 		return ob_get_clean();
+	}
+
+	/**
+	 * Handle AJAX request to save encrypted login data (v2 format).
+	 * This handles the new encryption format with AES-GCM + RSA + optional Passkey.
+	 *
+	 * @return void
+	 */
+	public function handle_save_login_data_v2() {
+		// Verify nonce for security.
+		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'secure_login_nonce' ) ) {
+			wp_send_json_error( __( 'Invalid security token.', 'secure-login-collector' ) );
+			return;
+		}
+
+		// Get submission data.
+		$submission_json = isset( $_POST['submission'] ) ? wp_unslash( $_POST['submission'] ) : '';
+
+		if ( empty( $submission_json ) ) {
+			wp_send_json_error( __( 'Missing submission data.', 'secure-login-collector' ) );
+			return;
+		}
+
+		// Parse submission data.
+		$submission = json_decode( $submission_json, true );
+		if ( JSON_ERROR_NONE !== json_last_error() ) {
+			wp_send_json_error( __( 'Invalid submission format.', 'secure-login-collector' ) );
+			return;
+		}
+
+		// Validate required fields.
+		$required_fields = array( 'encryptedData', 'rsaEncryptedKey', 'iv', 'salt', 'metadata' );
+		foreach ( $required_fields as $field ) {
+			if ( ! isset( $submission[ $field ] ) ) {
+				// translators: %s is the name of the missing field.
+				wp_send_json_error( sprintf( __( 'Missing required field: %s', 'secure-login-collector' ), $field ) );
+				return;
+			}
+		}
+
+		// Validate metadata.
+		$metadata          = $submission['metadata'];
+		$required_metadata = array( 'email', 'name', 'login_url' );
+		foreach ( $required_metadata as $field ) {
+			if ( ! isset( $metadata[ $field ] ) || empty( $metadata[ $field ] ) ) {
+				// translators: %s is the name of the missing metadata field.
+				wp_send_json_error( sprintf( __( 'Missing required metadata: %s', 'secure-login-collector' ), $field ) );
+				return;
+			}
+		}
+
+		// Sanitize metadata.
+		$metadata['email']      = sanitize_email( $metadata['email'] );
+		$metadata['name']       = sanitize_text_field( $metadata['name'] );
+		$metadata['login_url']  = sanitize_text_field( $metadata['login_url'] );
+		$metadata['created_at'] = isset( $metadata['created_at'] ) ? sanitize_text_field( $metadata['created_at'] ) : current_time( 'c' );
+
+		// Check if Pro version with pro keys is available on the server
+		// Use same logic as V2 encryption handler for consistency
+		$is_pro_encrypted     = false;
+		$server_credential_id = null;
+
+		if ( $this->is_pro_version && get_option( 'secure_login_pro_keys_active', false ) ) {
+			// Mark as Pro encrypted - data will be encrypted with pro public key
+			// The passkey decryption happens on the admin side during decryption
+			$is_pro_encrypted     = true;
+			$server_credential_id = get_option( 'secure_login_passkey_credential_id' );
+		}
+
+		// Create encrypted package for storage.
+		$encrypted_package = array(
+			'encryptedData'   => sanitize_text_field( $submission['encryptedData'] ),
+			'rsaEncryptedKey' => sanitize_text_field( $submission['rsaEncryptedKey'] ), // Store as-is from client
+			'iv'              => sanitize_text_field( $submission['iv'] ),
+			'salt'            => sanitize_text_field( $submission['salt'] ),
+			'isProEncrypted'  => $is_pro_encrypted, // Server determines this
+			'credentialId'    => $server_credential_id, // Server's passkey credential ID
+			'version'         => 2, // Mark as v2 format.
+		);
+
+		// Add encryption metadata.
+		$metadata['encryption_type']    = $is_pro_encrypted ? 'aes-rsa-passkey-v2' : 'aes-rsa-v2';
+		$metadata['encryption_version'] = 2;
+		$metadata['is_pro_encrypted']   = $is_pro_encrypted;
+
+		// Prepare data for database insertion.
+		$user_agent = '';
+		if ( isset( $_SERVER['HTTP_USER_AGENT'] ) ) {
+			$user_agent = sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) );
+		}
+
+		$data = array(
+			'encrypted_data' => wp_json_encode( $encrypted_package ), // Store entire package as JSON.
+			'metadata'       => wp_json_encode( $metadata ),
+			'user_id'        => 0, // Anonymous frontend submissions.
+			'ip_address'     => SecureLoginCollector::get_client_ip(),
+			'user_agent'     => $user_agent,
+		);
+
+		// Insert into database.
+		$result = $this->database_manager->insert_entry( $data );
+
+		if ( false === $result ) {
+			wp_send_json_error( __( 'Failed to save data to database.', 'secure-login-collector' ) );
+			return;
+		}
+
+		// Send email notification if enabled.
+		$this->database_manager->send_notification( $metadata['email'], $metadata['name'] );
+
+		wp_send_json_success( __( 'Login data saved securely with enhanced encryption.', 'secure-login-collector' ) );
 	}
 }
