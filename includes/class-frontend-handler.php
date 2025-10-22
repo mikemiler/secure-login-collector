@@ -163,6 +163,8 @@ class Secure_Login_Frontend_Handler {
 		<div class="secure-login-form-container">
 			<h3><?php echo esc_html( $atts['title'] ); ?></h3>
 			<div class="security-info">
+				<img src="<?php echo esc_url( SECURE_LOGIN_PLUGIN_URL . 'assets/img/slc-secure-data-transfer-300.png' ); ?>" alt="<?php echo esc_attr__( 'Secure Encrypted Data Transmission', 'secure-login-collector' ); ?>" class="security-badge-icon" />
+				<div class="security-info-text">
 				<?php
 				// Check text type selection.
 				$text_type       = get_option( 'secure_login_frontend_text_type', 'default' );
@@ -211,6 +213,7 @@ class Secure_Login_Frontend_Handler {
 						<p><strong><?php echo esc_html__( 'Security & Privacy:', 'secure-login-collector' ); ?></strong> <?php echo esc_html__( 'Your data is encrypted in your browser before being sent to our server. We store the encrypted data securely. Auto-deletion is disabled, so data will be retained until manually deleted by the administrator.', 'secure-login-collector' ); ?></p>
 					<?php endif; ?>
 				<?php endif; ?>
+				</div>
 			</div>
 			<form id="secure-login-frontend-form" class="secure-login-form">
 				<div class="form-group">

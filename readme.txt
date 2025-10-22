@@ -14,135 +14,125 @@ The secure way for agencies to receive client login credentials. Stop asking cli
 
 **Secure Login Collector** is built specifically for agencies who need to receive login credentials from clients for various services. Whether you're managing Google Ads accounts, social media profiles, or website maintenance, this plugin provides a secure, professional way to collect passwords without the risks of email transmission.
 
-= 🎯 Built for Agencies Receiving Client Credentials =
+= 🎯 What This Plugin Does =
 
-As an agency, you need access to your clients' various accounts and services. But asking clients to email passwords is:
-- **Insecure** - Emails are sent in plain text
+This plugin creates a secure, encrypted credential collection system that allows your clients to submit login credentials safely through your website. The data is encrypted in their browser before transmission and stored securely in your WordPress database. You can then decrypt and access these credentials when needed through a clean admin interface.
+
+**The Problem It Solves:**
+
+As an agency, asking clients to email passwords is:
+- **Insecure** - Emails are sent in plain text and can be intercepted
 - **Unprofessional** - Shows poor security practices
 - **Risky** - Creates liability if data is compromised
 - **Messy** - Hard to organize and track
+- **Compliance Issues** - Violates data protection regulations
 
-This plugin solves these problems with a secure, encrypted collection system that protects both you and your clients.
+**The Solution:**
 
-= 📋 Common Agency Use Cases =
+This plugin provides military-grade encryption, automatic data expiration, password manager integration, and a professional collection workflow that protects both you and your clients.
 
-**Digital Marketing Agencies**
-When taking on new clients, you need access to:
-* Google Ads accounts for campaign management
-* Facebook Business Manager for social advertising
-* Google Analytics for performance tracking
-* Social media accounts (Instagram, Twitter, LinkedIn)
-* Email marketing platforms (Mailchimp, Klaviyo)
-* CMS logins for content updates
+= 🔐 How the Free Version Works =
 
-**Web Development Agencies**
-For website projects, you need:
-* WordPress admin credentials for maintenance
-* FTP/SFTP access for file uploads
-* Hosting control panel logins (cPanel, Plesk)
-* Domain registrar access for DNS management
-* Database credentials for migrations
-* API keys for third-party integrations
+The free version uses a **server-trusted encryption model** suitable for most agency use cases:
 
-**SEO & Content Agencies**
-For optimization work, you need:
-* Google Search Console access
-* Website admin panels for content updates
-* Analytics platforms for reporting
-* SEO tool accounts (Ahrefs, SEMrush)
-* Content management systems
-* Client email accounts for outreach
+**Encryption Architecture:**
+1. **Client-Side Encryption:** When clients submit credentials, data is encrypted in their browser using RSA-2048 public key cryptography
+2. **Hybrid Encryption:** Actual credentials are encrypted with AES-256-GCM (fast), then the AES key is encrypted with RSA-2048 (secure)
+3. **Server Storage:** Encrypted data is stored in your WordPress database along with metadata (client email, domain, submission date)
+4. **Private Key Protection:** The RSA private key (needed for decryption) is encrypted using AES-256-CBC with WordPress authentication salts (AUTH_KEY + SECURE_AUTH_KEY)
+5. **Admin Decryption:** When you click decrypt, the server decrypts the RSA private key using WordPress salts, sends it to your browser, and your browser decrypts the credentials
 
-**IT Support Companies**
-For technical support, you need:
-* System administrator credentials
-* Cloud service logins (AWS, Azure, Google Cloud)
-* Software license keys and accounts
-* VPN access credentials
-* Server root access
-* Backup system logins
+**Security Model:**
+- **What's Protected:** Client credentials are never transmitted or stored in plain text
+- **Who Can Decrypt:** Any WordPress administrator with admin login access
+- **Server Role:** Server can access the private key using WordPress configuration salts
+- **Threat Protection:** Protects against email interception, casual database access, and client-side attacks
 
-= 🆓 What's Included in the FREE Version =
+**Key Storage:**
+- Public key: `secure_login_public_key_free` (stored in plain text, safe to expose)
+- Private key: `secure_login_private_key_free_encrypted` (encrypted with WordPress salts)
 
-The free version provides everything most agencies need for secure credential collection:
+= 🛡️ How the Pro Version Works =
 
-**Core Security Features**
-✅ **RSA-2048 Encryption** - Military-grade encryption before data leaves client's browser
-✅ **AES-256-GCM Data Encryption** - Additional layer of encryption for stored data
-✅ **Zero-Knowledge Architecture** - Your server never sees unencrypted passwords
-✅ **Secure Storage** - Encrypted data stored safely in your WordPress database
+The pro version adds **true zero-knowledge encryption** with passkey authentication for maximum security:
 
-**Collection & Management**
-✅ **Professional Collection Form** - Clean, responsive form with `[secure_login_form]` shortcode
-✅ **Real-Time Encryption Status** - Clients see their data being encrypted
-✅ **Email Notifications** - Get notified when clients submit credentials
-✅ **Admin Dashboard** - Central interface to manage all submissions
-✅ **Search & Filter** - Find credentials by client email or domain
-✅ **Individual Decryption** - Decrypt entries one at a time as needed
+**Encryption Architecture:**
+1. **Dual-Key System:** Pro version creates a separate RSA key pair dedicated to ultra-secure entries
+2. **Passkey Registration:** When you register your first passkey (hardware key or biometric), the plugin:
+   - Generates a new RSA-2048 key pair specifically for pro entries
+   - Derives a wrapping key from your passkey credential using PBKDF2 (100,000 iterations)
+   - Wraps (encrypts) the RSA private key with the passkey-derived key using AES-256-GCM
+3. **Client-Side Encryption:** Clients submit credentials (same process as free version) but data is encrypted with the pro public key
+4. **Zero-Knowledge Storage:** The wrapped private key is stored in database but cannot be decrypted without the physical passkey device
+5. **Passkey Decryption:** When you decrypt, you must authenticate with your passkey (YubiKey, Touch ID, Face ID, etc.):
+   - Browser performs WebAuthn authentication with your physical device
+   - Server derives the unwrapping key from your passkey credential
+   - Browser unwraps the RSA private key (never sent to server)
+   - Browser decrypts the credentials client-side
 
-**Data Handling**
-✅ **Auto-Expiration** - Automatically delete old data (1-365 days)
-✅ **Manual Entry Addition** - Add credentials received via phone/email
-✅ **One-Click Copy** - Copy decrypted credentials instantly
-✅ **Retention Management** - Extend or reduce retention per entry
-✅ **Bulk Delete** - Remove multiple entries at once
+**Security Model:**
+- **True Zero-Knowledge:** Server cannot decrypt data even with full database access
+- **Passkey Required:** Physical device (YubiKey, Touch ID, Face ID) required for decryption
+- **WebAuthn Security:** Uses FIDO2 standards with attestation validation and signature verification
+- **Threat Protection:** Protects against database compromise, server compromise, admin account takeover, and phishing attacks
 
-**Export Options**
-✅ **Password Manager Export** - Export to 8+ formats including:
-  - Bitwarden (recommended for teams)
-  - 1Password
-  - LastPass
-  - Chrome, Firefox, Safari
-  - Dashlane
-  - KeePass
-  - Generic CSV
+**Key Storage:**
+- Public key: `secure_login_public_key_pro` (stored in plain text)
+- Private key: `secure_login_wrapped_private_key_pro` (wrapped with passkey-derived key - cannot be decrypted without physical passkey device)
 
-**Customization**
-✅ **Custom Form Text** - Add your agency's instructions
-✅ **Multi-Language Support** - German and Spanish translations included
-✅ **Email Settings** - Configure notification recipients
-✅ **Retention Policies** - Set default expiration periods
+**Passkey Authentication:**
+- Credential registered via WebAuthn/FIDO2 standard
+- Supports hardware keys (YubiKey, Titan), platform authenticators (Touch ID, Face ID, Windows Hello)
+- Key derivation: PBKDF2-SHA256 from (credential_id + user_id + WordPress salt) with 100,000 iterations
+- Authentication requires: valid challenge + origin verification + signature verification
 
-The free version is perfect for:
-- Small to medium agencies
-- Freelancers and consultants
-- Anyone who needs basic secure credential collection
-- Teams using standard password managers
+= ⚖️ Free vs Pro: Detailed Comparison =
 
-= 🚀 What's Added in the PRO Version =
+**FREE VERSION - Server-Trusted Encryption**
 
-The Pro version adds advanced security features for agencies handling sensitive enterprise clients:
+✅ **Pros:**
+- **Simple Setup:** Works immediately after installation, no additional configuration needed
+- **Easy Access:** Any WordPress admin can decrypt with their normal login credentials
+- **Team Friendly:** Multiple admins can access credentials without additional setup
+- **No Hardware Required:** No need for physical security keys or specific devices
+- **Password Manager Integration:** Full export support to Bitwarden, 1Password, LastPass, etc.
+- **Sufficient Security:** Military-grade RSA-2048 + AES-256 encryption protects against:
+  - Email interception and transmission attacks
+  - Casual database access without WordPress configuration
+  - Client-side attacks and browser vulnerabilities
+  - Man-in-the-middle attacks during submission
+- **Quick Recovery:** No risk of losing access if device is lost (admin login always works)
+- **Cost:** Completely free forever
+- **Suitable For:** 95% of agencies and use cases
 
-**🔐 Passkey Authentication**
-⭐ **Hardware Security Keys** - Support for YubiKey, Titan, and other FIDO2 devices
-⭐ **Biometric Authentication** - Use Touch ID, Face ID, or Windows Hello
-⭐ **Phishing-Resistant** - Passkeys are domain-bound and cannot be phished
-⭐ **No Master Password** - Nothing to remember or potentially leak
+❌ **Cons:**
+- **Server Can Decrypt:** If someone gains full server access (database + wp-config.php with salts), they can decrypt all credentials
+- **Not Zero-Knowledge:** The server has the ability to decrypt private keys using WordPress salts
+- **Admin Account Risk:** Compromised admin account = access to all credentials
+- **Database Vulnerability:** Database backup with WordPress config = potential exposure
+- **No Physical Security:** No hardware-based security layer (no YubiKey, no biometrics)
+- **Compliance Limitations:** May not meet strict compliance requirements for healthcare (HIPAA) or financial data
+- **Single Factor:** Decryption only requires WordPress admin login (username + password)
 
-**🛡️ Enhanced Encryption**
-⭐ **Passkey-Wrapped Keys** - RSA private keys are additionally encrypted with passkey
-⭐ **True Zero-Knowledge** - Even with database access, data cannot be decrypted without your physical device
-⭐ **Separate Pro Keys** - Dedicated RSA key pair for ultra-secure entries
-⭐ **Double-Layer Protection** - Optional double encryption for maximum security
+**PRO VERSION - Zero-Knowledge Encryption**
 
-**⚡ Advanced Features**
-⭐ **Bulk Export with Single Authentication** - Decrypt multiple entries with one passkey authentication
-⭐ **Passkey Management** - Register multiple passkeys for team members
-⭐ **Enhanced Audit Logging** - Track who accessed what and when
-⭐ **Priority Security Updates** - Get security patches first
-
-**💼 Premium Support**
-⭐ **Priority Email Support** - Get help within 24 hours
-⭐ **Setup Assistance** - We'll help you configure everything
-⭐ **Security Consultation** - Best practices for your agency
-⭐ **Custom Integration Help** - Assistance with special requirements
-
-The Pro version is ideal for:
-- Large agencies with enterprise clients
-- Agencies handling financial or healthcare data
-- Teams requiring hardware security key enforcement
-- Organizations with strict compliance requirements
-- Agencies wanting the absolute best security available
+✅ **Pros:**
+- **True Zero-Knowledge:** Server cannot decrypt data even with complete database and server access
+- **Physical Security:** Requires physical passkey device (YubiKey) or biometric (Touch ID/Face ID) for decryption
+- **Maximum Security:** Protects against:
+  - Complete server compromise (database + configuration + code)
+  - Admin account takeover (attacker still needs your physical device)
+  - Database theft or backup exposure
+  - Insider threats (hosting provider, developers, etc.)
+  - Remote attacks (phishing, malware cannot steal physical device)
+- **WebAuthn/FIDO2 Standard:** Industry-standard phishing-resistant authentication
+- **Hardware-Backed:** Keys protected by secure enclaves (YubiKey chip, Apple Secure Enclave, TPM)
+- **Compliance Ready:** Meets strict requirements for HIPAA, GDPR, financial services, enterprise security
+- **Audit Trail:** Enhanced logging for who accessed what and when
+- **Multi-Device Support:** Register multiple passkeys (primary + backup)
+- **Team Security:** Each team member can register their own passkey
+- **Platform Flexible:** Works with hardware keys, Touch ID, Face ID, Windows Hello
+- **Dual-Key System:** Free version credentials remain accessible if needed
 
 = 🔄 How It Works =
 
@@ -244,10 +234,7 @@ You control retention periods from 1-365 days (or set to 0 for no auto-deletion)
 
 = What happens if I lose my passkey (Pro version)? =
 
-The free version credentials remain accessible with WordPress admin access. For Pro version, we recommend:
-- Registering multiple passkeys (one primary, one backup)
-- Keeping encrypted backups of your keys
-- Using the free version for critical credentials if concerned
+The free version credentials remain accessible with WordPress admin access. Decrypting login data without the passkey won't be possible anymore. 
 
 = Can clients update previously submitted credentials? =
 
@@ -256,6 +243,7 @@ Clients can submit new credentials with a note explaining the change. Each submi
 = Is this GDPR compliant? =
 
 The plugin provides tools for GDPR compliance:
+- All data is only saved at your server. No 3rd party is interfering with transfering and saving the login data.
 - Automatic data deletion (right to be forgotten)
 - Strong encryption (data protection)
 - No unnecessary data collection
@@ -291,9 +279,6 @@ The plugin supports export to: Bitwarden, 1Password, LastPass, Dashlane, KeePass
 
 == Changelog ==
 
-= 1.1.0 =
-* Improved passkey security
-
 = 1.0.0 =
 * Initial public release
 * Free version with RSA-2048 + AES-256 encryption
@@ -312,18 +297,9 @@ First stable release. Upgrade from beta versions recommended for security enhanc
 
 == Support ==
 
-**Free Version Support**
 - WordPress.org support forums
 - Documentation and FAQs
 - Community assistance
-
-**Pro Version Support**
-- Priority email support (24-hour response)
-- Setup assistance included
-- Security best practices consultation
-- Direct support from developers
-
-For pre-sales questions: [your-email@domain.com]
 
 == Privacy & Security ==
 
@@ -334,17 +310,3 @@ This plugin prioritizes security:
 - No external API calls (except Pro license validation)
 - All processing happens on your server
 - Regular security updates
-
-Found a security issue? Please responsibly disclose to [security@your-domain.com]
-
-== Pro Version Pricing ==
-
-The Pro version is available as an annual subscription that includes:
-- All Pro features mentioned above
-- Unlimited client submissions
-- Unlimited team members
-- Priority support
-- Regular security updates
-- No per-credential fees
-
-Visit [your-website.com/pricing] for current pricing and to purchase.
