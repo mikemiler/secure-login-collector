@@ -35,7 +35,7 @@ class Master_Key_Manager {
 		global $wpdb;
 		$this->table_name = $wpdb->prefix . 'secure_login_wrapped_keys';
 
-		// Create table if needed
+		// Create table if needed.
 		add_action( 'init', array( $this, 'maybe_create_table' ) );
 	}
 
@@ -79,7 +79,7 @@ class Master_Key_Manager {
 	public function delete_wrapped_mwk( $user_id, $credential_id ) {
 		global $wpdb;
 
-		// Ensure table exists before deleting
+		// Ensure table exists before deleting.
 		$this->maybe_create_table();
 
 		return false !== $wpdb->delete(
@@ -102,7 +102,7 @@ class Master_Key_Manager {
 	public function delete_all_user_mwks( $user_id ) {
 		global $wpdb;
 
-		// Ensure table exists before deleting
+		// Ensure table exists before deleting.
 		$this->maybe_create_table();
 
 		return false !== $wpdb->delete(
@@ -131,7 +131,7 @@ class Master_Key_Manager {
 		$iv        = base64_decode( $wrapped_data['iv'] );
 		$tag       = base64_decode( $wrapped_data['tag'] );
 
-		// Decrypt MWK
+		// Decrypt MWK.
 		$decrypted = openssl_decrypt(
 			$encrypted,
 			'aes-256-gcm',

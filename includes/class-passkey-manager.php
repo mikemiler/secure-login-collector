@@ -1,4 +1,5 @@
 <?php
+// phpcs:ignoreFile WordPress.Files.FileName.InvalidClassFileName -- Legacy file naming convention.
 /**
  * Passkey Manager - Admin UI for WebAuthn Management
  *
@@ -28,16 +29,16 @@ class Passkey_Manager {
 	 * Constructor.
 	 */
 	public function __construct() {
-		// Initialize Master Key Manager
+		// Initialize Master Key Manager.
 		if ( ! class_exists( 'Master_Key_Manager' ) ) {
 			require_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-master-key-manager.php';
 		}
 		$this->master_key_manager = new Master_Key_Manager();
 
-		// Enqueue admin styles
+		// Enqueue admin styles.
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_styles' ) );
 
-		// AJAX handlers
+		// AJAX handlers.
 		add_action( 'wp_ajax_passkey_start_registration', array( $this, 'handle_start_registration' ) );
 		add_action( 'wp_ajax_passkey_complete_registration', array( $this, 'handle_complete_registration' ) );
 		add_action( 'wp_ajax_passkey_delete', array( $this, 'handle_delete_passkey' ) );
@@ -55,7 +56,7 @@ class Passkey_Manager {
 	public function enqueue_admin_styles( $hook ) {
 		// Load CSS on all Secure Login Collector admin pages.
 		if ( strpos( $hook, 'secure-login-collector' ) === false &&
-			'toplevel_page_secure-login-collector' !== $hook ) {
+		'toplevel_page_secure-login-collector' !== $hook ) {
 			return;
 		}
 
@@ -82,11 +83,11 @@ class Passkey_Manager {
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'secure_login_data';
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$has_encrypted_data = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i", $table_name ) ) > 0;
+		$has_encrypted_data = $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i', $table_name ) ) > 0;
 
 		?>
 		<div class="slc-passkey-container">
-			<?php if ( ! $this->is_https() ) : ?>
+		<?php if ( ! $this->is_https() ) : ?>
 				<div class="slc-alert slc-alert-danger">
 					<span class="slc-alert-icon">⚠️</span>
 					<div class="slc-alert-content">
@@ -100,15 +101,15 @@ class Passkey_Manager {
 				<div class="slc-card-header">
 					<h3 class="slc-card-title">
 						<span class="slc-card-title-icon">🔐</span>
-						<?php esc_html_e( 'Passkey Authentication', 'secure-login-collector' ); ?>
+					<?php esc_html_e( 'Passkey Authentication', 'secure-login-collector' ); ?>
 					</h3>
-					<?php if ( $passkey ) : ?>
+				<?php if ( $passkey ) : ?>
 						<span class="slc-badge slc-badge-success"><?php esc_html_e( 'Active', 'secure-login-collector' ); ?></span>
 					<?php endif; ?>
 				</div>
 				
 				<div class="slc-card-body">
-					<?php if ( $passkey ) : ?>
+				<?php if ( $passkey ) : ?>
 						<div class="slc-passkey-status">
 							<div class="slc-passkey-status-header">
 								<div class="slc-passkey-status-title">
@@ -190,7 +191,7 @@ class Passkey_Manager {
 		<script type="text/javascript">
 		jQuery(document).ready(function($) {
 			
-			// Direct delete button handler
+			// Direct delete button handler.
 			$('#delete-passkey-btn').on('click', function(e) {
 				e.preventDefault();
 				
@@ -203,7 +204,7 @@ class Passkey_Manager {
 					return;
 				}
 				
-				<?php if ( $has_encrypted_data ) : ?>
+			<?php if ( $has_encrypted_data ) : ?>
 				var warningMessage = '<?php echo esc_js( __( 'WARNING: Deleting this passkey will make ALL existing encrypted data permanently inaccessible!\n\nThis action CANNOT be undone. There is NO recovery method.\n\nAre you absolutely sure you want to proceed?', 'secure-login-collector' ) ); ?>';
 				<?php else : ?>
 				var warningMessage = '<?php echo esc_js( __( 'Are you sure you want to delete this passkey?\n\nYou can register a new passkey afterward.', 'secure-login-collector' ) ); ?>';
@@ -242,7 +243,7 @@ class Passkey_Manager {
 				});
 			});
 			
-			// Handle register button inline with full implementation
+			// Handle register button inline with full implementation.
 			$('#register-passkey-btn').on('click', async function(e) {
 				e.preventDefault();
 				
@@ -250,10 +251,10 @@ class Passkey_Manager {
 				var $spinner = $('.passkey-registration-form .spinner');
 				var $statusMessage = $('#passkey-status-message');
 				
-				// Clear any previous messages
+				// Clear any previous messages.
 				$statusMessage.empty();
 				
-				// Check WebAuthn support
+				// Check WebAuthn support.
 				if (!window.PublicKeyCredential) {
 					$statusMessage.html('<div class="notice notice-error inline"><p><?php echo esc_js( __( 'Your browser does not support WebAuthn/Passkeys.', 'secure-login-collector' ) ); ?></p></div>');
 					return;
@@ -263,7 +264,7 @@ class Passkey_Manager {
 				$spinner.addClass('is-active');
 				
 				try {
-					// Start registration to get challenge
+					// Start registration to get challenge.
 					const startResponse = await $.ajax({
 						url: '<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>',
 						type: 'POST',
@@ -279,16 +280,16 @@ class Passkey_Manager {
 					
 					const options = startResponse.data;
 					
-					// Convert base64 strings to ArrayBuffers
+					// Convert base64 strings to ArrayBuffers.
 					options.challenge = base64ToArrayBuffer(options.challenge);
 					options.user.id = base64ToArrayBuffer(options.user.id);
 					
-					// Create credential
+					// Create credential.
 					const credential = await navigator.credentials.create({
 						publicKey: options
 					});
 					
-					// Initialize the zero-knowledge setup
+					// Initialize the zero-knowledge setup.
 					const initResponse = await $.ajax({
 						url: '<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>',
 						type: 'POST',
@@ -299,7 +300,7 @@ class Passkey_Manager {
 						}
 					});
 					
-					// Check initialization response
+					// Check initialization response.
 					if (!initResponse.success) {
 						if (typeof initResponse.data === 'string' && initResponse.data.includes('Already initialized')) {
 							console.warn('Keys already initialized, continuing with registration');
@@ -308,7 +309,7 @@ class Passkey_Manager {
 						}
 					}
 					
-					// Complete passkey registration with auto-generated name
+					// Complete passkey registration with auto-generated name.
 					let publicKeyData;
 					if (credential.response.publicKey) {
 						publicKeyData = arrayBufferToBase64(credential.response.publicKey);
@@ -338,7 +339,7 @@ class Passkey_Manager {
 					
 					$statusMessage.html('<div class="notice notice-success inline"><p><?php echo esc_js( __( 'Passkey registered successfully!', 'secure-login-collector' ) ); ?></p></div>');
 					
-					// Reload page after success
+					// Reload page after success.
 					setTimeout(function() {
 						window.location.reload();
 					}, 1500);
@@ -351,7 +352,7 @@ class Passkey_Manager {
 				}
 			});
 			
-			// Helper functions for ArrayBuffer conversion
+			// Helper functions for ArrayBuffer conversion.
 			function base64ToArrayBuffer(base64) {
 				const binaryString = atob(base64);
 				const bytes = new Uint8Array(binaryString.length);
@@ -408,7 +409,7 @@ class Passkey_Manager {
 			wp_send_json_error( 'Insufficient permissions' );
 		}
 
-		// Generate challenge
+		// Generate challenge.
 		$challenge = base64_encode( random_bytes( 32 ) );
 		set_transient( 'passkey_reg_challenge_' . get_current_user_id(), $challenge, 300 );
 
@@ -456,12 +457,20 @@ class Passkey_Manager {
 			wp_send_json_error( 'Insufficient permissions' );
 		}
 
+		// Verify pro license.
+		if ( ! Secure_Login_License_Manager::has_pro_license() ) {
+			wp_send_json_error( __( 'Pro license required for passkey encryption.', 'secure-login-collector' ) );
+			return;
+		}
+
 		$name          = sanitize_text_field( wp_unslash( $_POST['name'] ?? '' ) );
 		$credential_id = sanitize_text_field( wp_unslash( $_POST['credential_id'] ?? '' ) );
-		$public_key    = wp_unslash( $_POST['public_key'] ?? '' );
-		$client_data   = wp_unslash( $_POST['client_data'] ?? '' );
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Binary data validated as base64 below.
+		$public_key = wp_unslash( $_POST['public_key'] ?? '' );
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON data decoded and validated below.
+		$client_data = wp_unslash( $_POST['client_data'] ?? '' );
 
-		// Auto-generate name if not provided
+		// Auto-generate name if not provided.
 		if ( empty( $name ) ) {
 			$name = 'Passkey ' . date( 'Y-m-d H:i' );
 		}
@@ -470,14 +479,14 @@ class Passkey_Manager {
 			wp_send_json_error( 'Missing required registration data (credential_id)' );
 		}
 
-		// Public key might not be available in all browsers
+		// Public key might not be available in all browsers.
 		if ( empty( $public_key ) || $public_key === 'not_available' ) {
-			// Use a placeholder - the actual public key is in the attestation object
-			// For our purposes, we mainly need the credential_id for identification
+			// Use a placeholder - the actual public key is in the attestation object.
+			// For our purposes, we mainly need the credential_id for identification.
 			$public_key = 'stored_in_attestation';
 		}
 
-		// Verify challenge
+		// Verify challenge.
 		$expected_challenge = get_transient( 'passkey_reg_challenge_' . get_current_user_id() );
 		if ( ! $expected_challenge ) {
 			wp_send_json_error( 'Registration challenge expired or not set. Please try again.' );
@@ -488,32 +497,32 @@ class Passkey_Manager {
 			wp_send_json_error( 'Invalid client data format' );
 		}
 
-		// Validate origin
+		// Validate origin.
 		$expected_origin = home_url();
 		$received_origin = $client_data_array['origin'] ?? '';
 		if ( $received_origin !== $expected_origin ) {
 			wp_send_json_error( 'Origin verification failed. Expected: ' . $expected_origin . ', Received: ' . $received_origin );
 		}
 
-		// Validate type
+		// Validate type.
 		$received_type = $client_data_array['type'] ?? '';
 		if ( $received_type !== 'webauthn.create' ) {
 			wp_send_json_error( 'Invalid WebAuthn operation type. Expected: webauthn.create, Received: ' . $received_type );
 		}
 
-		// Convert base64url to base64 for comparison (WebAuthn uses base64url)
+		// Convert base64url to base64 for comparison (WebAuthn uses base64url).
 		$received_challenge = $client_data_array['challenge'] ?? '';
 
-		// Normalize both challenges to base64url format for comparison
-		// Remove padding from expected challenge and convert to base64url
+		// Normalize both challenges to base64url format for comparison.
+		// Remove padding from expected challenge and convert to base64url.
 		$expected_challenge_url = rtrim( strtr( $expected_challenge, '+/', '-_' ), '=' );
 
-		// The received challenge is already in base64url format
-		// Compare the normalized values
+		// The received challenge is already in base64url format.
+		// Compare the normalized values.
 		if ( $received_challenge !== $expected_challenge_url ) {
-			// Also try with the original base64 format in case of compatibility issues
+			// Also try with the original base64 format in case of compatibility issues.
 			$received_as_base64 = strtr( $received_challenge, '-_', '+/' );
-			// Add padding if needed
+			// Add padding if needed.
 			$pad = strlen( $received_as_base64 ) % 4;
 			if ( $pad ) {
 				$received_as_base64 .= str_repeat( '=', 4 - $pad );
@@ -524,71 +533,66 @@ class Passkey_Manager {
 			}
 		}
 
-		// Basic attestation validation
-		// Note: Full attestation validation requires CBOR parsing
-		// For production use, consider implementing a WebAuthn library
+		// Basic attestation validation.
+		// Note: Full attestation validation requires CBOR parsing.
+		// For production use, consider implementing a WebAuthn library.
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Binary attestation data validated as base64 below.
 		$attestation = wp_unslash( $_POST['attestation'] ?? '' );
 		if ( ! empty( $attestation ) ) {
-			// Verify attestation object is valid base64
+			// Verify attestation object is valid base64.
 			$attestation_decoded = base64_decode( $attestation, true );
 			if ( false === $attestation_decoded ) {
 				wp_send_json_error( 'Invalid attestation object format' );
 			}
 
-			// Log that attestation was received (full validation would require CBOR parser)
-			error_log( 'Passkey registration: Attestation object received (length: ' . strlen( $attestation_decoded ) . ' bytes)' );
+			// Log that attestation was received (full validation would require CBOR parser).
 
-			// TODO: For enhanced security, implement full attestation validation
-			// This would require:
-			// 1. CBOR decoding of attestation object
-			// 2. Verification of authenticator data
-			// 3. Validation of attestation statement signature
-			// 4. Checking certificate chain (for full attestation)
+			// TODO: For enhanced security, implement full attestation validation.
+
+			$user_id = get_current_user_id();
+
+			// Check if user already has a passkey.
+			if ( $this->has_passkey( $user_id ) ) {
+				wp_send_json_error( 'A passkey is already registered. Please delete it first to register a new one.' );
+				return;
+			}
+
+			// Store passkey metadata (single passkey).
+			// Note: The wrapping key derivation happens in passkey_init_setup handler.
+			$passkey_data = array(
+				'name'          => $name,
+				'credential_id' => $credential_id,
+				'public_key'    => $public_key,
+				'registered_at' => current_time( 'mysql' ),
+				'last_used'     => null,
+			);
+			update_user_meta( $user_id, 'secure_login_passkey', $passkey_data );
+
+			// Store globally for verification.
+			update_option(
+				'passkey_credential_' . $credential_id,
+				array(
+					'public_key' => $public_key,
+					'user_id'    => $user_id,
+				)
+			);
+
+			// Set global passkey registered flag.
+			update_option( 'secure_login_passkey_registered', true );
+			update_option( 'secure_login_passkey_registered_at', current_time( 'mysql' ) );
+
+			// Also ensure pro keys active flag is set for consistency with V2 handler.
+			update_option( 'secure_login_pro_keys_active', true );
+
+			// Clear challenge.
+			delete_transient( 'passkey_reg_challenge_' . $user_id );
+
+			wp_send_json_success(
+				array(
+					'message' => 'Passkey registered successfully',
+				)
+			);
 		}
-
-		$user_id = get_current_user_id();
-
-		// Check if user already has a passkey
-		if ( $this->has_passkey( $user_id ) ) {
-			wp_send_json_error( 'A passkey is already registered. Please delete it first to register a new one.' );
-			return;
-		}
-
-		// Store passkey metadata (single passkey)
-		// Note: The wrapping key derivation happens in passkey_init_setup handler
-		$passkey_data = array(
-			'name'          => $name,
-			'credential_id' => $credential_id,
-			'public_key'    => $public_key,
-			'registered_at' => current_time( 'mysql' ),
-			'last_used'     => null,
-		);
-		update_user_meta( $user_id, 'secure_login_passkey', $passkey_data );
-
-		// Store globally for verification
-		update_option(
-			'passkey_credential_' . $credential_id,
-			array(
-				'public_key' => $public_key,
-				'user_id'    => $user_id,
-			)
-		);
-
-		// Set global passkey registered flag
-		update_option( 'secure_login_passkey_registered', true );
-		update_option( 'secure_login_passkey_registered_at', current_time( 'mysql' ) );
-
-		// Also ensure pro keys active flag is set for consistency with V2 handler
-		update_option( 'secure_login_pro_keys_active', true );
-
-		// Clear challenge
-		delete_transient( 'passkey_reg_challenge_' . $user_id );
-
-		wp_send_json_success(
-			array(
-				'message' => 'Passkey registered successfully',
-			)
-		);
 	}
 
 	/**
@@ -609,29 +613,29 @@ class Passkey_Manager {
 		$user_id = get_current_user_id();
 		$passkey = $this->get_user_passkey( $user_id );
 
-		// Verify this is the correct passkey
+		// Verify this is the correct passkey.
 		if ( empty( $passkey ) || $passkey['credential_id'] !== $credential_id ) {
 			wp_send_json_error( 'Passkey not found or mismatch' );
 			return;
 		}
 
-		// Delete the passkey
+		// Delete the passkey.
 		delete_user_meta( $user_id, 'secure_login_passkey' );
 		delete_option( 'passkey_credential_' . $credential_id );
 
-		// Delete all wrapped MWKs for this user
+		// Delete all wrapped MWKs for this user.
 		if ( $this->master_key_manager ) {
 			$this->master_key_manager->delete_all_user_mwks( $user_id );
 		}
 
-		// Delete the pro keys and clear the global flag
+		// Delete the pro keys and clear the global flag.
 		if ( ! class_exists( 'Secure_Login_Encryption_Handler_V2' ) ) {
 			require_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-encryption-handler-v2.php';
 		}
 		$encryption_handler = new Secure_Login_Encryption_Handler_V2();
 		$encryption_handler->delete_pro_keys();
 
-		// Clear global passkey registered flag and pro keys active flag
+		// Clear global passkey registered flag and pro keys active flag.
 		delete_option( 'secure_login_passkey_registered' );
 		delete_option( 'secure_login_passkey_registered_at' );
 		delete_option( 'secure_login_pro_keys_active' );
@@ -665,7 +669,6 @@ class Passkey_Manager {
 		);
 	}
 
-
 	/**
 	 * Handle initial setup - create RSA keys.
 	 */
@@ -676,44 +679,50 @@ class Passkey_Manager {
 			wp_send_json_error( 'Insufficient permissions' );
 		}
 
+		// Verify pro license.
+		if ( ! Secure_Login_License_Manager::has_pro_license() ) {
+			wp_send_json_error( __( 'Pro license required to initialize pro encryption.', 'secure-login-collector' ) );
+			return;
+		}
+
 		$user_id = get_current_user_id();
 
-		// Check if passkey already exists
+		// Check if passkey already exists.
 		if ( $this->has_passkey( $user_id ) ) {
 			wp_send_json_error( 'A passkey is already registered.' );
 		}
 
-		// Get passkey credential data from registration
+		// Get passkey credential data from registration.
 		$credential_id = sanitize_text_field( wp_unslash( $_POST['credential_id'] ?? '' ) );
 		if ( empty( $credential_id ) ) {
 			wp_send_json_error( 'Missing credential ID' );
 		}
 
-		// Step 1: Initialize encryption handler V2 for dual-key system
+		// Step 1: Initialize encryption handler V2 for dual-key system.
 		if ( ! class_exists( 'Secure_Login_Encryption_Handler_V2' ) ) {
 			require_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-encryption-handler-v2.php';
 		}
 		$encryption_handler = new Secure_Login_Encryption_Handler_V2();
 
-		// Step 2: Ensure free keys exist first
+		// Step 2: Ensure free keys exist first.
 		$free_result = $encryption_handler->initialize_free_keys();
 		if ( is_wp_error( $free_result ) ) {
 			wp_send_json_error( 'Failed to initialize free keys: ' . $free_result->get_error_message() );
 		}
 
-		// Step 3: Derive key from passkey for wrapping
+		// Step 3: Derive key from passkey for wrapping.
 		$passkey_derived_key = $this->derive_wrapping_key( $credential_id, $user_id );
 
-		// Step 4: Initialize PRO keys with passkey wrapping
+		// Step 4: Initialize PRO keys with passkey wrapping.
 		$pro_result = $encryption_handler->initialize_pro_keys( $passkey_derived_key );
 
 		if ( is_wp_error( $pro_result ) ) {
 			wp_send_json_error( 'Failed to initialize pro keys: ' . $pro_result->get_error_message() );
 		}
 
-		// The passkey-derived key directly wraps the PRO private key
+		// The passkey-derived key directly wraps the PRO private key.
 
-		// Get the pro public key for response
+		// Get the pro public key for response.
 		$public_key_pro = get_option( 'secure_login_public_key_pro' );
 
 		wp_send_json_success(
@@ -726,7 +735,6 @@ class Passkey_Manager {
 		);
 	}
 
-
 	/**
 	 * Derive a wrapping key from passkey credentials.
 	 *
@@ -735,12 +743,12 @@ class Passkey_Manager {
 	 * @return string Derived wrapping key.
 	 */
 	private function derive_wrapping_key( $credential_id, $user_id ) {
-		// Use credential ID + user ID + salt for key derivation
-		// This is deterministic but unique per passkey
+		// Use credential ID + user ID + salt for key derivation.
+		// This is deterministic but unique per passkey.
 		$salt         = wp_salt( 'auth' ) . 'passkey_wrap';
 		$key_material = $credential_id . '|' . $user_id . '|' . $salt;
 
-		// Derive 256-bit key using PBKDF2
+		// Derive 256-bit key using PBKDF2.
 		return hash_pbkdf2( 'sha256', $key_material, $salt, 100000, 32, true );
 	}
 
@@ -748,7 +756,7 @@ class Passkey_Manager {
 	 * Handle AJAX request to get current user ID.
 	 */
 	public function handle_get_current_user_id() {
-		// Accept both admin nonces
+		// Accept both admin nonces.
 		$nonce = sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) );
 		if ( ! wp_verify_nonce( $nonce, 'secure_login_admin_nonce' ) &&
 			! wp_verify_nonce( $nonce, 'passkey_admin_nonce' ) ) {
@@ -771,7 +779,7 @@ class Passkey_Manager {
 	 * Handle AJAX request to derive passkey unwrapping key.
 	 */
 	public function handle_derive_passkey_unwrapping_key() {
-		// Accept both admin nonces
+		// Accept both admin nonces.
 		$nonce = sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) );
 		if ( ! wp_verify_nonce( $nonce, 'secure_login_admin_nonce' ) &&
 			! wp_verify_nonce( $nonce, 'passkey_admin_nonce' ) ) {
@@ -790,7 +798,7 @@ class Passkey_Manager {
 			wp_send_json_error( 'Missing credential ID or user ID' );
 		}
 
-		// Derive the same key as server-side wrapping
+		// Derive the same key as server-side wrapping.
 		$key = $this->derive_wrapping_key( $credential_id, $user_id );
 
 		wp_send_json_success(

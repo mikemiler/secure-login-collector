@@ -1,4 +1,5 @@
 <?php
+// phpcs:ignoreFile WordPress.Files.FileName.InvalidClassFileName -- Legacy file naming convention.
 /**
  * Settings Manager Class
  *
@@ -69,14 +70,14 @@ class Secure_Login_Settings_Manager {
 		);
 
 		// Passkey functionality is now handled inline in class-passkey-manager.php
-		// No need to load external JavaScript file anymore
+		// No need to load external JavaScript file anymore.
 	}
 
 	/**
 	 * Add settings submenu.
 	 */
 	public function add_settings_menu() {
-		// Add to the plugin's own menu
+		// Add to the plugin's own menu.
 		add_submenu_page(
 			'secure-login-collector',
 			__( 'Settings', 'secure-login-collector' ),
@@ -85,20 +86,6 @@ class Secure_Login_Settings_Manager {
 			'secure-login-collector-settings',
 			array( $this, 'settings_page' )
 		);
-
-		// Add custom account page - Disabled to use Freemius account page instead
-		// if ( file_exists( SECURE_LOGIN_PLUGIN_DIR . 'includes/account-page-simple.php' ) ) {
-		//  require_once SECURE_LOGIN_PLUGIN_DIR . 'includes/account-page-simple.php';
-		// }
-
-		// add_submenu_page(
-		//  'secure-login-collector',
-		//  __( 'Account', 'secure-login-collector' ),
-		//  __( 'Account', 'secure-login-collector' ),
-		//  'manage_options',
-		//  'secure-login-collector-account',
-		//  'slc_simple_account_page'
-		// );
 	}
 
 	/**
@@ -229,7 +216,7 @@ class Secure_Login_Settings_Manager {
 		echo '</div>';
 		echo '<div class="slc-card-body">';
 		echo '<p>' . esc_html__( 'Configure email notifications for new login data submissions.', 'secure-login-collector' ) . '</p>';
-		// Don't close the card-body div here - let the form-table be inside it
+		// Don't close the card-body div here - let the form-table be inside it.
 	}
 
 	/**
@@ -244,7 +231,7 @@ class Secure_Login_Settings_Manager {
 		echo '</div>';
 		echo '<div class="slc-card-body">';
 		echo '<p>' . esc_html__( 'Customize the frontend form appearance and text.', 'secure-login-collector' ) . '</p>';
-		// Don't close the card-body div here - let the form-table be inside it
+		// Don't close the card-body div here - let the form-table be inside it.
 	}
 
 	/**
@@ -259,7 +246,7 @@ class Secure_Login_Settings_Manager {
 		echo '</div>';
 		echo '<div class="slc-card-body">';
 		echo '<p>' . esc_html__( 'Configure automatic deletion of old login data.', 'secure-login-collector' ) . '</p>';
-		// Don't close the card-body div here - let the form-table be inside it
+		// Don't close the card-body div here - let the form-table be inside it.
 	}
 
 	/**
@@ -272,12 +259,12 @@ class Secure_Login_Settings_Manager {
 		echo '</div>';
 		echo '<div class="slc-card-body">';
 		echo '<p>' . esc_html__( 'Manage RSA encryption keys for secure data transmission.', 'secure-login-collector' ) . '</p>';
-		
-		// Output all the encryption content inline
+
+		// Output all the encryption content inline.
 		$this->display_encryption_content();
-		// Don't close the card-body div here - handled by the custom renderer
+		// Don't close the card-body div here - handled by the custom renderer.
 	}
-	
+
 	/**
 	 * Display encryption content inside the card
 	 */
@@ -319,11 +306,11 @@ class Secure_Login_Settings_Manager {
 		$pro_keys_active    = get_option( 'secure_login_pro_keys_active', false );
 		$passkey_registered = get_option( 'secure_login_passkey_registered', false );
 
-		// Display RSA Keys Status in a more comprehensive way
+		// Display RSA Keys Status in a more comprehensive way.
 		echo '<div class="rsa-keys-status" style="margin: 20px 0;">';
 		echo '<h4 style="margin-bottom: 15px;">' . esc_html__( 'RSA Keys Status', 'secure-login-collector' ) . '</h4>';
 
-		// Free RSA Keys Status
+		// Free RSA Keys Status.
 		echo '<div style="background: white; border: 1px solid #c3c4c7; border-radius: 4px; padding: 15px; margin-bottom: 15px;">';
 		echo '<div style="display: flex; justify-content: space-between; align-items: center;">';
 		echo '<div>';
@@ -344,7 +331,7 @@ class Secure_Login_Settings_Manager {
 		echo '</div>';
 		echo '</div>';
 
-		// Pro RSA Keys Status (only show if pro version is enabled)
+		// Pro RSA Keys Status (only show if pro version is enabled).
 		if ( $this->is_pro_version ) {
 			echo '<div style="background: white; border: 1px solid #c3c4c7; border-radius: 4px; padding: 15px;">';
 			echo '<div style="display: flex; justify-content: space-between; align-items: center;">';
@@ -375,11 +362,11 @@ class Secure_Login_Settings_Manager {
 
 		echo '</div>';
 
-		// Key management section
+		// Key management section.
 		echo '<div class="notice notice-info inline">';
 		echo '<p><strong>' . esc_html__( 'Key Management:', 'secure-login-collector' ) . '</strong></p>';
 
-		// Show different messages based on key status
+		// Show different messages based on key status.
 		if ( ! $free_public_key ) {
 			echo '<p>' . esc_html__( 'Free RSA keys will be automatically initialized on first form submission.', 'secure-login-collector' ) . '</p>';
 			echo '<p><button type="button" class="button button-primary" id="initialize-free-keys">' . esc_html__( 'Initialize Free Keys Now', 'secure-login-collector' ) . '</button></p>';
@@ -396,7 +383,7 @@ class Secure_Login_Settings_Manager {
 		}
 		echo '</div>';
 
-		// Export buttons based on available keys
+		// Export buttons based on available keys.
 		echo '<p>';
 		if ( $free_public_key ) {
 			echo '<button type="button" class="button button-secondary" id="export-free-public-key">' . esc_html__( 'Export Free Public Key', 'secure-login-collector' ) . '</button> ';
@@ -406,19 +393,19 @@ class Secure_Login_Settings_Manager {
 		}
 		echo '</p>';
 
-		// Add Passkey Management Section (available for all users)
-		// Passkeys provide enhanced security for all users
+		// Add Passkey Management Section (available for all users).
+		// Passkeys provide enhanced security for all users.
 		if ( ! class_exists( 'Passkey_Manager' ) ) {
 			require_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-passkey-manager.php';
 		}
 		$passkey_manager = new Passkey_Manager();
 		$passkey_manager->render_passkey_section();
 
-		// Add JavaScript for key management
+		// Add JavaScript for key management.
 		?>
 		<script>
 		jQuery(document).ready(function($) {
-			// Initialize free keys
+			// Initialize free keys.
 			$('#initialize-free-keys').on('click', function() {
 				var button = $(this);
 				button.prop('disabled', true).text('<?php echo esc_js( __( 'Initializing...', 'secure-login-collector' ) ); ?>');
@@ -446,7 +433,7 @@ class Secure_Login_Settings_Manager {
 				});
 			});
 			
-			// Export free public key
+			// Export free public key.
 			$('#export-free-public-key').on('click', function() {
 				$.ajax({
 					url: ajaxurl,
@@ -472,7 +459,7 @@ class Secure_Login_Settings_Manager {
 				});
 			});
 			
-			// Export pro public key
+			// Export pro public key.
 			$('#export-pro-public-key').on('click', function() {
 				$.ajax({
 					url: ajaxurl,
@@ -516,8 +503,7 @@ class Secure_Login_Settings_Manager {
 		echo '<div class="slc-card-body">';
 		echo '<p>' . esc_html__( 'Advanced security settings for the pro version including passkey authentication.', 'secure-login-collector' ) . '</p>';
 
-		
-		// Don't close the card-body div here - let the form-table be inside it
+		// Don't close the card-body div here - let the form-table be inside it.
 	}
 
 	/**
@@ -574,21 +560,21 @@ class Secure_Login_Settings_Manager {
 				
 				if (selectedType === 'default') {
 					textarea.prop('disabled', true).css('background-color', '#f1f1f1');
-					// If current text is empty or is the default text, show default
+					// If current text is empty or is the default text, show default.
 					if (textarea.val() === '' || textarea.val() === defaultText) {
 						textarea.val(defaultText);
 					}
 				} else {
 					textarea.prop('disabled', false).css('background-color', '#fff');
-					// If the current text is the default text and we're switching to custom, 
-					// keep it so user can edit it
+					// If the current text is the default text and we're switching to custom, .
+					// keep it so user can edit it.
 				}
 			}
 			
-			// Initial state
+			// Initial state.
 			toggleTextarea();
 			
-			// Listen for radio button changes
+			// Listen for radio button changes.
 			$('input[name="secure_login_frontend_text_type"]').on('change', toggleTextarea);
 		});
 		</script>
@@ -659,7 +645,7 @@ class Secure_Login_Settings_Manager {
 		echo '</div>';
 		echo '<div class="slc-card-body">';
 		echo '<p>' . esc_html__( 'Configure how the plugin handles data when it is uninstalled.', 'secure-login-collector' ) . '</p>';
-		// Don't close the card-body div here - let the form-table be inside it
+		// Don't close the card-body div here - let the form-table be inside it.
 	}
 
 	/**
@@ -712,33 +698,33 @@ class Secure_Login_Settings_Manager {
 				<div class="slc-settings-sections">
 					<?php
 					settings_fields( 'secure_login_settings' );
-					
-					// Custom rendering of settings sections to properly wrap in cards
+
+					// Custom rendering of settings sections to properly wrap in cards.
 					global $wp_settings_sections, $wp_settings_fields;
 					$page = 'secure_login_settings';
-					
+
 					if ( ! isset( $wp_settings_sections[ $page ] ) ) {
 						return;
 					}
-					
+
 					foreach ( (array) $wp_settings_sections[ $page ] as $section ) {
-						// Call the section callback to render the card opening
+						// Call the section callback to render the card opening.
 						if ( $section['callback'] ) {
 							call_user_func( $section['callback'], $section );
 						}
-						
-						// Render the fields inside the card
+
+						// Render the fields inside the card.
 						if ( ! isset( $wp_settings_fields ) || ! isset( $wp_settings_fields[ $page ] ) || ! isset( $wp_settings_fields[ $page ][ $section['id'] ] ) ) {
 							echo '</div></div>'; // Close card-body and card if no fields
 							continue;
 						}
-						
+
 						echo '<table class="form-table" role="presentation">';
 						do_settings_fields( $page, $section['id'] );
 						echo '</table>';
 						echo '</div></div>'; // Close card-body and card
 					}
-					
+
 					submit_button();
 					?>
 				</div>

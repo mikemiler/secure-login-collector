@@ -13,20 +13,21 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Handle Freemius account page redirect
  */
 function slc_handle_freemius_account_redirect() {
-	// Check if we're on the Freemius-generated account page
-	// Freemius uses the pattern: {slug}-account
+	// Check if we're on the Freemius-generated account page.
+	// Freemius uses the pattern: {slug}-account.
+	// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET parameter for page routing.
 	if ( ! isset( $_GET['page'] ) || 'secure-login-collector-account' !== $_GET['page'] ) {
 		return;
 	}
 
-	// Check permissions
+	// Check permissions.
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_die( esc_html__( 'Sorry, you are not allowed to access this page.', 'secure-login-collector' ) );
 	}
 
-	// Don't render via admin_init - let the page callback handle it
+	// Don't render via admin_init - let the page callback handle it.
 }
-// add_action( 'admin_init', 'slc_handle_freemius_account_redirect', 1 ); // Disabled - let Freemius handle redirects
+// add_action( 'admin_init', 'slc_handle_freemius_account_redirect', 1 ); // Disabled - let Freemius handle redirects.
 
 /**
  * Alternative: Handle via direct page callback
@@ -44,7 +45,7 @@ function slc_freemius_account_page() {
 		return;
 	}
 
-	// Check if user has completed opt-in
+	// Check if user has completed opt-in.
 	if ( ! slc_fs()->is_registered() ) {
 		?>
 		<div class="wrap">
@@ -64,7 +65,7 @@ function slc_freemius_account_page() {
 		return;
 	}
 
-	// Try to render account page
+	// Try to render account page.
 	try {
 		slc_fs()->_account_page_render();
 	} catch ( Exception $e ) {
@@ -92,11 +93,12 @@ function slc_freemius_account_page() {
  * Fix Freemius page URLs
  */
 function slc_fix_freemius_urls() {
+	// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only GET parameters for URL redirects.
 	if ( ! isset( $_GET['page'] ) ) {
 		return;
 	}
 
-	// Redirect old URLs to new ones
+	// Redirect old URLs to new ones.
 	$redirects = array(
 		'secure-login-data'     => 'secure-login-collector',
 		'secure-login-settings' => 'secure-login-collector-settings',
@@ -104,9 +106,11 @@ function slc_fix_freemius_urls() {
 		'secure-login-debug'    => 'secure-login-collector-debug',
 	);
 
-	if ( isset( $redirects[ $_GET['page'] ] ) ) {
-		wp_safe_redirect( admin_url( 'admin.php?page=' . $redirects[ $_GET['page'] ] ) );
+	$page = isset( $_GET['page'] ) ? sanitize_text_field( wp_unslash( $_GET['page'] ) ) : '';
+	if ( isset( $redirects[ $page ] ) ) {
+		wp_safe_redirect( admin_url( 'admin.php?page=' . $redirects[ $page ] ) );
 		exit;
 	}
+	// phpcs:enable WordPress.Security.NonceVerification.Recommended
 }
 add_action( 'admin_init', 'slc_fix_freemius_urls', 0 );

@@ -1,4 +1,5 @@
 <?php
+// phpcs:ignoreFile WordPress.Files.FileName.InvalidClassFileName -- Legacy file naming convention.
 /**
  * Dual-Key Encryption Handler
  *
@@ -13,6 +14,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Encryption Handler V2 - AES-256-GCM with RSA-2048 key wrapping.
+ */
 class Secure_Login_Encryption_Handler_V2 {
 
 	/**
@@ -31,7 +35,7 @@ class Secure_Login_Encryption_Handler_V2 {
 		}
 		$this->master_key_manager = new Master_Key_Manager();
 
-		// AJAX handlers
+		// AJAX handlers.
 		add_action( 'wp_ajax_slc_get_public_key', array( $this, 'handle_get_public_key' ) );
 		add_action( 'wp_ajax_nopriv_slc_get_public_key', array( $this, 'handle_get_public_key' ) );
 		add_action( 'wp_ajax_slc_get_wrapped_private_key', array( $this, 'handle_get_wrapped_private_key' ) );
@@ -62,10 +66,10 @@ class Secure_Login_Encryption_Handler_V2 {
 			return new WP_Error( 'generation_failed', 'Failed to generate RSA keypair' );
 		}
 
-		// Extract private key
+		// Extract private key.
 		openssl_pkey_export( $keypair, $private_key );
 
-		// Extract public key
+		// Extract public key.
 		$details = openssl_pkey_get_details( $keypair );
 
 		return array(
@@ -80,7 +84,7 @@ class Secure_Login_Encryption_Handler_V2 {
 	 * @return array|WP_Error Result of key initialization.
 	 */
 	public function initialize_free_keys() {
-		// Check if free keys already exist
+		// Check if free keys already exist.
 		$public_key_free            = get_option( 'secure_login_public_key_free' );
 		$private_key_free_encrypted = get_option( 'secure_login_private_key_free_encrypted' );
 
@@ -91,20 +95,20 @@ class Secure_Login_Encryption_Handler_V2 {
 			);
 		}
 
-		// Generate new RSA keypair for free version
+		// Generate new RSA keypair for free version.
 		$keypair = $this->generate_rsa_keypair();
 		if ( is_wp_error( $keypair ) ) {
 			return $keypair;
 		}
 
-		// Store public key (publicly accessible)
+		// Store public key (publicly accessible).
 		update_option( 'secure_login_public_key_free', $keypair['public'] );
 
-		// Encrypt private key with WordPress salts for free version
+		// Encrypt private key with WordPress salts for free version.
 		$encrypted_private = $this->encrypt_with_wp_salts( $keypair['private'] );
 		update_option( 'secure_login_private_key_free_encrypted', $encrypted_private );
 
-		// Log initialization
+		// Log initialization.
 		$this->log_key_operation( 'free_keys_initialized' );
 
 		return array(
@@ -122,7 +126,7 @@ class Secure_Login_Encryption_Handler_V2 {
 	 * @return array|WP_Error Result of key initialization.
 	 */
 	public function initialize_pro_keys( $passkey_derived_key ) {
-		// Check if pro keys already exist
+		// Check if pro keys already exist.
 		$public_key_pro  = get_option( 'secure_login_public_key_pro' );
 		$wrapped_key_pro = get_option( 'secure_login_wrapped_private_key_pro' );
 
@@ -133,29 +137,29 @@ class Secure_Login_Encryption_Handler_V2 {
 			);
 		}
 
-		// Generate new RSA keypair for pro version
+		// Generate new RSA keypair for pro version.
 		$keypair = $this->generate_rsa_keypair();
 		if ( is_wp_error( $keypair ) ) {
 			return $keypair;
 		}
 
-		// Store public key (publicly accessible)
+		// Store public key (publicly accessible).
 		update_option( 'secure_login_public_key_pro', $keypair['public'] );
 
-		// Wrap private key with passkey-derived key
+		// Wrap private key with passkey-derived key.
 		$wrapped = $this->wrap_private_key( $keypair['private'], $passkey_derived_key );
 		if ( is_wp_error( $wrapped ) ) {
-			// Clean up on failure
+			// Clean up on failure.
 			delete_option( 'secure_login_public_key_pro' );
 			return $wrapped;
 		}
 
 		update_option( 'secure_login_wrapped_private_key_pro', $wrapped );
 
-		// Mark pro version as active
+		// Mark pro version as active.
 		update_option( 'secure_login_pro_keys_active', true );
 
-		// Log initialization
+		// Log initialization.
 		$this->log_key_operation( 'pro_keys_initialized' );
 
 		return array(
@@ -172,12 +176,12 @@ class Secure_Login_Encryption_Handler_V2 {
 	 * @return array Result of deletion.
 	 */
 	public function delete_pro_keys() {
-		// Delete pro keys
+		// Delete pro keys.
 		delete_option( 'secure_login_public_key_pro' );
 		delete_option( 'secure_login_wrapped_private_key_pro' );
 		delete_option( 'secure_login_pro_keys_active' );
 
-		// Log deletion
+		// Log deletion.
 		$this->log_key_operation( 'pro_keys_deleted' );
 
 		return array(
@@ -194,10 +198,10 @@ class Secure_Login_Encryption_Handler_V2 {
 	 * @return array|WP_Error Wrapped key data or error.
 	 */
 	private function wrap_private_key( $private_key, $passkey_key ) {
-		// Generate random IV for AES-256-GCM (96-bit/12-byte IV is standard for GCM)
+		// Generate random IV for AES-256-GCM (96-bit/12-byte IV is standard for GCM).
 		$iv = random_bytes( 12 );
 
-		// Encrypt private key with passkey-derived key
+		// Encrypt private key with passkey-derived key.
 		$tag       = '';
 		$encrypted = openssl_encrypt(
 			$private_key,
@@ -218,7 +222,7 @@ class Secure_Login_Encryption_Handler_V2 {
 			'tag'        => base64_encode( $tag ),
 			'algorithm'  => 'AES-256-GCM',
 			'wrapped_at' => time(),
-			'version'    => '2.0', // Version 2.0 for dual-key system
+			'version'    => '2.0', // Version 2.0 for dual-key system.
 		);
 	}
 
@@ -269,12 +273,12 @@ class Secure_Login_Encryption_Handler_V2 {
 	 * Returns appropriate public key based on available keys.
 	 */
 	public function handle_get_public_key() {
-		// Check if pro keys are active and available
+		// Check if pro keys are active and available.
 		$pro_active     = get_option( 'secure_login_pro_keys_active', false );
 		$public_key_pro = get_option( 'secure_login_public_key_pro' );
 
-		// Use pro key if available and active
-		if ( $pro_active && $public_key_pro ) {
+		// Use pro key if available and active.
+		if ( $pro_active && $public_key_pro && Secure_Login_License_Manager::has_pro_license() ) {
 			wp_send_json_success(
 				array(
 					'public_key' => $public_key_pro,
@@ -286,10 +290,10 @@ class Secure_Login_Encryption_Handler_V2 {
 			return;
 		}
 
-		// Otherwise use free key
+		// Otherwise use free key.
 		$public_key_free = get_option( 'secure_login_public_key_free' );
 
-		// Initialize free keys if not exists
+		// Initialize free keys if not exists.
 		if ( ! $public_key_free ) {
 			$result = $this->initialize_free_keys();
 			if ( is_wp_error( $result ) ) {
@@ -314,13 +318,13 @@ class Secure_Login_Encryption_Handler_V2 {
 	 * Returns the appropriate private key based on the entry.
 	 */
 	public function handle_get_wrapped_private_key() {
-		// Check admin permissions
+		// Check admin permissions.
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( 'Insufficient permissions' );
 			return;
 		}
 
-		// Verify nonce (accept multiple nonce names for compatibility)
+		// Verify nonce (accept multiple nonce names for compatibility).
 		$nonce = sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) );
 		if ( ! wp_verify_nonce( $nonce, 'secure_login_admin_nonce' ) &&
 			! wp_verify_nonce( $nonce, 'slc_admin_nonce' ) &&
@@ -329,11 +333,11 @@ class Secure_Login_Encryption_Handler_V2 {
 			return;
 		}
 
-		// Get the entry ID to determine which key was used
+		// Get the entry ID to determine which key was used.
 		$entry_id = intval( $_POST['entry_id'] ?? 0 );
 
 		if ( $entry_id ) {
-			// Check which key was used for this entry
+			// Check which key was used for this entry.
 			global $wpdb;
 			$table = esc_sql( $wpdb->prefix . 'secure_login_data' );
 			// Note: Table names cannot be prepared in WordPress, but this is safe as table name is controlled.
@@ -349,7 +353,7 @@ class Secure_Login_Encryption_Handler_V2 {
 				$is_pro   = isset( $metadata['is_pro_encrypted'] ) && $metadata['is_pro_encrypted'];
 
 				if ( $is_pro ) {
-					// Return pro wrapped key
+					// Return pro wrapped key.
 					$wrapped_key = get_option( 'secure_login_wrapped_private_key_pro' );
 					if ( $wrapped_key ) {
 						$this->log_key_access( get_current_user_id(), 'pro' );
@@ -366,7 +370,7 @@ class Secure_Login_Encryption_Handler_V2 {
 			}
 		}
 
-		// Default to free key
+		// Default to free key.
 		$encrypted_key = get_option( 'secure_login_private_key_free_encrypted' );
 
 		if ( ! $encrypted_key ) {
@@ -374,25 +378,24 @@ class Secure_Login_Encryption_Handler_V2 {
 			return;
 		}
 
-		// For free version, decrypt with WP salts and return
-		// NOTE: This returns the plaintext private key to the browser for client-side decryption
-		// This is acceptable for the free version's zero-knowledge architecture where:
-		// 1. Only admins with manage_options capability can access
-		// 2. Nonce verification is required
-		// 3. Connection must be over HTTPS
-		// 4. Decryption happens client-side, server never sees passwords
+		// For free version, decrypt with WP salts and return.
+		// NOTE: This returns the plaintext private key to the browser for client-side decryption.
+		// This is acceptable for the free version's zero-knowledge architecture where:.
+		// 1. Only admins with manage_options capability can access.
+		// 2. Nonce verification is required.
+		// 3. Connection must be over HTTPS.
+		// 4. Decryption happens client-side, server never sees passwords.
 		$private_key = $this->decrypt_with_wp_salts( $encrypted_key );
 		if ( ! $private_key ) {
 			wp_send_json_error( 'Failed to decrypt private key' );
 			return;
 		}
 
-		// Log this security-sensitive operation
+		// Log this security-sensitive operation.
 		$this->log_key_access( get_current_user_id(), 'free' );
-		error_log( 'WARNING: Free version private key accessed by user ID: ' . get_current_user_id() . ' from IP: ' . ( $_SERVER['REMOTE_ADDR'] ?? 'unknown' ) );
 
-		// Return as a "wrapped" format for consistency
-		// SECURITY NOTE: The key is base64-encoded but not encrypted for free version
+		// Return as a "wrapped" format for consistency.
+		// SECURITY NOTE: The key is base64-encoded but not encrypted for free version.
 		wp_send_json_success(
 			array(
 				'private_key' => base64_encode( $private_key ),
@@ -411,20 +414,26 @@ class Secure_Login_Encryption_Handler_V2 {
 			return;
 		}
 
-		// Verify nonce
+		// Verify nonce.
 		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) ), 'slc_admin_nonce' ) ) {
 			wp_send_json_error( 'Invalid security token' );
 			return;
 		}
 
-		// Get passkey-derived key from request
+		// Verify pro license.
+		if ( ! Secure_Login_License_Manager::has_pro_license() ) {
+			wp_send_json_error( array( 'message' => __( 'Pro license required.', 'secure-login-collector' ) ) );
+			return;
+		}
+
+		// Get passkey-derived key from request.
 		$passkey_key = sanitize_text_field( wp_unslash( $_POST['passkey_derived_key'] ?? '' ) );
 		if ( empty( $passkey_key ) ) {
 			wp_send_json_error( 'Passkey-derived key required' );
 			return;
 		}
 
-		// Decode the key (it's base64 encoded from client)
+		// Decode the key (it's base64 encoded from client).
 		$passkey_key = base64_decode( $passkey_key );
 		if ( strlen( $passkey_key ) !== 32 ) {
 			wp_send_json_error( 'Invalid key length' );
@@ -450,7 +459,7 @@ class Secure_Login_Encryption_Handler_V2 {
 			return;
 		}
 
-		// Verify nonce
+		// Verify nonce.
 		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) ), 'slc_admin_nonce' ) ) {
 			wp_send_json_error( 'Invalid security token' );
 			return;
@@ -469,7 +478,7 @@ class Secure_Login_Encryption_Handler_V2 {
 	private function log_key_access( $user_id, $type = 'unknown' ) {
 		$log = get_option( 'secure_login_key_access_log', array() );
 
-		// Keep only last 100 entries
+		// Keep only last 100 entries.
 		if ( count( $log ) > 100 ) {
 			$log = array_slice( $log, -100 );
 		}
@@ -477,7 +486,7 @@ class Secure_Login_Encryption_Handler_V2 {
 		$log[] = array(
 			'user_id'   => $user_id,
 			'timestamp' => time(),
-			'ip'        => $_SERVER['REMOTE_ADDR'] ?? '',
+			'ip'        => isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '',
 			'action'    => 'key_retrieved',
 			'type'      => $type,
 		);
@@ -493,7 +502,7 @@ class Secure_Login_Encryption_Handler_V2 {
 	private function log_key_operation( $operation ) {
 		$log = get_option( 'secure_login_key_operations_log', array() );
 
-		// Keep only last 50 operations
+		// Keep only last 50 operations.
 		if ( count( $log ) > 50 ) {
 			$log = array_slice( $log, -50 );
 		}
@@ -526,7 +535,7 @@ class Secure_Login_Encryption_Handler_V2 {
 		$public_key_free = get_option( 'secure_login_public_key_free' );
 
 		if ( ! $public_key_free ) {
-			// Try to initialize free keys if admin
+			// Try to initialize free keys if admin.
 			if ( current_user_can( 'manage_options' ) ) {
 				$result = $this->initialize_free_keys();
 				if ( ! is_wp_error( $result ) ) {
@@ -571,13 +580,13 @@ class Secure_Login_Encryption_Handler_V2 {
 	 * Handle AJAX request to initialize free keys.
 	 */
 	public function handle_initialize_free_keys() {
-		// Check admin permissions
+		// Check admin permissions.
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( 'Insufficient permissions' );
 			return;
 		}
 
-		// Verify nonce
+		// Verify nonce.
 		$nonce = sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) );
 		if ( ! wp_verify_nonce( $nonce, 'slc_admin_nonce' ) ) {
 			wp_send_json_error( 'Invalid security token' );
@@ -597,13 +606,13 @@ class Secure_Login_Encryption_Handler_V2 {
 	 * Handle AJAX request to export public key.
 	 */
 	public function handle_export_public_key() {
-		// Check admin permissions
+		// Check admin permissions.
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( 'Insufficient permissions' );
 			return;
 		}
 
-		// Verify nonce
+		// Verify nonce.
 		$nonce = sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) );
 		if ( ! wp_verify_nonce( $nonce, 'slc_admin_nonce' ) ) {
 			wp_send_json_error( 'Invalid security token' );

@@ -1,5 +1,5 @@
 <?php
-
+// phpcs:ignoreFile WordPress.Files.FileName.InvalidClassFileName -- Legacy file naming convention.
 /**
  * Freemius Configuration
  *
@@ -23,7 +23,7 @@ function slc_fs() {
 		$freemius_sdk = dirname( __DIR__ ) . '/vendor/freemius/start.php';
 
 		if ( ! file_exists( $freemius_sdk ) ) {
-			// SDK not found - return dummy object to prevent errors
+			// SDK not found - return dummy object to prevent errors.
 			return null;
 		}
 
@@ -85,7 +85,7 @@ function slc_fs_license_activation_message() {
 		jQuery(document).ready(function($) {
 			$(document).on('fs_license_activated', function() {
 				alert('<?php echo esc_js( __( 'Pro version activated! Passkey encryption is now available.', 'secure-login-collector' ) ); ?>');
-				// Reload page to show pro features
+				// Reload page to show pro features.
 				window.location.reload();
 			});
 		});

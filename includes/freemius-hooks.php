@@ -1,5 +1,5 @@
 <?php
-
+// phpcs:ignoreFile WordPress.Files.FileName.InvalidClassFileName -- Legacy file naming convention.
 /**
  * Freemius Hooks and Customizations
  *
@@ -46,25 +46,26 @@ if ( function_exists( 'slc_fs' ) ) {
  * Hook into plugin uninstall
  */
 function slc_fs_uninstall_cleanup() {
-	// Clean up Freemius data
+	// Clean up Freemius data.
 	if ( ! slc_fs()->is_clone() ) {
 		slc_fs()->remove_database_option();
 	}
 
-	// Your existing uninstall code
+	// Your existing uninstall code.
 	global $wpdb;
 
-	// Delete custom table
+	// Delete custom table.
 	// SECURITY FIX: Using $wpdb->prepare() with %i placeholder for table names (WordPress 6.2+)
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
 	$table_name = $wpdb->prefix . 'secure_login_data';
 	$wpdb->query(
 		$wpdb->prepare(
-			"DROP TABLE IF EXISTS %i",
+			'DROP TABLE IF EXISTS %i',
 			$table_name
 		)
 	);
 
-	// Delete all plugin options
+	// Delete all plugin options.
 	$options = array(
 		'secure_login_public_key',
 		'secure_login_private_key_encrypted',
@@ -92,20 +93,22 @@ function slc_fs_uninstall_cleanup() {
 		delete_option( $option );
 	}
 
-	// Delete transients
-	// SECURITY FIX: Using $wpdb->prepare() to prevent SQL injection
+	// Delete transients.
+	// SECURITY FIX: Using $wpdb->prepare() to prevent SQL injection.
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	$wpdb->query(
 		$wpdb->prepare(
-			"DELETE FROM %i WHERE option_name LIKE %s",
+			'DELETE FROM %i WHERE option_name LIKE %s',
 			$wpdb->options,
-			'_transient_secure_login_%'
+			$wpdb->esc_like( '_transient_secure_login_' ) . '%'
 		)
 	);
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	$wpdb->query(
 		$wpdb->prepare(
-			"DELETE FROM %i WHERE option_name LIKE %s",
+			'DELETE FROM %i WHERE option_name LIKE %s',
 			$wpdb->options,
-			'_transient_timeout_secure_login_%'
+			$wpdb->esc_like( '_transient_timeout_secure_login_' ) . '%'
 		)
 	);
 }
@@ -118,8 +121,8 @@ if ( function_exists( 'slc_fs' ) ) {
  */
 function slc_fs_custom_pricing_page() {
 	// Use freemium pricing for now.
-	// TODO: Enable custom pricing page when ready.
-	/* Commented out for future use
+	/*
+	Commented out for future use
 	?>
 	<div class="wrap">
 		<h1><?php esc_html_e( 'Secure Login Collector Pro', 'secure-login-collector' ); ?></h1>
@@ -149,20 +152,20 @@ function slc_fs_custom_pricing_page() {
 
 				<?php
 				if ( function_exists( 'slc_fs' ) ) {
-					// Debug information
+					// Debug information.
 					if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
 						echo '<!-- Debug: is_registered = ' . ( slc_fs()->is_registered() ? 'true' : 'false' ) . ' -->';
 						echo '<!-- Debug: is_anonymous = ' . ( slc_fs()->is_anonymous() ? 'true' : 'false' ) . ' -->';
 						echo '<!-- Debug: is_pending_activation = ' . ( slc_fs()->is_pending_activation() ? 'true' : 'false' ) . ' -->';
 					}
 
-					// Check if Freemius is properly set up
+					// Check if Freemius is properly set up.
 					if ( ! slc_fs()->is_registered() || slc_fs()->is_anonymous() ) {
 						echo '<p>' . esc_html__( 'Please complete the Freemius opt-in process first.', 'secure-login-collector' ) . '</p>';
 
-						// Show opt-in button if available
+						// Show opt-in button if available.
 						if ( method_exists( slc_fs(), 'get_activation_url' ) ) {
-							// Use onclick to trigger Freemius opt-in dialog
+							// Use onclick to trigger Freemius opt-in dialog.
 							echo '<button type="button" class="button button-primary" onclick="if(typeof slc_fs !== \'undefined\' && slc_fs.opt_in) { slc_fs.opt_in(); } else { window.location.href = \'' . esc_url( slc_fs()->get_activation_url() ) . '\'; }">' .
 								esc_html__( 'Complete Activation', 'secure-login-collector' ) . '</button>';
 						} else {
@@ -170,11 +173,11 @@ function slc_fs_custom_pricing_page() {
 								esc_html__( 'Go to Plugin Settings', 'secure-login-collector' ) . '</a>';
 						}
 					} else {
-						// Try different methods to get the upgrade URL
+						// Try different methods to get the upgrade URL.
 						$upgrade_url = slc_fs()->get_upgrade_url();
 
 						if ( ! $upgrade_url && method_exists( slc_fs(), 'checkout_url' ) ) {
-							// Try checkout URL as fallback
+							// Try checkout URL as fallback.
 							$upgrade_url = slc_fs()->checkout_url();
 						}
 
@@ -184,7 +187,7 @@ function slc_fs_custom_pricing_page() {
 							echo '<p style="margin-top: 10px; font-size: 12px; color: #666;">' .
 								esc_html__( 'Secure checkout powered by Freemius', 'secure-login-collector' ) . '</p>';
 						} else {
-							// Manual checkout link
+							// Manual checkout link.
 							echo '<p>' . esc_html__( 'Automatic upgrade URL not available.', 'secure-login-collector' ) . '</p>';
 							echo '<a href="https://checkout.freemius.com/mode/dialog/plugin/19897/plan/33427/" class="button button-primary button-hero" target="_blank">' .
 								esc_html__( 'Upgrade to Pro', 'secure-login-collector' ) . '</a>';
@@ -274,6 +277,7 @@ function slc_fs_admin_notices() {
 		return;
 	}
 
+	// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET parameter for page detection.
 	if ( ! slc_fs()->is_paying() && isset( $_GET['page'] ) && 'secure-login-collector-account' === $_GET['page'] ) {
 		$passkey_registered = get_option( 'secure_login_passkey_registered', false );
 
@@ -301,10 +305,10 @@ add_action( 'admin_notices', 'slc_fs_admin_notices' );
  */
 function slc_fs_plugin_action_links( $links ) {
 	if ( function_exists( 'slc_fs' ) && slc_fs()->is_not_paying() ) {
-		// Use Freemius's proper upgrade URL
+		// Use Freemius's proper upgrade URL.
 		$upgrade_url = slc_fs()->get_upgrade_url();
 
-		// If no upgrade URL available, use account page
+		// If no upgrade URL available, use account page.
 		if ( empty( $upgrade_url ) ) {
 			$upgrade_url = slc_fs()->get_account_url();
 		}
@@ -322,7 +326,7 @@ add_filter( 'plugin_action_links_' . plugin_basename( SECURE_LOGIN_PLUGIN_DIR . 
  */
 function slc_fs_custom_menu_items() {
 	if ( function_exists( 'slc_fs' ) && slc_fs()->is_not_paying() ) {
-		// Add pricing page under our plugin menu
+		// Add pricing page under our plugin menu.
 		add_submenu_page(
 			'secure-login-collector',
 			__( 'Pricing', 'secure-login-collector' ),

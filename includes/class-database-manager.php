@@ -1,4 +1,5 @@
 <?php
+// phpcs:ignoreFile WordPress.Files.FileName.InvalidClassFileName -- Legacy file naming convention.
 /**
  * Database Manager Class
  *
@@ -83,7 +84,7 @@ class Secure_Login_Database_Manager {
 		global $wpdb;
 
 		// Check if retention_until column exists.
-		// Note: Table names cannot be prepared in WordPress, but this is safe as table name is controlled.
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is escaped in constructor via esc_sql().
 		$column_exists = $wpdb->get_results(
 			$wpdb->prepare(
 				"SHOW COLUMNS FROM {$this->table_name} LIKE %s",
@@ -94,7 +95,7 @@ class Secure_Login_Database_Manager {
 		if ( empty( $column_exists ) ) {
 			// Add retention_until column.
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
-			$wpdb->query( $wpdb->prepare( "ALTER TABLE %i ADD COLUMN retention_until datetime DEFAULT NULL AFTER created_at", $this->table_name ) );
+			$wpdb->query( $wpdb->prepare( 'ALTER TABLE %i ADD COLUMN retention_until datetime DEFAULT NULL AFTER created_at', $this->table_name ) );
 
 			// Set retention_until for existing records based on created_at + expiration days.
 			$expiration_days = get_option( 'secure_login_expiration_days', 30 );
@@ -102,7 +103,7 @@ class Secure_Login_Database_Manager {
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 				$wpdb->query(
 					$wpdb->prepare(
-						"UPDATE %i SET retention_until = DATE_ADD(created_at, INTERVAL %d DAY) WHERE retention_until IS NULL",
+						'UPDATE %i SET retention_until = DATE_ADD(created_at, INTERVAL %d DAY) WHERE retention_until IS NULL',
 						$this->table_name,
 						$expiration_days
 					)
@@ -111,7 +112,7 @@ class Secure_Login_Database_Manager {
 		}
 
 		// Check if is_expired column exists.
-		// Note: Table names cannot be prepared in WordPress, but this is safe as table name is controlled.
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is escaped in constructor via esc_sql().
 		$is_expired_exists = $wpdb->get_results(
 			$wpdb->prepare(
 				"SHOW COLUMNS FROM {$this->table_name} LIKE %s",
@@ -122,11 +123,11 @@ class Secure_Login_Database_Manager {
 		if ( empty( $is_expired_exists ) ) {
 			// Add is_expired column.
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
-			$wpdb->query( $wpdb->prepare( "ALTER TABLE %i ADD COLUMN is_expired tinyint(1) DEFAULT 0 AFTER retention_until", $this->table_name ) );
+			$wpdb->query( $wpdb->prepare( 'ALTER TABLE %i ADD COLUMN is_expired tinyint(1) DEFAULT 0 AFTER retention_until', $this->table_name ) );
 
 			// Add index for is_expired column.
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
-			$wpdb->query( $wpdb->prepare( "ALTER TABLE %i ADD KEY is_expired (is_expired)", $this->table_name ) );
+			$wpdb->query( $wpdb->prepare( 'ALTER TABLE %i ADD KEY is_expired (is_expired)', $this->table_name ) );
 		}
 	}
 
@@ -173,8 +174,8 @@ class Secure_Login_Database_Manager {
 		// Clear encrypted data for entries where retention_until has passed.
 		$current_time = current_time( 'mysql' );
 
-		// Note: Table names cannot be prepared in WordPress, but this is safe as table name is controlled.
 		// Only update entries that haven't already been expired (is_expired = 0).
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is escaped in constructor via esc_sql().
 		$affected_rows = $wpdb->query(
 			$wpdb->prepare(
 				"UPDATE {$this->table_name}
@@ -187,7 +188,7 @@ class Secure_Login_Database_Manager {
 			)
 		);
 
-		return $affected_rows !== false ? (int) $affected_rows : 0;
+		return false !== $affected_rows ? (int) $affected_rows : 0;
 	}
 
 	/**
@@ -198,7 +199,7 @@ class Secure_Login_Database_Manager {
 	public function get_all_entries() {
 		global $wpdb;
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		return $wpdb->get_results( $wpdb->prepare( "SELECT * FROM %i ORDER BY created_at DESC", $this->table_name ) );
+		return $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM %i ORDER BY created_at DESC', $this->table_name ) );
 	}
 
 	/**
@@ -211,7 +212,7 @@ class Secure_Login_Database_Manager {
 		global $wpdb;
 		// Note: Table names cannot be prepared in WordPress, but this is safe as table name is controlled.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		return $wpdb->get_row( $wpdb->prepare( "SELECT * FROM %i WHERE id = %d", $this->table_name, $id ) );
+		return $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM %i WHERE id = %d', $this->table_name, $id ) );
 	}
 
 	/**
@@ -311,7 +312,7 @@ class Secure_Login_Database_Manager {
 	 */
 	public function is_entry_expired( $entry ) {
 		// Check the is_expired flag first.
-		if ( isset( $entry->is_expired ) && $entry->is_expired == 1 ) {
+		if ( isset( $entry->is_expired ) && 1 === $entry->is_expired ) {
 			return true;
 		}
 
@@ -336,7 +337,7 @@ class Secure_Login_Database_Manager {
 	 */
 	public function calculate_expiration( $retention_until, $is_expired = 0 ) {
 		// Check if entry has been marked as expired.
-		if ( $is_expired == 1 ) {
+		if ( 1 === $is_expired ) {
 			return '<span style="color: red; font-weight: bold;">' . __( 'Expired (data purged)', 'secure-login-collector' ) . '</span>';
 		}
 
@@ -373,7 +374,7 @@ class Secure_Login_Database_Manager {
 	public function get_expired_entries_count() {
 		global $wpdb;
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		return (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i WHERE is_expired = 1", $this->table_name ) );
+		return (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE is_expired = 1', $this->table_name ) );
 	}
 
 	/**
@@ -386,10 +387,9 @@ class Secure_Login_Database_Manager {
 	 */
 	public function delete_expired_entries() {
 		global $wpdb;
-		// Note: Table names cannot be prepared in WordPress, but this is safe as table name is controlled.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$affected_rows = $wpdb->query( $wpdb->prepare( "DELETE FROM %i WHERE is_expired = 1", $this->table_name ) );
-		return $affected_rows !== false ? (int) $affected_rows : 0;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is escaped in constructor via esc_sql().
+		$affected_rows = $wpdb->query( $wpdb->prepare( 'DELETE FROM %i WHERE is_expired = 1', $this->table_name ) );
+		return false !== $affected_rows ? (int) $affected_rows : 0;
 	}
 
 	/**
@@ -497,7 +497,7 @@ class Secure_Login_Database_Manager {
 		} elseif ( 'expires' === $orderby ) {
 			$order_clause = 'retention_until';
 		} else {
-			// Additional validation - only allow created_at as fallback
+			// Additional validation - only allow created_at as fallback.
 			$order_clause = 'created_at';
 		}
 
@@ -508,10 +508,10 @@ class Secure_Login_Database_Manager {
 		}
 
 		// Build final query.
-		// Note: Table names cannot be prepared in WordPress, but this is safe as table name is controlled.
-		$query = "SELECT * FROM {$this->table_name} 
-                  {$where_clause} 
-                  ORDER BY {$order_clause} {$order} 
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is escaped in constructor via esc_sql(). Order clause validated against whitelist above.
+		$query = "SELECT * FROM {$this->table_name}
+                  {$where_clause}
+                  ORDER BY {$order_clause} {$order}
                   LIMIT %d OFFSET %d";
 
 		// Prepare parameters.
@@ -521,7 +521,7 @@ class Secure_Login_Database_Manager {
 			return $wpdb->get_results( $wpdb->prepare( $query, $params ) );
 		} else {
 			// No parameters needed.
-			// Note: Table names cannot be prepared in WordPress, but this is safe as table name is controlled.
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is escaped in constructor via esc_sql(). Order clause validated against whitelist above.
 			return $wpdb->get_results( $query );
 		}
 	}
@@ -553,13 +553,13 @@ class Secure_Login_Database_Manager {
 		}
 
 		// Build query.
-		// Note: Table names cannot be prepared in WordPress, but this is safe as table name is controlled.
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is escaped in constructor via esc_sql().
 		$query = "SELECT COUNT(*) FROM {$this->table_name} {$where_clause}";
 
 		if ( ! empty( $search_params ) ) {
 			return (int) $wpdb->get_var( $wpdb->prepare( $query, $search_params ) );
 		} else {
-			// Note: Table names cannot be prepared in WordPress, but this is safe as table name is controlled.
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is escaped in constructor via esc_sql().
 			return (int) $wpdb->get_var( $query );
 		}
 	}

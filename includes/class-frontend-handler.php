@@ -1,4 +1,5 @@
 <?php
+// phpcs:ignoreFile WordPress.Files.FileName.InvalidClassFileName -- Legacy file naming convention.
 /**
  * Frontend Handler Class
  *
@@ -9,6 +10,8 @@
  * - Double encryption for ultra-secure mode
  *
  * @package SecureLoginCollector
+ *
+ * @phpcs:disable WordPress.Files.FileName.InvalidClassFileName
  */
 
 // Prevent direct access.
@@ -73,7 +76,7 @@ class Secure_Login_Frontend_Handler {
 		add_action( 'wp_ajax_save_secure_login_data_v2', array( $this, 'handle_save_login_data_v2' ) );
 		add_action( 'wp_ajax_nopriv_save_secure_login_data_v2', array( $this, 'handle_save_login_data_v2' ) );
 
-		// Add handler for public key retrieval (delegates to encryption handler)
+		// Add handler for public key retrieval (delegates to encryption handler).
 		add_action( 'wp_ajax_slc_get_public_key', array( $this->encryption_handler, 'handle_get_public_key' ) );
 		add_action( 'wp_ajax_nopriv_slc_get_public_key', array( $this->encryption_handler, 'handle_get_public_key' ) );
 	}
@@ -132,7 +135,7 @@ class Secure_Login_Frontend_Handler {
 				$localize_data['public_key'] = $public_key;
 			}
 
-			// No need to send passkey info to frontend - clients don't have passkeys
+			// No need to send passkey info to frontend - clients don't have passkeys.
 
 			// Localize script with data.
 			wp_localize_script( 'secure-login-frontend', 'secureLoginAjax', $localize_data );
@@ -315,14 +318,14 @@ class Secure_Login_Frontend_Handler {
 		$metadata['login_url']  = sanitize_text_field( $metadata['login_url'] );
 		$metadata['created_at'] = isset( $metadata['created_at'] ) ? sanitize_text_field( $metadata['created_at'] ) : current_time( 'c' );
 
-		// Check if Pro version with pro keys is available on the server
-		// Use same logic as V2 encryption handler for consistency
+		// Check if Pro version with pro keys is available on the server.
+		// Use same logic as V2 encryption handler for consistency.
 		$is_pro_encrypted     = false;
 		$server_credential_id = null;
 
-		if ( $this->is_pro_version && get_option( 'secure_login_pro_keys_active', false ) ) {
-			// Mark as Pro encrypted - data will be encrypted with pro public key
-			// The passkey decryption happens on the admin side during decryption
+		if ( $this->is_pro_version && get_option( 'secure_login_pro_keys_active', false ) && Secure_Login_License_Manager::has_pro_license() ) {
+			// Mark as Pro encrypted - data will be encrypted with pro public key.
+			// The passkey decryption happens on the admin side during decryption.
 			$is_pro_encrypted     = true;
 			$server_credential_id = get_option( 'secure_login_passkey_credential_id' );
 		}
@@ -330,11 +333,11 @@ class Secure_Login_Frontend_Handler {
 		// Create encrypted package for storage.
 		$encrypted_package = array(
 			'encryptedData'   => sanitize_text_field( $submission['encryptedData'] ),
-			'rsaEncryptedKey' => sanitize_text_field( $submission['rsaEncryptedKey'] ), // Store as-is from client
+			'rsaEncryptedKey' => sanitize_text_field( $submission['rsaEncryptedKey'] ), // Store as-is from client.
 			'iv'              => sanitize_text_field( $submission['iv'] ),
 			'salt'            => sanitize_text_field( $submission['salt'] ),
-			'isProEncrypted'  => $is_pro_encrypted, // Server determines this
-			'credentialId'    => $server_credential_id, // Server's passkey credential ID
+			'isProEncrypted'  => $is_pro_encrypted, // Server determines this.
+			'credentialId'    => $server_credential_id, // Server's passkey credential ID.
 			'version'         => 2, // Mark as v2 format.
 		);
 

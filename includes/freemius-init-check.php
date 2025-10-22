@@ -21,7 +21,7 @@ function slc_check_freemius_loaded() {
 	}
 
 	try {
-		// Test if Freemius object is accessible
+		// Test if Freemius object is accessible.
 		$fs = slc_fs();
 		if ( ! is_object( $fs ) ) {
 			add_action( 'admin_notices', 'slc_freemius_init_error_notice' );
@@ -67,7 +67,7 @@ function slc_freemius_init_error_notice() {
 	}
 }
 
-// Run the check on admin_init
+// Run the check on admin_init.
 add_action( 'admin_init', 'slc_check_freemius_loaded' );
 
 /**

@@ -317,7 +317,7 @@ jQuery(document).ready(function ($) {
         const password = $('#password').val().trim();
         const additionalNotes = $('#additional_notes').val().trim();
 
-        // Validate required fields
+        // Basic validation - only check for required fields
         if (!email || !userName || !loginUrl || !usernameEmail || !password) {
             messageDiv.removeClass('success').addClass('error')
                 .text(secureLoginAjax.strings.required_fields_error)

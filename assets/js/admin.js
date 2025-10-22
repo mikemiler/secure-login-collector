@@ -536,8 +536,6 @@ jQuery(document).ready(function ($) {
                 navigator.credentials.get(getCredentialDefaultArgs)
                     .then(async (assertion) => {
                         // After successful passkey authentication, perform client-side bulk decryption
-                        console.log('Passkey authenticated, starting client-side bulk decryption...');
-                        
                         try {
                             button.text('Initializing decryption...');
                             

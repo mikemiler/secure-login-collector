@@ -1,5 +1,5 @@
 <?php
-
+// phpcs:ignoreFile WordPress.Files.FileName.InvalidClassFileName -- Plugin file naming convention.
 /**
  * Plugin Name: Secure Login Collector
  * Plugin URI: https://wp-mike.com
@@ -10,6 +10,8 @@
  * Text Domain: secure-login-collector
  *
  * @package SecureLoginCollector
+ *
+ * @phpcs:disable WordPress.Files.FileName.InvalidClassFileName
  */
 
 // Prevent direct access.
@@ -24,14 +26,14 @@ define( 'SECURE_LOGIN_VERSION', '1.2.1' );
 
 // Initialize Freemius.
 if ( ! function_exists( 'slc_fs' ) ) {
-	// Check if vendor directory exists with Freemius SDK
+	// Check if vendor directory exists with Freemius SDK.
 	if ( file_exists( SECURE_LOGIN_PLUGIN_DIR . 'vendor/freemius/start.php' ) ) {
 		try {
 			require_once SECURE_LOGIN_PLUGIN_DIR . 'includes/freemius-config.php';
 		} catch ( Exception $e ) {
-			// Log error but don't break plugin activation
+			// Log error but don't break plugin activation.
 			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-				error_log( 'Secure Login Collector - Freemius Error: ' . $e->getMessage() );
+				error_log( 'Secure Login Collector - Freemius Error: ' . $e->getMessage() ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 			}
 		}
 	}
@@ -136,17 +138,17 @@ class SecureLoginCollector {
 		include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-passkey-manager.php';
 		include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-master-key-manager.php';
 
-		// Load Freemius hooks if available
+		// Load Freemius hooks if available.
 		if ( function_exists( 'slc_fs' ) && file_exists( SECURE_LOGIN_PLUGIN_DIR . 'includes/freemius-hooks.php' ) ) {
 			include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/freemius-hooks.php';
 		}
 
-		// Load Freemius initialization check
+		// Load Freemius initialization check.
 		if ( file_exists( SECURE_LOGIN_PLUGIN_DIR . 'includes/freemius-init-check.php' ) ) {
 			include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/freemius-init-check.php';
 		}
 
-		// Load Freemius account redirect handler
+		// Load Freemius account redirect handler.
 		if ( file_exists( SECURE_LOGIN_PLUGIN_DIR . 'includes/freemius-account-redirect.php' ) ) {
 			include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/freemius-account-redirect.php';
 		}
@@ -162,7 +164,7 @@ class SecureLoginCollector {
 		$this->frontend_handler   = new Secure_Login_Frontend_Handler( $this->table_name, $this->is_pro_version, $this->encryption_handler, $this->database_manager );
 		$this->settings_manager   = new Secure_Login_Settings_Manager( $this->is_pro_version, $this->encryption_handler );
 
-		// Initialize passkey manager (available for all users)
+		// Initialize passkey manager (available for all users).
 		if ( class_exists( 'Passkey_Manager' ) ) {
 			$this->passkey_manager = new Passkey_Manager();
 		}
@@ -179,16 +181,16 @@ class SecureLoginCollector {
 	 * Check if pro version is available.
 	 */
 	private function check_pro_version() {
-		// First check if Freemius is loaded and user has active license
+		// First check if Freemius is loaded and user has active license.
 		if ( function_exists( 'slc_fs' ) ) {
 			try {
 				$fs = slc_fs();
 				if ( $fs && is_object( $fs ) && method_exists( $fs, 'is_paying' ) && $fs->is_paying() ) {
 					return true;
 				}
+			// phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch
 			} catch ( Exception $e ) {
 				// Freemius error - fall through to constant check.
-				// phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch
 			}
 		}
 	}
@@ -204,19 +206,19 @@ class SecureLoginCollector {
 	 * Plugin activation.
 	 */
 	public function activate() {
-		// Load required classes if not already loaded
+		// Load required classes if not already loaded.
 		if ( ! class_exists( 'Master_Key_Manager' ) ) {
 			require_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-master-key-manager.php';
 		}
 
-		// Create wrapped keys table for passkey functionality
+		// Create wrapped keys table for passkey functionality.
 		$master_key_manager = new Master_Key_Manager();
 		$master_key_manager->maybe_create_table();
 
-		// Create main data table and perform other activation tasks
+		// Create main data table and perform other activation tasks.
 		$this->database_manager->create_table();
 		$this->database_manager->upgrade_database();
-		//$this->encryption_handler->ensure_rsa_keys();
+		// RSA keys now generated on-demand, not during activation. phpcs:ignore Squiz.PHP.CommentedOutCode.Found -- Intentionally commented for documentation.
 		$this->database_manager->schedule_cleanup();
 	}
 

@@ -1,10 +1,13 @@
 <?php
+// phpcs:ignoreFile WordPress.Files.FileName.InvalidClassFileName -- Legacy file naming convention.
 /**
  * License Manager Class
  *
  * Handles Pro version licensing and activation
  *
  * @package SecureLoginCollector
+ *
+ * @phpcs:disable WordPress.Files.FileName.InvalidClassFileName
  */
 
 // Prevent direct access.
@@ -30,13 +33,13 @@ class Secure_Login_License_Manager {
 	 * @return bool
 	 */
 	public static function is_pro_active() {
-		// Check transient first for performance
+		// Check transient first for performance.
 		$cached_status = get_transient( self::LICENSE_TRANSIENT );
 		if ( false !== $cached_status ) {
 			return 'active' === $cached_status;
 		}
 
-		// Verify license
+		// Verify license.
 		$license_key = get_option( 'secure_login_license_key' );
 		if ( ! $license_key ) {
 			return false;
@@ -44,23 +47,34 @@ class Secure_Login_License_Manager {
 
 		$status = self::verify_license( $license_key );
 
-		// Cache for 12 hours
+		// Cache for 12 hours.
 		set_transient( self::LICENSE_TRANSIENT, $status, 12 * HOUR_IN_SECONDS );
 
 		return 'active' === $status;
 	}
 
 	/**
-	 * Activate license
+	 * Check if user has active pro license.
 	 *
-	 * @param string $license_key License key to activate
-	 * @return array Response with status and message
+	 * @return bool True if user has paid license, false otherwise.
+	 */
+	public static function has_pro_license() {
+		return function_exists( 'slc_fs' )
+			&& slc_fs()->is_registered()
+			&& slc_fs()->is_paying();
+	}
+
+	/**
+	 * Activate license.
+	 *
+	 * @param string $license_key License key to activate.
+	 * @return array Response with status and message.
 	 */
 	public static function activate_license( $license_key ) {
-		// Sanitize
+		// Sanitize.
 		$license_key = sanitize_text_field( $license_key );
 
-		// Basic validation
+		// Basic validation.
 		if ( strlen( $license_key ) !== 32 ) {
 			return array(
 				'success' => false,
@@ -68,7 +82,7 @@ class Secure_Login_License_Manager {
 			);
 		}
 
-		// Call activation API
+		// Call activation API.
 		$response = wp_remote_post(
 			'https://your-licensing-server.com/wp-json/license/v1/activate',
 			array(
@@ -91,11 +105,11 @@ class Secure_Login_License_Manager {
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
 
 		if ( ! empty( $body['success'] ) ) {
-			// Save license
+			// Save license.
 			update_option( 'secure_login_license_key', $license_key );
 			update_option( 'secure_login_license_email', $body['email'] ?? '' );
 
-			// Clear cache
+			// Clear cache.
 			delete_transient( self::LICENSE_TRANSIENT );
 
 			return array(
@@ -119,7 +133,7 @@ class Secure_Login_License_Manager {
 		$license_key = get_option( 'secure_login_license_key' );
 
 		if ( $license_key ) {
-			// Call deactivation API
+			// Call deactivation API.
 			wp_remote_post(
 				'https://your-licensing-server.com/wp-json/license/v1/deactivate',
 				array(
@@ -131,7 +145,7 @@ class Secure_Login_License_Manager {
 			);
 		}
 
-		// Clean up
+		// Clean up.
 		delete_option( 'secure_login_license_key' );
 		delete_option( 'secure_login_license_email' );
 		delete_transient( self::LICENSE_TRANSIENT );
@@ -140,10 +154,10 @@ class Secure_Login_License_Manager {
 	}
 
 	/**
-	 * Verify license status
+	 * Verify license status.
 	 *
-	 * @param string $license_key License key to verify
-	 * @return string Status: 'active', 'expired', 'invalid'
+	 * @param string $license_key License key to verify.
+	 * @return string Status: 'active', 'expired', 'invalid'.
 	 */
 	private static function verify_license( $license_key ) {
 		$response = wp_remote_get(
@@ -176,7 +190,7 @@ class Secure_Login_License_Manager {
 			wp_send_json_error( __( 'Insufficient permissions', 'secure-login-collector' ) );
 		}
 
-		$license_key = sanitize_text_field( $_POST['license_key'] ?? '' );
+		$license_key = isset( $_POST['license_key'] ) ? sanitize_text_field( wp_unslash( $_POST['license_key'] ) ) : '';
 
 		if ( empty( $license_key ) ) {
 			wp_send_json_error( __( 'Please enter a license key', 'secure-login-collector' ) );
@@ -192,5 +206,5 @@ class Secure_Login_License_Manager {
 	}
 }
 
-// Register AJAX handlers
+// Register AJAX handlers.
 add_action( 'wp_ajax_secure_login_activate_license', array( 'Secure_Login_License_Manager', 'ajax_activate_license' ) );

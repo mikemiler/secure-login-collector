@@ -1,4 +1,5 @@
 <?php
+// phpcs:ignoreFile WordPress.Files.FileName.InvalidClassFileName -- Legacy file naming convention.
 /**
  * Uninstall Secure Login Collector
  *
@@ -31,11 +32,12 @@ global $wpdb;
 
 // 1. Delete the custom database table
 $table_name = $wpdb->prefix . 'secure_login_data';
-$wpdb->query( "DROP TABLE IF EXISTS {$table_name}" );
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
+$wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS %i', $table_name ) );
 
 // 2. Delete all plugin options
 $plugin_options = array(
-	// Settings
+	// Settings.
 	'secure_login_notification_email',
 	'secure_login_enable_notifications',
 	'secure_login_expiration_days',
@@ -43,8 +45,8 @@ $plugin_options = array(
 	'secure_login_frontend_form_text',
 	'secure_login_frontend_text_type',
 	'secure_login_delete_on_uninstall',
-	
-	// Encryption keys and related data
+
+	// Encryption keys and related data.
 	'secure_login_public_key',
 	'secure_login_private_key',
 	'secure_login_wrapped_private_key',
@@ -58,18 +60,18 @@ $plugin_options = array(
 	'secure_login_master_key_wrapped',
 	'secure_login_key_access_log',
 	'secure_login_session_keys',
-	
-	// Database version
+
+	// Database version.
 	'secure_login_db_version',
-	
-	// Freemius related options (if using Freemius)
+
+	// Freemius related options (if using Freemius).
 	'fs_accounts',
 	'fs_active_plugins',
 	'fs_api_cache',
 	'fs_debug_mode',
 );
 
-// Delete each option
+// Delete each option.
 foreach ( $plugin_options as $option ) {
 	delete_option( $option );
 }
@@ -83,7 +85,7 @@ foreach ( $users as $user ) {
 }
 
 // 4. Delete any transients that might exist
-$wpdb->query( 
+$wpdb->query(
 	"DELETE FROM {$wpdb->options} 
 	WHERE option_name LIKE '_transient_secure_login_%' 
 	OR option_name LIKE '_transient_timeout_secure_login_%'"
@@ -98,7 +100,7 @@ if ( $timestamp ) {
 // 6. Clear object cache
 wp_cache_flush();
 
-// Log the uninstall for debugging (optional - remove in production)
+// Log the uninstall for debugging (optional - remove in production).
 if ( defined( 'WP_DEBUG' ) && WP_DEBUG === true ) {
 	error_log( 'Secure Login Collector: Plugin data has been completely removed.' );
 }
