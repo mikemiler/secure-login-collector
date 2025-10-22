@@ -488,6 +488,19 @@ class Passkey_Manager {
 			wp_send_json_error( 'Invalid client data format' );
 		}
 
+		// Validate origin
+		$expected_origin = home_url();
+		$received_origin = $client_data_array['origin'] ?? '';
+		if ( $received_origin !== $expected_origin ) {
+			wp_send_json_error( 'Origin verification failed. Expected: ' . $expected_origin . ', Received: ' . $received_origin );
+		}
+
+		// Validate type
+		$received_type = $client_data_array['type'] ?? '';
+		if ( $received_type !== 'webauthn.create' ) {
+			wp_send_json_error( 'Invalid WebAuthn operation type. Expected: webauthn.create, Received: ' . $received_type );
+		}
+
 		// Convert base64url to base64 for comparison (WebAuthn uses base64url)
 		$received_challenge = $client_data_array['challenge'] ?? '';
 
@@ -509,6 +522,28 @@ class Passkey_Manager {
 			if ( $received_as_base64 !== $expected_challenge ) {
 				wp_send_json_error( 'Challenge verification failed' );
 			}
+		}
+
+		// Basic attestation validation
+		// Note: Full attestation validation requires CBOR parsing
+		// For production use, consider implementing a WebAuthn library
+		$attestation = wp_unslash( $_POST['attestation'] ?? '' );
+		if ( ! empty( $attestation ) ) {
+			// Verify attestation object is valid base64
+			$attestation_decoded = base64_decode( $attestation, true );
+			if ( false === $attestation_decoded ) {
+				wp_send_json_error( 'Invalid attestation object format' );
+			}
+
+			// Log that attestation was received (full validation would require CBOR parser)
+			error_log( 'Passkey registration: Attestation object received (length: ' . strlen( $attestation_decoded ) . ' bytes)' );
+
+			// TODO: For enhanced security, implement full attestation validation
+			// This would require:
+			// 1. CBOR decoding of attestation object
+			// 2. Verification of authenticator data
+			// 3. Validation of attestation statement signature
+			// 4. Checking certificate chain (for full attestation)
 		}
 
 		$user_id = get_current_user_id();

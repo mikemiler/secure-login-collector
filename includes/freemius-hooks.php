@@ -55,10 +55,14 @@ function slc_fs_uninstall_cleanup() {
 	global $wpdb;
 
 	// Delete custom table
-	$table_name = esc_sql( $wpdb->prefix . 'secure_login_data' );
-	// Note: Table names cannot be prepared in WordPress, but this is safe as table name is controlled.
-	// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-	$wpdb->query( "DROP TABLE IF EXISTS {$table_name}" );
+	// SECURITY FIX: Using $wpdb->prepare() with %i placeholder for table names (WordPress 6.2+)
+	$table_name = $wpdb->prefix . 'secure_login_data';
+	$wpdb->query(
+		$wpdb->prepare(
+			"DROP TABLE IF EXISTS %i",
+			$table_name
+		)
+	);
 
 	// Delete all plugin options
 	$options = array(
@@ -89,8 +93,21 @@ function slc_fs_uninstall_cleanup() {
 	}
 
 	// Delete transients
-	$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_secure_login_%'" );
-	$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_secure_login_%'" );
+	// SECURITY FIX: Using $wpdb->prepare() to prevent SQL injection
+	$wpdb->query(
+		$wpdb->prepare(
+			"DELETE FROM %i WHERE option_name LIKE %s",
+			$wpdb->options,
+			'_transient_secure_login_%'
+		)
+	);
+	$wpdb->query(
+		$wpdb->prepare(
+			"DELETE FROM %i WHERE option_name LIKE %s",
+			$wpdb->options,
+			'_transient_timeout_secure_login_%'
+		)
+	);
 }
 if ( function_exists( 'slc_fs' ) ) {
 	slc_fs()->add_action( 'after_uninstall', 'slc_fs_uninstall_cleanup' );

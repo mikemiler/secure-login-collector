@@ -208,8 +208,8 @@ class Secure_Login_Encryption_Handler_V2 {
 	 * @return array|WP_Error Wrapped key data or error.
 	 */
 	private function wrap_private_key( $private_key, $passkey_key ) {
-		// Generate random IV for AES-256-GCM
-		$iv = random_bytes( 16 );
+		// Generate random IV for AES-256-GCM (96-bit/12-byte IV is standard for GCM)
+		$iv = random_bytes( 12 );
 
 		// Encrypt private key with passkey-derived key
 		$tag       = '';
@@ -389,15 +389,24 @@ class Secure_Login_Encryption_Handler_V2 {
 		}
 
 		// For free version, decrypt with WP salts and return
+		// NOTE: This returns the plaintext private key to the browser for client-side decryption
+		// This is acceptable for the free version's zero-knowledge architecture where:
+		// 1. Only admins with manage_options capability can access
+		// 2. Nonce verification is required
+		// 3. Connection must be over HTTPS
+		// 4. Decryption happens client-side, server never sees passwords
 		$private_key = $this->decrypt_with_wp_salts( $encrypted_key );
 		if ( ! $private_key ) {
 			wp_send_json_error( 'Failed to decrypt private key' );
 			return;
 		}
 
+		// Log this security-sensitive operation
 		$this->log_key_access( get_current_user_id(), 'free' );
+		error_log( 'WARNING: Free version private key accessed by user ID: ' . get_current_user_id() . ' from IP: ' . ( $_SERVER['REMOTE_ADDR'] ?? 'unknown' ) );
 
 		// Return as a "wrapped" format for consistency
+		// SECURITY NOTE: The key is base64-encoded but not encrypted for free version
 		wp_send_json_success(
 			array(
 				'private_key' => base64_encode( $private_key ),
@@ -452,6 +461,12 @@ class Secure_Login_Encryption_Handler_V2 {
 	public function handle_delete_pro_keys() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( 'Insufficient permissions' );
+			return;
+		}
+
+		// Verify nonce
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) ), 'slc_admin_nonce' ) ) {
+			wp_send_json_error( 'Invalid security token' );
 			return;
 		}
 

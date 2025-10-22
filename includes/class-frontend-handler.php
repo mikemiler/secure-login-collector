@@ -273,8 +273,8 @@ class Secure_Login_Frontend_Handler {
 			return;
 		}
 
-		// Get submission data.
-		$submission_json = isset( $_POST['submission'] ) ? wp_unslash( $_POST['submission'] ) : '';
+		// Get submission data and sanitize before JSON decode.
+		$submission_json = isset( $_POST['submission'] ) ? sanitize_textarea_field( wp_unslash( $_POST['submission'] ) ) : '';
 
 		if ( empty( $submission_json ) ) {
 			wp_send_json_error( __( 'Missing submission data.', 'secure-login-collector' ) );
