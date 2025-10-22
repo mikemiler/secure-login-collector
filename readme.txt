@@ -1,5 +1,5 @@
 === Secure Login Collector ===
-Contributors: mike.miler
+Contributors: Mike.Miler
 Tags: login, password, credential management, password collection, data security
 Requires at least: 5.0
 Tested up to: 6.8
