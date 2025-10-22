@@ -31,9 +31,6 @@ class Secure_Login_Encryption_Handler_V2 {
 		}
 		$this->master_key_manager = new Master_Key_Manager();
 
-		// Clean up old V1 keys if they exist (no backward compatibility needed)
-		$this->cleanup_v1_keys();
-
 		// AJAX handlers
 		add_action( 'wp_ajax_slc_get_public_key', array( $this, 'handle_get_public_key' ) );
 		add_action( 'wp_ajax_nopriv_slc_get_public_key', array( $this, 'handle_get_public_key' ) );
@@ -42,17 +39,6 @@ class Secure_Login_Encryption_Handler_V2 {
 		add_action( 'wp_ajax_slc_initialize_pro_keys', array( $this, 'handle_initialize_pro_keys' ) );
 		add_action( 'wp_ajax_slc_delete_pro_keys', array( $this, 'handle_delete_pro_keys' ) );
 		add_action( 'wp_ajax_slc_export_public_key', array( $this, 'handle_export_public_key' ) );
-	}
-
-	/**
-	 * Clean up old V1 single-key system options if they exist.
-	 */
-	private function cleanup_v1_keys() {
-		// Remove old V1 keys if they exist
-		delete_option( 'secure_login_public_key' );
-		delete_option( 'secure_login_wrapped_private_key' );
-		delete_option( 'secure_login_private_key_encrypted' );
-		delete_option( 'secure_login_keys_generated' );
 	}
 
 	/**

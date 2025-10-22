@@ -10,10 +10,6 @@
  * Text Domain: secure-login-collector
  *
  * @package SecureLoginCollector
- *
- * Pro Version Activation:
- * To enable pro version features, add this line to your wp-config.php:
- * define('SECURE_LOGIN_PRO', true);
  */
 
 // Prevent direct access.

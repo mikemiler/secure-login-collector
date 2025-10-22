@@ -84,10 +84,6 @@ function slc_simple_account_page() {
 					<li><?php esc_html_e( 'The Freemius SDK is not installed in /vendor/freemius/', 'secure-login-collector' ); ?></li>
 					<li><?php esc_html_e( 'There was an error loading the SDK', 'secure-login-collector' ); ?></li>
 				</ul>
-				
-				<h4><?php esc_html_e( 'Using Pro Features Without Freemius', 'secure-login-collector' ); ?></h4>
-				<p><?php esc_html_e( 'To enable Pro features for development/testing, add this to wp-config.php:', 'secure-login-collector' ); ?></p>
-				<code>define('SECURE_LOGIN_PRO', true);</code>
 			</div>
 		<?php endif; ?>
 		

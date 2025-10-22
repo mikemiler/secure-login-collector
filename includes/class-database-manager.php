@@ -62,10 +62,12 @@ class Secure_Login_Database_Manager {
             user_agent text NOT NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             retention_until datetime DEFAULT NULL,
+            is_expired tinyint(1) DEFAULT 0,
             PRIMARY KEY (id),
             KEY user_id (user_id),
             KEY created_at (created_at),
-            KEY retention_until (retention_until)
+            KEY retention_until (retention_until),
+            KEY is_expired (is_expired)
         ) $charset_collate;";
 
 		include_once ABSPATH . 'wp-admin/includes/upgrade.php';
@@ -107,6 +109,25 @@ class Secure_Login_Database_Manager {
 				);
 			}
 		}
+
+		// Check if is_expired column exists.
+		// Note: Table names cannot be prepared in WordPress, but this is safe as table name is controlled.
+		$is_expired_exists = $wpdb->get_results(
+			$wpdb->prepare(
+				"SHOW COLUMNS FROM {$this->table_name} LIKE %s",
+				'is_expired'
+			)
+		);
+
+		if ( empty( $is_expired_exists ) ) {
+			// Add is_expired column.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query( $wpdb->prepare( "ALTER TABLE %i ADD COLUMN is_expired tinyint(1) DEFAULT 0 AFTER retention_until", $this->table_name ) );
+
+			// Add index for is_expired column.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query( $wpdb->prepare( "ALTER TABLE %i ADD KEY is_expired (is_expired)", $this->table_name ) );
+		}
 	}
 
 	/**
@@ -132,7 +153,12 @@ class Secure_Login_Database_Manager {
 	/**
 	 * Clean up expired entries based on retention settings.
 	 *
-	 * @return void
+	 * Instead of deleting entire records, this method:
+	 * - Clears the encrypted_data field (username, password, notes)
+	 * - Marks the entry as expired with is_expired flag
+	 * - Preserves all metadata (email, name, login_url, timestamps, IP, user_agent)
+	 *
+	 * @return int Number of entries expired.
 	 */
 	public function cleanup_old_data() {
 		global $wpdb;
@@ -141,19 +167,27 @@ class Secure_Login_Database_Manager {
 		$expiration_days = get_option( 'secure_login_expiration_days', 30 );
 		if ( $expiration_days <= 0 ) {
 			// Auto-deletion is disabled, don't delete anything.
-			return;
+			return 0;
 		}
 
-		// Delete entries where retention_until has passed.
+		// Clear encrypted data for entries where retention_until has passed.
 		$current_time = current_time( 'mysql' );
 
 		// Note: Table names cannot be prepared in WordPress, but this is safe as table name is controlled.
-		$wpdb->query(
+		// Only update entries that haven't already been expired (is_expired = 0).
+		$affected_rows = $wpdb->query(
 			$wpdb->prepare(
-				"DELETE FROM {$this->table_name} WHERE retention_until IS NOT NULL AND retention_until < %s",
+				"UPDATE {$this->table_name}
+				SET encrypted_data = '',
+				    is_expired = 1
+				WHERE retention_until IS NOT NULL
+				AND retention_until < %s
+				AND is_expired = 0",
 				$current_time
 			)
 		);
+
+		return $affected_rows !== false ? (int) $affected_rows : 0;
 	}
 
 	/**
@@ -270,12 +304,42 @@ class Secure_Login_Database_Manager {
 	}
 
 	/**
+	 * Check if an entry is expired.
+	 *
+	 * @param object $entry Database entry object.
+	 * @return bool True if entry is expired, false otherwise.
+	 */
+	public function is_entry_expired( $entry ) {
+		// Check the is_expired flag first.
+		if ( isset( $entry->is_expired ) && $entry->is_expired == 1 ) {
+			return true;
+		}
+
+		// If retention_until is null, entry never expires.
+		if ( is_null( $entry->retention_until ) ) {
+			return false;
+		}
+
+		// Check if retention_until has passed.
+		$expiration_time = strtotime( $entry->retention_until );
+		$current_time    = time();
+
+		return $expiration_time < $current_time;
+	}
+
+	/**
 	 * Calculate expiration time for display.
 	 *
 	 * @param string|null $retention_until Retention until date.
+	 * @param int         $is_expired      Flag indicating if entry is already expired.
 	 * @return string Formatted expiration text.
 	 */
-	public function calculate_expiration( $retention_until ) {
+	public function calculate_expiration( $retention_until, $is_expired = 0 ) {
+		// Check if entry has been marked as expired.
+		if ( $is_expired == 1 ) {
+			return '<span style="color: red; font-weight: bold;">' . __( 'Expired (data purged)', 'secure-login-collector' ) . '</span>';
+		}
+
 		// If retention_until is null, check if expiration is disabled.
 		if ( is_null( $retention_until ) ) {
 			return __( 'Never expires', 'secure-login-collector' );
@@ -286,7 +350,7 @@ class Secure_Login_Database_Manager {
 		$remaining_time  = $expiration_time - $current_time;
 
 		if ( $remaining_time <= 0 ) {
-			return '<span style="color: red;">' . __( 'Expired', 'secure-login-collector' ) . '</span>';
+			return '<span style="color: red;">' . __( 'Expired (pending cleanup)', 'secure-login-collector' ) . '</span>';
 		}
 
 		$days  = floor( $remaining_time / 86400 );
@@ -299,6 +363,33 @@ class Secure_Login_Database_Manager {
 			// translators: %d is the number of hours.
 			return sprintf( __( '%d hours', 'secure-login-collector' ), $hours );
 		}
+	}
+
+	/**
+	 * Get count of expired entries.
+	 *
+	 * @return int Number of expired entries.
+	 */
+	public function get_expired_entries_count() {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		return (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i WHERE is_expired = 1", $this->table_name ) );
+	}
+
+	/**
+	 * Permanently delete expired entries from the database.
+	 *
+	 * This removes the entire record including metadata.
+	 * Use with caution - this is irreversible.
+	 *
+	 * @return int Number of entries deleted.
+	 */
+	public function delete_expired_entries() {
+		global $wpdb;
+		// Note: Table names cannot be prepared in WordPress, but this is safe as table name is controlled.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$affected_rows = $wpdb->query( $wpdb->prepare( "DELETE FROM %i WHERE is_expired = 1", $this->table_name ) );
+		return $affected_rows !== false ? (int) $affected_rows : 0;
 	}
 
 	/**

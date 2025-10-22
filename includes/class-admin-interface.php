@@ -234,7 +234,8 @@ class Secure_Login_List_Table extends WP_List_Table {
 	 * @return string Expires column HTML.
 	 */
 	public function column_expires( $item ) {
-		return $this->database_manager->calculate_expiration( $item->retention_until );
+		$is_expired = isset( $item->is_expired ) ? $item->is_expired : 0;
+		return $this->database_manager->calculate_expiration( $item->retention_until, $is_expired );
 	}
 
 	/**
@@ -248,42 +249,54 @@ class Secure_Login_List_Table extends WP_List_Table {
 		$encryption_type  = isset( $metadata['encryption_type'] ) ? $metadata['encryption_type'] : 'rsa';
 		$hostname         = isset( $metadata['key_hostname'] ) ? $metadata['key_hostname'] : '';
 		$timestamp_suffix = isset( $metadata['key_timestamp_suffix'] ) ? $metadata['key_timestamp_suffix'] : '';
+		$is_expired       = isset( $item->is_expired ) && $item->is_expired == 1;
 
 		$actions = array();
 
-		// Edit button with icon.
-		$actions[] = sprintf(
-			'<button type="button" class="button edit-btn" data-id="%s" title="%s"><span class="dashicons dashicons-edit"></span></button>',
-			$item->id,
-			esc_attr__( 'Edit entry', 'secure-login-collector' )
-		);
+		// Edit button with icon (disabled for expired entries).
+		if ( ! $is_expired ) {
+			$actions[] = sprintf(
+				'<button type="button" class="button edit-btn" data-id="%s" title="%s"><span class="dashicons dashicons-edit"></span></button>',
+				$item->id,
+				esc_attr__( 'Edit entry', 'secure-login-collector' )
+			);
 
-		// Save/Cancel buttons (hidden by default) with icons.
-		$actions[] = sprintf(
-			'<button type="button" class="button button-primary save-btn" data-id="%s" title="%s" style="display: none;"><span class="dashicons dashicons-yes"></span></button>',
-			$item->id,
-			esc_attr__( 'Save changes', 'secure-login-collector' )
-		);
+			// Save/Cancel buttons (hidden by default) with icons.
+			$actions[] = sprintf(
+				'<button type="button" class="button button-primary save-btn" data-id="%s" title="%s" style="display: none;"><span class="dashicons dashicons-yes"></span></button>',
+				$item->id,
+				esc_attr__( 'Save changes', 'secure-login-collector' )
+			);
 
-		$actions[] = sprintf(
-			'<button type="button" class="button cancel-btn" data-id="%s" title="%s" style="display: none;"><span class="dashicons dashicons-no"></span></button>',
-			$item->id,
-			esc_attr__( 'Cancel editing', 'secure-login-collector' )
-		);
+			$actions[] = sprintf(
+				'<button type="button" class="button cancel-btn" data-id="%s" title="%s" style="display: none;"><span class="dashicons dashicons-no"></span></button>',
+				$item->id,
+				esc_attr__( 'Cancel editing', 'secure-login-collector' )
+			);
+		}
 
-		// Always use v2 decrypt button since we only support current encryption format
-		$actions[] = sprintf(
-			'<button type="button" class="button decrypt-btn-v2" data-id="%s" data-hostname="%s" data-timestamp="%s" data-encryption-type="%s" title="%s"><span class="dashicons dashicons-unlock"></span></button>',
-			$item->id,
-			esc_attr( $hostname ),
-			esc_attr( $timestamp_suffix ),
-			esc_attr( $encryption_type ),
-			esc_attr__( 'Decrypt data', 'secure-login-collector' )
-		);
+		// Decrypt button (disabled for expired entries since data is purged).
+		if ( ! $is_expired ) {
+			// Always use v2 decrypt button since we only support current encryption format
+			$actions[] = sprintf(
+				'<button type="button" class="button decrypt-btn-v2" data-id="%s" data-hostname="%s" data-timestamp="%s" data-encryption-type="%s" title="%s"><span class="dashicons dashicons-unlock"></span></button>',
+				$item->id,
+				esc_attr( $hostname ),
+				esc_attr( $timestamp_suffix ),
+				esc_attr( $encryption_type ),
+				esc_attr__( 'Decrypt data', 'secure-login-collector' )
+			);
+		} else {
+			// Show disabled decrypt button for expired entries
+			$actions[] = sprintf(
+				'<button type="button" class="button" disabled title="%s" style="opacity: 0.5; cursor: not-allowed;"><span class="dashicons dashicons-unlock"></span></button>',
+				esc_attr__( 'Data has been purged (expired)', 'secure-login-collector' )
+			);
+		}
 
-		// Extend button (if expiration is enabled) with icon.
+		// Extend button (only for non-expired entries if expiration is enabled) with icon.
 		$expiration_days = get_option( 'secure_login_expiration_days', 30 );
-		if ( $expiration_days > 0 ) {
+		if ( $expiration_days > 0 && ! $is_expired ) {
 			$actions[] = sprintf(
 				'<button type="button" class="button button-secondary extend-btn" data-id="%s" title="%s"><span class="dashicons dashicons-calendar-alt"></span></button>',
 				$item->id,
@@ -1253,7 +1266,8 @@ class Secure_Login_Admin_Interface {
 
 		// Get updated expiration display.
 		$row                    = $this->database_manager->get_entry( $extend_id );
-		$new_expiration_display = $this->database_manager->calculate_expiration( $row->retention_until );
+		$is_expired             = isset( $row->is_expired ) ? $row->is_expired : 0;
+		$new_expiration_display = $this->database_manager->calculate_expiration( $row->retention_until, $is_expired );
 		$expiration_days        = get_option( 'secure_login_expiration_days', 30 );
 		// translators: %d: number of days.
 		wp_send_json_success(
