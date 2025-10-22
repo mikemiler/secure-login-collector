@@ -17,15 +17,15 @@
             this.decryptedData = new Map();
             this.unwrappedKeys = { pro: null, free: null }; // Cache both key types separately
             this.autoClearTimeout = 60000; // 60 seconds
+            this.countdownSeconds = 60;
+            this.countdownInterval = null;
+            this.clearTimer = null;
             this.init();
         }
 
         init() {
             // Bind decrypt buttons (both old and new class names)
             $(document).on('click', '.decrypt-btn, .decrypt-btn-v2', (e) => this.handleDecrypt(e));
-            
-            // Auto-clear sensitive data
-            this.startAutoClear();
         }
 
         /**
@@ -46,16 +46,16 @@
             }
 
             try {
-                $btn.prop('disabled', true).text('Authenticating...');
+                $btn.prop('disabled', true).html('<span class="dashicons dashicons-unlock spin"></span>');
 
-                
+
                 // Step 1: Get encrypted data from server
                 const encryptedPackage = await this.getEncryptedData(entryId);
 
                 // Step 2: Get wrapped private key (determine type first)
                 const keyInfo = await this.getKeyType(entryId);
                 const keyType = keyInfo.type;
-                
+
                 // Check if we have the right key cached
                 if (!this.unwrappedKeys[keyType]) {
 
@@ -64,20 +64,23 @@
 
                 const privateKey = this.unwrappedKeys[keyType];
 
-                
+
                 // Step 3: Decrypt the data
                 const decrypted = await this.decryptData(encryptedPackage, privateKey);
-                
+
                 // Store and display
                 this.decryptedData.set(entryId, decrypted);
                 this.displayDecryptedData(entryId, $btn);
-                
-                $btn.text('Decrypted').addClass('success');
-                
+
+                $btn.html('<span class="dashicons dashicons-yes"></span>').addClass('success');
+
+                // Start/reset auto-clear countdown
+                this.resetAutoClear();
+
             } catch (error) {
                 console.error('Decryption failed:', error);
                 alert('Decryption failed: ' + error.message);
-                $btn.prop('disabled', false).text('Decrypt');
+                $btn.prop('disabled', false).html('<span class="dashicons dashicons-unlock"></span>');
             }
         }
 
@@ -420,7 +423,7 @@
                             <div class="decrypted-data-container">
                                 <div class="decrypted-header">
                                     <strong>Decrypted Data</strong>
-                                    <span class="auto-clear-warning">Auto-clears in 60 seconds</span>
+                                    <span class="auto-clear-warning">Auto-clears in <span id="decrypted-area-countdown">60</span> seconds</span>
                                 </div>
                                 <div class="decrypted-content">
                                     <div class="field-group">
@@ -492,30 +495,70 @@
             });
         }
 
+
         /**
          * Auto-clear sensitive data after timeout
          */
         startAutoClear() {
+            // Clear any existing timers
+            this.stopAutoClear();
+
+            // Reset countdown
+            this.countdownSeconds = 60;
+            $('#decrypted-area-countdown').text(this.countdownSeconds);
+
+            // Start countdown interval (updates every second)
+            this.countdownInterval = setInterval(() => {
+                this.countdownSeconds--;
+                $('#decrypted-area-countdown').text(this.countdownSeconds);
+
+                // Change color when less than 10 seconds
+                if (this.countdownSeconds <= 10) {
+                    $('.auto-clear-warning').css('color', '#d63638');
+                } else {
+                    $('.auto-clear-warning').css('color', '#996800');
+                }
+
+                if (this.countdownSeconds <= 0) {
+                    this.clearAllDecryptedData();
+                }
+            }, 1000);
+
+            // Set main clear timer
             this.clearTimer = setTimeout(() => {
                 this.clearAllDecryptedData();
             }, this.autoClearTimeout);
         }
 
-        resetAutoClear() {
+        stopAutoClear() {
             clearTimeout(this.clearTimer);
+            clearInterval(this.countdownInterval);
+            this.clearTimer = null;
+            this.countdownInterval = null;
+        }
+
+        resetAutoClear() {
+            this.stopAutoClear();
             this.startAutoClear();
         }
 
         clearAllDecryptedData() {
+            // Stop all timers
+            this.stopAutoClear();
+
             // Clear decrypted data from memory
             this.decryptedData.clear();
             this.unwrappedKeys = { pro: null, free: null };
-            
-            // Remove from UI
-            $('.decrypted-row').remove();
-            $('.decrypt-btn').prop('disabled', false).text('Decrypt').removeClass('success');
-            
 
+            // Remove from UI and reset buttons
+            $('.decrypted-row').remove();
+            $('.decrypt-btn, .decrypt-btn-v2').each(function() {
+                $(this).prop('disabled', false)
+                    .html('<span class="dashicons dashicons-unlock"></span>')
+                    .removeClass('success button-success');
+            });
+
+            console.log('Decrypted data auto-cleared from memory');
         }
 
         /**

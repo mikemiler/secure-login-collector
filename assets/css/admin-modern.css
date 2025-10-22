@@ -569,6 +569,16 @@
 	}
 }
 
+/* Spin class for dashicons */
+.dashicons.spin {
+	animation: spin 1s linear infinite;
+	display: inline-block;
+}
+
+button .dashicons {
+	padding-top: 3px;
+}
+
 /* ==========================================================================
    Responsive Adjustments
    ========================================================================== */

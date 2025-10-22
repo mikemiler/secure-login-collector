@@ -204,7 +204,7 @@ jQuery(document).ready(function ($) {
             return;
         }
 
-        button.prop('disabled', true).text(secureLoginAjax.strings.extending);
+        button.prop('disabled', true).html('<span class="dashicons dashicons-update-alt spin"></span>');
 
         $.ajax({
             url: secureLoginAjax.ajaxurl,
@@ -222,11 +222,11 @@ jQuery(document).ready(function ($) {
                 } else {
                     alert('Extend failed: ' + (response.data || 'Unknown error'));
                 }
-                button.prop('disabled', false).text('Extend');
+                button.prop('disabled', false).html('<span class="dashicons dashicons-update"></span>');
             },
             error: function () {
                 alert('Network error occurred during extension.');
-                button.prop('disabled', false).text('Extend');
+                button.prop('disabled', false).html('<span class="dashicons dashicons-update"></span>');
             }
         });
     });
@@ -240,7 +240,7 @@ jQuery(document).ready(function ($) {
             return;
         }
 
-        button.prop('disabled', true).text('Deleting...');
+        button.prop('disabled', true).html('<span class="dashicons dashicons-trash spin"></span>');
 
         $.ajax({
             url: secureLoginAjax.ajaxurl,
@@ -256,7 +256,7 @@ jQuery(document).ready(function ($) {
                     location.reload();
                 } else {
                     alert('Delete failed: ' + (response.data || 'Unknown error'));
-                    button.prop('disabled', false).text('Delete');
+                    button.prop('disabled', false).html('<span class="dashicons dashicons-trash"></span>');
                 }
             },
             error: function () {
@@ -467,7 +467,7 @@ jQuery(document).ready(function ($) {
         // Handle passkey authentication
         $('#bulk-passkey-auth-btn').on('click', function () {
             var button = $(this);
-            button.prop('disabled', true).text('Authenticating and decrypting ' + data.entry_count + ' entries...');
+            button.prop('disabled', true).html('<span class="dashicons dashicons-update-alt spin"></span> Authenticating...');
 
             authenticateWithPasskeyForBulkDecrypt(data, button);
         });
@@ -490,7 +490,7 @@ jQuery(document).ready(function ($) {
         // Check if WebAuthn is supported
         if (!window.PublicKeyCredential) {
             alert(secureLoginAjax.strings.webauthn_not_supported);
-            button.prop('disabled', false).text('Authenticate with Passkey to Decrypt All');
+            button.prop('disabled', false).html('<span class="dashicons dashicons-shield-alt"></span> Authenticate with Passkey to Decrypt All');
             return;
         }
 
@@ -505,7 +505,7 @@ jQuery(document).ready(function ($) {
             success: function(challengeResponse) {
                 if (!challengeResponse.success) {
                     alert('Failed to get passkey challenge: ' + (challengeResponse.data || 'Unknown error'));
-                    button.prop('disabled', false).text('Authenticate with Passkey to Decrypt All');
+                    button.prop('disabled', false).html('<span class="dashicons dashicons-shield-alt"></span> Authenticate with Passkey to Decrypt All');
                     return;
                 }
 
@@ -537,37 +537,37 @@ jQuery(document).ready(function ($) {
                     .then(async (assertion) => {
                         // After successful passkey authentication, perform client-side bulk decryption
                         try {
-                            button.text('Initializing decryption...');
-                            
+                            button.html('<span class="dashicons dashicons-update-alt spin"></span> Initializing...');
+
                             // Store the entry IDs and manager for processing
                             const entryIds = data.entry_ids || [];
                             const manager = data.manager;
-                            
+
                             // Use existing SecureAdminDecryption for bulk decryption
                             let decryptedEntries = [];
-                            
+
                             // Check if SecureAdminDecryption is available
                             if (!window.secureAdminDecryption && window.SecureAdminDecryption) {
                                 window.secureAdminDecryption = new SecureAdminDecryption();
                             }
-                            
+
                             if (!window.secureAdminDecryption) {
                                 throw new Error('Decryption module not available. Please refresh the page.');
                             }
-                            
+
                             const decryptor = window.secureAdminDecryption;
-                            
+
                             // Derive the unwrapping key from the assertion ONCE
-                            button.text('Deriving decryption key...');
+                            button.html('<span class="dashicons dashicons-admin-network spin"></span> Deriving key...');
                             const derivedKey = await decryptor.deriveUnwrappingKeyFromAssertion(assertion);
                             const preAuthData = { derivedKey: derivedKey };
-                            
+
                             let processed = 0;
-                            
+
                             // Decrypt each entry using existing decrypt logic
                             for (const entryId of entryIds) {
                                 processed++;
-                                button.text('Decrypting entry ' + processed + ' of ' + entryIds.length + '...');
+                                button.html('<span class="dashicons dashicons-unlock spin"></span> ' + processed + '/' + entryIds.length);
                                 
                                 try {
                                     // Check if already decrypted
@@ -644,24 +644,24 @@ jQuery(document).ready(function ($) {
                                
                             } else {
                                 alert('Failed to decrypt any entries.');
-                                button.prop('disabled', false).text('Authenticate with Passkey to Decrypt All');
+                                button.prop('disabled', false).html('<span class="dashicons dashicons-shield-alt"></span> Authenticate with Passkey to Decrypt All');
                             }
                         } catch (error) {
                             console.error('Bulk decryption error:', error);
                             alert('Bulk decryption failed: ' + error.message);
-                            button.prop('disabled', false).text('Authenticate with Passkey to Decrypt All');
+                            button.prop('disabled', false).html('<span class="dashicons dashicons-shield-alt"></span> Authenticate with Passkey to Decrypt All');
                         }
                     })
                     .catch((err) => {
                         console.error('Bulk passkey authentication failed:', err);
                         alert(secureLoginAjax.strings.passkey_auth_failed + ' ' + err.message);
-                        button.prop('disabled', false).text('Authenticate with Passkey to Decrypt All');
+                        button.prop('disabled', false).html('<span class="dashicons dashicons-shield-alt"></span> Authenticate with Passkey to Decrypt All');
                     });
             },
             error: function(xhr, status, error) {
                 console.error('Failed to get passkey challenge:', error);
                 alert('Failed to get passkey challenge. Please try again.');
-                button.prop('disabled', false).text('Authenticate with Passkey to Decrypt All');
+                button.prop('disabled', false).html('<span class="dashicons dashicons-shield-alt"></span> Authenticate with Passkey to Decrypt All');
             }
         });
     }
@@ -802,7 +802,7 @@ $(document).on('click', '#fix-passkey-flag-btn', function() {
     const button = $(this);
     const resultSpan = $('#fix-passkey-flag-result');
     
-    button.prop('disabled', true).text('Fixing...');
+    button.prop('disabled', true).html('<span class="dashicons dashicons-admin-tools spin"></span>');
     resultSpan.html('<span style="color: #666;">Processing...</span>');
     
     $.ajax({
@@ -827,7 +827,7 @@ $(document).on('click', '#fix-passkey-flag-btn', function() {
             resultSpan.html('<span style="color: #f44336;">❌ Network error occurred</span>');
         },
         complete: function() {
-            button.prop('disabled', false).text('Fix Pro Encryption Status');
+            button.prop('disabled', false).html('<span class="dashicons dashicons-admin-tools"></span> Fix');
         }
     });
 }); 
