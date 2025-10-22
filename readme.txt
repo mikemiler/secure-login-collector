@@ -1,14 +1,14 @@
 === Secure Login Collector ===
 Contributors: mike.miler
-Tags: security, login, encryption, password, agency, client management, credential management, password collection, data security
+Tags: login, password, credential management, password collection, data security
 Requires at least: 5.0
-Tested up to: 6.4
+Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 1.0.0
 License: GPL v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-The secure way for agencies to receive client login credentials. Stop asking clients to send passwords via email - use military-grade encryption instead.
+The secure way for agencies to receive client login credentials. Stop asking clients to send passwords via email.
 
 == Description ==
 
