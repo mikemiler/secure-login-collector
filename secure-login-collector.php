@@ -137,6 +137,7 @@ class SecureLoginCollector {
 		include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-database-manager.php';
 		include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-passkey-manager.php';
 		include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-master-key-manager.php';
+		include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-license-manager.php';
 
 		// Load Freemius hooks if available.
 		if ( function_exists( 'slc_fs' ) && file_exists( SECURE_LOGIN_PLUGIN_DIR . 'includes/freemius-hooks.php' ) ) {

@@ -178,7 +178,7 @@ msgstr "选择是使用默认的安全信息文本还是下面的自定义文本
 
 #: class-settings-manager.php:373
 msgid "Click \"Register Passkey\" again"
-msgstr "再次点击"注册通行密钥""
+msgstr "再次点击\"注册通行密钥\""
 
 #: freemius-account-redirect.php:59
 msgid "Click below to complete the setup:"
