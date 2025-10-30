@@ -1,50 +1,42 @@
-name: Deploy to Freemius
+name: Freemius Deploy
 
 on:
   push:
     tags:
-      - 'v*.*.*'
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version to deploy (optional, auto-detected if not provided)'
-        required: false
-        type: string
+      - 'v*'
 
 jobs:
   deploy:
-    name: Build and Deploy
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
       - name: Create deployment package
-        id: package
         run: |
-          # Make script executable
-          chmod +x ./create-deployment-package.sh
-
-          # Run deployment script (auto-detects version, uses GitHub Actions mode)
-          ./create-deployment-package.sh
-
-          # Get the created package info from GitHub output
-          echo "Package created successfully"
-
-      - name: Upload deployment artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: deployment-packages
-          path: deploy/*.zip
-          retention-days: 30
-
-      - name: Upload checksums
-        uses: actions/upload-artifact@v4
-        with:
-          name: checksums
-          path: deploy/*.sha256
-          retention-days: 30
+          mkdir -p deploy
+          rsync -av \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='node_modules' \
+            --exclude='tests' \
+            --exclude='docs' \
+            --exclude='.gitignore' \
+            --exclude='.gitattributes' \
+            --exclude='phpunit.xml' \
+            --exclude='composer.json' \
+            --exclude='composer.lock' \
+            --exclude='package.json' \
+            --exclude='package-lock.json' \
+            --exclude='*.md' \
+            ./ deploy/secure-login-collector/
+          cd deploy
+          zip -r secure-login-collector-${{ steps.version.outputs.VERSION }}.zip secure-login-collector/
 
       - name: Deploy to Freemius
         uses: buttonizer/freemius-deploy@v0.1.2
@@ -55,16 +47,7 @@ jobs:
           PLUGIN_ID: ${{ secrets.FREEMIUS_PLUGIN_ID }}
           PLUGIN_SLUG: secure-login-collector
         with:
-          file_name: deploy/secure-login-collector-dev-*.zip
-          version: ${{ github.ref_name }}
+          file_name: deploy/secure-login-collector-${{ steps.version.outputs.VERSION }}.zip
+          version: ${{ steps.version.outputs.VERSION }}
           release_mode: released
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          files: |
-            deploy/*.zip
-            deploy/*.sha256
-          draft: false
-          prerelease: false
+          sandbox: false
