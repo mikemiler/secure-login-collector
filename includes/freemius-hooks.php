@@ -43,78 +43,10 @@ if ( function_exists( 'slc_fs' ) ) {
 }
 
 /**
- * Hook into plugin uninstall
+ * Note: Uninstall cleanup is now handled in includes/freemius-uninstall.php
+ * That file is included in the main plugin file and properly registers
+ * the uninstall handler with Freemius via the 'slc_fs_loaded' action.
  */
-function slc_fs_uninstall_cleanup() {
-	// Clean up Freemius data.
-	if ( ! slc_fs()->is_clone() ) {
-		slc_fs()->remove_database_option();
-	}
-
-	// Your existing uninstall code.
-	global $wpdb;
-
-	// Delete custom table.
-	// SECURITY FIX: Using $wpdb->prepare() with %i placeholder for table names (WordPress 6.2+)
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
-	$table_name = $wpdb->prefix . 'secure_login_data';
-	$wpdb->query(
-		$wpdb->prepare(
-			'DROP TABLE IF EXISTS %i',
-			$table_name
-		)
-	);
-
-	// Delete all plugin options.
-	$options = array(
-		'secure_login_public_key',
-		'secure_login_private_key_encrypted',
-		'secure_login_keys_generated',
-		'secure_login_key_version',
-		'secure_login_passkey_credential_id',
-		'secure_login_passkey_public_key',
-		'secure_login_passkey_registered',
-		'secure_login_passkey_user_id',
-		'secure_login_passkey_registered_at',
-		'secure_login_passkey_salt',
-		'secure_login_notification_enabled',
-		'secure_login_notification_email',
-		'secure_login_ultra_secure_mode',
-		'secure_login_expiration_days',
-		'secure_login_form_intro_text',
-		'secure_login_form_footer_text',
-		'secure_login_form_success_message',
-		'secure_login_form_button_text',
-		'secure_login_export_format',
-		'secure_login_auto_export_format',
-	);
-
-	foreach ( $options as $option ) {
-		delete_option( $option );
-	}
-
-	// Delete transients.
-	// SECURITY FIX: Using $wpdb->prepare() to prevent SQL injection.
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-	$wpdb->query(
-		$wpdb->prepare(
-			'DELETE FROM %i WHERE option_name LIKE %s',
-			$wpdb->options,
-			$wpdb->esc_like( '_transient_secure_login_' ) . '%'
-		)
-	);
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-	$wpdb->query(
-		$wpdb->prepare(
-			'DELETE FROM %i WHERE option_name LIKE %s',
-			$wpdb->options,
-			$wpdb->esc_like( '_transient_timeout_secure_login_' ) . '%'
-		)
-	);
-}
-if ( function_exists( 'slc_fs' ) ) {
-	slc_fs()->add_action( 'after_uninstall', 'slc_fs_uninstall_cleanup' );
-}
 
 /**
  * Add custom pricing page

@@ -32,17 +32,19 @@ function slc_fs() {
 		$slc_fs = fs_dynamic_init(
 			array(
 				'id'                  => '19897',
-				'slug'                => 'secure-login-collector',
-				'premium_slug'        => 'secure-login-collector-premium',
-				'type'                => 'plugin',
-				'public_key'          => 'pk_f21b15938db645fdeb2d1dadb9ac4',
-				'is_premium'          => false,
-				'is_org_compliant'    => true,
-				'premium_suffix'      => 'Pro',
-				// If your plugin is a serviceware, set this option to false.
-				'has_premium_version' => true,
-				'has_addons'          => false,
-				'has_paid_plans'      => true,
+                'slug'                => 'secure-login-collector',
+                'premium_slug'        => 'secure-login-collector-pro',
+                'type'                => 'plugin',
+                'public_key'          => 'pk_f21b15938db645fdeb2d1dadb9ac4',
+                'is_premium'          => true,
+                'premium_suffix'      => 'Pro',
+                // If your plugin is a serviceware, set this option to false.
+                'has_premium_version' => true,
+                'has_addons'          => false,
+                'has_paid_plans'      => true,
+				// Automatically removed in the free version. If you're not using the
+                // auto-generated free version, delete this line before uploading to wp.org.
+                'wp_org_gatekeeper'   => 'OA7#BoRiBNqdf52FvzEf!!074aRLPs8fspif$7K1#4u4Csys1fQlCecVcUTOs2mcpeVHi#C2j9d09fOTvbC0HloPT7fFee5WdS3G',
 				'menu'                => array(
 					'slug'        => 'secure-login-collector',
 					'first-path'  => 'admin.php?page=secure-login-collector',
