@@ -115,9 +115,6 @@ class SecureLoginCollector {
 		// Initialize components.
 		$this->init_components();
 
-		// Load plugin text domain for translations.
-		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
-
 		// Hook into WordPress.
 		add_action( 'init', array( $this, 'init' ) );
 
@@ -130,14 +127,25 @@ class SecureLoginCollector {
 	 * Load plugin dependencies.
 	 */
 	private function load_dependencies() {
+		// Always load free version classes.
 		include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-encryption-handler-v2.php';
 		include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-admin-interface.php';
 		include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-frontend-handler.php';
 		include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-settings-manager.php';
 		include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-database-manager.php';
-		include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-passkey-manager.php';
-		include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-master-key-manager.php';
-		include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-license-manager.php';
+
+		// Load premium classes only if available and licensed.
+		if ( function_exists( 'slc_fs' ) && slc_fs()->can_use_premium_code() ) {
+			if ( file_exists( SECURE_LOGIN_PLUGIN_DIR . 'includes/class-passkey-manager.php' ) ) {
+				include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-passkey-manager.php';
+			}
+			if ( file_exists( SECURE_LOGIN_PLUGIN_DIR . 'includes/class-master-key-manager.php' ) ) {
+				include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-master-key-manager.php';
+			}
+			if ( file_exists( SECURE_LOGIN_PLUGIN_DIR . 'includes/class-license-manager.php' ) ) {
+				include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-license-manager.php';
+			}
+		}
 
 		// Load Freemius hooks if available.
 		if ( function_exists( 'slc_fs' ) && file_exists( SECURE_LOGIN_PLUGIN_DIR . 'includes/freemius-hooks.php' ) ) {
@@ -165,35 +173,36 @@ class SecureLoginCollector {
 		$this->frontend_handler   = new Secure_Login_Frontend_Handler( $this->table_name, $this->is_pro_version, $this->encryption_handler, $this->database_manager );
 		$this->settings_manager   = new Secure_Login_Settings_Manager( $this->is_pro_version, $this->encryption_handler );
 
-		// Initialize passkey manager (available for all users).
-		if ( class_exists( 'Passkey_Manager' ) ) {
+		// Initialize passkey manager only if premium version and class exists.
+		if ( $this->is_pro_version && class_exists( 'Passkey_Manager' ) ) {
 			$this->passkey_manager = new Passkey_Manager();
 		}
 	}
 
 	/**
-	 * Load plugin text domain for translations.
-	 */
-	public function load_textdomain() {
-		load_plugin_textdomain( 'secure-login-collector', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
-	}
-
-	/**
 	 * Check if pro version is available.
+	 * Uses Freemius helper methods to check for active license.
 	 */
 	private function check_pro_version() {
-		// First check if Freemius is loaded and user has active license.
+		// Check if Freemius is loaded and user has premium license.
 		if ( function_exists( 'slc_fs' ) ) {
 			try {
 				$fs = slc_fs();
-				if ( $fs && is_object( $fs ) && method_exists( $fs, 'is_paying' ) && $fs->is_paying() ) {
-					return true;
+				if ( $fs && is_object( $fs ) ) {
+					// Check if user can use premium code (has active license).
+					if ( method_exists( $fs, 'can_use_premium_code' ) && $fs->can_use_premium_code() ) {
+						return true;
+					}
+					// Also check is_paying() for backward compatibility.
+					if ( method_exists( $fs, 'is_paying' ) && $fs->is_paying() ) {
+						return true;
+					}
 				}
-			// phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch
 			} catch ( Exception $e ) {
-				// Freemius error - fall through to constant check.
+				// Freemius error - return false.
 			}
 		}
+		return false;
 	}
 
 	/**
@@ -207,20 +216,17 @@ class SecureLoginCollector {
 	 * Plugin activation.
 	 */
 	public function activate() {
-		// Load required classes if not already loaded.
-		if ( ! class_exists( 'Master_Key_Manager' ) ) {
-			require_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-master-key-manager.php';
-		}
-
-		// Create wrapped keys table for passkey functionality.
-		$master_key_manager = new Master_Key_Manager();
-		$master_key_manager->maybe_create_table();
-
-		// Create main data table and perform other activation tasks.
+		// Create main data table and perform activation tasks.
 		$this->database_manager->create_table();
 		$this->database_manager->upgrade_database();
-		// RSA keys now generated on-demand, not during activation. phpcs:ignore Squiz.PHP.CommentedOutCode.Found -- Intentionally commented for documentation.
 		$this->database_manager->schedule_cleanup();
+
+		// Premium plugin will handle its own table creation (wrapped keys, etc).
+		// Note: Master key manager table only created if premium version active.
+		if ( $this->is_pro_version && class_exists( 'Master_Key_Manager' ) ) {
+			$master_key_manager = new Master_Key_Manager();
+			$master_key_manager->maybe_create_table();
+		}
 	}
 
 	/**

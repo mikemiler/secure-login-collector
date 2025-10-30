@@ -22,6 +22,7 @@ class Secure_Login_Settings_Manager {
 
 	/**
 	 * Whether pro version is enabled.
+	 * Note: All features are now available to all users without license restrictions.
 	 *
 	 * @var bool
 	 */
@@ -69,8 +70,15 @@ class Secure_Login_Settings_Manager {
 			'1.0.0'
 		);
 
-		// Passkey functionality is now handled inline in class-passkey-manager.php
-		// No need to load external JavaScript file anymore.
+		// Enqueue jQuery for inline scripts.
+		wp_enqueue_script( 'jquery' );
+
+		// Register placeholder scripts for inline functionality.
+		wp_register_script( 'slc-key-management', '', array( 'jquery' ), '1.0.0', true );
+		wp_enqueue_script( 'slc-key-management' );
+
+		wp_register_script( 'slc-textarea-toggle', '', array( 'jquery' ), '1.0.0', true );
+		wp_enqueue_script( 'slc-textarea-toggle' );
 	}
 
 	/**
@@ -92,13 +100,62 @@ class Secure_Login_Settings_Manager {
 	 * Register plugin settings.
 	 */
 	public function register_settings() {
-		register_setting( 'secure_login_settings', 'secure_login_notification_email' );
-		register_setting( 'secure_login_settings', 'secure_login_enable_notifications' );
-		register_setting( 'secure_login_settings', 'secure_login_expiration_days' );
-		register_setting( 'secure_login_settings', 'secure_login_ultra_secure_mode' );
-		register_setting( 'secure_login_settings', 'secure_login_frontend_form_text', array( $this, 'sanitize_frontend_form_text' ) );
-		register_setting( 'secure_login_settings', 'secure_login_frontend_text_type' );
-		register_setting( 'secure_login_settings', 'secure_login_delete_on_uninstall' );
+		register_setting(
+			'secure_login_settings',
+			'secure_login_notification_email',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_email',
+			)
+		);
+		register_setting(
+			'secure_login_settings',
+			'secure_login_enable_notifications',
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => array( $this, 'sanitize_boolean' ),
+			)
+		);
+		register_setting(
+			'secure_login_settings',
+			'secure_login_expiration_days',
+			array(
+				'type'              => 'integer',
+				'sanitize_callback' => 'absint',
+			)
+		);
+		register_setting(
+			'secure_login_settings',
+			'secure_login_ultra_secure_mode',
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => array( $this, 'sanitize_boolean' ),
+			)
+		);
+		register_setting(
+			'secure_login_settings',
+			'secure_login_frontend_form_text',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => array( $this, 'sanitize_frontend_form_text' ),
+			)
+		);
+		register_setting(
+			'secure_login_settings',
+			'secure_login_frontend_text_type',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+			)
+		);
+		register_setting(
+			'secure_login_settings',
+			'secure_login_delete_on_uninstall',
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => array( $this, 'sanitize_boolean' ),
+			)
+		);
 
 		add_settings_section(
 			'secure_login_notification_section',
@@ -121,11 +178,11 @@ class Secure_Login_Settings_Manager {
 			'secure_login_settings'
 		);
 
-		// Add pro version settings section.
+		// Add advanced security settings section (Pro version only).
 		if ( $this->is_pro_version ) {
 			add_settings_section(
 				'secure_login_pro_section',
-				__( 'Pro Version Settings', 'secure-login-collector' ),
+				__( 'Advanced Security Settings', 'secure-login-collector' ),
 				array( $this, 'pro_section_callback' ),
 				'secure_login_settings'
 			);
@@ -266,47 +323,149 @@ class Secure_Login_Settings_Manager {
 	}
 
 	/**
+	 * Add key management inline script.
+	 */
+	private function add_key_management_inline_script() {
+		$nonce = wp_create_nonce( 'slc_admin_nonce' );
+
+		$script = "
+		jQuery(document).ready(function($) {
+			// Initialize free keys
+			$('#initialize-free-keys').on('click', function() {
+				var button = $(this);
+				button.prop('disabled', true).text('" . esc_js( __( 'Initializing...', 'secure-login-collector' ) ) . "');
+
+				$.ajax({
+					url: ajaxurl,
+					type: 'POST',
+					data: {
+						action: 'slc_initialize_free_keys',
+						nonce: '" . esc_js( $nonce ) . "'
+					},
+					success: function(response) {
+						if (response.success) {
+							alert('" . esc_js( __( 'Free RSA keys initialized successfully!', 'secure-login-collector' ) ) . "');
+							location.reload();
+						} else {
+							alert('" . esc_js( __( 'Failed to initialize keys:', 'secure-login-collector' ) ) . "' + response.data);
+							button.prop('disabled', false).text('" . esc_js( __( 'Initialize Free Keys Now', 'secure-login-collector' ) ) . "');
+						}
+					},
+					error: function() {
+						alert('" . esc_js( __( 'Network error occurred.', 'secure-login-collector' ) ) . "');
+						button.prop('disabled', false).text('" . esc_js( __( 'Initialize Free Keys Now', 'secure-login-collector' ) ) . "');
+					}
+				});
+			});
+
+			// Export free public key
+			$('#export-free-public-key').on('click', function() {
+				$.ajax({
+					url: ajaxurl,
+					type: 'POST',
+					data: {
+						action: 'slc_export_public_key',
+						key_type: 'free',
+						nonce: '" . esc_js( $nonce ) . "'
+					},
+					success: function(response) {
+						if (response.success) {
+							var blob = new Blob([response.data.public_key], {type: 'text/plain'});
+							var url = window.URL.createObjectURL(blob);
+							var a = document.createElement('a');
+							a.href = url;
+							a.download = 'secure-login-free-public-key.pem';
+							a.click();
+							window.URL.revokeObjectURL(url);
+						} else {
+							alert('" . esc_js( __( 'Failed to export public key:', 'secure-login-collector' ) ) . "' + response.data);
+						}
+					}
+				});
+			});
+
+			// Export pro public key
+			$('#export-pro-public-key').on('click', function() {
+				$.ajax({
+					url: ajaxurl,
+					type: 'POST',
+					data: {
+						action: 'slc_export_public_key',
+						key_type: 'pro',
+						nonce: '" . esc_js( $nonce ) . "'
+					},
+					success: function(response) {
+						if (response.success) {
+							var blob = new Blob([response.data.public_key], {type: 'text/plain'});
+							var url = window.URL.createObjectURL(blob);
+							var a = document.createElement('a');
+							a.href = url;
+							a.download = 'secure-login-pro-public-key.pem';
+							a.click();
+							window.URL.revokeObjectURL(url);
+						} else {
+							alert('" . esc_js( __( 'Failed to export public key:', 'secure-login-collector' ) ) . "' + response.data);
+						}
+					}
+				});
+			});
+		});
+		";
+
+		wp_add_inline_script( 'slc-key-management', $script );
+	}
+
+	/**
 	 * Display encryption content inside the card
 	 */
 	private function display_encryption_content() {
 		echo '<div class="slc-passkey-benefits">';
 
-		// Ultra-Secure (Passkey-derived).
-		if ( $this->is_pro_version ) {
-			echo '<div class="slc-passkey-benefit" style="border-color: var(--slc-success);">';
-			echo '<span class="slc-passkey-benefit-icon"></span>';
-			echo '<div class="slc-passkey-benefit-text">';
-			echo '<div class="slc-passkey-benefit-title">';
-			echo '<span class="slc-badge slc-badge-pro">ULTRA-SECURE</span> ';
-			echo esc_html__( 'Passkey-Derived', 'secure-login-collector' );
-			echo '</div>';
-			echo '<div class="slc-passkey-benefit-desc">' . esc_html__( 'Wraps private keys with passkey authentication. True zero-knowledge - server cannot decrypt without your physical device.', 'secure-login-collector' ) . '</div>';
-			echo '</div>';
-			echo '</div>';
-		}
-
-		// RSA-2048.
+		// RSA-2048 (Free version).
 		echo '<div class="slc-passkey-benefit" style="border-color: var(--slc-info);">';
 		echo '<span class="slc-passkey-benefit-icon"></span>';
 		echo '<div class="slc-passkey-benefit-text">';
 		echo '<div class="slc-passkey-benefit-title">';
 		echo '<span class="slc-badge slc-badge-info">SECURE</span> ';
-		echo esc_html__( 'RSA-2048', 'secure-login-collector' );
+		echo esc_html__( 'RSA-2048 + AES-256-GCM', 'secure-login-collector' );
 		echo '</div>';
-		echo '<div class="slc-passkey-benefit-desc">' . esc_html__( 'Industry-standard RSA encryption with 2048-bit keys. Secure for most use cases and available for all users.', 'secure-login-collector' ) . '</div>';
+		echo '<div class="slc-passkey-benefit-desc">' . esc_html__( 'Industry-standard RSA encryption with 2048-bit keys and AES-256-GCM for data encryption. Secure for most use cases.', 'secure-login-collector' ) . '</div>';
 		echo '</div>';
 		echo '</div>'; // Close slc-passkey-benefit
+
+		// Ultra-Secure (Pro version only).
+		if ( ! $this->is_pro_version ) {
+			echo '<div class="slc-passkey-benefit" style="border-color: #ccc; opacity: 0.7;">';
+			echo '<span class="slc-passkey-benefit-icon"></span>';
+			echo '<div class="slc-passkey-benefit-text">';
+			echo '<div class="slc-passkey-benefit-title">';
+			echo '<span class="slc-badge" style="background: #ccc; color: #666;">PRO ONLY</span> ';
+			echo esc_html__( 'Ultra-Secure (Passkey-Protected)', 'secure-login-collector' );
+			echo '</div>';
+			echo '<div class="slc-passkey-benefit-desc">' . esc_html__( 'Passkey-protected encryption with WebAuthn/FIDO2. True zero-knowledge - server cannot decrypt without your physical device.', 'secure-login-collector' ) . '</div>';
+			echo '<div style="margin-top: 8px;"><a href="#" class="button button-secondary">' . esc_html__( 'Upgrade to Pro', 'secure-login-collector' ) . '</a></div>';
+			echo '</div>';
+			echo '</div>'; // Close slc-passkey-benefit
+		} else {
+			echo '<div class="slc-passkey-benefit" style="border-color: var(--slc-success);">';
+			echo '<span class="slc-passkey-benefit-icon"></span>';
+			echo '<div class="slc-passkey-benefit-text">';
+			echo '<div class="slc-passkey-benefit-title">';
+			echo '<span class="slc-badge slc-badge-success">ULTRA-SECURE</span> ';
+			echo esc_html__( 'Passkey-Protected', 'secure-login-collector' );
+			echo '</div>';
+			echo '<div class="slc-passkey-benefit-desc">' . esc_html__( 'Wraps private keys with passkey authentication. True zero-knowledge - server cannot decrypt without your physical device.', 'secure-login-collector' ) . '</div>';
+			echo '</div>';
+			echo '</div>'; // Close slc-passkey-benefit
+		}
+
 		echo '</div>'; // Close slc-passkey-benefits
 
-		// Display key status for both free and pro versions.
-		$free_public_key    = get_option( 'secure_login_public_key_free' );
-		$free_private_key   = get_option( 'secure_login_private_key_free_encrypted' );
-		$pro_public_key     = get_option( 'secure_login_public_key_pro' );
-		$pro_private_key    = get_option( 'secure_login_wrapped_private_key_pro' );
-		$pro_keys_active    = get_option( 'secure_login_pro_keys_active', false );
-		$passkey_registered = get_option( 'secure_login_passkey_registered', false );
+		// Display key status.
+		$free_public_key  = get_option( 'secure_login_public_key_free' );
+		$free_private_key = get_option( 'secure_login_private_key_free_encrypted' );
 
-		// Display RSA Keys Status in a more comprehensive way.
+		// Display RSA Keys Status.
 		echo '<div class="rsa-keys-status" style="margin: 20px 0;">';
 		echo '<h4 style="margin-bottom: 15px;">' . esc_html__( 'RSA Keys Status', 'secure-login-collector' ) . '</h4>';
 
@@ -314,8 +473,8 @@ class Secure_Login_Settings_Manager {
 		echo '<div style="background: white; border: 1px solid #c3c4c7; border-radius: 4px; padding: 15px; margin-bottom: 15px;">';
 		echo '<div style="display: flex; justify-content: space-between; align-items: center;">';
 		echo '<div>';
-		echo '<strong style="font-size: 14px;">' . esc_html__( 'Free Version RSA Keys', 'secure-login-collector' ) . '</strong>';
-		echo '<p style="margin: 5px 0 0; color: #666; font-size: 12px;">' . esc_html__( 'Standard RSA-2048 encryption for all users', 'secure-login-collector' ) . '</p>';
+		echo '<strong style="font-size: 14px;">' . esc_html__( 'Standard RSA Keys', 'secure-login-collector' ) . '</strong>';
+		echo '<p style="margin: 5px 0 0; color: #666; font-size: 12px;">' . esc_html__( 'RSA-2048 + AES-256-GCM encryption', 'secure-login-collector' ) . '</p>';
 		echo '</div>';
 
 		if ( $free_public_key && $free_private_key ) {
@@ -331,12 +490,17 @@ class Secure_Login_Settings_Manager {
 		echo '</div>';
 		echo '</div>';
 
-		// Pro RSA Keys Status (only show if pro version is enabled).
+		// Pro version keys status (only show if pro is active).
 		if ( $this->is_pro_version ) {
+			$pro_public_key     = get_option( 'secure_login_public_key_pro' );
+			$pro_private_key    = get_option( 'secure_login_wrapped_private_key_pro' );
+			$pro_keys_active    = get_option( 'secure_login_pro_keys_active', false );
+			$passkey_registered = get_option( 'secure_login_passkey_registered', false );
+
 			echo '<div style="background: white; border: 1px solid #c3c4c7; border-radius: 4px; padding: 15px;">';
 			echo '<div style="display: flex; justify-content: space-between; align-items: center;">';
 			echo '<div>';
-			echo '<strong style="font-size: 14px;">' . esc_html__( 'Pro Version RSA Keys', 'secure-login-collector' ) . '</strong>';
+			echo '<strong style="font-size: 14px;">' . esc_html__( 'Ultra-Secure RSA Keys', 'secure-login-collector' ) . '</strong>';
 			echo '<p style="margin: 5px 0 0; color: #666; font-size: 12px;">' . esc_html__( 'Passkey-protected RSA-2048 for ultra-secure encryption', 'secure-login-collector' ) . '</p>';
 			echo '</div>';
 
@@ -368,140 +532,73 @@ class Secure_Login_Settings_Manager {
 
 		// Show different messages based on key status.
 		if ( ! $free_public_key ) {
-			echo '<p>' . esc_html__( 'Free RSA keys will be automatically initialized on first form submission.', 'secure-login-collector' ) . '</p>';
-			echo '<p><button type="button" class="button button-primary" id="initialize-free-keys">' . esc_html__( 'Initialize Free Keys Now', 'secure-login-collector' ) . '</button></p>';
+			echo '<p>' . esc_html__( 'RSA keys will be automatically initialized on first form submission.', 'secure-login-collector' ) . '</p>';
+			echo '<p><button type="button" class="button button-primary" id="initialize-free-keys">' . esc_html__( 'Initialize Keys Now', 'secure-login-collector' ) . '</button></p>';
+		} else {
+			echo '<p>' . esc_html__( 'RSA keys are active and ready for use.', 'secure-login-collector' ) . '</p>';
 		}
 
+		// Pro version key management messages.
 		if ( $this->is_pro_version ) {
+			$pro_public_key     = get_option( 'secure_login_public_key_pro' );
+			$passkey_registered = get_option( 'secure_login_passkey_registered', false );
+
 			if ( ! $pro_public_key && $passkey_registered ) {
-				echo '<p>' . esc_html__( 'Pro RSA keys need to be initialized with your passkey.', 'secure-login-collector' ) . '</p>';
+				echo '<p>' . esc_html__( 'Ultra-secure RSA keys need to be initialized with your passkey.', 'secure-login-collector' ) . '</p>';
 			} elseif ( ! $passkey_registered ) {
-				echo '<p>' . esc_html__( 'To enable Pro encryption, register a passkey below.', 'secure-login-collector' ) . '</p>';
-			} else {
-				echo '<p>' . esc_html__( 'Pro RSA keys are active and ready for use.', 'secure-login-collector' ) . '</p>';
+				echo '<p>' . esc_html__( 'To enable ultra-secure encryption, register a passkey in the Pro settings.', 'secure-login-collector' ) . '</p>';
+			} elseif ( $pro_public_key ) {
+				echo '<p>' . esc_html__( 'Ultra-secure RSA keys are active and ready for use.', 'secure-login-collector' ) . '</p>';
 			}
 		}
+
 		echo '</div>';
 
 		// Export buttons based on available keys.
 		echo '<p>';
 		if ( $free_public_key ) {
-			echo '<button type="button" class="button button-secondary" id="export-free-public-key">' . esc_html__( 'Export Free Public Key', 'secure-login-collector' ) . '</button> ';
+			echo '<button type="button" class="button button-secondary" id="export-free-public-key">' . esc_html__( 'Export Public Key', 'secure-login-collector' ) . '</button> ';
 		}
-		if ( $pro_public_key ) {
-			echo '<button type="button" class="button button-secondary" id="export-pro-public-key">' . esc_html__( 'Export Pro Public Key', 'secure-login-collector' ) . '</button>';
+		if ( $this->is_pro_version ) {
+			$pro_public_key = get_option( 'secure_login_public_key_pro' );
+			if ( $pro_public_key ) {
+				echo '<button type="button" class="button button-secondary" id="export-pro-public-key">' . esc_html__( 'Export Pro Public Key', 'secure-login-collector' ) . '</button>';
+			}
 		}
 		echo '</p>';
 
-		// Add Passkey Management Section (available for all users).
-		// Passkeys provide enhanced security for all users.
-		if ( ! class_exists( 'Passkey_Manager' ) ) {
-			require_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-passkey-manager.php';
+		// Passkey Management Section (Pro version only).
+		if ( $this->is_pro_version ) {
+			if ( class_exists( 'Passkey_Manager__premium_only' ) ) {
+				$passkey_manager = new Passkey_Manager__premium_only();
+				$passkey_manager->render_passkey_section();
+			}
+		} else {
+			// Show upgrade message for passkey features.
+			echo '<div class="notice notice-warning inline" style="margin-top: 20px;">';
+			echo '<p><strong>' . esc_html__( 'Want Ultra-Secure Encryption?', 'secure-login-collector' ) . '</strong></p>';
+			echo '<p>' . esc_html__( 'Upgrade to Pro to enable passkey-protected encryption with WebAuthn/FIDO2 authentication for true zero-knowledge security.', 'secure-login-collector' ) . '</p>';
+			echo '<p><a href="#" class="button button-primary">' . esc_html__( 'Upgrade to Pro Version', 'secure-login-collector' ) . '</a></p>';
+			echo '</div>';
 		}
-		$passkey_manager = new Passkey_Manager();
-		$passkey_manager->render_passkey_section();
 
-		// Add JavaScript for key management.
-		?>
-		<script>
-		jQuery(document).ready(function($) {
-			// Initialize free keys.
-			$('#initialize-free-keys').on('click', function() {
-				var button = $(this);
-				button.prop('disabled', true).text('<?php echo esc_js( __( 'Initializing...', 'secure-login-collector' ) ); ?>');
-				
-				$.ajax({
-					url: ajaxurl,
-					type: 'POST',
-					data: {
-						action: 'slc_initialize_free_keys',
-						nonce: '<?php echo esc_attr( wp_create_nonce( 'slc_admin_nonce' ) ); ?>'
-					},
-					success: function(response) {
-						if (response.success) {
-							alert('<?php echo esc_js( __( 'Free RSA keys initialized successfully!', 'secure-login-collector' ) ); ?>');
-							location.reload();
-						} else {
-							alert('<?php echo esc_js( __( 'Failed to initialize keys:', 'secure-login-collector' ) ); ?> ' + response.data);
-							button.prop('disabled', false).text('<?php echo esc_js( __( 'Initialize Free Keys Now', 'secure-login-collector' ) ); ?>');
-						}
-					},
-					error: function() {
-						alert('<?php echo esc_js( __( 'Network error occurred.', 'secure-login-collector' ) ); ?>');
-						button.prop('disabled', false).text('<?php echo esc_js( __( 'Initialize Free Keys Now', 'secure-login-collector' ) ); ?>');
-					}
-				});
-			});
-			
-			// Export free public key.
-			$('#export-free-public-key').on('click', function() {
-				$.ajax({
-					url: ajaxurl,
-					type: 'POST',
-					data: {
-						action: 'slc_export_public_key',
-						key_type: 'free',
-						nonce: '<?php echo esc_attr( wp_create_nonce( 'slc_admin_nonce' ) ); ?>'
-					},
-					success: function(response) {
-						if (response.success) {
-							var blob = new Blob([response.data.public_key], {type: 'text/plain'});
-							var url = window.URL.createObjectURL(blob);
-							var a = document.createElement('a');
-							a.href = url;
-							a.download = 'secure-login-free-public-key.pem';
-							a.click();
-							window.URL.revokeObjectURL(url);
-						} else {
-							alert('<?php echo esc_js( __( 'Failed to export public key:', 'secure-login-collector' ) ); ?> ' + response.data);
-						}
-					}
-				});
-			});
-			
-			// Export pro public key.
-			$('#export-pro-public-key').on('click', function() {
-				$.ajax({
-					url: ajaxurl,
-					type: 'POST',
-					data: {
-						action: 'slc_export_public_key',
-						key_type: 'pro',
-						nonce: '<?php echo esc_attr( wp_create_nonce( 'slc_admin_nonce' ) ); ?>'
-					},
-					success: function(response) {
-						if (response.success) {
-							var blob = new Blob([response.data.public_key], {type: 'text/plain'});
-							var url = window.URL.createObjectURL(blob);
-							var a = document.createElement('a');
-							a.href = url;
-							a.download = 'secure-login-pro-public-key.pem';
-							a.click();
-							window.URL.revokeObjectURL(url);
-						} else {
-							alert('<?php echo esc_js( __( 'Failed to export public key:', 'secure-login-collector' ) ); ?> ' + response.data);
-						}
-					}
-				});
-			});
-		});
-		</script>
-		<?php
+		// Add JavaScript for key management via wp_add_inline_script.
+		$this->add_key_management_inline_script();
 	}
 
 	/**
-	 * Pro version settings section callback.
+	 * Advanced security settings section callback.
 	 */
 	public function pro_section_callback() {
 		echo '<div class="slc-card" style="margin-top: 20px;">';
 		echo '<div class="slc-card-header">';
 		echo '<h3 class="slc-card-title">';
-		echo esc_html__( 'Pro Version Features', 'secure-login-collector' );
+		echo esc_html__( 'Advanced Security Features', 'secure-login-collector' );
 		echo '</h3>';
-		echo '<span class="slc-badge slc-badge-pro">PRO</span>';
+		echo '<span class="slc-badge slc-badge-success">ADVANCED</span>';
 		echo '</div>';
 		echo '<div class="slc-card-body">';
-		echo '<p>' . esc_html__( 'Advanced security settings for the pro version including passkey authentication.', 'secure-login-collector' ) . '</p>';
+		echo '<p>' . esc_html__( 'Advanced security settings including passkey authentication for enhanced protection.', 'secure-login-collector' ) . '</p>';
 
 		// Don't close the card-body div here - let the form-table be inside it.
 	}
@@ -530,6 +627,39 @@ class Secure_Login_Settings_Manager {
 
 
 	/**
+	 * Add textarea toggle inline script.
+	 *
+	 * @param string $default_text Default text value.
+	 */
+	private function add_textarea_toggle_inline_script( $default_text ) {
+		$script = "
+		jQuery(document).ready(function($) {
+			var defaultText = " . wp_json_encode( $default_text ) . ";
+			var originalText = $('#secure_login_frontend_form_text').val();
+
+			function toggleTextarea() {
+				var selectedType = $('input[name=\"secure_login_frontend_text_type\"]:checked').val();
+				var textarea = $('#secure_login_frontend_form_text');
+
+				if (selectedType === 'default') {
+					textarea.prop('disabled', true).css('background-color', '#f1f1f1');
+					if (textarea.val() === '' || textarea.val() === defaultText) {
+						textarea.val(defaultText);
+					}
+				} else {
+					textarea.prop('disabled', false).css('background-color', '#fff');
+				}
+			}
+
+			toggleTextarea();
+			$('input[name=\"secure_login_frontend_text_type\"]').on('change', toggleTextarea);
+		});
+		";
+
+		wp_add_inline_script( 'slc-textarea-toggle', $script );
+	}
+
+	/**
 	 * Frontend form text field callback.
 	 */
 	public function frontend_form_text_callback() {
@@ -547,38 +677,8 @@ class Secure_Login_Settings_Manager {
 		echo '<textarea id="secure_login_frontend_form_text" name="secure_login_frontend_form_text" rows="6" class="large-text" style="width: 100%;" ' . esc_attr( $is_disabled ) . '>' . esc_textarea( $display_text ) . '</textarea>';
 		echo '<p class="description">' . esc_html__( 'Custom text to display above the login form. Basic HTML allowed (p, strong, em, br, a). This field is automatically populated with the default text when no custom text is provided. Use {EXPIRATION_TEXT} placeholder for automatic expiration information.', 'secure-login-collector' ) . '</p>';
 
-		// Add JavaScript for radio button interaction.
-		?>
-		<script type="text/javascript">
-		jQuery(document).ready(function($) {
-			var defaultText = <?php echo wp_json_encode( $default_text ); ?>;
-			var originalText = $('#secure_login_frontend_form_text').val();
-			
-			function toggleTextarea() {
-				var selectedType = $('input[name="secure_login_frontend_text_type"]:checked').val();
-				var textarea = $('#secure_login_frontend_form_text');
-				
-				if (selectedType === 'default') {
-					textarea.prop('disabled', true).css('background-color', '#f1f1f1');
-					// If current text is empty or is the default text, show default.
-					if (textarea.val() === '' || textarea.val() === defaultText) {
-						textarea.val(defaultText);
-					}
-				} else {
-					textarea.prop('disabled', false).css('background-color', '#fff');
-					// If the current text is the default text and we're switching to custom, .
-					// keep it so user can edit it.
-				}
-			}
-			
-			// Initial state.
-			toggleTextarea();
-			
-			// Listen for radio button changes.
-			$('input[name="secure_login_frontend_text_type"]').on('change', toggleTextarea);
-		});
-		</script>
-		<?php
+		// Add JavaScript for radio button interaction via wp_add_inline_script.
+		$this->add_textarea_toggle_inline_script( $default_text );
 	}
 
 	/**
@@ -731,6 +831,16 @@ class Secure_Login_Settings_Manager {
 			</form>
 		</div>
 		<?php
+	}
+
+	/**
+	 * Sanitize boolean values.
+	 *
+	 * @param mixed $value The value to sanitize.
+	 * @return bool Sanitized boolean value.
+	 */
+	public function sanitize_boolean( $value ) {
+		return filter_var( $value, FILTER_VALIDATE_BOOLEAN );
 	}
 
 	/**

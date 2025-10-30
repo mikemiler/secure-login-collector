@@ -36,7 +36,8 @@ function slc_fs() {
 				'premium_slug'        => 'secure-login-collector-premium',
 				'type'                => 'plugin',
 				'public_key'          => 'pk_f21b15938db645fdeb2d1dadb9ac4',
-				'is_premium'          => true,
+				'is_premium'          => false,
+				'is_org_compliant'    => true,
 				'premium_suffix'      => 'Pro',
 				// If your plugin is a serviceware, set this option to false.
 				'has_premium_version' => true,
@@ -79,20 +80,29 @@ if ( function_exists( 'slc_fs' ) && slc_fs() ) {
 /**
  * Add custom license activation success message
  */
-function slc_fs_license_activation_message() {
-	?>
-	<script type="text/javascript">
-		jQuery(document).ready(function($) {
-			$(document).on('fs_license_activated', function() {
-				alert('<?php echo esc_js( __( 'Pro version activated! Passkey encryption is now available.', 'secure-login-collector' ) ); ?>');
-				// Reload page to show pro features.
-				window.location.reload();
-			});
+function slc_fs_license_activation_message( $hook ) {
+	// Only load on Freemius pages.
+	if ( strpos( $hook, 'secure-login-collector' ) === false ) {
+		return;
+	}
+
+	// Enqueue jQuery.
+	wp_enqueue_script( 'jquery' );
+
+	// Add inline script for license activation.
+	$script = "
+	jQuery(document).ready(function($) {
+		$(document).on('fs_license_activated', function() {
+			alert('" . esc_js( __( 'Pro version activated! Passkey encryption is now available.', 'secure-login-collector' ) ) . "');
+			// Reload page to show pro features.
+			window.location.reload();
 		});
-	</script>
-	<?php
+	});
+	";
+
+	wp_add_inline_script( 'jquery', $script );
 }
-add_action( 'admin_footer', 'slc_fs_license_activation_message' );
+add_action( 'admin_enqueue_scripts', 'slc_fs_license_activation_message' );
 
 
 /**

@@ -326,7 +326,7 @@ class Secure_Login_Frontend_Handler {
 		$is_pro_encrypted     = false;
 		$server_credential_id = null;
 
-		if ( $this->is_pro_version && get_option( 'secure_login_pro_keys_active', false ) && Secure_Login_License_Manager::has_pro_license() ) {
+		if ( $this->is_pro_version && get_option( 'secure_login_pro_keys_active', false ) ) {
 			// Mark as Pro encrypted - data will be encrypted with pro public key.
 			// The passkey decryption happens on the admin side during decryption.
 			$is_pro_encrypted     = true;

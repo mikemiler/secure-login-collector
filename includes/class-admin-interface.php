@@ -669,11 +669,6 @@ class Secure_Login_Admin_Interface {
 	public function add_admin_menu() {
 		$menu_title = __( 'Login Data', 'secure-login-collector' );
 
-		// Add Pro badge if using free version.
-		if ( function_exists( 'slc_fs' ) && slc_fs()->is_not_paying() ) {
-			$menu_title .= ' <span style="color: #f18500; font-size: 10px; vertical-align: super;">PRO</span>';
-		}
-
 		add_menu_page(
 			__( 'Secure Login Data', 'secure-login-collector' ),
 			$menu_title,
@@ -833,35 +828,37 @@ class Secure_Login_Admin_Interface {
 			
 
 			<?php
-			// Show diagnostic info and fix button if needed.
-			$passkey_registered = get_option( 'secure_login_passkey_registered', false );
-			$pro_keys_active    = get_option( 'secure_login_pro_keys_active', false );
-			if ( $this->is_pro_version && ( ! $passkey_registered || ! $pro_keys_active ) ) {
-				// Check if passkeys actually exist.
-				// SECURITY FIX: Using $wpdb->prepare() to prevent SQL injection.
-				global $wpdb;
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-				$passkey_count = $wpdb->get_var(
-					$wpdb->prepare(
-						"SELECT COUNT(*) FROM %i WHERE meta_key = %s AND meta_value != ''",
-						$wpdb->usermeta,
-						'secure_login_passkeys'
-					)
-				);
+			// Show diagnostic info and fix button if needed (Pro version only).
+			if ( $this->is_pro_version ) {
+				$passkey_registered = get_option( 'secure_login_passkey_registered', false );
+				$pro_keys_active    = get_option( 'secure_login_pro_keys_active', false );
+				if ( ! $passkey_registered || ! $pro_keys_active ) {
+					// Check if passkeys actually exist.
+					// SECURITY FIX: Using $wpdb->prepare() to prevent SQL injection.
+					global $wpdb;
+					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+					$passkey_count = $wpdb->get_var(
+						$wpdb->prepare(
+							"SELECT COUNT(*) FROM %i WHERE meta_key = %s AND meta_value != ''",
+							$wpdb->usermeta,
+							'secure_login_passkey'
+						)
+					);
 
-				if ( $passkey_count > 0 ) {
-					?>
-					<div class="notice notice-warning">
-						<h3><?php echo esc_html__( 'Pro Encryption Issue Detected', 'secure-login-collector' ); ?></h3>
-						<p><?php echo esc_html__( 'You have pro version enabled and passkeys registered, but new data is not being pro-encrypted due to a missing flag.', 'secure-login-collector' ); ?></p>
-						<p>
-							<button type="button" class="button button-primary" id="fix-passkey-flag-btn">
-								<?php echo esc_html__( 'Fix Pro Encryption Status', 'secure-login-collector' ); ?>
-							</button>
-							<span id="fix-passkey-flag-result"></span>
-						</p>
-					</div>
-					<?php
+					if ( $passkey_count > 0 ) {
+						?>
+						<div class="notice notice-warning">
+							<h3><?php echo esc_html__( 'Pro Encryption Issue Detected', 'secure-login-collector' ); ?></h3>
+							<p><?php echo esc_html__( 'You have pro version enabled and passkeys registered, but new data is not being pro-encrypted due to a missing flag.', 'secure-login-collector' ); ?></p>
+							<p>
+								<button type="button" class="button button-primary" id="fix-passkey-flag-btn">
+									<?php echo esc_html__( 'Fix Pro Encryption Status', 'secure-login-collector' ); ?>
+								</button>
+								<span id="fix-passkey-flag-result"></span>
+							</p>
+						</div>
+						<?php
+					}
 				}
 			}
 			?>
@@ -939,27 +936,20 @@ class Secure_Login_Admin_Interface {
 									<p class="description"><?php echo esc_html__( 'Optional: Any additional information like security questions, backup codes, or special instructions.', 'secure-login-collector' ); ?></p>
 								</td>
 							</tr>
-							<?php if ( $this->is_pro_version && get_option( 'secure_login_ultra_secure_mode', false ) && get_option( 'secure_login_passkey_registered', false ) ) : ?>
 							<tr>
 								<th scope="row">
 									<?php echo esc_html__( 'Encryption Method', 'secure-login-collector' ); ?>
 								</th>
 								<td>
-									<strong><?php echo esc_html__( 'Ultra-Secure (AES-256 + RSA-2048 + Passkey)', 'secure-login-collector' ); ?></strong>
-									<p class="description"><?php echo esc_html__( 'Ultra-secure mode is enabled. All entries will be encrypted with triple-layer protection.', 'secure-login-collector' ); ?></p>
+									<?php if ( $this->is_pro_version && get_option( 'secure_login_ultra_secure_mode', false ) && get_option( 'secure_login_passkey_registered', false ) ) : ?>
+										<strong><?php echo esc_html__( 'Ultra-Secure (AES-256 + RSA-2048 + Passkey)', 'secure-login-collector' ); ?></strong>
+										<p class="description"><?php echo esc_html__( 'Ultra-secure mode is enabled. All entries will be encrypted with triple-layer protection.', 'secure-login-collector' ); ?></p>
+									<?php else : ?>
+										<strong><?php echo esc_html__( 'Secure (AES-256 + RSA-2048)', 'secure-login-collector' ); ?></strong>
+										<p class="description"><?php echo esc_html__( 'Standard encryption with AES-256 and RSA-2048 protection.', 'secure-login-collector' ); ?></p>
+									<?php endif; ?>
 								</td>
 							</tr>
-							<?php else : ?>
-							<tr>
-								<th scope="row">
-									<?php echo esc_html__( 'Encryption Method', 'secure-login-collector' ); ?>
-								</th>
-								<td>
-									<strong><?php echo esc_html__( 'Secure (AES-256 + RSA-2048)', 'secure-login-collector' ); ?></strong>
-									<p class="description"><?php echo esc_html__( 'Standard encryption with AES-256 and RSA-2048 protection.', 'secure-login-collector' ); ?></p>
-								</td>
-							</tr>
-							<?php endif; ?>
 						</table>
 
 						<p class="submit">
@@ -1346,7 +1336,7 @@ class Secure_Login_Admin_Interface {
 		$is_pro_encrypted     = false;
 		$server_credential_id = null;
 
-		if ( $this->is_pro_version && get_option( 'secure_login_passkey_registered', false ) && Secure_Login_License_Manager::has_pro_license() ) {
+		if ( $this->is_pro_version && get_option( 'secure_login_passkey_registered', false ) ) {
 			// For ultra-secure mode, mark as pro encrypted.
 			// Passkey authentication required for decryption.
 			$is_pro_encrypted     = true;

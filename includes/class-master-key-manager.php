@@ -1,5 +1,14 @@
 <?php
 /**
+ * @fs_premium_only
+ *
+ * Premium feature: Master Key Manager for Zero-Knowledge Encryption
+ * This file is only included in the premium version.
+ *
+ * @package SecureLoginCollector
+ */
+
+/**
  * Master Key Manager
  *
  * Manages wrapped keys storage for the plugin.

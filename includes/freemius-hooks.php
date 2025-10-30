@@ -200,7 +200,10 @@ function slc_fs_custom_pricing_page() {
 			</div>
 		</div>
 
-		<style>
+		<?php
+		// Enqueue pricing page styles properly.
+		// Note: When this code is activated, add this to the function that renders the page.
+		$pricing_styles = "
 			.slc-pricing-wrapper {
 				display: flex;
 				gap: 30px;
@@ -249,7 +252,10 @@ function slc_fs_custom_pricing_page() {
 				padding: 12px 24px;
 				height: auto;
 			}
-		</style>
+		";
+		// Use wp_add_inline_style() when this page is activated:
+		// wp_add_inline_style( 'secure-login-admin-modern-css', $pricing_styles );
+		?>
 	</div>
 	<?php
 	*/

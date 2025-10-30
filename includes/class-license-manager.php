@@ -1,4 +1,13 @@
 <?php
+/**
+ * @fs_premium_only
+ *
+ * Premium feature: License Management
+ * This file is only included in the premium version.
+ *
+ * @package SecureLoginCollector
+ */
+
 // phpcs:ignoreFile WordPress.Files.FileName.InvalidClassFileName -- Legacy file naming convention.
 /**
  * License Manager Class

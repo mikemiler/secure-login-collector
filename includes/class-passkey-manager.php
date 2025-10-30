@@ -1,4 +1,13 @@
 <?php
+/**
+ * @fs_premium_only
+ *
+ * Premium feature: WebAuthn/FIDO2 Passkey Authentication Manager
+ * This file is only included in the premium version.
+ *
+ * @package SecureLoginCollector
+ */
+
 // phpcs:ignoreFile WordPress.Files.FileName.InvalidClassFileName -- Legacy file naming convention.
 /**
  * Passkey Manager - Admin UI for WebAuthn Management
@@ -35,8 +44,9 @@ class Passkey_Manager {
 		}
 		$this->master_key_manager = new Master_Key_Manager();
 
-		// Enqueue admin styles.
+		// Enqueue admin styles and scripts.
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_styles' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_scripts' ) );
 
 		// AJAX handlers.
 		add_action( 'wp_ajax_passkey_start_registration', array( $this, 'handle_start_registration' ) );
@@ -69,6 +79,261 @@ class Passkey_Manager {
 				filemtime( plugin_dir_path( __FILE__ ) . '../assets/css/admin-modern.css' )
 			);
 		}
+	}
+
+	/**
+	 * Enqueue admin scripts.
+	 *
+	 * @param string $hook Current admin page hook.
+	 */
+	public function enqueue_admin_scripts( $hook ) {
+		// Load JS on all Secure Login Collector admin pages.
+		if ( strpos( $hook, 'secure-login-collector' ) === false &&
+		'toplevel_page_secure-login-collector' !== $hook ) {
+			return;
+		}
+
+		// Register empty script handle for passkey functionality.
+		wp_register_script( 'slc-passkey-js', '', array( 'jquery' ), SECURE_LOGIN_VERSION, true );
+		wp_enqueue_script( 'slc-passkey-js' );
+
+		// Add inline script for passkey management.
+		$this->add_passkey_inline_script();
+	}
+
+	/**
+	 * Add inline script for passkey management functionality.
+	 */
+	private function add_passkey_inline_script() {
+		if ( ! function_exists( 'wp_add_inline_script' ) ) {
+			return;
+		}
+
+		// Check if there are any encrypted entries for the warning message.
+		global $wpdb;
+		$table_name = $wpdb->prefix . 'secure_login_data';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$has_encrypted_data = $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i', $table_name ) ) > 0;
+
+		$user_id = get_current_user_id();
+		$passkey = $this->get_user_passkey( $user_id );
+
+		// Prepare dynamic values for script.
+		$ajax_url          = admin_url( 'admin-ajax.php' );
+		$nonce             = wp_create_nonce( 'passkey_admin_nonce' );
+		$has_encrypted     = $has_encrypted_data ? 'true' : 'false';
+		$has_passkey       = $passkey ? 'true' : 'false';
+
+		// Localized strings.
+		$strings = array(
+			'warningDataLoss'      => __( 'WARNING: Deleting this passkey will make ALL existing encrypted data permanently inaccessible!\n\nThis action CANNOT be undone. There is NO recovery method.\n\nAre you absolutely sure you want to proceed?', 'secure-login-collector' ),
+			'warningSimple'        => __( 'Are you sure you want to delete this passkey?\n\nYou can register a new passkey afterward.', 'secure-login-collector' ),
+			'deleting'             => __( 'Deleting...', 'secure-login-collector' ),
+			'deletePasskey'        => __( 'Delete Passkey', 'secure-login-collector' ),
+			'deleteSuccess'        => __( 'Passkey deleted successfully!', 'secure-login-collector' ),
+			'deleteFailed'         => __( 'Failed to delete passkey:', 'secure-login-collector' ),
+			'networkError'         => __( 'Network error occurred. Please try again.', 'secure-login-collector' ),
+			'noWebAuthn'           => __( 'Your browser does not support WebAuthn/Passkeys.', 'secure-login-collector' ),
+			'registerSuccess'      => __( 'Passkey registered successfully!', 'secure-login-collector' ),
+		);
+
+		$script = <<<JAVASCRIPT
+jQuery(document).ready(function($) {
+	var ajaxUrl = '{$ajax_url}';
+	var nonce = '{$nonce}';
+	var hasEncryptedData = {$has_encrypted};
+
+	// Localized strings
+	var strings = {
+		warningDataLoss: '{$strings['warningDataLoss']}',
+		warningSimple: '{$strings['warningSimple']}',
+		deleting: '{$strings['deleting']}',
+		deletePasskey: '{$strings['deletePasskey']}',
+		deleteSuccess: '{$strings['deleteSuccess']}',
+		deleteFailed: '{$strings['deleteFailed']}',
+		networkError: '{$strings['networkError']}',
+		noWebAuthn: '{$strings['noWebAuthn']}',
+		registerSuccess: '{$strings['registerSuccess']}'
+	};
+
+	// Direct delete button handler.
+	$('#delete-passkey-btn').on('click', function(e) {
+		e.preventDefault();
+
+		var \$button = $(this);
+		var credentialId = \$button.data('credential-id');
+
+		if (!credentialId) {
+			alert('No credential ID found. Please refresh the page and try again.');
+			return;
+		}
+
+		var warningMessage = hasEncryptedData ? strings.warningDataLoss : strings.warningSimple;
+
+		if (!confirm(warningMessage)) {
+			return;
+		}
+
+		\$button.prop('disabled', true).text(strings.deleting);
+
+		$.ajax({
+			url: ajaxUrl,
+			type: 'POST',
+			data: {
+				action: 'passkey_delete',
+				nonce: nonce,
+				credential_id: credentialId
+			},
+			success: function(response) {
+				if (response.success) {
+					$('#passkey-status-message').html('<div class="notice notice-success inline"><p>' + strings.deleteSuccess + '</p></div>');
+					setTimeout(function() {
+						window.location.reload();
+					}, 1500);
+				} else {
+					alert(strings.deleteFailed + ' ' + (response.data || 'Unknown error'));
+					\$button.prop('disabled', false).text(strings.deletePasskey);
+				}
+			},
+			error: function(xhr, status, error) {
+				console.error('Delete error:', error);
+				alert(strings.networkError);
+				\$button.prop('disabled', false).text(strings.deletePasskey);
+			}
+		});
+	});
+
+	// Handle register button inline with full implementation.
+	$('#register-passkey-btn').on('click', async function(e) {
+		e.preventDefault();
+
+		var \$button = $(this);
+		var \$spinner = $('.passkey-registration-form .spinner');
+		var \$statusMessage = $('#passkey-status-message');
+
+		// Clear any previous messages.
+		\$statusMessage.empty();
+
+		// Check WebAuthn support.
+		if (!window.PublicKeyCredential) {
+			\$statusMessage.html('<div class="notice notice-error inline"><p>' + strings.noWebAuthn + '</p></div>');
+			return;
+		}
+
+		\$button.prop('disabled', true);
+		\$spinner.addClass('is-active');
+
+		try {
+			// Start registration to get challenge.
+			const startResponse = await $.ajax({
+				url: ajaxUrl,
+				type: 'POST',
+				data: {
+					action: 'passkey_start_registration',
+					nonce: nonce
+				}
+			});
+
+			if (!startResponse.success) {
+				throw new Error(startResponse.data || 'Failed to start registration');
+			}
+
+			const options = startResponse.data;
+
+			// Convert base64 strings to ArrayBuffers.
+			options.challenge = base64ToArrayBuffer(options.challenge);
+			options.user.id = base64ToArrayBuffer(options.user.id);
+
+			// Create credential.
+			const credential = await navigator.credentials.create({
+				publicKey: options
+			});
+
+			// Initialize the zero-knowledge setup.
+			const initResponse = await $.ajax({
+				url: ajaxUrl,
+				type: 'POST',
+				data: {
+					action: 'passkey_init_setup',
+					nonce: nonce,
+					credential_id: arrayBufferToBase64(credential.rawId)
+				}
+			});
+
+			// Check initialization response.
+			if (!initResponse.success) {
+				if (typeof initResponse.data === 'string' && initResponse.data.includes('Already initialized')) {
+					console.warn('Keys already initialized, continuing with registration');
+				} else {
+					throw new Error(initResponse.data || 'Failed to initialize encryption');
+				}
+			}
+
+			// Complete passkey registration with auto-generated name.
+			let publicKeyData;
+			if (credential.response.publicKey) {
+				publicKeyData = arrayBufferToBase64(credential.response.publicKey);
+			} else if (credential.response.getPublicKey) {
+				publicKeyData = arrayBufferToBase64(credential.response.getPublicKey());
+			} else {
+				publicKeyData = 'not_available';
+			}
+
+			const completeResponse = await $.ajax({
+				url: ajaxUrl,
+				type: 'POST',
+				data: {
+					action: 'passkey_complete_registration',
+					nonce: nonce,
+					name: 'Passkey ' + new Date().toLocaleDateString(),
+					credential_id: arrayBufferToBase64(credential.rawId),
+					public_key: publicKeyData,
+					client_data: arrayBufferToBase64(credential.response.clientDataJSON),
+					attestation: arrayBufferToBase64(credential.response.attestationObject)
+				}
+			});
+
+			if (!completeResponse.success) {
+				throw new Error(completeResponse.data || 'Failed to complete registration');
+			}
+
+			\$statusMessage.html('<div class="notice notice-success inline"><p>' + strings.registerSuccess + '</p></div>');
+
+			// Reload page after success.
+			setTimeout(function() {
+				window.location.reload();
+			}, 1500);
+
+		} catch (error) {
+			console.error('Registration error:', error);
+			\$statusMessage.html('<div class="notice notice-error inline"><p>' + error.message + '</p></div>');
+			\$button.prop('disabled', false);
+			\$spinner.removeClass('is-active');
+		}
+	});
+
+	// Helper functions for ArrayBuffer conversion.
+	function base64ToArrayBuffer(base64) {
+		const binaryString = atob(base64);
+		const bytes = new Uint8Array(binaryString.length);
+		for (let i = 0; i < binaryString.length; i++) {
+			bytes[i] = binaryString.charCodeAt(i);
+		}
+		return bytes.buffer;
+	}
+
+	function arrayBufferToBase64(buffer) {
+		const bytes = new Uint8Array(buffer);
+		let binary = '';
+		for (let i = 0; i < bytes.length; i++) {
+			binary += String.fromCharCode(bytes[i]);
+		}
+		return btoa(binary);
+	}
+});
+JAVASCRIPT;
+
+		wp_add_inline_script( 'slc-passkey-js', $script );
 	}
 
 	/**
@@ -185,193 +450,9 @@ class Passkey_Manager {
 						<p><strong><?php esc_html_e( 'Keep your passkey device secure and consider having a backup authentication method.', 'secure-login-collector' ); ?></strong></p>
 					</div>
 				</div>
-			</div>			
+			</div>
 		</div>
-		
-		<script type="text/javascript">
-		jQuery(document).ready(function($) {
-			
-			// Direct delete button handler.
-			$('#delete-passkey-btn').on('click', function(e) {
-				e.preventDefault();
-				
-				var $button = $(this);
-				var credentialId = $button.data('credential-id');
-				
-				
-				if (!credentialId) {
-					alert('No credential ID found. Please refresh the page and try again.');
-					return;
-				}
-				
-			<?php if ( $has_encrypted_data ) : ?>
-				var warningMessage = '<?php echo esc_js( __( 'WARNING: Deleting this passkey will make ALL existing encrypted data permanently inaccessible!\n\nThis action CANNOT be undone. There is NO recovery method.\n\nAre you absolutely sure you want to proceed?', 'secure-login-collector' ) ); ?>';
-				<?php else : ?>
-				var warningMessage = '<?php echo esc_js( __( 'Are you sure you want to delete this passkey?\n\nYou can register a new passkey afterward.', 'secure-login-collector' ) ); ?>';
-				<?php endif; ?>
-				
-				if (!confirm(warningMessage)) {
-					return;
-				}
-				
-				$button.prop('disabled', true).text('<?php echo esc_js( __( 'Deleting...', 'secure-login-collector' ) ); ?>');
-				
-				$.ajax({
-					url: '<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>',
-					type: 'POST',
-					data: {
-						action: 'passkey_delete',
-						nonce: '<?php echo esc_attr( wp_create_nonce( 'passkey_admin_nonce' ) ); ?>',
-						credential_id: credentialId
-					},
-					success: function(response) {
-						if (response.success) {
-							$('#passkey-status-message').html('<div class="notice notice-success inline"><p><?php echo esc_js( __( 'Passkey deleted successfully!', 'secure-login-collector' ) ); ?></p></div>');
-							setTimeout(function() {
-								window.location.reload();
-							}, 1500);
-						} else {
-							alert('<?php echo esc_js( __( 'Failed to delete passkey:', 'secure-login-collector' ) ); ?> ' + (response.data || 'Unknown error'));
-							$button.prop('disabled', false).text('<?php echo esc_js( __( 'Delete Passkey', 'secure-login-collector' ) ); ?>');
-						}
-					},
-					error: function(xhr, status, error) {
-						console.error('Delete error:', error);
-						alert('<?php echo esc_js( __( 'Network error occurred. Please try again.', 'secure-login-collector' ) ); ?>');
-						$button.prop('disabled', false).text('<?php echo esc_js( __( 'Delete Passkey', 'secure-login-collector' ) ); ?>');
-					}
-				});
-			});
-			
-			// Handle register button inline with full implementation.
-			$('#register-passkey-btn').on('click', async function(e) {
-				e.preventDefault();
-				
-				var $button = $(this);
-				var $spinner = $('.passkey-registration-form .spinner');
-				var $statusMessage = $('#passkey-status-message');
-				
-				// Clear any previous messages.
-				$statusMessage.empty();
-				
-				// Check WebAuthn support.
-				if (!window.PublicKeyCredential) {
-					$statusMessage.html('<div class="notice notice-error inline"><p><?php echo esc_js( __( 'Your browser does not support WebAuthn/Passkeys.', 'secure-login-collector' ) ); ?></p></div>');
-					return;
-				}
-				
-				$button.prop('disabled', true);
-				$spinner.addClass('is-active');
-				
-				try {
-					// Start registration to get challenge.
-					const startResponse = await $.ajax({
-						url: '<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>',
-						type: 'POST',
-						data: {
-							action: 'passkey_start_registration',
-							nonce: '<?php echo esc_attr( wp_create_nonce( 'passkey_admin_nonce' ) ); ?>'
-						}
-					});
-					
-					if (!startResponse.success) {
-						throw new Error(startResponse.data || 'Failed to start registration');
-					}
-					
-					const options = startResponse.data;
-					
-					// Convert base64 strings to ArrayBuffers.
-					options.challenge = base64ToArrayBuffer(options.challenge);
-					options.user.id = base64ToArrayBuffer(options.user.id);
-					
-					// Create credential.
-					const credential = await navigator.credentials.create({
-						publicKey: options
-					});
-					
-					// Initialize the zero-knowledge setup.
-					const initResponse = await $.ajax({
-						url: '<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>',
-						type: 'POST',
-						data: {
-							action: 'passkey_init_setup',
-							nonce: '<?php echo esc_attr( wp_create_nonce( 'passkey_admin_nonce' ) ); ?>',
-							credential_id: arrayBufferToBase64(credential.rawId)
-						}
-					});
-					
-					// Check initialization response.
-					if (!initResponse.success) {
-						if (typeof initResponse.data === 'string' && initResponse.data.includes('Already initialized')) {
-							console.warn('Keys already initialized, continuing with registration');
-						} else {
-							throw new Error(initResponse.data || 'Failed to initialize encryption');
-						}
-					}
-					
-					// Complete passkey registration with auto-generated name.
-					let publicKeyData;
-					if (credential.response.publicKey) {
-						publicKeyData = arrayBufferToBase64(credential.response.publicKey);
-					} else if (credential.response.getPublicKey) {
-						publicKeyData = arrayBufferToBase64(credential.response.getPublicKey());
-					} else {
-						publicKeyData = 'not_available';
-					}
-					
-					const completeResponse = await $.ajax({
-						url: '<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>',
-						type: 'POST',
-						data: {
-							action: 'passkey_complete_registration',
-							nonce: '<?php echo esc_attr( wp_create_nonce( 'passkey_admin_nonce' ) ); ?>',
-							name: 'Passkey ' + new Date().toLocaleDateString(), // Auto-generate name
-							credential_id: arrayBufferToBase64(credential.rawId),
-							public_key: publicKeyData,
-							client_data: arrayBufferToBase64(credential.response.clientDataJSON),
-							attestation: arrayBufferToBase64(credential.response.attestationObject)
-						}
-					});
-					
-					if (!completeResponse.success) {
-						throw new Error(completeResponse.data || 'Failed to complete registration');
-					}
-					
-					$statusMessage.html('<div class="notice notice-success inline"><p><?php echo esc_js( __( 'Passkey registered successfully!', 'secure-login-collector' ) ); ?></p></div>');
-					
-					// Reload page after success.
-					setTimeout(function() {
-						window.location.reload();
-					}, 1500);
-					
-				} catch (error) {
-					console.error('Registration error:', error);
-					$statusMessage.html('<div class="notice notice-error inline"><p>' + error.message + '</p></div>');
-					$button.prop('disabled', false);
-					$spinner.removeClass('is-active');
-				}
-			});
-			
-			// Helper functions for ArrayBuffer conversion.
-			function base64ToArrayBuffer(base64) {
-				const binaryString = atob(base64);
-				const bytes = new Uint8Array(binaryString.length);
-				for (let i = 0; i < binaryString.length; i++) {
-					bytes[i] = binaryString.charCodeAt(i);
-				}
-				return bytes.buffer;
-			}
-			
-			function arrayBufferToBase64(buffer) {
-				const bytes = new Uint8Array(buffer);
-				let binary = '';
-				for (let i = 0; i < bytes.length; i++) {
-					binary += String.fromCharCode(bytes[i]);
-				}
-				return btoa(binary);
-			}
-		});
-		</script>
+
 		<?php
 	}
 

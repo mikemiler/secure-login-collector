@@ -22,18 +22,18 @@ class Secure_Login_Encryption_Handler_V2 {
 	/**
 	 * Master Key Manager instance.
 	 *
-	 * @var Master_Key_Manager
+	 * @var Master_Key_Manager__premium_only|null
 	 */
-	private $master_key_manager;
+	private $master_key_manager = null;
 
 	/**
 	 * Constructor.
 	 */
 	public function __construct() {
-		if ( ! class_exists( 'Master_Key_Manager' ) ) {
-			require_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-master-key-manager.php';
+		// Only initialize Master Key Manager if premium features are available.
+		if ( class_exists( 'Master_Key_Manager__premium_only' ) ) {
+			$this->master_key_manager = new Master_Key_Manager__premium_only();
 		}
-		$this->master_key_manager = new Master_Key_Manager();
 
 		// AJAX handlers.
 		add_action( 'wp_ajax_slc_get_public_key', array( $this, 'handle_get_public_key' ) );
@@ -278,7 +278,7 @@ class Secure_Login_Encryption_Handler_V2 {
 		$public_key_pro = get_option( 'secure_login_public_key_pro' );
 
 		// Use pro key if available and active.
-		if ( $pro_active && $public_key_pro && Secure_Login_License_Manager::has_pro_license() ) {
+		if ( $pro_active && $public_key_pro ) {
 			wp_send_json_success(
 				array(
 					'public_key' => $public_key_pro,
@@ -417,12 +417,6 @@ class Secure_Login_Encryption_Handler_V2 {
 		// Verify nonce.
 		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) ), 'slc_admin_nonce' ) ) {
 			wp_send_json_error( 'Invalid security token' );
-			return;
-		}
-
-		// Verify pro license.
-		if ( ! Secure_Login_License_Manager::has_pro_license() ) {
-			wp_send_json_error( array( 'message' => __( 'Pro license required.', 'secure-login-collector' ) ) );
 			return;
 		}
 

@@ -304,12 +304,35 @@ First stable release. Upgrade from beta versions recommended for security enhanc
 - Documentation and FAQs
 - Community assistance
 
+== External Services ==
+
+This plugin uses the Freemius SDK for plugin management and optional premium features. Freemius is only used if you choose to opt-in or upgrade to premium features.
+
+**Service:** Freemius (https://freemius.com)
+**Purpose:** Plugin analytics, licensing, and premium feature management (optional)
+**Data Sent:** Only if you opt-in:
+- Site URL and WordPress version
+- Plugin version and activation status
+- Admin email (only if you subscribe to updates)
+- License key (only if you purchase premium features)
+
+**When Data is Sent:**
+- When you opt-in to usage tracking (completely optional)
+- When you activate a premium license (if purchased)
+- Never sent automatically without your explicit consent
+
+**Privacy & Terms:**
+- Freemius Terms of Service: https://freemius.com/terms/
+- Freemius Privacy Policy: https://freemius.com/privacy/
+
+**Important:** All client credential data (the core plugin functionality) is processed and stored ONLY on your server. No client credentials or login data are ever sent to any external service.
+
 == Privacy & Security ==
 
 This plugin prioritizes security:
 - All data encrypted before transmission
 - Zero-knowledge architecture
-- No telemetry or data collection
-- No external API calls (except Pro license validation)
-- All processing happens on your server
+- Client credentials never leave your server
+- All credential processing happens on your server
+- No telemetry or tracking without explicit opt-in
 - Regular security updates
