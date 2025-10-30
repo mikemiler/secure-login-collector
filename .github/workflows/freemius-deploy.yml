@@ -1,437 +1,84 @@
-name: Freemius Deployment
+name: Deploy to Freemius
 
 on:
-  # Trigger on version tags (e.g., v1.0.0, v2.1.3)
   push:
     tags:
-      - 'v*'
-
-  # Allow manual workflow dispatch with options
+      - 'v*.*.*'
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to deploy (e.g., 1.0.0)'
-        required: true
-        type: string
-      release_mode:
-        description: 'Release mode'
-        required: true
-        type: choice
-        options:
-          - pending
-          - beta
-          - released
-        default: 'pending'
-      dry_run:
-        description: 'Dry run (validate without deploying)'
+        description: 'Version to deploy (optional, auto-detected if not provided)'
         required: false
-        type: boolean
-        default: false
+        type: string
 
 jobs:
-  validate:
-    name: Validate Release
+  deploy:
+    name: Build and Deploy
     runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.extract.outputs.version }}
-      should_deploy: ${{ steps.validate.outputs.should_deploy }}
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Extract version from tag
-        id: extract
-        run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            VERSION="${{ github.event.inputs.version }}"
-          else
-            # Extract version from tag (remove 'v' prefix)
-            VERSION="${GITHUB_REF#refs/tags/v}"
-          fi
-
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "📦 Deploying version: ${VERSION}"
-
-      - name: Validate version format
-        id: validate
-        run: |
-          VERSION="${{ steps.extract.outputs.version }}"
-
-          # Validate semantic versioning format (X.Y.Z)
-          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$ ]]; then
-            echo "❌ Invalid version format: $VERSION"
-            echo "✅ Expected format: X.Y.Z or X.Y.Z-suffix (e.g., 1.0.0, 1.0.0-beta)"
-            exit 1
-          fi
-
-          echo "✅ Valid version format: $VERSION"
-          echo "should_deploy=true" >> $GITHUB_OUTPUT
-
-      - name: Validate required secrets
-        run: |
-          MISSING_SECRETS=()
-
-          if [[ -z "${{ secrets.FREEMIUS_PUBLIC_KEY }}" ]]; then
-            MISSING_SECRETS+=("FREEMIUS_PUBLIC_KEY")
-          fi
-
-          if [[ -z "${{ secrets.FREEMIUS_SECRET_KEY }}" ]]; then
-            MISSING_SECRETS+=("FREEMIUS_SECRET_KEY")
-          fi
-
-          if [[ -z "${{ secrets.FREEMIUS_DEV_ID }}" ]]; then
-            MISSING_SECRETS+=("FREEMIUS_DEV_ID")
-          fi
-
-          if [[ -z "${{ secrets.FREEMIUS_PLUGIN_ID }}" ]]; then
-            MISSING_SECRETS+=("FREEMIUS_PLUGIN_ID")
-          fi
-
-          if [[ -z "${{ secrets.FREEMIUS_PLUGIN_SLUG }}" ]]; then
-            MISSING_SECRETS+=("FREEMIUS_PLUGIN_SLUG")
-          fi
-
-          if [[ ${#MISSING_SECRETS[@]} -gt 0 ]]; then
-            echo "❌ Missing required secrets:"
-            printf '%s\n' "${MISSING_SECRETS[@]}"
-            echo ""
-            echo "Please configure the following secrets in GitHub repository settings:"
-            echo "Settings → Secrets and variables → Actions → New repository secret"
-            exit 1
-          fi
-
-          echo "✅ All required secrets are configured"
-
-      - name: Check for existing release
-        run: |
-          VERSION="${{ steps.extract.outputs.version }}"
-
-          # Check if tag already exists
-          if git rev-parse "v${VERSION}" >/dev/null 2>&1; then
-            echo "⚠️  Tag v${VERSION} already exists"
-
-            if [[ "${{ github.event_name }}" == "push" ]]; then
-              echo "✅ Proceeding with deployment for pushed tag"
-            fi
-          else
-            echo "✅ New version tag: v${VERSION}"
-          fi
-
-  build:
-    name: Build Plugin Archive
-    runs-on: ubuntu-latest
-    needs: validate
-    if: needs.validate.outputs.should_deploy == 'true'
-    outputs:
-      artifact_name: plugin-build
-      archive_name: ${{ steps.create_archive.outputs.archive_name }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run linting
-        run: npm run lint
-        continue-on-error: true
-
-      - name: Run tests
-        run: npm test
-        continue-on-error: true
-
-      - name: Build project
-        run: npm run build
-        continue-on-error: true
-
-      - name: Create deployment archive
-        id: create_archive
-        env:
-          PLUGIN_SLUG: ${{ secrets.FREEMIUS_PLUGIN_SLUG }}
+      - name: Create deployment package
+        id: package
         run: |
-          VERSION="${{ needs.validate.outputs.version }}"
-          SLUG="${PLUGIN_SLUG}"
+          # Make script executable
+          chmod +x ./create-deployment-package.sh
 
-          # Create clean build directory
-          mkdir -p dist
+          # Run deployment script (auto-detects version, uses GitHub Actions mode)
+          ./create-deployment-package.sh
 
-          # Copy plugin files (exclude development files)
-          rsync -av \
-            --exclude='.git*' \
-            --exclude='node_modules' \
-            --exclude='.github' \
-            --exclude='tests' \
-            --exclude='*.md' \
-            --exclude='.swarm' \
-            --exclude='dist' \
-            ./ dist/${SLUG}/
+          # Get the created package info from GitHub output
+          echo "Package created successfully"
 
-          # Create zip archive
-          cd dist
-          zip -r ${SLUG}-${VERSION}.zip ${SLUG}
-
-          echo "archive_name=${SLUG}-${VERSION}.zip" >> $GITHUB_OUTPUT
-          echo "✅ Created archive: ${SLUG}-${VERSION}.zip"
-          ls -lh ${SLUG}-${VERSION}.zip
-
-      - name: Upload build artifact
+      - name: Upload deployment artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: plugin-build
-          path: dist/*.zip
-          retention-days: 7
+          name: deployment-packages
+          path: deploy/*.zip
+          retention-days: 30
 
-  deploy:
-    name: Deploy to Freemius
-    runs-on: ubuntu-latest
-    needs: [validate, build]
-    if: needs.validate.outputs.should_deploy == 'true' && github.event.inputs.dry_run != 'true'
-    outputs:
-      release_mode: ${{ steps.release_mode.outputs.mode }}
-      deployment_status: ${{ steps.deploy_status.outputs.status }}
-    environment:
-      name: freemius-production
-      url: https://dashboard.freemius.com
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
+      - name: Upload checksums
+        uses: actions/upload-artifact@v4
         with:
-          name: plugin-build
-          path: dist
-
-      - name: Determine release mode
-        id: release_mode
-        run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            MODE="${{ github.event.inputs.release_mode }}"
-          else
-            # Auto-detect release mode from tag
-            VERSION="${{ needs.validate.outputs.version }}"
-
-            if [[ "$VERSION" =~ -beta ]]; then
-              MODE="beta"
-            elif [[ "$VERSION" =~ -rc ]]; then
-              MODE="pending"
-            else
-              MODE="released"
-            fi
-          fi
-
-          echo "mode=${MODE}" >> $GITHUB_OUTPUT
-          echo "🚀 Release mode: ${MODE}"
+          name: checksums
+          path: deploy/*.sha256
+          retention-days: 30
 
       - name: Deploy to Freemius
-        id: deploy_freemius
-        uses: buttonizer/freemius-deploy@v0.1.2
-        with:
-          file_name: dist/${{ needs.build.outputs.archive_name }}
-          version: ${{ needs.validate.outputs.version }}
-          release_mode: ${{ steps.release_mode.outputs.mode }}
-          sandbox: false
         env:
-          PUBLIC_KEY: ${{ secrets.FREEMIUS_PUBLIC_KEY }}
-          SECRET_KEY: ${{ secrets.FREEMIUS_SECRET_KEY }}
-          DEV_ID: ${{ secrets.FREEMIUS_DEV_ID }}
-          PLUGIN_SLUG: ${{ secrets.FREEMIUS_PLUGIN_SLUG }}
-          PLUGIN_ID: ${{ secrets.FREEMIUS_PLUGIN_ID }}
-        timeout-minutes: 10
-        continue-on-error: false
-
-      - name: Set deployment status
-        id: deploy_status
-        if: always()
+          FREEMIUS_DEVELOPER_ID: ${{ secrets.FREEMIUS_DEVELOPER_ID }}
+          FREEMIUS_PLUGIN_ID: ${{ secrets.FREEMIUS_PLUGIN_ID }}
+          FREEMIUS_PUBLIC_KEY: ${{ secrets.FREEMIUS_PUBLIC_KEY }}
+          FREEMIUS_SECRET_KEY: ${{ secrets.FREEMIUS_SECRET_KEY }}
         run: |
-          if [[ "${{ steps.deploy_freemius.outcome }}" == "success" ]]; then
-            echo "status=success" >> $GITHUB_OUTPUT
-            echo "✅ Deployment successful"
-          else
-            echo "status=failed" >> $GITHUB_OUTPUT
-            echo "❌ Deployment failed"
-          fi
+          echo "🚀 Deploying to Freemius..."
 
-      - name: Deployment success notification
-        if: success()
-        run: |
-          VERSION="${{ needs.validate.outputs.version }}"
-          MODE="${{ steps.release_mode.outputs.mode }}"
+          # Find the dev package
+          DEV_PACKAGE=$(ls deploy/secure-login-collector-dev-*.zip | head -1)
 
-          echo "✅ Successfully deployed version ${VERSION} to Freemius"
-          echo "📦 Release mode: ${MODE}"
-          echo "🔗 Check deployment: https://dashboard.freemius.com"
-
-      - name: Deployment failure notification
-        if: failure()
-        run: |
-          VERSION="${{ needs.validate.outputs.version }}"
-
-          echo "❌ Deployment failed for version ${VERSION}"
-          echo "🔍 Check the logs above for details"
-          echo "💡 Verify your Freemius credentials and plugin configuration"
-          exit 1
-
-  dry-run:
-    name: Dry Run Validation
-    runs-on: ubuntu-latest
-    needs: [validate, build]
-    if: github.event.inputs.dry_run == 'true'
-
-    steps:
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: plugin-build
-          path: dist
-
-      - name: Validate archive
-        env:
-          PLUGIN_SLUG: ${{ secrets.FREEMIUS_PLUGIN_SLUG }}
-        run: |
-          VERSION="${{ needs.validate.outputs.version }}"
-          SLUG="${PLUGIN_SLUG}"
-          ARCHIVE="dist/${SLUG}-${VERSION}.zip"
-
-          echo "🔍 Validating deployment archive..."
-
-          if [[ ! -f "$ARCHIVE" ]]; then
-            echo "❌ Archive not found: $ARCHIVE"
+          if [ -z "$DEV_PACKAGE" ]; then
+            echo "❌ Error: No deployment package found"
             exit 1
           fi
 
-          # Check archive contents
-          echo "📦 Archive contents:"
-          unzip -l "$ARCHIVE"
+          echo "📦 Package: $DEV_PACKAGE"
 
-          # Validate archive size (use GNU stat syntax for Ubuntu)
-          SIZE=$(stat -c%s "$ARCHIVE")
-          SIZE_MB=$((SIZE / 1024 / 1024))
+          # Deploy using Freemius API
+          curl -X POST "https://api.freemius.com/v1/developers/${FREEMIUS_DEVELOPER_ID}/plugins/${FREEMIUS_PLUGIN_ID}/tags.json" \
+            -F "public_key=${FREEMIUS_PUBLIC_KEY}" \
+            -F "secret_key=${FREEMIUS_SECRET_KEY}" \
+            -F "file=@${DEV_PACKAGE}"
 
-          echo "📊 Archive size: ${SIZE_MB} MB"
-
-          if [[ $SIZE -lt 1024 ]]; then
-            echo "⚠️  Archive seems too small (< 1KB)"
-            exit 1
-          fi
-
-          # Extract archive for validation
-          echo "🔍 Extracting archive for validation..."
-          mkdir -p /tmp/validate
-          unzip -q "$ARCHIVE" -d /tmp/validate
-
-          # Check for main plugin file
-          MAIN_FILE="/tmp/validate/${SLUG}/${SLUG}.php"
-          if [[ ! -f "$MAIN_FILE" ]]; then
-            echo "❌ Missing main plugin file: ${SLUG}.php"
-            exit 1
-          fi
-
-          echo "✅ Main plugin file found"
-
-          # Validate plugin version header
-          if grep -q "Version:" "$MAIN_FILE"; then
-            HEADER_VERSION=$(grep -Po '(?<=Version:\s*)[\d.]+(-[a-zA-Z0-9]+)?' "$MAIN_FILE" | head -1)
-            echo "📋 Plugin header version: ${HEADER_VERSION}"
-
-            if [[ "$HEADER_VERSION" != "$VERSION" ]]; then
-              echo "⚠️  Version mismatch: Header=$HEADER_VERSION, Tag=$VERSION"
-              echo "💡 Update plugin header to match deployment version"
-            else
-              echo "✅ Version header matches deployment version"
-            fi
-          fi
-
-          # Check for readme.txt
-          if [[ -f "/tmp/validate/${SLUG}/readme.txt" ]]; then
-            echo "✅ readme.txt found"
-          else
-            echo "⚠️  readme.txt not found (recommended for WordPress.org)"
-          fi
-
-          echo ""
-          echo "✅ Dry run validation complete"
-          echo "💡 Archive is ready for deployment"
-          echo "🚀 Remove dry_run flag to proceed with actual deployment"
-
-  post-deploy:
-    name: Post-Deployment Tasks
-    runs-on: ubuntu-latest
-    needs: [validate, deploy]
-    if: success()
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+          echo "✅ Deployment complete"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
         with:
-          tag_name: v${{ needs.validate.outputs.version }}
-          name: Release v${{ needs.validate.outputs.version }}
-          body: |
-            🚀 **Deployed to Freemius**
-
-            Version: ${{ needs.validate.outputs.version }}
-            Release Mode: ${{ needs.deploy.outputs.release_mode }}
-
-            ---
-
-            ### Changes
-            See commit history for details.
-
-            ### Installation
-            This version has been deployed to Freemius and will be available through the WordPress plugin update mechanism.
-
-            ### Deployment Status
-            - ✅ Build completed successfully
-            - ✅ Deployed to Freemius (${{ needs.deploy.outputs.release_mode }} mode)
-            - ✅ GitHub release created
+          files: |
+            deploy/*.zip
+            deploy/*.sha256
           draft: false
-          prerelease: ${{ contains(needs.validate.outputs.version, 'beta') || contains(needs.validate.outputs.version, 'rc') }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Update deployment log
-        run: |
-          VERSION="${{ needs.validate.outputs.version }}"
-          MODE="${{ needs.deploy.outputs.release_mode }}"
-          DATE=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
-
-          mkdir -p docs
-
-          # Create or update deployment log
-          if [[ -f docs/DEPLOYMENTS.md ]]; then
-            # Append to existing log
-            echo "| v${VERSION} | ${DATE} | ✅ Deployed (${MODE}) |" >> docs/DEPLOYMENTS.md
-          else
-            # Create new log
-            cat > docs/DEPLOYMENTS.md << 'EOF'
-          ## Deployment Log
-
-          | Version | Date | Status |
-          |---------|------|--------|
-          EOF
-            echo "| v${VERSION} | ${DATE} | ✅ Deployed (${MODE}) |" >> docs/DEPLOYMENTS.md
-          fi
-
-          echo "✅ Updated deployment log"
-
-      - name: Notify deployment complete
-        run: |
-          echo "🎉 Deployment workflow complete!"
-          echo "✅ Version ${{ needs.validate.outputs.version }} is now live on Freemius"
-          echo "📦 Release mode: ${{ needs.deploy.outputs.release_mode }}"
-          echo "📋 GitHub release created"
-          echo "📝 Deployment log updated"
+          prerelease: false
