@@ -47,31 +47,17 @@ jobs:
           retention-days: 30
 
       - name: Deploy to Freemius
+        uses: buttonizer/freemius-deploy@v0.1.2
         env:
-          FREEMIUS_DEVELOPER_ID: ${{ secrets.FREEMIUS_DEVELOPER_ID }}
-          FREEMIUS_PLUGIN_ID: ${{ secrets.FREEMIUS_PLUGIN_ID }}
-          FREEMIUS_PUBLIC_KEY: ${{ secrets.FREEMIUS_PUBLIC_KEY }}
-          FREEMIUS_SECRET_KEY: ${{ secrets.FREEMIUS_SECRET_KEY }}
-        run: |
-          echo "🚀 Deploying to Freemius..."
-
-          # Find the dev package
-          DEV_PACKAGE=$(ls deploy/secure-login-collector-dev-*.zip | head -1)
-
-          if [ -z "$DEV_PACKAGE" ]; then
-            echo "❌ Error: No deployment package found"
-            exit 1
-          fi
-
-          echo "📦 Package: $DEV_PACKAGE"
-
-          # Deploy using Freemius API
-          curl -X POST "https://api.freemius.com/v1/developers/${FREEMIUS_DEVELOPER_ID}/plugins/${FREEMIUS_PLUGIN_ID}/tags.json" \
-            -F "public_key=${FREEMIUS_PUBLIC_KEY}" \
-            -F "secret_key=${FREEMIUS_SECRET_KEY}" \
-            -F "file=@${DEV_PACKAGE}"
-
-          echo "✅ Deployment complete"
+          PUBLIC_KEY: ${{ secrets.FREEMIUS_PUBLIC_KEY }}
+          SECRET_KEY: ${{ secrets.FREEMIUS_SECRET_KEY }}
+          DEV_ID: ${{ secrets.FREEMIUS_DEVELOPER_ID }}
+          PLUGIN_ID: ${{ secrets.FREEMIUS_PLUGIN_ID }}
+          PLUGIN_SLUG: secure-login-collector
+        with:
+          file_name: deploy/secure-login-collector-dev-*.zip
+          version: ${{ github.ref_name }}
+          release_mode: released
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
