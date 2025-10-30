@@ -82,8 +82,7 @@ class Master_Key_Manager {
 		// Ensure table exists before deleting.
 		$this->maybe_create_table();
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom table requires direct query.
-		$result = $wpdb->delete(
+		return false !== $wpdb->delete(
 			$this->table_name,
 			array(
 				'user_id'               => $user_id,
@@ -91,14 +90,6 @@ class Master_Key_Manager {
 				'passkey_credential_id' => $credential_id,
 			)
 		);
-
-		// Invalidate cache for this user's wrapped keys.
-		if ( false !== $result ) {
-			wp_cache_delete( 'wrapped_keys_' . $user_id, 'secure_login_collector' );
-			wp_cache_delete( 'wrapped_key_' . $user_id . '_' . $credential_id, 'secure_login_collector' );
-		}
-
-		return false !== $result;
 	}
 
 	/**
@@ -114,23 +105,13 @@ class Master_Key_Manager {
 		// Ensure table exists before deleting.
 		$this->maybe_create_table();
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom table requires direct query.
-		$result = $wpdb->delete(
+		return false !== $wpdb->delete(
 			$this->table_name,
 			array(
 				'user_id'  => $user_id,
 				'key_type' => 'mwk',
 			)
 		);
-
-		// Invalidate all caches for this user's wrapped keys.
-		if ( false !== $result ) {
-			wp_cache_delete( 'wrapped_keys_' . $user_id, 'secure_login_collector' );
-			// Also delete the user-specific cache group if used.
-			wp_cache_flush_group( 'secure_login_collector_user_' . $user_id );
-		}
-
-		return false !== $result;
 	}
 
 	/**
