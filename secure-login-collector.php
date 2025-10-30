@@ -161,6 +161,11 @@ class SecureLoginCollector {
 		if ( file_exists( SECURE_LOGIN_PLUGIN_DIR . 'includes/freemius-account-redirect.php' ) ) {
 			include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/freemius-account-redirect.php';
 		}
+
+		// Load Freemius uninstall handler.
+		if ( file_exists( SECURE_LOGIN_PLUGIN_DIR . 'includes/freemius-uninstall.php' ) ) {
+			include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/freemius-uninstall.php';
+		}
 	}
 
 	/**
