@@ -1,0 +1,14 @@
+            - name: Deploy on Freemius
+  # You may pin to the exact commit or the version.
+  # uses: buttonizer/freemius-deploy@08affced4e9e05d19318468c758828a00c9be42b
+  uses: buttonizer/freemius-deploy@v0.1.2
+  with:
+    # Sandbox mode
+    sandbox: # optional
+    # file to deploy
+    file_name: 
+    # tag version
+    version: 
+    # release mode
+    release_mode: # optional, default is pending
+          
