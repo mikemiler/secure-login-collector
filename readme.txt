@@ -4,7 +4,7 @@ Tags: login, password, credential management, password collection, data security
 Requires at least: 5.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: GPL v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -278,6 +278,9 @@ The plugin supports export to: Bitwarden, 1Password, LastPass, Dashlane, KeePass
 8. **Export Options** - Choose from 8+ password manager formats
 
 == Changelog ==
+
+= 1.0.1 =
+* Cache handling
 
 = 1.0.0 =
 * Initial public release
