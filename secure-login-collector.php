@@ -53,13 +53,6 @@ class SecureLoginCollector {
 	private $table_name;
 
 	/**
-	 * Whether pro version is enabled.
-	 *
-	 * @var bool
-	 */
-	private $is_pro_version;
-
-	/**
 	 * Encryption handler instance.
 	 *
 	 * @var Secure_Login_Encryption_Handler
@@ -95,19 +88,11 @@ class SecureLoginCollector {
 	private $database_manager;
 
 	/**
-	 * Passkey manager instance (Pro version).
-	 *
-	 * @var Passkey_Manager|null
-	 */
-	private $passkey_manager = null;
-
-	/**
 	 * Constructor - initializes the plugin.
 	 */
 	public function __construct() {
 		global $wpdb;
-		$this->table_name     = $wpdb->prefix . 'secure_login_data';
-		$this->is_pro_version = $this->check_pro_version();
+		$this->table_name = $wpdb->prefix . 'secure_login_data';
 
 		// Load dependencies.
 		$this->load_dependencies();
@@ -129,21 +114,38 @@ class SecureLoginCollector {
 	private function load_dependencies() {
 		// Always load free version classes.
 		include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-encryption-handler-v2.php';
+		include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-database-manager.php';
 		include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-admin-interface.php';
 		include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-frontend-handler.php';
 		include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-settings-manager.php';
-		include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-database-manager.php';
 
-		// Load premium classes only if available and licensed.
+		// Load premium base classes only if available and licensed.
+		// These provide pro functionality (passkey management, licensing, etc).
 		if ( function_exists( 'seculoco_fs' ) && seculoco_fs()->can_use_premium_code() ) {
-			if ( file_exists( SECURE_LOGIN_PLUGIN_DIR . 'includes/class-passkey-manager.php' ) ) {
-				include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-passkey-manager.php';
+			$premium_base_files = array(
+				'includes/class-passkey-manager.php',
+				'includes/class-master-key-manager.php',
+				'includes/class-license-manager.php',
+			);
+
+			foreach ( $premium_base_files as $file ) {
+				if ( file_exists( SECURE_LOGIN_PLUGIN_DIR . $file ) ) {
+					include_once SECURE_LOGIN_PLUGIN_DIR . $file;
+				}
 			}
-			if ( file_exists( SECURE_LOGIN_PLUGIN_DIR . 'includes/class-master-key-manager.php' ) ) {
-				include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-master-key-manager.php';
-			}
-			if ( file_exists( SECURE_LOGIN_PLUGIN_DIR . 'includes/class-license-manager.php' ) ) {
-				include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-license-manager.php';
+
+			// Load pro extension files (hook into free version via filters/actions).
+			// These files extend the free version with pro features.
+			$premium_extension_files = array(
+				'includes/class-frontend-handler-pro.php',
+				'includes/class-admin-interface-pro.php',
+				'includes/class-settings-manager-pro.php',
+			);
+
+			foreach ( $premium_extension_files as $file ) {
+				if ( file_exists( SECURE_LOGIN_PLUGIN_DIR . $file ) ) {
+					include_once SECURE_LOGIN_PLUGIN_DIR . $file;
+				}
 			}
 		}
 
@@ -174,40 +176,15 @@ class SecureLoginCollector {
 	private function init_components() {
 		$this->encryption_handler = new Secure_Login_Encryption_Handler_V2();
 		$this->database_manager   = new Secure_Login_Database_Manager( $this->table_name );
-		$this->admin_interface    = new Secure_Login_Admin_Interface( $this->table_name, $this->is_pro_version, $this->encryption_handler, $this->database_manager );
-		$this->frontend_handler   = new Secure_Login_Frontend_Handler( $this->table_name, $this->is_pro_version, $this->encryption_handler, $this->database_manager );
-		$this->settings_manager   = new Secure_Login_Settings_Manager( $this->is_pro_version, $this->encryption_handler );
+		$this->admin_interface    = new Secure_Login_Admin_Interface( $this->table_name, $this->encryption_handler, $this->database_manager );
+		$this->frontend_handler   = new Secure_Login_Frontend_Handler( $this->table_name, $this->encryption_handler, $this->database_manager );
+		$this->settings_manager   = new Secure_Login_Settings_Manager( $this->encryption_handler );
 
-		// Initialize passkey manager only if premium version and class exists.
-		if ( $this->is_pro_version && class_exists( 'Passkey_Manager' ) ) {
-			$this->passkey_manager = new Passkey_Manager();
-		}
-	}
+		// Allow pro extensions to hook in after components are initialized.
+		do_action( 'secure_login_components_initialized', $this );
 
-	/**
-	 * Check if pro version is available.
-	 * Uses Freemius helper methods to check for active license.
-	 */
-	private function check_pro_version() {
-		// Check if Freemius is loaded and user has premium license.
-		if ( function_exists( 'seculoco_fs' ) ) {
-			try {
-				$fs = seculoco_fs();
-				if ( $fs && is_object( $fs ) ) {
-					// Check if user can use premium code (has active license).
-					if ( method_exists( $fs, 'can_use_premium_code' ) && $fs->can_use_premium_code() ) {
-						return true;
-					}
-					// Also check is_paying() for backward compatibility.
-					if ( method_exists( $fs, 'is_paying' ) && $fs->is_paying() ) {
-						return true;
-					}
-				}
-			} catch ( Exception $e ) {
-				// Freemius error - return false.
-			}
-		}
-		return false;
+		// Signal that encryption handler is ready for pro extensions.
+		do_action( 'secure_login_encryption_handler_ready', $this->encryption_handler );
 	}
 
 	/**
@@ -226,9 +203,12 @@ class SecureLoginCollector {
 		$this->database_manager->upgrade_database();
 		$this->database_manager->schedule_cleanup();
 
+		// Allow pro extensions to run activation tasks.
 		// Premium plugin will handle its own table creation (wrapped keys, etc).
-		// Note: Master key manager table only created if premium version active.
-		if ( $this->is_pro_version && class_exists( 'Master_Key_Manager' ) ) {
+		do_action( 'secure_login_activate' );
+
+		// Pro-specific activation: Create master key manager table if pro version active.
+		if ( class_exists( 'Master_Key_Manager' ) ) {
 			$master_key_manager = new Master_Key_Manager();
 			$master_key_manager->maybe_create_table();
 		}

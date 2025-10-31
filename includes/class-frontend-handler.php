@@ -34,13 +34,6 @@ class Secure_Login_Frontend_Handler {
 	private $table_name;
 
 	/**
-	 * Whether pro version is enabled.
-	 *
-	 * @var bool
-	 */
-	private $is_pro_version;
-
-	/**
 	 * Encryption handler instance.
 	 *
 	 * @var Secure_Login_Encryption_Handler
@@ -58,13 +51,11 @@ class Secure_Login_Frontend_Handler {
 	 * Constructor - initializes frontend handler.
 	 *
 	 * @param string                          $table_name         Database table name.
-	 * @param bool                            $is_pro_version     Whether pro version is enabled.
 	 * @param Secure_Login_Encryption_Handler $encryption_handler Encryption handler instance.
 	 * @param Secure_Login_Database_Manager   $database_manager   Database manager instance.
 	 */
-	public function __construct( $table_name, $is_pro_version, $encryption_handler, $database_manager ) {
+	public function __construct( $table_name, $encryption_handler, $database_manager ) {
 		$this->table_name         = $table_name;
-		$this->is_pro_version     = $is_pro_version;
 		$this->encryption_handler = $encryption_handler;
 		$this->database_manager   = $database_manager;
 
@@ -111,7 +102,7 @@ class Secure_Login_Frontend_Handler {
 			$localize_data = array(
 				'ajaxurl' => admin_url( 'admin-ajax.php' ),
 				'nonce'   => wp_create_nonce( 'secure_login_nonce' ),
-				'is_pro'  => $this->is_pro_version,
+				'is_pro'  => false, // Free version default - pro version filters this.
 				'strings' => array(
 					'required_fields_error'   => __( 'Please fill in all required fields (Email Address, Name, Login URL, Username/Email, and Password).', 'secure-login-collector' ),
 					'submitting'              => __( 'Submitting...', 'secure-login-collector' ),
@@ -137,6 +128,9 @@ class Secure_Login_Frontend_Handler {
 			}
 
 			// No need to send passkey info to frontend - clients don't have passkeys.
+
+			// Allow pro version to modify JS config.
+			$localize_data = apply_filters( 'secure_login_frontend_js_config', $localize_data );
 
 			// Localize script with data.
 			wp_localize_script( 'secure-login-frontend', 'secureLoginAjax', $localize_data );
@@ -322,17 +316,18 @@ class Secure_Login_Frontend_Handler {
 		$metadata['login_url']  = sanitize_text_field( $metadata['login_url'] );
 		$metadata['created_at'] = isset( $metadata['created_at'] ) ? sanitize_text_field( $metadata['created_at'] ) : current_time( 'c' );
 
-		// Check if Pro version with pro keys is available on the server.
-		// Use same logic as V2 encryption handler for consistency.
-		$is_pro_encrypted     = false;
-		$server_credential_id = null;
+			// Allow pro version to modify encryption metadata.
+		$encryption_metadata = apply_filters(
+			'secure_login_encryption_metadata',
+			array(
+				'is_pro_encrypted'     => false,
+				'server_credential_id' => null,
+			),
+			$metadata
+		);
 
-		if ( $this->is_pro_version && get_option( 'secure_login_pro_keys_active', false ) ) {
-			// Mark as Pro encrypted - data will be encrypted with pro public key.
-			// The passkey decryption happens on the admin side during decryption.
-			$is_pro_encrypted     = true;
-			$server_credential_id = get_option( 'secure_login_passkey_credential_id' );
-		}
+		$is_pro_encrypted     = $encryption_metadata['is_pro_encrypted'];
+		$server_credential_id = $encryption_metadata['server_credential_id'];
 
 		// Create encrypted package for storage.
 		$encrypted_package = array(

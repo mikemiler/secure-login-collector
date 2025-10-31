@@ -22,7 +22,7 @@ class Secure_Login_Encryption_Handler_V2 {
 	/**
 	 * Master Key Manager instance.
 	 *
-	 * @var Master_Key_Manager__premium_only|null
+	 * @var Master_Key_Manager|null
 	 */
 	private $master_key_manager = null;
 
@@ -31,8 +31,8 @@ class Secure_Login_Encryption_Handler_V2 {
 	 */
 	public function __construct() {
 		// Only initialize Master Key Manager if premium features are available.
-		if ( class_exists( 'Master_Key_Manager__premium_only' ) ) {
-			$this->master_key_manager = new Master_Key_Manager__premium_only();
+		if ( class_exists( 'Master_Key_Manager' ) ) {
+			$this->master_key_manager = new Master_Key_Manager();
 		}
 
 		// AJAX handlers - using seculoco_ prefix (WordPress.org compliant, 4+ chars).

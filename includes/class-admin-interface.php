@@ -51,25 +51,16 @@ class Secure_Login_List_Table extends WP_List_Table {
 	private $encryption_handler;
 
 	/**
-	 * Whether pro version is enabled.
-	 *
-	 * @var bool
-	 */
-	private $is_pro_version;
-
-	/**
 	 * Constructor - initializes list table.
 	 *
 	 * @param string                          $table_name         Database table name.
 	 * @param Secure_Login_Database_Manager   $database_manager   Database manager instance.
 	 * @param Secure_Login_Encryption_Handler $encryption_handler Encryption handler instance.
-	 * @param bool                            $is_pro_version     Whether pro version is enabled.
 	 */
-	public function __construct( $table_name, $database_manager, $encryption_handler, $is_pro_version ) {
+	public function __construct( $table_name, $database_manager, $encryption_handler ) {
 		$this->table_name         = $table_name;
 		$this->database_manager   = $database_manager;
 		$this->encryption_handler = $encryption_handler;
-		$this->is_pro_version     = $is_pro_version;
 
 		parent::__construct(
 			array(
@@ -578,13 +569,6 @@ class Secure_Login_Admin_Interface {
 	private $table_name;
 
 	/**
-	 * Whether pro version is enabled.
-	 *
-	 * @var bool
-	 */
-	private $is_pro_version;
-
-	/**
 	 * Encryption handler instance.
 	 *
 	 * @var Secure_Login_Encryption_Handler
@@ -609,13 +593,11 @@ class Secure_Login_Admin_Interface {
 	 * Constructor - initializes admin interface.
 	 *
 	 * @param string                          $table_name         Database table name.
-	 * @param bool                            $is_pro_version     Whether pro version is enabled.
 	 * @param Secure_Login_Encryption_Handler $encryption_handler Encryption handler instance.
 	 * @param Secure_Login_Database_Manager   $database_manager   Database manager instance.
 	 */
-	public function __construct( $table_name, $is_pro_version, $encryption_handler, $database_manager ) {
+	public function __construct( $table_name, $encryption_handler, $database_manager ) {
 		$this->table_name         = $table_name;
-		$this->is_pro_version     = $is_pro_version;
 		$this->encryption_handler = $encryption_handler;
 		$this->database_manager   = $database_manager;
 
@@ -658,8 +640,7 @@ class Secure_Login_Admin_Interface {
 		$this->list_table = new Secure_Login_List_Table(
 			$this->table_name,
 			$this->database_manager,
-			$this->encryption_handler,
-			$this->is_pro_version
+			$this->encryption_handler
 		);
 	}
 
@@ -766,14 +747,19 @@ class Secure_Login_Admin_Interface {
 		);
 
 		// Localize script with configuration data.
+		$admin_config = array(
+			'isProVersion'      => false,
+			'passkeyRegistered' => get_option( 'secure_login_passkey_registered', false ),
+			'currentUserId'     => get_current_user_id(),
+		);
+
+		// Allow pro version to modify config.
+		$admin_config = apply_filters( 'secure_login_admin_js_config', $admin_config );
+
 		wp_localize_script(
 			'secure-login-admin-js',
 			'secureLoginConfig',
-			array(
-				'isProVersion'      => $this->is_pro_version,
-				'passkeyRegistered' => get_option( 'secure_login_passkey_registered', false ),
-				'currentUserId'     => get_current_user_id(),
-			)
+			$admin_config
 		);
 
 		// Localize script with translatable messages.
@@ -808,8 +794,7 @@ class Secure_Login_Admin_Interface {
 			$this->list_table = new Secure_Login_List_Table(
 				$this->table_name,
 				$this->database_manager,
-				$this->encryption_handler,
-				$this->is_pro_version
+				$this->encryption_handler
 			);
 		}
 
@@ -828,39 +813,8 @@ class Secure_Login_Admin_Interface {
 			
 
 			<?php
-			// Show diagnostic info and fix button if needed (Pro version only).
-			if ( $this->is_pro_version ) {
-				$passkey_registered = get_option( 'secure_login_passkey_registered', false );
-				$pro_keys_active    = get_option( 'secure_login_pro_keys_active', false );
-				if ( ! $passkey_registered || ! $pro_keys_active ) {
-					// Check if passkeys actually exist.
-					// SECURITY FIX: Using $wpdb->prepare() to prevent SQL injection.
-					global $wpdb;
-					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-					$passkey_count = $wpdb->get_var(
-						$wpdb->prepare(
-							"SELECT COUNT(*) FROM %i WHERE meta_key = %s AND meta_value != ''",
-							$wpdb->usermeta,
-							'secure_login_passkey'
-						)
-					);
-
-					if ( $passkey_count > 0 ) {
-						?>
-						<div class="notice notice-warning">
-							<h3><?php echo esc_html__( 'Pro Encryption Issue Detected', 'secure-login-collector' ); ?></h3>
-							<p><?php echo esc_html__( 'You have pro version enabled and passkeys registered, but new data is not being pro-encrypted due to a missing flag.', 'secure-login-collector' ); ?></p>
-							<p>
-								<button type="button" class="button button-primary" id="fix-passkey-flag-btn">
-									<?php echo esc_html__( 'Fix Pro Encryption Status', 'secure-login-collector' ); ?>
-								</button>
-								<span id="fix-passkey-flag-result"></span>
-							</p>
-						</div>
-						<?php
-					}
-				}
-			}
+			// Allow pro version to show diagnostic info and fix button.
+			do_action( 'secure_login_dashboard_diagnostics' );
 			?>
 
 			<div class="slc-card">
@@ -941,13 +895,17 @@ class Secure_Login_Admin_Interface {
 									<?php echo esc_html__( 'Encryption Method', 'secure-login-collector' ); ?>
 								</th>
 								<td>
-									<?php if ( $this->is_pro_version && get_option( 'secure_login_ultra_secure_mode', false ) && get_option( 'secure_login_passkey_registered', false ) ) : ?>
-										<strong><?php echo esc_html__( 'Ultra-Secure (AES-256 + RSA-2048 + Passkey)', 'secure-login-collector' ); ?></strong>
-										<p class="description"><?php echo esc_html__( 'Ultra-secure mode is enabled. All entries will be encrypted with triple-layer protection.', 'secure-login-collector' ); ?></p>
-									<?php else : ?>
-										<strong><?php echo esc_html__( 'Secure (AES-256 + RSA-2048)', 'secure-login-collector' ); ?></strong>
-										<p class="description"><?php echo esc_html__( 'Standard encryption with AES-256 and RSA-2048 protection.', 'secure-login-collector' ); ?></p>
-									<?php endif; ?>
+									<?php
+									$encryption_info = apply_filters(
+										'secure_login_manual_entry_encryption_display',
+										array(
+											'title'       => __( 'Secure (AES-256 + RSA-2048)', 'secure-login-collector' ),
+											'description' => __( 'Standard encryption with AES-256 and RSA-2048 protection.', 'secure-login-collector' ),
+										)
+									);
+									?>
+									<strong><?php echo esc_html( $encryption_info['title'] ); ?></strong>
+									<p class="description"><?php echo esc_html( $encryption_info['description'] ); ?></p>
 								</td>
 							</tr>
 						</table>
@@ -1052,8 +1010,9 @@ class Secure_Login_Admin_Interface {
 			return;
 		}
 
-		// Check if this is pro version with passkey.
-		if ( ! $this->is_pro_version ) {
+		// Check if pro features are available.
+		$can_use_passkey = apply_filters( 'secure_login_can_use_passkey_decrypt', false );
+		if ( ! $can_use_passkey ) {
 			wp_send_json_error( __( 'Pro version required.', 'secure-login-collector' ) );
 			return;
 		}
@@ -1333,15 +1292,17 @@ class Secure_Login_Admin_Interface {
 		}
 
 		// Check if ultra-secure mode is enabled (Pro with passkey).
-		$is_pro_encrypted     = false;
-		$server_credential_id = null;
+		// Allow pro version to set encryption metadata.
+		$encryption_meta = apply_filters(
+			'secure_login_manual_entry_metadata',
+			array(
+				'is_pro_encrypted'     => false,
+				'server_credential_id' => null,
+			)
+		);
 
-		if ( $this->is_pro_version && get_option( 'secure_login_passkey_registered', false ) ) {
-			// For ultra-secure mode, mark as pro encrypted.
-			// Passkey authentication required for decryption.
-			$is_pro_encrypted     = true;
-			$server_credential_id = get_option( 'secure_login_passkey_credential_id', '' );
-		}
+		$is_pro_encrypted     = $encryption_meta['is_pro_encrypted'];
+		$server_credential_id = $encryption_meta['server_credential_id'];
 
 		// RSA encrypt the AES key (raw bytes, not base64).
 		$encrypted_aes_key = '';
@@ -1507,7 +1468,8 @@ class Secure_Login_Admin_Interface {
 			return;
 		}
 
-		if ( ! $this->is_pro_version ) {
+		$can_use_passkey = apply_filters( 'secure_login_can_use_passkey_decrypt', false );
+		if ( ! $can_use_passkey ) {
 			wp_send_json_error( __( 'Pro version required for passkey authentication.', 'secure-login-collector' ) );
 			return;
 		}

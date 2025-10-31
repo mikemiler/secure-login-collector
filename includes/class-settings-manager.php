@@ -21,14 +21,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Secure_Login_Settings_Manager {
 
 	/**
-	 * Whether pro version is enabled.
-	 * Note: All features are now available to all users without license restrictions.
-	 *
-	 * @var bool
-	 */
-	private $is_pro_version;
-
-	/**
 	 * Encryption handler instance.
 	 *
 	 * @var Secure_Login_Encryption_Handler
@@ -38,11 +30,9 @@ class Secure_Login_Settings_Manager {
 	/**
 	 * Constructor - initializes settings manager.
 	 *
-	 * @param bool                            $is_pro_version     Whether pro version is enabled.
 	 * @param Secure_Login_Encryption_Handler $encryption_handler Encryption handler instance.
 	 */
-	public function __construct( $is_pro_version, $encryption_handler ) {
-		$this->is_pro_version     = $is_pro_version;
+	public function __construct( $encryption_handler ) {
 		$this->encryption_handler = $encryption_handler;
 
 		// Register hooks.
@@ -178,23 +168,8 @@ class Secure_Login_Settings_Manager {
 			'secure_login_settings'
 		);
 
-		// Add advanced security settings section (Pro version only).
-		if ( $this->is_pro_version ) {
-			add_settings_section(
-				'secure_login_pro_section',
-				__( 'Advanced Security Settings', 'secure-login-collector' ),
-				array( $this, 'pro_section_callback' ),
-				'secure_login_settings'
-			);
-
-			add_settings_field(
-				'secure_login_ultra_secure_mode',
-				__( 'Ultra-Secure Mode', 'secure-login-collector' ),
-				array( $this, 'ultra_secure_mode_callback' ),
-				'secure_login_settings',
-				'secure_login_pro_section'
-			);
-		}
+		// Allow pro version to register its settings.
+		do_action( 'secure_login_register_settings' );
 
 		// Add encryption settings section (for all users now).
 		add_settings_section(
@@ -433,8 +408,9 @@ class Secure_Login_Settings_Manager {
 		echo '</div>';
 		echo '</div>'; // Close slc-passkey-benefit
 
-		// Ultra-Secure (Pro version only).
-		if ( ! $this->is_pro_version ) {
+		// Ultra-Secure (Show upgrade notice in free version, pro version will hide this).
+		$show_pro_upgrade = apply_filters( 'secure_login_show_pro_upgrade', true );
+		if ( $show_pro_upgrade ) {
 			echo '<div class="slc-passkey-benefit" style="border-color: #ccc; opacity: 0.7;">';
 			echo '<span class="slc-passkey-benefit-icon"></span>';
 			echo '<div class="slc-passkey-benefit-text">';
@@ -444,17 +420,6 @@ class Secure_Login_Settings_Manager {
 			echo '</div>';
 			echo '<div class="slc-passkey-benefit-desc">' . esc_html__( 'Passkey-protected encryption with WebAuthn/FIDO2. True zero-knowledge - server cannot decrypt without your physical device.', 'secure-login-collector' ) . '</div>';
 			echo '<div style="margin-top: 8px;"><a href="#" class="button button-secondary">' . esc_html__( 'Upgrade to Pro', 'secure-login-collector' ) . '</a></div>';
-			echo '</div>';
-			echo '</div>'; // Close slc-passkey-benefit
-		} else {
-			echo '<div class="slc-passkey-benefit" style="border-color: var(--slc-success);">';
-			echo '<span class="slc-passkey-benefit-icon"></span>';
-			echo '<div class="slc-passkey-benefit-text">';
-			echo '<div class="slc-passkey-benefit-title">';
-			echo '<span class="slc-badge slc-badge-success">ULTRA-SECURE</span> ';
-			echo esc_html__( 'Passkey-Protected', 'secure-login-collector' );
-			echo '</div>';
-			echo '<div class="slc-passkey-benefit-desc">' . esc_html__( 'Wraps private keys with passkey authentication. True zero-knowledge - server cannot decrypt without your physical device.', 'secure-login-collector' ) . '</div>';
 			echo '</div>';
 			echo '</div>'; // Close slc-passkey-benefit
 		}
@@ -490,41 +455,7 @@ class Secure_Login_Settings_Manager {
 		echo '</div>';
 		echo '</div>';
 
-		// Pro version keys status (only show if pro is active).
-		if ( $this->is_pro_version ) {
-			$pro_public_key     = get_option( 'secure_login_public_key_pro' );
-			$pro_private_key    = get_option( 'secure_login_wrapped_private_key_pro' );
-			$pro_keys_active    = get_option( 'secure_login_pro_keys_active', false );
-			$passkey_registered = get_option( 'secure_login_passkey_registered', false );
-
-			echo '<div style="background: white; border: 1px solid #c3c4c7; border-radius: 4px; padding: 15px;">';
-			echo '<div style="display: flex; justify-content: space-between; align-items: center;">';
-			echo '<div>';
-			echo '<strong style="font-size: 14px;">' . esc_html__( 'Ultra-Secure RSA Keys', 'secure-login-collector' ) . '</strong>';
-			echo '<p style="margin: 5px 0 0; color: #666; font-size: 12px;">' . esc_html__( 'Passkey-protected RSA-2048 for ultra-secure encryption', 'secure-login-collector' ) . '</p>';
-			echo '</div>';
-
-			if ( $pro_public_key && $pro_private_key && $pro_keys_active ) {
-				echo '<div style="text-align: right;">';
-				echo '<span style="background: #d1ecf1; color: #0c5460; padding: 4px 12px; border-radius: 3px; font-size: 12px; font-weight: 600;">' . esc_html__( 'ACTIVE', 'secure-login-collector' ) . '</span>';
-				echo '<p style="margin: 5px 0 0; font-size: 11px; color: #666;">' . esc_html__( 'Using passkey protection', 'secure-login-collector' ) . '</p>';
-				echo '</div>';
-			} elseif ( $passkey_registered ) {
-				echo '<div style="text-align: right;">';
-				echo '<span style="background: #fff3cd; color: #856404; padding: 4px 12px; border-radius: 3px; font-size: 12px; font-weight: 600;">' . esc_html__( 'NEEDS INITIALIZATION', 'secure-login-collector' ) . '</span>';
-				echo '<p style="margin: 5px 0 0; font-size: 11px; color: #666;">' . esc_html__( 'Passkey registered but keys not initialized', 'secure-login-collector' ) . '</p>';
-				echo '</div>';
-			} else {
-				echo '<div style="text-align: right;">';
-				echo '<span style="background: #f8f9fa; color: #6c757d; padding: 4px 12px; border-radius: 3px; font-size: 12px; font-weight: 600;">' . esc_html__( 'NOT AVAILABLE', 'secure-login-collector' ) . '</span>';
-				echo '<p style="margin: 5px 0 0; font-size: 11px; color: #666;">' . esc_html__( 'Register passkey to enable', 'secure-login-collector' ) . '</p>';
-				echo '</div>';
-			}
-			echo '</div>';
-			echo '</div>';
-		}
-
-		echo '</div>';
+		echo '</div>'; // Close rsa-keys-status
 
 		// Key management section.
 		echo '<div class="notice notice-info inline">';
@@ -538,19 +469,8 @@ class Secure_Login_Settings_Manager {
 			echo '<p>' . esc_html__( 'RSA keys are active and ready for use.', 'secure-login-collector' ) . '</p>';
 		}
 
-		// Pro version key management messages.
-		if ( $this->is_pro_version ) {
-			$pro_public_key     = get_option( 'secure_login_public_key_pro' );
-			$passkey_registered = get_option( 'secure_login_passkey_registered', false );
-
-			if ( ! $pro_public_key && $passkey_registered ) {
-				echo '<p>' . esc_html__( 'Ultra-secure RSA keys need to be initialized with your passkey.', 'secure-login-collector' ) . '</p>';
-			} elseif ( ! $passkey_registered ) {
-				echo '<p>' . esc_html__( 'To enable ultra-secure encryption, register a passkey in the Pro settings.', 'secure-login-collector' ) . '</p>';
-			} elseif ( $pro_public_key ) {
-				echo '<p>' . esc_html__( 'Ultra-secure RSA keys are active and ready for use.', 'secure-login-collector' ) . '</p>';
-			}
-		}
+		// Allow pro version to add key management messages via hook.
+		do_action( 'secure_login_encryption_key_management_messages' );
 
 		echo '</div>';
 
@@ -559,22 +479,15 @@ class Secure_Login_Settings_Manager {
 		if ( $free_public_key ) {
 			echo '<button type="button" class="button button-secondary" id="export-free-public-key">' . esc_html__( 'Export Public Key', 'secure-login-collector' ) . '</button> ';
 		}
-		if ( $this->is_pro_version ) {
-			$pro_public_key = get_option( 'secure_login_public_key_pro' );
-			if ( $pro_public_key ) {
-				echo '<button type="button" class="button button-secondary" id="export-pro-public-key">' . esc_html__( 'Export Pro Public Key', 'secure-login-collector' ) . '</button>';
-			}
-		}
+		// Allow pro version to add export button via hook.
+		do_action( 'secure_login_encryption_export_buttons' );
 		echo '</p>';
 
-		// Passkey Management Section (Pro version only).
-		if ( $this->is_pro_version ) {
-			if ( class_exists( 'Passkey_Manager__premium_only' ) ) {
-				$passkey_manager = new Passkey_Manager__premium_only();
-				$passkey_manager->render_passkey_section();
-			}
-		} else {
-			// Show upgrade message for passkey features.
+		// Allow pro version to add passkey management section via hook.
+		do_action( 'secure_login_encryption_section_after_keys' );
+
+		// Show upgrade notice in free version (pro version will suppress this via filter).
+		if ( apply_filters( 'secure_login_show_pro_upgrade', true ) ) {
 			echo '<div class="notice notice-warning inline" style="margin-top: 20px;">';
 			echo '<p><strong>' . esc_html__( 'Want Ultra-Secure Encryption?', 'secure-login-collector' ) . '</strong></p>';
 			echo '<p>' . esc_html__( 'Upgrade to Pro to enable passkey-protected encryption with WebAuthn/FIDO2 authentication for true zero-knowledge security.', 'secure-login-collector' ) . '</p>';
