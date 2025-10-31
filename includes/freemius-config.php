@@ -51,6 +51,7 @@ function seculoco_fs() {
 					'slug'        => 'secure-login-collector',
 					'first-path'  => 'admin.php?page=secure-login-collector',
 					'account'     => true,
+					'pricing'     => false,
 					'contact'     => false,
 					'support'     => false,
 					'affiliation' => false,

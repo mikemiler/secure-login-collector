@@ -419,7 +419,8 @@ class Secure_Login_Settings_Manager {
 			echo esc_html__( 'Ultra-Secure (Passkey-Protected)', 'secure-login-collector' );
 			echo '</div>';
 			echo '<div class="slc-passkey-benefit-desc">' . esc_html__( 'Passkey-protected encryption with WebAuthn/FIDO2. True zero-knowledge - server cannot decrypt without your physical device.', 'secure-login-collector' ) . '</div>';
-			echo '<div style="margin-top: 8px;"><a href="#" class="button button-secondary">' . esc_html__( 'Upgrade to Pro', 'secure-login-collector' ) . '</a></div>';
+			$upgrade_url = function_exists( 'seculoco_fs' ) && seculoco_fs() ? seculoco_fs()->get_upgrade_url() : '#';
+			echo '<div style="margin-top: 8px;"><a href="' . esc_url( $upgrade_url ) . '" class="button button-secondary">' . esc_html__( 'Upgrade to Pro', 'secure-login-collector' ) . '</a></div>';
 			echo '</div>';
 			echo '</div>'; // Close slc-passkey-benefit
 		}
@@ -491,7 +492,8 @@ class Secure_Login_Settings_Manager {
 			echo '<div class="notice notice-warning inline" style="margin-top: 20px;">';
 			echo '<p><strong>' . esc_html__( 'Want Ultra-Secure Encryption?', 'secure-login-collector' ) . '</strong></p>';
 			echo '<p>' . esc_html__( 'Upgrade to Pro to enable passkey-protected encryption with WebAuthn/FIDO2 authentication for true zero-knowledge security.', 'secure-login-collector' ) . '</p>';
-			echo '<p><a href="#" class="button button-primary">' . esc_html__( 'Upgrade to Pro Version', 'secure-login-collector' ) . '</a></p>';
+			$upgrade_url = function_exists( 'seculoco_fs' ) && seculoco_fs() ? seculoco_fs()->get_upgrade_url() : '#';
+			echo '<p><a href="' . esc_url( $upgrade_url ) . '" class="button button-primary">' . esc_html__( 'Upgrade to Pro Version', 'secure-login-collector' ) . '</a></p>';
 			echo '</div>';
 		}
 
