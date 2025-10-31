@@ -23,8 +23,9 @@ jobs:
 
       - name: Create deployment package
         run: |
-          # Create a clean directory for the plugin
-          mkdir -p deploy/secure-login-collector
+          # Create temporary build directory outside plugin structure
+          BUILD_DIR="/tmp/plugin-build-${{ steps.get_version.outputs.version }}"
+          mkdir -p "$BUILD_DIR/secure-login-collector"
 
           # Copy plugin files (exclude dev files)
           rsync -av \
@@ -40,12 +41,16 @@ jobs:
             --exclude='package.json' \
             --exclude='package-lock.json' \
             --exclude='.github' \
-            ./ deploy/secure-login-collector/
+            --exclude='deploy' \
+            ./ "$BUILD_DIR/secure-login-collector/"
 
-          # Create ZIP file
-          cd deploy
-          zip -r ../secure-login-collector-${{ steps.get_version.outputs.version }}.zip secure-login-collector/
-          cd ..
+          # Create ZIP file in workflow root (not in plugin structure)
+          cd "$BUILD_DIR"
+          zip -r "$GITHUB_WORKSPACE/secure-login-collector-${{ steps.get_version.outputs.version }}.zip" secure-login-collector/
+          cd "$GITHUB_WORKSPACE"
+
+          # Clean up temporary build directory
+          rm -rf "$BUILD_DIR"
 
           # Verify ZIP was created
           ls -lh secure-login-collector-${{ steps.get_version.outputs.version }}.zip
