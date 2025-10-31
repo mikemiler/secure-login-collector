@@ -40,7 +40,7 @@ class Passkey_Manager {
 	public function __construct() {
 		// Initialize Master Key Manager.
 		if ( ! class_exists( 'Master_Key_Manager' ) ) {
-			require_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-master-key-manager.php';
+			require_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-master-key-manager__premium_only.php';
 		}
 		$this->master_key_manager = new Master_Key_Manager();
 

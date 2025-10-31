@@ -4,7 +4,7 @@
  * Plugin Name: Secure Login Collector
  * Plugin URI: https://wp-mike.com
  * Description: Securely collects and stores encrypted login credentials from clients via frontend form with email notifications.
- * Version: 1.2.0
+ * Version: 1.2.1
  * Author: Mike Miler
  * License: GPL v2 or later
  * Text Domain: secure-login-collector
@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // Define plugin constants.
 define( 'SECURE_LOGIN_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SECURE_LOGIN_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'SECURE_LOGIN_VERSION', '1.2.0' );
+define( 'SECURE_LOGIN_VERSION', '1.2.1' );
 
 // Initialize Freemius.
 if ( ! function_exists( 'seculoco_fs' ) ) {
@@ -121,11 +121,12 @@ class SecureLoginCollector {
 
 		// Load premium base classes only if available and licensed.
 		// These provide pro functionality (passkey management, licensing, etc).
+		// Files with __premium_only suffix are automatically removed by Freemius in free version.
 		if ( function_exists( 'seculoco_fs' ) && seculoco_fs()->can_use_premium_code() ) {
 			$premium_base_files = array(
-				'includes/class-passkey-manager.php',
-				'includes/class-master-key-manager.php',
-				'includes/class-license-manager.php',
+				'includes/class-passkey-manager__premium_only.php',
+				'includes/class-master-key-manager__premium_only.php',
+				'includes/class-license-manager__premium_only.php',
 			);
 
 			foreach ( $premium_base_files as $file ) {
@@ -137,9 +138,9 @@ class SecureLoginCollector {
 			// Load pro extension files (hook into free version via filters/actions).
 			// These files extend the free version with pro features.
 			$premium_extension_files = array(
-				'includes/class-frontend-handler-pro.php',
-				'includes/class-admin-interface-pro.php',
-				'includes/class-settings-manager-pro.php',
+				'includes/class-frontend-handler__premium_only.php',
+				'includes/class-admin-interface__premium_only.php',
+				'includes/class-settings-manager__premium_only.php',
 			);
 
 			foreach ( $premium_extension_files as $file ) {
