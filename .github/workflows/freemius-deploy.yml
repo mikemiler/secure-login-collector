@@ -181,7 +181,7 @@ jobs:
           file_name: secure-login-collector-${{ steps.get_version.outputs.version }}.zip
           version: ${{ steps.get_version.outputs.version }}
           release_mode: pending
-          version: ${{ steps.get_version.outputs.version }}
+          sandbox: false
         env:
           PUBLIC_KEY: ${{ secrets.FREEMIUS_PUBLIC_KEY }}
           SECRET_KEY: ${{ secrets.FREEMIUS_SECRET_KEY }}
