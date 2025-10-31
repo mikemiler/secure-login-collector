@@ -13,12 +13,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.0'
-          coverage: none
-
       - name: Extract version from tag
         id: get_version
         run: |
@@ -69,14 +63,6 @@ jobs:
           DEV_ID: 24748
           PLUGIN_ID: 19897
           PLUGIN_SLUG: secure-login-collector
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: secure-login-collector-${{ steps.get_version.outputs.version }}.zip
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Notify deployment success
         run: |
