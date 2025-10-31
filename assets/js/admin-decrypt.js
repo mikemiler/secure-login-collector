@@ -92,7 +92,7 @@
                 url: secureLoginAdmin.ajaxurl,
                 method: 'POST',
                 data: {
-                    action: 'get_encrypted_entry',
+                    action: 'seculoco_get_encrypted_entry',
                     id: entryId,
                     nonce: secureLoginAdmin.nonce
                 }
@@ -113,7 +113,7 @@
                 url: secureLoginAdmin.ajaxurl,
                 method: 'POST',
                 data: {
-                    action: 'slc_get_wrapped_private_key',
+                    action: 'seculoco_get_wrapped_private_key',
                     entry_id: entryId,
                     nonce: secureLoginAdmin.nonce
                 }
@@ -138,7 +138,7 @@
                 url: secureLoginAdmin.ajaxurl,
                 method: 'POST',
                 data: {
-                    action: 'slc_get_wrapped_private_key',
+                    action: 'seculoco_get_wrapped_private_key',
                     entry_id: entryId,
                     nonce: secureLoginAdmin.nonce
                 }

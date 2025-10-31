@@ -625,17 +625,17 @@ class Secure_Login_Admin_Interface {
 
 		// Register AJAX handlers.
 		// Decryption is handled client-side only - server never decrypts.
-		add_action( 'wp_ajax_get_encrypted_entry', array( $this, 'handle_get_encrypted_entry' ) );
+		add_action( 'wp_ajax_seculoco_get_encrypted_entry', array( $this, 'handle_get_encrypted_entry' ) );
 		add_action( 'wp_ajax_passkey_get_challenge', array( $this, 'handle_passkey_challenge' ) );
-		add_action( 'wp_ajax_get_encryption_info', array( $this, 'handle_get_encryption_info' ) );
-		add_action( 'wp_ajax_delete_secure_login_data', array( $this, 'handle_delete_ajax' ) );
-		add_action( 'wp_ajax_extend_secure_login_data', array( $this, 'handle_extend_ajax' ) );
-		add_action( 'wp_ajax_save_manual_login_data', array( $this, 'handle_save_manual_login_data' ) );
-		add_action( 'wp_ajax_update_secure_login_metadata', array( $this, 'handle_update_metadata_ajax' ) );
-		add_action( 'wp_ajax_process_bulk_export', array( $this, 'handle_bulk_export_ajax' ) );
-		add_action( 'wp_ajax_bulk_decrypt_with_passkey', array( $this, 'handle_bulk_decrypt_with_passkey_ajax' ) );
-		add_action( 'wp_ajax_authenticate_passkey_for_decrypt', array( $this, 'handle_passkey_auth_for_decrypt' ) );
-		add_action( 'wp_ajax_fix_passkey_flag', array( $this, 'handle_fix_passkey_flag' ) );
+		add_action( 'wp_ajax_seculoco_get_encryption_info', array( $this, 'handle_get_encryption_info' ) );
+		add_action( 'wp_ajax_seculoco_delete_entry', array( $this, 'handle_delete_ajax' ) );
+		add_action( 'wp_ajax_seculoco_extend_entry', array( $this, 'handle_extend_ajax' ) );
+		add_action( 'wp_ajax_seculoco_save_manual_entry', array( $this, 'handle_save_manual_login_data' ) );
+		add_action( 'wp_ajax_seculoco_update_metadata', array( $this, 'handle_update_metadata_ajax' ) );
+		add_action( 'wp_ajax_seculoco_bulk_export', array( $this, 'handle_bulk_export_ajax' ) );
+		add_action( 'wp_ajax_seculoco_bulk_decrypt_passkey', array( $this, 'handle_bulk_decrypt_with_passkey_ajax' ) );
+		add_action( 'wp_ajax_seculoco_auth_passkey_decrypt', array( $this, 'handle_passkey_auth_for_decrypt' ) );
+		add_action( 'wp_ajax_seculoco_fix_passkey_flag', array( $this, 'handle_fix_passkey_flag' ) );
 
 		// Add screen option for items per page.
 		add_action( 'load-toplevel_page_secure-login-collector', array( $this, 'add_screen_options' ) );

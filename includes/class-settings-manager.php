@@ -74,11 +74,11 @@ class Secure_Login_Settings_Manager {
 		wp_enqueue_script( 'jquery' );
 
 		// Register placeholder scripts for inline functionality.
-		wp_register_script( 'slc-key-management', '', array( 'jquery' ), '1.0.0', true );
-		wp_enqueue_script( 'slc-key-management' );
+		wp_register_script( 'seculoco-key-management', '', array( 'jquery' ), '1.0.0', true );
+		wp_enqueue_script( 'seculoco-key-management' );
 
-		wp_register_script( 'slc-textarea-toggle', '', array( 'jquery' ), '1.0.0', true );
-		wp_enqueue_script( 'slc-textarea-toggle' );
+		wp_register_script( 'seculoco-textarea-toggle', '', array( 'jquery' ), '1.0.0', true );
+		wp_enqueue_script( 'seculoco-textarea-toggle' );
 	}
 
 	/**
@@ -326,7 +326,7 @@ class Secure_Login_Settings_Manager {
 	 * Add key management inline script.
 	 */
 	private function add_key_management_inline_script() {
-		$nonce = wp_create_nonce( 'slc_admin_nonce' );
+		$nonce = wp_create_nonce( 'seculoco_admin_nonce' );
 
 		$script = "
 		jQuery(document).ready(function($) {
@@ -339,7 +339,7 @@ class Secure_Login_Settings_Manager {
 					url: ajaxurl,
 					type: 'POST',
 					data: {
-						action: 'slc_initialize_free_keys',
+						action: 'seculoco_initialize_free_keys',
 						nonce: '" . esc_js( $nonce ) . "'
 					},
 					success: function(response) {
@@ -364,7 +364,7 @@ class Secure_Login_Settings_Manager {
 					url: ajaxurl,
 					type: 'POST',
 					data: {
-						action: 'slc_export_public_key',
+						action: 'seculoco_export_public_key',
 						key_type: 'free',
 						nonce: '" . esc_js( $nonce ) . "'
 					},
@@ -390,7 +390,7 @@ class Secure_Login_Settings_Manager {
 					url: ajaxurl,
 					type: 'POST',
 					data: {
-						action: 'slc_export_public_key',
+						action: 'seculoco_export_public_key',
 						key_type: 'pro',
 						nonce: '" . esc_js( $nonce ) . "'
 					},
@@ -412,7 +412,7 @@ class Secure_Login_Settings_Manager {
 		});
 		";
 
-		wp_add_inline_script( 'slc-key-management', $script );
+		wp_add_inline_script( 'seculoco-key-management', $script );
 	}
 
 	/**
@@ -656,7 +656,7 @@ class Secure_Login_Settings_Manager {
 		});
 		";
 
-		wp_add_inline_script( 'slc-textarea-toggle', $script );
+		wp_add_inline_script( 'seculoco-textarea-toggle', $script );
 	}
 
 	/**

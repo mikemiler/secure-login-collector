@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @since 1.0.1
  * @return void
  */
-function slc_fs_uninstall_cleanup() {
+function seculoco_fs_uninstall_cleanup() {
 	try {
 		// Check if user has opted to delete all data on uninstall.
 		$delete_on_uninstall = get_option( 'secure_login_delete_on_uninstall', false );
@@ -162,9 +162,9 @@ function slc_fs_uninstall_cleanup() {
  *
  * @since 1.0.1
  */
-function slc_register_freemius_uninstall() {
-	if ( function_exists( 'slc_fs' ) && slc_fs() ) {
-		slc_fs()->add_action( 'after_uninstall', 'slc_fs_uninstall_cleanup' );
+function seculoco_register_freemius_uninstall() {
+	if ( function_exists( 'seculoco_fs' ) && seculoco_fs() ) {
+		seculoco_fs()->add_action( 'after_uninstall', 'seculoco_fs_uninstall_cleanup' );
 
 		if ( defined( 'WP_DEBUG' ) && WP_DEBUG === true ) {
 			error_log( 'Secure Login Collector: Freemius uninstall handler registered.' );
@@ -173,4 +173,4 @@ function slc_register_freemius_uninstall() {
 }
 
 // Register the uninstall handler when Freemius is loaded.
-add_action( 'slc_fs_loaded', 'slc_register_freemius_uninstall' );
+add_action( 'seculoco_fs_loaded', 'seculoco_register_freemius_uninstall' );

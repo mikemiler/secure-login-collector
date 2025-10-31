@@ -73,12 +73,13 @@ class Secure_Login_Frontend_Handler {
 		add_shortcode( 'secure_login_form', array( $this, 'frontend_form_shortcode' ) );
 
 		// Register v2 AJAX handlers for new encryption format (only v2 supported now).
-		add_action( 'wp_ajax_save_secure_login_data_v2', array( $this, 'handle_save_login_data_v2' ) );
-		add_action( 'wp_ajax_nopriv_save_secure_login_data_v2', array( $this, 'handle_save_login_data_v2' ) );
+		// Using seculoco_ prefix (WordPress.org compliant, 4+ chars, unique).
+		add_action( 'wp_ajax_seculoco_save_entry_v2', array( $this, 'handle_save_login_data_v2' ) );
+		add_action( 'wp_ajax_nopriv_seculoco_save_entry_v2', array( $this, 'handle_save_login_data_v2' ) );
 
 		// Add handler for public key retrieval (delegates to encryption handler).
-		add_action( 'wp_ajax_slc_get_public_key', array( $this->encryption_handler, 'handle_get_public_key' ) );
-		add_action( 'wp_ajax_nopriv_slc_get_public_key', array( $this->encryption_handler, 'handle_get_public_key' ) );
+		add_action( 'wp_ajax_seculoco_get_public_key', array( $this->encryption_handler, 'handle_get_public_key' ) );
+		add_action( 'wp_ajax_nopriv_seculoco_get_public_key', array( $this->encryption_handler, 'handle_get_public_key' ) );
 	}
 
 	/**

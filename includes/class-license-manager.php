@@ -68,9 +68,9 @@ class Secure_Login_License_Manager {
 	 * @return bool True if user has paid license, false otherwise.
 	 */
 	public static function has_pro_license() {
-		return function_exists( 'slc_fs' )
-			&& slc_fs()->is_registered()
-			&& slc_fs()->is_paying();
+		return function_exists( 'seculoco_fs' )
+			&& seculoco_fs()->is_registered()
+			&& seculoco_fs()->is_paying();
 	}
 
 	/**

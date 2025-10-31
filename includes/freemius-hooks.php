@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Customize Freemius opt-in message
  */
-function slc_fs_custom_connect_message(
+function seculoco_fs_custom_connect_message(
 	$message,
 	$user_first_name,
 	$plugin_title,
@@ -28,30 +28,25 @@ function slc_fs_custom_connect_message(
 		'<b>' . $plugin_title . '</b>'
 	);
 }
-if ( function_exists( 'slc_fs' ) ) {
-	slc_fs()->add_filter( 'connect_message', 'slc_fs_custom_connect_message', 10, 6 );
+if ( function_exists( 'seculoco_fs' ) ) {
+	seculoco_fs()->add_filter( 'connect_message', 'seculoco_fs_custom_connect_message', 10, 6 );
 }
 
 /**
- * Add custom icon for Freemius
+ * Note: Plugin icon should be uploaded to WordPress.org assets directory via SVN.
+ * The icon is NOT included in the plugin zip file per WordPress.org guidelines.
  */
-function slc_fs_custom_icon() {
-	return SECURE_LOGIN_PLUGIN_DIR . 'assets/icon-256x256.png';
-}
-if ( function_exists( 'slc_fs' ) ) {
-	slc_fs()->add_filter( 'plugin_icon', 'slc_fs_custom_icon' );
-}
 
 /**
  * Note: Uninstall cleanup is now handled in includes/freemius-uninstall.php
  * That file is included in the main plugin file and properly registers
- * the uninstall handler with Freemius via the 'slc_fs_loaded' action.
+ * the uninstall handler with Freemius via the 'seculoco_fs_loaded' action.
  */
 
 /**
  * Add custom pricing page
  */
-function slc_fs_custom_pricing_page() {
+function seculoco_fs_custom_pricing_page() {
 	// Use freemium pricing for now.
 	/*
 	Commented out for future use
@@ -83,22 +78,22 @@ function slc_fs_custom_pricing_page() {
 				</ul>
 
 				<?php
-				if ( function_exists( 'slc_fs' ) ) {
+				if ( function_exists( 'seculoco_fs' ) ) {
 					// Debug information.
 					if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-						echo '<!-- Debug: is_registered = ' . ( slc_fs()->is_registered() ? 'true' : 'false' ) . ' -->';
-						echo '<!-- Debug: is_anonymous = ' . ( slc_fs()->is_anonymous() ? 'true' : 'false' ) . ' -->';
-						echo '<!-- Debug: is_pending_activation = ' . ( slc_fs()->is_pending_activation() ? 'true' : 'false' ) . ' -->';
+						echo '<!-- Debug: is_registered = ' . ( seculoco_fs()->is_registered() ? 'true' : 'false' ) . ' -->';
+						echo '<!-- Debug: is_anonymous = ' . ( seculoco_fs()->is_anonymous() ? 'true' : 'false' ) . ' -->';
+						echo '<!-- Debug: is_pending_activation = ' . ( seculoco_fs()->is_pending_activation() ? 'true' : 'false' ) . ' -->';
 					}
 
 					// Check if Freemius is properly set up.
-					if ( ! slc_fs()->is_registered() || slc_fs()->is_anonymous() ) {
+					if ( ! seculoco_fs()->is_registered() || seculoco_fs()->is_anonymous() ) {
 						echo '<p>' . esc_html__( 'Please complete the Freemius opt-in process first.', 'secure-login-collector' ) . '</p>';
 
 						// Show opt-in button if available.
-						if ( method_exists( slc_fs(), 'get_activation_url' ) ) {
+						if ( method_exists( seculoco_fs(), 'get_activation_url' ) ) {
 							// Use onclick to trigger Freemius opt-in dialog.
-							echo '<button type="button" class="button button-primary" onclick="if(typeof slc_fs !== \'undefined\' && slc_fs.opt_in) { slc_fs.opt_in(); } else { window.location.href = \'' . esc_url( slc_fs()->get_activation_url() ) . '\'; }">' .
+							echo '<button type="button" class="button button-primary" onclick="if(typeof seculoco_fs !== \'undefined\' && seculoco_fs.opt_in) { seculoco_fs.opt_in(); } else { window.location.href = \'' . esc_url( seculoco_fs()->get_activation_url() ) . '\'; }">' .
 								esc_html__( 'Complete Activation', 'secure-login-collector' ) . '</button>';
 						} else {
 							echo '<a href="' . esc_url( admin_url( 'admin.php?page=secure-login-collector' ) ) . '" class="button button-primary">' .
@@ -106,11 +101,11 @@ function slc_fs_custom_pricing_page() {
 						}
 					} else {
 						// Try different methods to get the upgrade URL.
-						$upgrade_url = slc_fs()->get_upgrade_url();
+						$upgrade_url = seculoco_fs()->get_upgrade_url();
 
-						if ( ! $upgrade_url && method_exists( slc_fs(), 'checkout_url' ) ) {
+						if ( ! $upgrade_url && method_exists( seculoco_fs(), 'checkout_url' ) ) {
 							// Try checkout URL as fallback.
-							$upgrade_url = slc_fs()->checkout_url();
+							$upgrade_url = seculoco_fs()->checkout_url();
 						}
 
 						if ( $upgrade_url ) {
@@ -197,26 +192,26 @@ function slc_fs_custom_pricing_page() {
 /**
  * Customize trial message
  */
-function slc_fs_trial_promotion_message( $message ) {
+function seculoco_fs_trial_promotion_message( $message ) {
 	return sprintf(
 		__( 'Hey there! Want to try the Pro version of Secure Login Collector? Start your 14-day free trial and experience passkey-derived encryption!', 'secure-login-collector' ),
-		'<b>' . slc_fs()->get_plugin_name() . '</b>'
+		'<b>' . seculoco_fs()->get_plugin_name() . '</b>'
 	);
 }
-if ( function_exists( 'slc_fs' ) ) {
-	slc_fs()->add_filter( 'trial_promotion_message', 'slc_fs_trial_promotion_message' );
+if ( function_exists( 'seculoco_fs' ) ) {
+	seculoco_fs()->add_filter( 'trial_promotion_message', 'seculoco_fs_trial_promotion_message' );
 }
 
 /**
  * Add admin notices for pro features
  */
-function slc_fs_admin_notices() {
-	if ( ! function_exists( 'slc_fs' ) ) {
+function seculoco_fs_admin_notices() {
+	if ( ! function_exists( 'seculoco_fs' ) ) {
 		return;
 	}
 
 	// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET parameter for page detection.
-	if ( ! slc_fs()->is_paying() && isset( $_GET['page'] ) && 'secure-login-collector-account' === $_GET['page'] ) {
+	if ( ! seculoco_fs()->is_paying() && isset( $_GET['page'] ) && 'secure-login-collector-account' === $_GET['page'] ) {
 		$passkey_registered = get_option( 'secure_login_passkey_registered', false );
 
 		if ( $passkey_registered ) {
@@ -227,7 +222,7 @@ function slc_fs_admin_notices() {
 					printf(
 						/* translators: %s: upgrade link */
 						esc_html__( 'You have a passkey registered but need the Pro version to use passkey encryption. %s', 'secure-login-collector' ),
-						'<a href="' . esc_url( slc_fs()->get_upgrade_url() ) . '">' . esc_html__( 'Upgrade Now', 'secure-login-collector' ) . '</a>'
+						'<a href="' . esc_url( seculoco_fs()->get_upgrade_url() ) . '">' . esc_html__( 'Upgrade Now', 'secure-login-collector' ) . '</a>'
 					);
 					?>
 				</p>
@@ -236,19 +231,19 @@ function slc_fs_admin_notices() {
 		}
 	}
 }
-add_action( 'admin_notices', 'slc_fs_admin_notices' );
+add_action( 'admin_notices', 'seculoco_fs_admin_notices' );
 
 /**
  * Override plugin action links
  */
-function slc_fs_plugin_action_links( $links ) {
-	if ( function_exists( 'slc_fs' ) && slc_fs()->is_not_paying() ) {
+function seculoco_fs_plugin_action_links( $links ) {
+	if ( function_exists( 'seculoco_fs' ) && seculoco_fs()->is_not_paying() ) {
 		// Use Freemius's proper upgrade URL.
-		$upgrade_url = slc_fs()->get_upgrade_url();
+		$upgrade_url = seculoco_fs()->get_upgrade_url();
 
 		// If no upgrade URL available, use account page.
 		if ( empty( $upgrade_url ) ) {
-			$upgrade_url = slc_fs()->get_account_url();
+			$upgrade_url = seculoco_fs()->get_account_url();
 		}
 
 		$links['go-pro'] = '<a href="' . esc_url( $upgrade_url ) . '" style="color: #2271b1; font-weight: bold;">' .
@@ -257,13 +252,13 @@ function slc_fs_plugin_action_links( $links ) {
 
 	return $links;
 }
-add_filter( 'plugin_action_links_' . plugin_basename( SECURE_LOGIN_PLUGIN_DIR . 'secure-login-collector.php' ), 'slc_fs_plugin_action_links' );
+add_filter( 'plugin_action_links_' . plugin_basename( SECURE_LOGIN_PLUGIN_DIR . 'secure-login-collector.php' ), 'seculoco_fs_plugin_action_links' );
 
 /**
  * Custom menu items
  */
-function slc_fs_custom_menu_items() {
-	if ( function_exists( 'slc_fs' ) && slc_fs()->is_not_paying() ) {
+function seculoco_fs_custom_menu_items() {
+	if ( function_exists( 'seculoco_fs' ) && seculoco_fs()->is_not_paying() ) {
 		// Add pricing page under our plugin menu.
 		add_submenu_page(
 			'secure-login-collector',
@@ -271,8 +266,8 @@ function slc_fs_custom_menu_items() {
 			__( 'Pricing', 'secure-login-collector' ),
 			'manage_options',
 			'secure-login-collector-pricing',
-			'slc_fs_custom_pricing_page'
+			'seculoco_fs_custom_pricing_page'
 		);
 	}
 }
-add_action( 'admin_menu', 'slc_fs_custom_menu_items', 99 );
+add_action( 'admin_menu', 'seculoco_fs_custom_menu_items', 99 );

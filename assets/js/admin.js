@@ -150,7 +150,7 @@ jQuery(document).ready(function ($) {
             url: secureLoginAjax.ajaxurl,
             type: 'POST',
             data: {
-                action: 'update_secure_login_metadata',
+                action: 'seculoco_update_metadata',
                 update_id: id,
                 metadata: newData,
                 nonce: secureLoginAjax.nonce
@@ -210,7 +210,7 @@ jQuery(document).ready(function ($) {
             url: secureLoginAjax.ajaxurl,
             type: 'POST',
             data: {
-                action: 'extend_secure_login_data',
+                action: 'seculoco_extend_entry',
                 extend_id: id,
                 nonce: secureLoginAjax.nonce
             },
@@ -246,7 +246,7 @@ jQuery(document).ready(function ($) {
             url: secureLoginAjax.ajaxurl,
             type: 'POST',
             data: {
-                action: 'delete_secure_login_data',
+                action: 'seculoco_delete_entry',
                 delete_id: id,
                 nonce: secureLoginAjax.nonce
             },
@@ -359,7 +359,7 @@ jQuery(document).ready(function ($) {
             url: secureLoginAjax.ajaxurl,
             type: 'POST',
             data: {
-                action: 'save_manual_login_data',
+                action: 'seculoco_save_manual_entry',
                 login_data: loginData,
                 metadata: JSON.stringify(metadata),
                 nonce: secureLoginAjax.nonce
@@ -683,7 +683,7 @@ jQuery(document).ready(function ($) {
                     url: secureLoginAjax.ajaxurl,
                     type: 'POST',
                     data: {
-                        action: 'process_bulk_export',
+                        action: 'seculoco_bulk_export',
                         nonce: secureLoginAjax.nonce
                     },
                     success: function (response) {
@@ -809,7 +809,7 @@ $(document).on('click', '#fix-passkey-flag-btn', function() {
         url: ajaxurl,
         type: 'POST',
         data: {
-            action: 'fix_passkey_flag',
+            action: 'seculoco_fix_passkey_flag',
             nonce: secureLoginAdmin.nonce
         },
         success: function(response) {

@@ -14,21 +14,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Check if Freemius is properly loaded and handle errors gracefully
  */
-function slc_check_freemius_loaded() {
-	if ( ! function_exists( 'slc_fs' ) ) {
-		add_action( 'admin_notices', 'slc_freemius_not_loaded_notice' );
+function seculoco_check_freemius_loaded() {
+	if ( ! function_exists( 'seculoco_fs' ) ) {
+		add_action( 'admin_notices', 'seculoco_freemius_not_loaded_notice' );
 		return false;
 	}
 
 	try {
 		// Test if Freemius object is accessible.
-		$fs = slc_fs();
+		$fs = seculoco_fs();
 		if ( ! is_object( $fs ) ) {
-			add_action( 'admin_notices', 'slc_freemius_init_error_notice' );
+			add_action( 'admin_notices', 'seculoco_freemius_init_error_notice' );
 			return false;
 		}
 	} catch ( Exception $e ) {
-		add_action( 'admin_notices', 'slc_freemius_init_error_notice' );
+		add_action( 'admin_notices', 'seculoco_freemius_init_error_notice' );
 		return false;
 	}
 
@@ -38,7 +38,7 @@ function slc_check_freemius_loaded() {
 /**
  * Admin notice when Freemius SDK is not loaded
  */
-function slc_freemius_not_loaded_notice() {
+function seculoco_freemius_not_loaded_notice() {
 	if ( current_user_can( 'manage_options' ) ) {
 		?>
 		<div class="notice notice-error">
@@ -54,7 +54,7 @@ function slc_freemius_not_loaded_notice() {
 /**
  * Admin notice when Freemius initialization fails
  */
-function slc_freemius_init_error_notice() {
+function seculoco_freemius_init_error_notice() {
 	if ( current_user_can( 'manage_options' ) ) {
 		?>
 		<div class="notice notice-error">
@@ -68,15 +68,15 @@ function slc_freemius_init_error_notice() {
 }
 
 // Run the check on admin_init.
-add_action( 'admin_init', 'slc_check_freemius_loaded' );
+add_action( 'admin_init', 'seculoco_check_freemius_loaded' );
 
 /**
  * Safe wrapper for Freemius functions
  */
-function slc_fs_safe() {
-	if ( function_exists( 'slc_fs' ) ) {
+function seculoco_fs_safe() {
+	if ( function_exists( 'seculoco_fs' ) ) {
 		try {
-			return slc_fs();
+			return seculoco_fs();
 		} catch ( Exception $e ) {
 			return null;
 		}

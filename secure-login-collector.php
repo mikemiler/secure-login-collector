@@ -25,7 +25,7 @@ define( 'SECURE_LOGIN_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'SECURE_LOGIN_VERSION', '1.1.2' );
 
 // Initialize Freemius.
-if ( ! function_exists( 'slc_fs' ) ) {
+if ( ! function_exists( 'seculoco_fs' ) ) {
 	// Check if vendor directory exists with Freemius SDK.
 	if ( file_exists( SECURE_LOGIN_PLUGIN_DIR . 'vendor/freemius/start.php' ) ) {
 		try {
@@ -135,7 +135,7 @@ class SecureLoginCollector {
 		include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-database-manager.php';
 
 		// Load premium classes only if available and licensed.
-		if ( function_exists( 'slc_fs' ) && slc_fs()->can_use_premium_code() ) {
+		if ( function_exists( 'seculoco_fs' ) && seculoco_fs()->can_use_premium_code() ) {
 			if ( file_exists( SECURE_LOGIN_PLUGIN_DIR . 'includes/class-passkey-manager.php' ) ) {
 				include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-passkey-manager.php';
 			}
@@ -148,7 +148,7 @@ class SecureLoginCollector {
 		}
 
 		// Load Freemius hooks if available.
-		if ( function_exists( 'slc_fs' ) && file_exists( SECURE_LOGIN_PLUGIN_DIR . 'includes/freemius-hooks.php' ) ) {
+		if ( function_exists( 'seculoco_fs' ) && file_exists( SECURE_LOGIN_PLUGIN_DIR . 'includes/freemius-hooks.php' ) ) {
 			include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/freemius-hooks.php';
 		}
 
@@ -190,9 +190,9 @@ class SecureLoginCollector {
 	 */
 	private function check_pro_version() {
 		// Check if Freemius is loaded and user has premium license.
-		if ( function_exists( 'slc_fs' ) ) {
+		if ( function_exists( 'seculoco_fs' ) ) {
 			try {
-				$fs = slc_fs();
+				$fs = seculoco_fs();
 				if ( $fs && is_object( $fs ) ) {
 					// Check if user can use premium code (has active license).
 					if ( method_exists( $fs, 'can_use_premium_code' ) && $fs->can_use_premium_code() ) {

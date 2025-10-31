@@ -15,10 +15,10 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @return Freemius
  */
-function slc_fs() {
-	global $slc_fs;
+function seculoco_fs() {
+	global $seculoco_fs;
 
-	if ( ! isset( $slc_fs ) ) {
+	if ( ! isset( $seculoco_fs ) ) {
 		// Include Freemius SDK.
 		$freemius_sdk = dirname( __DIR__ ) . '/vendor/freemius/start.php';
 
@@ -29,7 +29,7 @@ function slc_fs() {
 
 		require_once $freemius_sdk;
 
-		$slc_fs = fs_dynamic_init(
+		$seculoco_fs = fs_dynamic_init(
 			array(
 				'id'                  => '19897',
                 'slug'                => 'secure-login-collector',
@@ -42,6 +42,8 @@ function slc_fs() {
                 'has_premium_version' => true,
                 'has_addons'          => false,
                 'has_paid_plans'      => true,
+				// Enable WordPress.org compliance mode - required for plugins hosted on WordPress.org.
+				'is_org_compliant'    => true,
 				// Automatically removed in the free version. If you're not using the
                 // auto-generated free version, delete this line before uploading to wp.org.
                 'wp_org_gatekeeper'   => 'OA7#BoRiBNqdf52FvzEf!!074aRLPs8fspif$7K1#4u4Csys1fQlCecVcUTOs2mcpeVHi#C2j9d09fOTvbC0HloPT7fFee5WdS3G',
@@ -57,32 +59,32 @@ function slc_fs() {
 		);
 	}
 
-	return $slc_fs;
+	return $seculoco_fs;
 }
 
 // Init Freemius.
-slc_fs();
+seculoco_fs();
 
 // Signal that SDK was initiated.
-do_action( 'slc_fs_loaded' );
+do_action( 'seculoco_fs_loaded' );
 
 /**
  * Customize Freemius strings
  */
-function slc_fs_custom_strings( $strings ) {
+function seculoco_fs_custom_strings( $strings ) {
 	$strings['free'] = __( 'Free Version', 'secure-login-collector' );
 	$strings['pro']  = __( 'Pro Version', 'secure-login-collector' );
 
 	return $strings;
 }
-if ( function_exists( 'slc_fs' ) && slc_fs() ) {
-	slc_fs()->add_filter( 'plugin_strings', 'slc_fs_custom_strings' );
+if ( function_exists( 'seculoco_fs' ) && seculoco_fs() ) {
+	seculoco_fs()->add_filter( 'plugin_strings', 'seculoco_fs_custom_strings' );
 }
 
 /**
  * Add custom license activation success message
  */
-function slc_fs_license_activation_message( $hook ) {
+function seculoco_fs_license_activation_message( $hook ) {
 	// Only load on Freemius pages.
 	if ( strpos( $hook, 'secure-login-collector' ) === false ) {
 		return;
@@ -104,15 +106,15 @@ function slc_fs_license_activation_message( $hook ) {
 
 	wp_add_inline_script( 'jquery', $script );
 }
-add_action( 'admin_enqueue_scripts', 'slc_fs_license_activation_message' );
+add_action( 'admin_enqueue_scripts', 'seculoco_fs_license_activation_message' );
 
 
 /**
  * Hide Freemius admin notices for non-admin users
  */
-function slc_fs_hide_admin_notices() {
-	if ( ! current_user_can( 'manage_options' ) && function_exists( 'slc_fs' ) && slc_fs() ) {
-		slc_fs()->add_filter( 'show_admin_notices', '__return_false' );
+function seculoco_fs_hide_admin_notices() {
+	if ( ! current_user_can( 'manage_options' ) && function_exists( 'seculoco_fs' ) && seculoco_fs() ) {
+		seculoco_fs()->add_filter( 'show_admin_notices', '__return_false' );
 	}
 }
-add_action( 'init', 'slc_fs_hide_admin_notices' );
+add_action( 'init', 'seculoco_fs_hide_admin_notices' );

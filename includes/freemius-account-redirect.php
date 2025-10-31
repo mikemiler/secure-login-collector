@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Handle Freemius account page redirect
  */
-function slc_handle_freemius_account_redirect() {
+function seculoco_handle_freemius_account_redirect() {
 	// Check if we're on the Freemius-generated account page.
 	// Freemius uses the pattern: {slug}-account.
 	// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET parameter for page routing.
@@ -27,13 +27,13 @@ function slc_handle_freemius_account_redirect() {
 
 	// Don't render via admin_init - let the page callback handle it.
 }
-// add_action( 'admin_init', 'slc_handle_freemius_account_redirect', 1 ); // Disabled - let Freemius handle redirects.
+// add_action( 'admin_init', 'seculoco_handle_freemius_account_redirect', 1 ); // Disabled - let Freemius handle redirects.
 
 /**
  * Alternative: Handle via direct page callback
  */
-function slc_freemius_account_page() {
-	if ( ! function_exists( 'slc_fs' ) || ! slc_fs() ) {
+function seculoco_freemius_account_page() {
+	if ( ! function_exists( 'seculoco_fs' ) || ! seculoco_fs() ) {
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Account', 'secure-login-collector' ); ?></h1>
@@ -46,7 +46,7 @@ function slc_freemius_account_page() {
 	}
 
 	// Check if user has completed opt-in.
-	if ( ! slc_fs()->is_registered() ) {
+	if ( ! seculoco_fs()->is_registered() ) {
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Account Setup Required', 'secure-login-collector' ); ?></h1>
@@ -55,10 +55,10 @@ function slc_freemius_account_page() {
 				<p><a href="<?php echo esc_url( admin_url( 'admin.php?page=secure-login-collector' ) ); ?>" class="button button-primary"><?php esc_html_e( 'Go to Plugin Dashboard', 'secure-login-collector' ); ?></a></p>
 			</div>
 			
-			<?php if ( method_exists( slc_fs(), 'connect_url' ) ) : ?>
+			<?php if ( method_exists( seculoco_fs(), 'connect_url' ) ) : ?>
 				<h2><?php esc_html_e( 'Quick Setup', 'secure-login-collector' ); ?></h2>
 				<p><?php esc_html_e( 'Click below to complete the setup:', 'secure-login-collector' ); ?></p>
-				<a href="<?php echo esc_url( slc_fs()->get_activation_url() ); ?>" class="button button-primary"><?php esc_html_e( 'Complete Setup', 'secure-login-collector' ); ?></a>
+				<a href="<?php echo esc_url( seculoco_fs()->get_activation_url() ); ?>" class="button button-primary"><?php esc_html_e( 'Complete Setup', 'secure-login-collector' ); ?></a>
 			<?php endif; ?>
 		</div>
 		<?php
@@ -67,7 +67,7 @@ function slc_freemius_account_page() {
 
 	// Try to render account page.
 	try {
-		slc_fs()->_account_page_render();
+		seculoco_fs()->_account_page_render();
 	} catch ( Exception $e ) {
 		?>
 		<div class="wrap">
@@ -80,7 +80,7 @@ function slc_freemius_account_page() {
 			<p>
 				<a href="<?php echo esc_url( admin_url( 'admin.php?page=secure-login-collector' ) ); ?>" class="button"><?php esc_html_e( 'Plugin Dashboard', 'secure-login-collector' ); ?></a>
 				<a href="<?php echo esc_url( admin_url( 'admin.php?page=secure-login-collector-settings' ) ); ?>" class="button"><?php esc_html_e( 'Settings', 'secure-login-collector' ); ?></a>
-				<?php if ( slc_fs()->is_not_paying() ) : ?>
+				<?php if ( seculoco_fs()->is_not_paying() ) : ?>
 					<a href="<?php echo esc_url( admin_url( 'admin.php?page=secure-login-collector-pricing' ) ); ?>" class="button"><?php esc_html_e( 'View Pricing', 'secure-login-collector' ); ?></a>
 				<?php endif; ?>
 			</p>
@@ -92,7 +92,7 @@ function slc_freemius_account_page() {
 /**
  * Fix Freemius page URLs
  */
-function slc_fix_freemius_urls() {
+function seculoco_fix_freemius_urls() {
 	// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only GET parameters for URL redirects.
 	if ( ! isset( $_GET['page'] ) ) {
 		return;
@@ -113,4 +113,4 @@ function slc_fix_freemius_urls() {
 	}
 	// phpcs:enable WordPress.Security.NonceVerification.Recommended
 }
-add_action( 'admin_init', 'slc_fix_freemius_urls', 0 );
+add_action( 'admin_init', 'seculoco_fix_freemius_urls', 0 );

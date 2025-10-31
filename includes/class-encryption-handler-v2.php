@@ -35,14 +35,14 @@ class Secure_Login_Encryption_Handler_V2 {
 			$this->master_key_manager = new Master_Key_Manager__premium_only();
 		}
 
-		// AJAX handlers.
-		add_action( 'wp_ajax_slc_get_public_key', array( $this, 'handle_get_public_key' ) );
-		add_action( 'wp_ajax_nopriv_slc_get_public_key', array( $this, 'handle_get_public_key' ) );
-		add_action( 'wp_ajax_slc_get_wrapped_private_key', array( $this, 'handle_get_wrapped_private_key' ) );
-		add_action( 'wp_ajax_slc_initialize_free_keys', array( $this, 'handle_initialize_free_keys' ) );
-		add_action( 'wp_ajax_slc_initialize_pro_keys', array( $this, 'handle_initialize_pro_keys' ) );
-		add_action( 'wp_ajax_slc_delete_pro_keys', array( $this, 'handle_delete_pro_keys' ) );
-		add_action( 'wp_ajax_slc_export_public_key', array( $this, 'handle_export_public_key' ) );
+		// AJAX handlers - using seculoco_ prefix (WordPress.org compliant, 4+ chars).
+		add_action( 'wp_ajax_seculoco_get_public_key', array( $this, 'handle_get_public_key' ) );
+		add_action( 'wp_ajax_nopriv_seculoco_get_public_key', array( $this, 'handle_get_public_key' ) );
+		add_action( 'wp_ajax_seculoco_get_wrapped_private_key', array( $this, 'handle_get_wrapped_private_key' ) );
+		add_action( 'wp_ajax_seculoco_initialize_free_keys', array( $this, 'handle_initialize_free_keys' ) );
+		add_action( 'wp_ajax_seculoco_initialize_pro_keys', array( $this, 'handle_initialize_pro_keys' ) );
+		add_action( 'wp_ajax_seculoco_delete_pro_keys', array( $this, 'handle_delete_pro_keys' ) );
+		add_action( 'wp_ajax_seculoco_export_public_key', array( $this, 'handle_export_public_key' ) );
 	}
 
 	/**
@@ -327,7 +327,7 @@ class Secure_Login_Encryption_Handler_V2 {
 		// Verify nonce (accept multiple nonce names for compatibility).
 		$nonce = sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) );
 		if ( ! wp_verify_nonce( $nonce, 'secure_login_admin_nonce' ) &&
-			! wp_verify_nonce( $nonce, 'slc_admin_nonce' ) &&
+			! wp_verify_nonce( $nonce, 'seculoco_admin_nonce' ) &&
 			! wp_verify_nonce( $nonce, 'secure_login_nonce' ) ) {
 			wp_send_json_error( 'Invalid security token' );
 			return;
@@ -415,7 +415,7 @@ class Secure_Login_Encryption_Handler_V2 {
 		}
 
 		// Verify nonce.
-		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) ), 'slc_admin_nonce' ) ) {
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) ), 'seculoco_admin_nonce' ) ) {
 			wp_send_json_error( 'Invalid security token' );
 			return;
 		}
@@ -454,7 +454,7 @@ class Secure_Login_Encryption_Handler_V2 {
 		}
 
 		// Verify nonce.
-		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) ), 'slc_admin_nonce' ) ) {
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) ), 'seculoco_admin_nonce' ) ) {
 			wp_send_json_error( 'Invalid security token' );
 			return;
 		}
@@ -582,7 +582,7 @@ class Secure_Login_Encryption_Handler_V2 {
 
 		// Verify nonce.
 		$nonce = sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) );
-		if ( ! wp_verify_nonce( $nonce, 'slc_admin_nonce' ) ) {
+		if ( ! wp_verify_nonce( $nonce, 'seculoco_admin_nonce' ) ) {
 			wp_send_json_error( 'Invalid security token' );
 			return;
 		}
@@ -608,7 +608,7 @@ class Secure_Login_Encryption_Handler_V2 {
 
 		// Verify nonce.
 		$nonce = sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) );
-		if ( ! wp_verify_nonce( $nonce, 'slc_admin_nonce' ) ) {
+		if ( ! wp_verify_nonce( $nonce, 'seculoco_admin_nonce' ) ) {
 			wp_send_json_error( 'Invalid security token' );
 			return;
 		}

@@ -391,7 +391,7 @@ jQuery(document).ready(function ($) {
                 url: secureLoginAjax.ajaxurl,
                 type: 'POST',
                 data: {
-                    action: 'save_secure_login_data_v2',
+                    action: 'seculoco_save_entry_v2',
                     submission: JSON.stringify(submissionData),
                     nonce: secureLoginAjax.nonce
                 },
