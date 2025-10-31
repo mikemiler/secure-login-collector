@@ -60,7 +60,7 @@ jobs:
         run: |
           API_HOST="https://api.freemius.com"
 
-          curl -f -X POST "$API_HOST/v1/products/${PLUGIN_ID}/tags.json" \
+          curl -f -X POST "$API_HOST/v1/products/${PLUGIN_ID}.json" \
             -H "Authorization: Bearer ${FREEMIUS_API_TOKEN}" \
             -F "file=@secure-login-collector-${{ steps.get_version.outputs.version }}.zip" \
             -F "version=${{ steps.get_version.outputs.version }}" \
