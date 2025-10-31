@@ -176,7 +176,7 @@ jobs:
           ls -lh secure-login-collector-${{ steps.get_version.outputs.version }}.zip
 
       - name: Deploy to Freemius
-        uses: buttonizer/freemius-deploy@v0.1.2
+        uses: buttonizer/freemius-deploy@v0.1.3
         with:
           file_name: secure-login-collector-${{ steps.get_version.outputs.version }}.zip
           version: ${{ steps.get_version.outputs.version }}
