@@ -27,6 +27,125 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Deploying version: $VERSION"
 
+      - name: Validate Freemius Credentials
+        run: |
+          # ===========================================================================
+          # FREEMIUS API CREDENTIALS VALIDATION
+          # ===========================================================================
+          #
+          # ⚠️  WICHTIG / IMPORTANT:
+          #
+          # Diese Secrets müssen PLUGIN-level API-Schlüssel sein, NICHT Developer-level!
+          # These secrets must be PLUGIN-level API keys, NOT developer-level!
+          #
+          # 📍 Wo finden Sie die richtigen Schlüssel:
+          #    Where to find the correct keys:
+          #
+          #    Freemius Dashboard → Plugins → Secure Login Collector → API
+          #    https://dashboard.freemius.com/
+          #
+          # 🔑 Erforderliche Secrets / Required Secrets:
+          #    - FREEMIUS_PUBLIC_KEY  (Format: pk_XXXXXXXXXX)
+          #    - FREEMIUS_SECRET_KEY  (Format: sk_XXXXXXXXXX)
+          #    - FREEMIUS_DEVELOPER_ID (Numerisch / Numeric)
+          #    - FREEMIUS_PLUGIN_ID   (Numerisch / Numeric)
+          #
+          # ===========================================================================
+
+          echo "🔍 Validating Freemius API credentials..."
+          echo "================================================"
+
+          VALIDATION_FAILED=0
+
+          # Check PUBLIC_KEY
+          echo ""
+          echo "1️⃣  Validating FREEMIUS_PUBLIC_KEY..."
+          if [ -z "${{ secrets.FREEMIUS_PUBLIC_KEY }}" ]; then
+            echo "❌ ERROR: FREEMIUS_PUBLIC_KEY is not set or empty"
+            echo "   FEHLER: FREEMIUS_PUBLIC_KEY ist nicht gesetzt oder leer"
+            VALIDATION_FAILED=1
+          elif ! [[ "${{ secrets.FREEMIUS_PUBLIC_KEY }}" =~ ^pk_ ]]; then
+            echo "❌ ERROR: FREEMIUS_PUBLIC_KEY must start with 'pk_'"
+            echo "   FEHLER: FREEMIUS_PUBLIC_KEY muss mit 'pk_' beginnen"
+            VALIDATION_FAILED=1
+          else
+            echo "   ✅ FREEMIUS_PUBLIC_KEY: Valid"
+          fi
+
+          # Check SECRET_KEY
+          echo ""
+          echo "2️⃣  Validating FREEMIUS_SECRET_KEY..."
+          if [ -z "${{ secrets.FREEMIUS_SECRET_KEY }}" ]; then
+            echo "❌ ERROR: FREEMIUS_SECRET_KEY is not set or empty"
+            echo "   FEHLER: FREEMIUS_SECRET_KEY ist nicht gesetzt oder leer"
+            VALIDATION_FAILED=1
+          elif ! [[ "${{ secrets.FREEMIUS_SECRET_KEY }}" =~ ^sk_ ]]; then
+            echo "❌ ERROR: FREEMIUS_SECRET_KEY must start with 'sk_'"
+            echo "   FEHLER: FREEMIUS_SECRET_KEY muss mit 'sk_' beginnen"
+            VALIDATION_FAILED=1
+          else
+            echo "   ✅ FREEMIUS_SECRET_KEY: Valid"
+          fi
+
+          # Check DEVELOPER_ID
+          echo ""
+          echo "3️⃣  Validating FREEMIUS_DEVELOPER_ID..."
+          if [ -z "${{ secrets.FREEMIUS_DEVELOPER_ID }}" ]; then
+            echo "❌ ERROR: FREEMIUS_DEVELOPER_ID is not set or empty"
+            echo "   FEHLER: FREEMIUS_DEVELOPER_ID ist nicht gesetzt oder leer"
+            VALIDATION_FAILED=1
+          elif ! [[ "${{ secrets.FREEMIUS_DEVELOPER_ID }}" =~ ^[0-9]+$ ]]; then
+            echo "❌ ERROR: FREEMIUS_DEVELOPER_ID must be numeric"
+            echo "   FEHLER: FREEMIUS_DEVELOPER_ID muss numerisch sein"
+            VALIDATION_FAILED=1
+          else
+            echo "   ✅ FREEMIUS_DEVELOPER_ID: Valid (ID: ${{ secrets.FREEMIUS_DEVELOPER_ID }})"
+          fi
+
+          # Check PLUGIN_ID
+          echo ""
+          echo "4️⃣  Validating FREEMIUS_PLUGIN_ID..."
+          if [ -z "${{ secrets.FREEMIUS_PLUGIN_ID }}" ]; then
+            echo "❌ ERROR: FREEMIUS_PLUGIN_ID is not set or empty"
+            echo "   FEHLER: FREEMIUS_PLUGIN_ID ist nicht gesetzt oder leer"
+            VALIDATION_FAILED=1
+          elif ! [[ "${{ secrets.FREEMIUS_PLUGIN_ID }}" =~ ^[0-9]+$ ]]; then
+            echo "❌ ERROR: FREEMIUS_PLUGIN_ID must be numeric"
+            echo "   FEHLER: FREEMIUS_PLUGIN_ID muss numerisch sein"
+            VALIDATION_FAILED=1
+          else
+            echo "   ✅ FREEMIUS_PLUGIN_ID: Valid (ID: ${{ secrets.FREEMIUS_PLUGIN_ID }})"
+          fi
+
+          # Final result
+          echo ""
+          echo "================================================"
+          if [ $VALIDATION_FAILED -eq 1 ]; then
+            echo "❌ VALIDATION FAILED / VALIDIERUNG FEHLGESCHLAGEN"
+            echo ""
+            echo "📖 Please use PLUGIN-level API keys from:"
+            echo "   Bitte verwenden Sie PLUGIN-level API-Schlüssel von:"
+            echo ""
+            echo "   Freemius Dashboard → Plugins → Secure Login Collector → API"
+            echo "   https://dashboard.freemius.com/"
+            echo ""
+            echo "🔗 Add to: Repository Secrets (NOT Environment Secrets)"
+            echo "   Settings → Secrets and variables → Actions → Repository secrets"
+            echo ""
+            exit 1
+          else
+            echo "✅ ALL CREDENTIALS VALIDATED SUCCESSFULLY"
+            echo "   ALLE ANMELDEDATEN ERFOLGREICH VALIDIERT"
+            echo ""
+            echo "📊 Credential Summary:"
+            echo "   - Developer ID: ${{ secrets.FREEMIUS_DEVELOPER_ID }}"
+            echo "   - Plugin ID: ${{ secrets.FREEMIUS_PLUGIN_ID }}"
+            echo "   - Public Key: ✓ Valid"
+            echo "   - Secret Key: ✓ Valid"
+            echo ""
+            echo "✨ Ready for deployment!"
+          fi
+
       - name: Create deployment package
         run: |
           # Create a clean directory for the plugin
