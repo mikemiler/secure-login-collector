@@ -185,8 +185,8 @@ jobs:
         env:
           PUBLIC_KEY: ${{ secrets.FREEMIUS_PUBLIC_KEY }}
           SECRET_KEY: ${{ secrets.FREEMIUS_SECRET_KEY }}
-          DEV_ID: ${{ secrets.FREEMIUS_DEVELOPER_ID }}
-          PLUGIN_ID: ${{ secrets.FREEMIUS_PLUGIN_ID }}
+          DEV_ID: 24748
+          PLUGIN_ID: 19897
           PLUGIN_SLUG: secure-login-collector
 
       - name: Create GitHub Release
