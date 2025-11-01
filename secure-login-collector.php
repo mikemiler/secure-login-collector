@@ -20,16 +20,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'SECURE_LOGIN_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
-define( 'SECURE_LOGIN_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'SECURE_LOGIN_VERSION', '1.2.2' );
+define( 'SECULOCO_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
+define( 'SECULOCO_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+define( 'SECULOCO_VERSION', '1.2.2' );
 
 // Initialize Freemius.
 if ( ! function_exists( 'seculoco_fs' ) ) {
 	// Check if vendor directory exists with Freemius SDK.
-	if ( file_exists( SECURE_LOGIN_PLUGIN_DIR . 'vendor/freemius/start.php' ) ) {
+	if ( file_exists( SECULOCO_PLUGIN_DIR . 'vendor/freemius/start.php' ) ) {
 		try {
-			require_once SECURE_LOGIN_PLUGIN_DIR . 'includes/freemius-config.php';
+			require_once SECULOCO_PLUGIN_DIR . 'includes/freemius-config.php';
 		} catch ( Exception $e ) {
 			// Log error but don't break plugin activation.
 			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
@@ -55,35 +55,35 @@ class SecureLoginCollector {
 	/**
 	 * Encryption handler instance.
 	 *
-	 * @var Secure_Login_Encryption_Handler
+	 * @var Seculoco_Encryption_Handler_V2
 	 */
 	private $encryption_handler;
 
 	/**
 	 * Admin interface instance.
 	 *
-	 * @var Secure_Login_Admin_Interface
+	 * @var Seculoco_Admin_Interface
 	 */
 	private $admin_interface;
 
 	/**
 	 * Frontend handler instance.
 	 *
-	 * @var Secure_Login_Frontend_Handler
+	 * @var Seculoco_Frontend_Handler
 	 */
 	private $frontend_handler;
 
 	/**
 	 * Settings manager instance.
 	 *
-	 * @var Secure_Login_Settings_Manager
+	 * @var Seculoco_Settings_Manager
 	 */
 	private $settings_manager;
 
 	/**
 	 * Database manager instance.
 	 *
-	 * @var Secure_Login_Database_Manager
+	 * @var Seculoco_Database_Manager
 	 */
 	private $database_manager;
 
@@ -92,7 +92,7 @@ class SecureLoginCollector {
 	 */
 	public function __construct() {
 		global $wpdb;
-		$this->table_name = $wpdb->prefix . 'secure_login_data';
+		$this->table_name = $wpdb->prefix . 'seculoco_data';
 
 		// Load dependencies.
 		$this->load_dependencies();
@@ -113,11 +113,11 @@ class SecureLoginCollector {
 	 */
 	private function load_dependencies() {
 		// Always load free version classes.
-		include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-encryption-handler-v2.php';
-		include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-database-manager.php';
-		include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-admin-interface.php';
-		include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-frontend-handler.php';
-		include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-settings-manager.php';
+		include_once SECULOCO_PLUGIN_DIR . 'includes/class-encryption-handler-v2.php';
+		include_once SECULOCO_PLUGIN_DIR . 'includes/class-database-manager.php';
+		include_once SECULOCO_PLUGIN_DIR . 'includes/class-admin-interface.php';
+		include_once SECULOCO_PLUGIN_DIR . 'includes/class-frontend-handler.php';
+		include_once SECULOCO_PLUGIN_DIR . 'includes/class-settings-manager.php';
 
 		// Load premium base classes only if available and licensed.
 		// These provide pro functionality (passkey management, licensing, etc).
@@ -130,8 +130,8 @@ class SecureLoginCollector {
 			);
 
 			foreach ( $premium_base_files as $file ) {
-				if ( file_exists( SECURE_LOGIN_PLUGIN_DIR . $file ) ) {
-					include_once SECURE_LOGIN_PLUGIN_DIR . $file;
+				if ( file_exists( SECULOCO_PLUGIN_DIR . $file ) ) {
+					include_once SECULOCO_PLUGIN_DIR . $file;
 				}
 			}
 
@@ -144,30 +144,30 @@ class SecureLoginCollector {
 			);
 
 			foreach ( $premium_extension_files as $file ) {
-				if ( file_exists( SECURE_LOGIN_PLUGIN_DIR . $file ) ) {
-					include_once SECURE_LOGIN_PLUGIN_DIR . $file;
+				if ( file_exists( SECULOCO_PLUGIN_DIR . $file ) ) {
+					include_once SECULOCO_PLUGIN_DIR . $file;
 				}
 			}
 		}
 
 		// Load Freemius hooks if available.
-		if ( function_exists( 'seculoco_fs' ) && file_exists( SECURE_LOGIN_PLUGIN_DIR . 'includes/freemius-hooks.php' ) ) {
-			include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/freemius-hooks.php';
+		if ( function_exists( 'seculoco_fs' ) && file_exists( SECULOCO_PLUGIN_DIR . 'includes/freemius-hooks.php' ) ) {
+			include_once SECULOCO_PLUGIN_DIR . 'includes/freemius-hooks.php';
 		}
 
 		// Load Freemius initialization check.
-		if ( file_exists( SECURE_LOGIN_PLUGIN_DIR . 'includes/freemius-init-check.php' ) ) {
-			include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/freemius-init-check.php';
+		if ( file_exists( SECULOCO_PLUGIN_DIR . 'includes/freemius-init-check.php' ) ) {
+			include_once SECULOCO_PLUGIN_DIR . 'includes/freemius-init-check.php';
 		}
 
 		// Load Freemius account redirect handler.
-		if ( file_exists( SECURE_LOGIN_PLUGIN_DIR . 'includes/freemius-account-redirect.php' ) ) {
-			include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/freemius-account-redirect.php';
+		if ( file_exists( SECULOCO_PLUGIN_DIR . 'includes/freemius-account-redirect.php' ) ) {
+			include_once SECULOCO_PLUGIN_DIR . 'includes/freemius-account-redirect.php';
 		}
 
 		// Load Freemius uninstall handler.
-		if ( file_exists( SECURE_LOGIN_PLUGIN_DIR . 'includes/freemius-uninstall.php' ) ) {
-			include_once SECURE_LOGIN_PLUGIN_DIR . 'includes/freemius-uninstall.php';
+		if ( file_exists( SECULOCO_PLUGIN_DIR . 'includes/freemius-uninstall.php' ) ) {
+			include_once SECULOCO_PLUGIN_DIR . 'includes/freemius-uninstall.php';
 		}
 	}
 
@@ -175,17 +175,17 @@ class SecureLoginCollector {
 	 * Initialize plugin components.
 	 */
 	private function init_components() {
-		$this->encryption_handler = new Secure_Login_Encryption_Handler_V2();
-		$this->database_manager   = new Secure_Login_Database_Manager( $this->table_name );
-		$this->admin_interface    = new Secure_Login_Admin_Interface( $this->table_name, $this->encryption_handler, $this->database_manager );
-		$this->frontend_handler   = new Secure_Login_Frontend_Handler( $this->table_name, $this->encryption_handler, $this->database_manager );
-		$this->settings_manager   = new Secure_Login_Settings_Manager( $this->encryption_handler );
+		$this->encryption_handler = new Seculoco_Encryption_Handler_V2();
+		$this->database_manager   = new Seculoco_Database_Manager( $this->table_name );
+		$this->admin_interface    = new Seculoco_Admin_Interface( $this->table_name, $this->encryption_handler, $this->database_manager );
+		$this->frontend_handler   = new Seculoco_Frontend_Handler( $this->table_name, $this->encryption_handler, $this->database_manager );
+		$this->settings_manager   = new Seculoco_Settings_Manager( $this->encryption_handler );
 
 		// Allow pro extensions to hook in after components are initialized.
-		do_action( 'secure_login_components_initialized', $this );
+		do_action( 'seculoco_components_initialized', $this );
 
 		// Signal that encryption handler is ready for pro extensions.
-		do_action( 'secure_login_encryption_handler_ready', $this->encryption_handler );
+		do_action( 'seculoco_encryption_handler_ready', $this->encryption_handler );
 	}
 
 	/**
@@ -206,7 +206,7 @@ class SecureLoginCollector {
 
 		// Allow pro extensions to run activation tasks.
 		// Premium plugin will handle its own table creation (wrapped keys, etc).
-		do_action( 'secure_login_activate' );
+		do_action( 'seculoco_activate' );
 
 		// Pro-specific activation: Create master key manager table if pro version active.
 		if ( class_exists( 'Master_Key_Manager' ) ) {

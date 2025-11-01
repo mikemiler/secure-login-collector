@@ -89,12 +89,12 @@
          */
         async getEncryptedData(entryId) {
             const response = await $.ajax({
-                url: secureLoginAdmin.ajaxurl,
+                url: seculocoAdmin.ajaxurl,
                 method: 'POST',
                 data: {
                     action: 'seculoco_get_encrypted_entry',
                     id: entryId,
-                    nonce: secureLoginAdmin.nonce
+                    nonce: seculocoAdmin.nonce
                 }
             });
 
@@ -110,12 +110,12 @@
          */
         async getKeyType(entryId) {
             const response = await $.ajax({
-                url: secureLoginAdmin.ajaxurl,
+                url: seculocoAdmin.ajaxurl,
                 method: 'POST',
                 data: {
                     action: 'seculoco_get_wrapped_private_key',
                     entry_id: entryId,
-                    nonce: secureLoginAdmin.nonce
+                    nonce: seculocoAdmin.nonce
                 }
             });
 
@@ -135,12 +135,12 @@
         async unwrapPrivateKey(entryId, keyType, preAuthData = null) {
             // Get wrapped key from server (pass entry ID to determine pro vs free key)
             const wrappedResponse = await $.ajax({
-                url: secureLoginAdmin.ajaxurl,
+                url: seculocoAdmin.ajaxurl,
                 method: 'POST',
                 data: {
                     action: 'seculoco_get_wrapped_private_key',
                     entry_id: entryId,
-                    nonce: secureLoginAdmin.nonce
+                    nonce: seculocoAdmin.nonce
                 }
             });
 
@@ -191,11 +191,11 @@
 
             // Get challenge from server
             const challengeResponse = await $.ajax({
-                url: secureLoginAdmin.ajaxurl,
+                url: seculocoAdmin.ajaxurl,
                 method: 'POST',
                 data: {
                     action: 'passkey_get_challenge',
-                    nonce: secureLoginAdmin.nonce
+                    nonce: seculocoAdmin.nonce
                 }
             });
 
@@ -235,11 +235,11 @@
             
             // Get user ID (we'll need to get this from server or session)
             const userResponse = await $.ajax({
-                url: secureLoginAdmin.ajaxurl,
+                url: seculocoAdmin.ajaxurl,
                 method: 'POST',
                 data: {
                     action: 'get_current_user_id',
-                    nonce: secureLoginAdmin.nonce
+                    nonce: seculocoAdmin.nonce
                 }
             });
             
@@ -252,13 +252,13 @@
             // Match server-side key derivation: credential_id + user_id + salt
             // Note: We can't access wp_salt() from client, so we'll ask server to derive the key
             const keyResponse = await $.ajax({
-                url: secureLoginAdmin.ajaxurl,
+                url: seculocoAdmin.ajaxurl,
                 method: 'POST',
                 data: {
                     action: 'derive_passkey_unwrapping_key',
                     credential_id: credentialIdB64,
                     user_id: userId,
-                    nonce: secureLoginAdmin.nonce
+                    nonce: seculocoAdmin.nonce
                 }
             });
             

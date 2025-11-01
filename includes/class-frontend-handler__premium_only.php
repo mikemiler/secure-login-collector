@@ -14,21 +14,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class Secure_Login_Frontend_Handler_Pro
+ * Class Seculoco_Frontend_Handler_Pro
  *
  * Handles pro-specific frontend functionality via hooks.
  */
-class Secure_Login_Frontend_Handler_Pro {
+class Seculoco_Frontend_Handler_Pro {
 
 	/**
 	 * Constructor - hooks into free version's actions/filters.
 	 */
 	public function __construct() {
 		// Add pro flag to frontend JS config.
-		add_filter( 'secure_login_frontend_js_config', array( $this, 'add_pro_js_config' ) );
+		add_filter( 'seculoco_frontend_js_config', array( $this, 'add_pro_js_config' ) );
 
 		// Filter encryption metadata for pro keys.
-		add_filter( 'secure_login_encryption_metadata', array( $this, 'add_pro_encryption_metadata' ), 10, 2 );
+		add_filter( 'seculoco_encryption_metadata', array( $this, 'add_pro_encryption_metadata' ), 10, 2 );
 	}
 
 	/**
@@ -51,11 +51,11 @@ class Secure_Login_Frontend_Handler_Pro {
 	 */
 	public function add_pro_encryption_metadata( $metadata, $login_data ) {
 		// Check if pro keys are active.
-		if ( get_option( 'secure_login_pro_keys_active', false ) ) {
+		if ( get_option( 'seculoco_pro_keys_active', false ) ) {
 			// Mark as Pro encrypted - data will be encrypted with pro public key.
 			// The passkey decryption happens on the admin side during decryption.
 			$metadata['is_pro_encrypted']     = true;
-			$metadata['server_credential_id'] = get_option( 'secure_login_passkey_credential_id' );
+			$metadata['server_credential_id'] = get_option( 'seculoco_passkey_credential_id' );
 		}
 
 		return $metadata;
@@ -63,4 +63,4 @@ class Secure_Login_Frontend_Handler_Pro {
 }
 
 // Initialize pro frontend handler.
-new Secure_Login_Frontend_Handler_Pro();
+new Seculoco_Frontend_Handler_Pro();

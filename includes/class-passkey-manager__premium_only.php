@@ -40,7 +40,7 @@ class Passkey_Manager {
 	public function __construct() {
 		// Initialize Master Key Manager.
 		if ( ! class_exists( 'Master_Key_Manager' ) ) {
-			require_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-master-key-manager__premium_only.php';
+			require_once SECULOCO_PLUGIN_DIR . 'includes/class-master-key-manager__premium_only.php';
 		}
 		$this->master_key_manager = new Master_Key_Manager();
 
@@ -94,7 +94,7 @@ class Passkey_Manager {
 		}
 
 		// Register empty script handle for passkey functionality.
-		wp_register_script( 'slc-passkey-js', '', array( 'jquery' ), SECURE_LOGIN_VERSION, true );
+		wp_register_script( 'slc-passkey-js', '', array( 'jquery' ), SECULOCO_VERSION, true );
 		wp_enqueue_script( 'slc-passkey-js' );
 
 		// Add inline script for passkey management.
@@ -111,7 +111,7 @@ class Passkey_Manager {
 
 		// Check if there are any encrypted entries for the warning message.
 		global $wpdb;
-		$table_name = $wpdb->prefix . 'secure_login_data';
+		$table_name = $wpdb->prefix . 'seculoco_data';
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$has_encrypted_data = $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i', $table_name ) ) > 0;
 
@@ -346,43 +346,43 @@ JAVASCRIPT;
 
 		// Check if there are any encrypted entries.
 		global $wpdb;
-		$table_name = $wpdb->prefix . 'secure_login_data';
+		$table_name = $wpdb->prefix . 'seculoco_data';
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$has_encrypted_data = $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i', $table_name ) ) > 0;
 
 		?>
-		<div class="slc-passkey-container">
+		<div class="seculoco-passkey-container">
 		<?php if ( ! $this->is_https() ) : ?>
-				<div class="slc-alert slc-alert-danger">
-					<span class="slc-alert-icon">⚠️</span>
-					<div class="slc-alert-content">
-						<div class="slc-alert-title"><?php esc_html_e( 'HTTPS Required', 'secure-login-collector' ); ?></div>
-						<div class="slc-alert-message"><?php esc_html_e( 'WebAuthn requires HTTPS. Please enable SSL on your site to use passkeys.', 'secure-login-collector' ); ?></div>
+				<div class="seculoco-alert seculoco-alert-danger">
+					<span class="seculoco-alert-icon">⚠️</span>
+					<div class="seculoco-alert-content">
+						<div class="seculoco-alert-title"><?php esc_html_e( 'HTTPS Required', 'secure-login-collector' ); ?></div>
+						<div class="seculoco-alert-message"><?php esc_html_e( 'WebAuthn requires HTTPS. Please enable SSL on your site to use passkeys.', 'secure-login-collector' ); ?></div>
 					</div>
 				</div>
 			<?php endif; ?>
 			
-			<div class="slc-card">
-				<div class="slc-card-header">
-					<h3 class="slc-card-title">
-						<span class="slc-card-title-icon">🔐</span>
+			<div class="seculoco-card">
+				<div class="seculoco-card-header">
+					<h3 class="seculoco-card-title">
+						<span class="seculoco-card-title-icon">🔐</span>
 					<?php esc_html_e( 'Passkey Authentication', 'secure-login-collector' ); ?>
 					</h3>
 				<?php if ( $passkey ) : ?>
-						<span class="slc-badge slc-badge-success"><?php esc_html_e( 'Active', 'secure-login-collector' ); ?></span>
+						<span class="seculoco-badge slc-badge-success"><?php esc_html_e( 'Active', 'secure-login-collector' ); ?></span>
 					<?php endif; ?>
 				</div>
 				
-				<div class="slc-card-body">
+				<div class="seculoco-card-body">
 				<?php if ( $passkey ) : ?>
-						<div class="slc-passkey-status">
-							<div class="slc-passkey-status-header">
-								<div class="slc-passkey-status-title">
+						<div class="seculoco-passkey-status">
+							<div class="seculoco-passkey-status-header">
+								<div class="seculoco-passkey-status-title">
 									<span>✅</span>
 									<?php esc_html_e( 'Passkey Registered', 'secure-login-collector' ); ?>
 								</div>
 							</div>
-							<div class="slc-passkey-status-details">
+							<div class="seculoco-passkey-status-details">
 								<strong><?php esc_html_e( 'Name:', 'secure-login-collector' ); ?></strong> <?php echo esc_html( $passkey['name'] ); ?><br>
 								<strong><?php esc_html_e( 'Registered:', 'secure-login-collector' ); ?></strong> <?php echo esc_html( $passkey['registered_at'] ); ?><br>
 								<strong><?php esc_html_e( 'ID:', 'secure-login-collector' ); ?></strong> <?php echo esc_html( substr( $passkey['credential_id'], 0, 20 ) . '...' ); ?>
@@ -390,11 +390,11 @@ JAVASCRIPT;
 						</div>
 						
 						<?php if ( $has_encrypted_data ) : ?>
-							<div class="slc-alert slc-alert-danger" style="margin-top: 20px;">
-								<span class="slc-alert-icon">⚠️</span>
-								<div class="slc-alert-content">
-									<div class="slc-alert-title"><?php esc_html_e( 'CRITICAL WARNING: Data Loss Risk', 'secure-login-collector' ); ?></div>
-									<div class="slc-alert-message">
+							<div class="seculoco-alert seculoco-alert-danger" style="margin-top: 20px;">
+								<span class="seculoco-alert-icon">⚠️</span>
+								<div class="seculoco-alert-content">
+									<div class="seculoco-alert-title"><?php esc_html_e( 'CRITICAL WARNING: Data Loss Risk', 'secure-login-collector' ); ?></div>
+									<div class="seculoco-alert-message">
 										<p><strong><?php esc_html_e( 'Deleting this passkey will permanently prevent decryption of:', 'secure-login-collector' ); ?></strong></p>
 										<ul>
 											<li><?php esc_html_e( 'All existing login data encrypted with this passkey', 'secure-login-collector' ); ?></li>
@@ -407,12 +407,12 @@ JAVASCRIPT;
 						<?php endif; ?>
 						
 						<div style="margin-top: 20px;">
-							<button type="button" class="slc-btn slc-btn-danger" id="delete-passkey-btn" 
+							<button type="button" class="seculoco-btn slc-btn-danger" id="delete-passkey-btn" 
 									data-credential-id="<?php echo esc_attr( $passkey['credential_id'] ); ?>">
 								<span>🗑️</span>
 								<?php esc_html_e( 'Delete Passkey', 'secure-login-collector' ); ?>
 							</button>
-							<p class="slc-form-help" style="margin-top: 8px;">
+							<p class="seculoco-form-help" style="margin-top: 8px;">
 								<?php esc_html_e( 'Only delete if you understand the consequences above.', 'secure-login-collector' ); ?>
 							</p>
 						</div>
@@ -422,7 +422,7 @@ JAVASCRIPT;
 						<div class="passkey-registration-form" style="margin: 20px 0;">
 							<button type="button" 
 									id="register-passkey-btn" 
-									class="slc-btn slc-btn-primary slc-btn-lg">
+									class="seculoco-btn slc-btn-primary slc-btn-lg">
 								<span>🔑</span>
 								<?php esc_html_e( 'Register Passkey', 'secure-login-collector' ); ?>
 							</button>
@@ -436,11 +436,11 @@ JAVASCRIPT;
 			</div>
 			
 			<!-- Critical Warning About Passkey Loss -->
-			<div class="slc-alert slc-alert-warning">
-				<span class="slc-alert-icon">⚠️</span>
-				<div class="slc-alert-content">
-					<div class="slc-alert-title"><?php esc_html_e( 'Important: No Recovery Options', 'secure-login-collector' ); ?></div>
-					<div class="slc-alert-message">
+			<div class="seculoco-alert seculoco-alert-warning">
+				<span class="seculoco-alert-icon">⚠️</span>
+				<div class="seculoco-alert-content">
+					<div class="seculoco-alert-title"><?php esc_html_e( 'Important: No Recovery Options', 'secure-login-collector' ); ?></div>
+					<div class="seculoco-alert-message">
 						<p><?php esc_html_e( 'If you lose access to your passkey:', 'secure-login-collector' ); ?></p>
 						<ul>
 							<li><?php esc_html_e( 'All data encrypted with that passkey becomes permanently inaccessible', 'secure-login-collector' ); ?></li>
@@ -461,7 +461,7 @@ JAVASCRIPT;
 	 * Get user's registered passkey.
 	 */
 	private function get_user_passkey( $user_id ) {
-		$passkey = get_user_meta( $user_id, 'secure_login_passkey', true );
+		$passkey = get_user_meta( $user_id, 'seculoco_passkey', true );
 		return is_array( $passkey ) ? $passkey : null;
 	}
 
@@ -539,7 +539,7 @@ JAVASCRIPT;
 		}
 
 		// Verify pro license.
-		if ( ! Secure_Login_License_Manager::has_pro_license() ) {
+		if ( ! Seculoco_License_Manager::has_pro_license() ) {
 			wp_send_json_error( __( 'Pro license required for passkey encryption.', 'secure-login-collector' ) );
 			return;
 		}
@@ -647,7 +647,7 @@ JAVASCRIPT;
 				'registered_at' => current_time( 'mysql' ),
 				'last_used'     => null,
 			);
-			update_user_meta( $user_id, 'secure_login_passkey', $passkey_data );
+			update_user_meta( $user_id, 'seculoco_passkey', $passkey_data );
 
 			// Store globally for verification.
 			update_option(
@@ -659,11 +659,11 @@ JAVASCRIPT;
 			);
 
 			// Set global passkey registered flag.
-			update_option( 'secure_login_passkey_registered', true );
-			update_option( 'secure_login_passkey_registered_at', current_time( 'mysql' ) );
+			update_option( 'seculoco_passkey_registered', true );
+			update_option( 'seculoco_passkey_registered_at', current_time( 'mysql' ) );
 
 			// Also ensure pro keys active flag is set for consistency with V2 handler.
-			update_option( 'secure_login_pro_keys_active', true );
+			update_option( 'seculoco_pro_keys_active', true );
 
 			// Clear challenge.
 			delete_transient( 'passkey_reg_challenge_' . $user_id );
@@ -701,7 +701,7 @@ JAVASCRIPT;
 		}
 
 		// Delete the passkey.
-		delete_user_meta( $user_id, 'secure_login_passkey' );
+		delete_user_meta( $user_id, 'seculoco_passkey' );
 		delete_option( 'passkey_credential_' . $credential_id );
 
 		// Delete all wrapped MWKs for this user.
@@ -710,16 +710,16 @@ JAVASCRIPT;
 		}
 
 		// Delete the pro keys and clear the global flag.
-		if ( ! class_exists( 'Secure_Login_Encryption_Handler_V2' ) ) {
-			require_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-encryption-handler-v2.php';
+		if ( ! class_exists( 'Seculoco_Encryption_Handler_V2' ) ) {
+			require_once SECULOCO_PLUGIN_DIR . 'includes/class-encryption-handler-v2.php';
 		}
-		$encryption_handler = new Secure_Login_Encryption_Handler_V2();
+		$encryption_handler = new Seculoco_Encryption_Handler_V2();
 		$encryption_handler->delete_pro_keys();
 
 		// Clear global passkey registered flag and pro keys active flag.
-		delete_option( 'secure_login_passkey_registered' );
-		delete_option( 'secure_login_passkey_registered_at' );
-		delete_option( 'secure_login_pro_keys_active' );
+		delete_option( 'seculoco_passkey_registered' );
+		delete_option( 'seculoco_passkey_registered_at' );
+		delete_option( 'seculoco_pro_keys_active' );
 
 		wp_send_json_success(
 			array(
@@ -761,7 +761,7 @@ JAVASCRIPT;
 		}
 
 		// Verify pro license.
-		if ( ! Secure_Login_License_Manager::has_pro_license() ) {
+		if ( ! Seculoco_License_Manager::has_pro_license() ) {
 			wp_send_json_error( __( 'Pro license required to initialize pro encryption.', 'secure-login-collector' ) );
 			return;
 		}
@@ -780,10 +780,10 @@ JAVASCRIPT;
 		}
 
 		// Step 1: Initialize encryption handler V2 for dual-key system.
-		if ( ! class_exists( 'Secure_Login_Encryption_Handler_V2' ) ) {
-			require_once SECURE_LOGIN_PLUGIN_DIR . 'includes/class-encryption-handler-v2.php';
+		if ( ! class_exists( 'Seculoco_Encryption_Handler_V2' ) ) {
+			require_once SECULOCO_PLUGIN_DIR . 'includes/class-encryption-handler-v2.php';
 		}
-		$encryption_handler = new Secure_Login_Encryption_Handler_V2();
+		$encryption_handler = new Seculoco_Encryption_Handler_V2();
 
 		// Step 2: Ensure free keys exist first.
 		$free_result = $encryption_handler->initialize_free_keys();
@@ -804,7 +804,7 @@ JAVASCRIPT;
 		// The passkey-derived key directly wraps the PRO private key.
 
 		// Get the pro public key for response.
-		$public_key_pro = get_option( 'secure_login_public_key_pro' );
+		$public_key_pro = get_option( 'seculoco_public_key_pro' );
 
 		wp_send_json_success(
 			array(
@@ -839,7 +839,7 @@ JAVASCRIPT;
 	public function handle_get_current_user_id() {
 		// Accept both admin nonces.
 		$nonce = sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) );
-		if ( ! wp_verify_nonce( $nonce, 'secure_login_admin_nonce' ) &&
+		if ( ! wp_verify_nonce( $nonce, 'seculoco_admin_nonce' ) &&
 			! wp_verify_nonce( $nonce, 'passkey_admin_nonce' ) ) {
 			wp_send_json_error( 'Invalid security token' );
 			return;
@@ -862,7 +862,7 @@ JAVASCRIPT;
 	public function handle_derive_passkey_unwrapping_key() {
 		// Accept both admin nonces.
 		$nonce = sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) );
-		if ( ! wp_verify_nonce( $nonce, 'secure_login_admin_nonce' ) &&
+		if ( ! wp_verify_nonce( $nonce, 'seculoco_admin_nonce' ) &&
 			! wp_verify_nonce( $nonce, 'passkey_admin_nonce' ) ) {
 			wp_send_json_error( 'Invalid security token' );
 			return;

@@ -6,7 +6,7 @@ jQuery(document).ready(function ($) {
 
         // Login URL from metadata
         var loginUrl = metadata && metadata.login_url ? metadata.login_url : '';
-        if (loginUrl && loginUrl !== secureLoginAjax.strings.not_provided) {
+        if (loginUrl && loginUrl !== seculocoAjax.strings.not_provided) {
             html += '<div class="data-field">';
             html += '<strong>Login URL:</strong>';
             html += '<div class="field-row">';
@@ -147,13 +147,13 @@ jQuery(document).ready(function ($) {
         button.prop('disabled', true);
 
         $.ajax({
-            url: secureLoginAjax.ajaxurl,
+            url: seculocoAjax.ajaxurl,
             type: 'POST',
             data: {
                 action: 'seculoco_update_metadata',
                 update_id: id,
                 metadata: newData,
-                nonce: secureLoginAjax.nonce
+                nonce: seculocoAjax.nonce
             },
             success: function (response) {
                 if (response.success) {
@@ -167,12 +167,12 @@ jQuery(document).ready(function ($) {
                     row.find('.save-btn, .cancel-btn').hide();
                     row.find('.edit-btn').show();
                 } else {
-                    alert(secureLoginAjax.strings.save_failed + (response.data || secureLoginAjax.strings.unknown_error));
+                    alert(seculocoAjax.strings.save_failed + (response.data || seculocoAjax.strings.unknown_error));
                 }
                 button.prop('disabled', false);
             },
             error: function () {
-                alert(secureLoginAjax.strings.network_error_save);
+                alert(seculocoAjax.strings.network_error_save);
                 button.prop('disabled', false);
             }
         });
@@ -200,23 +200,23 @@ jQuery(document).ready(function ($) {
         var button = $(this);
         var id = button.data('id');
 
-        if (!confirm(secureLoginAjax.strings.confirm_extend_retention)) {
+        if (!confirm(seculocoAjax.strings.confirm_extend_retention)) {
             return;
         }
 
         button.prop('disabled', true).html('<span class="dashicons dashicons-update-alt spin"></span>');
 
         $.ajax({
-            url: secureLoginAjax.ajaxurl,
+            url: seculocoAjax.ajaxurl,
             type: 'POST',
             data: {
                 action: 'seculoco_extend_entry',
                 extend_id: id,
-                nonce: secureLoginAjax.nonce
+                nonce: seculocoAjax.nonce
             },
             success: function (response) {
                 if (response.success) {
-                    alert(response.data.message || secureLoginAjax.strings.retention_extended);
+                    alert(response.data.message || seculocoAjax.strings.retention_extended);
                     // Refresh page to show updated expiration
                     location.reload();
                 } else {
@@ -243,12 +243,12 @@ jQuery(document).ready(function ($) {
         button.prop('disabled', true).html('<span class="dashicons dashicons-trash spin"></span>');
 
         $.ajax({
-            url: secureLoginAjax.ajaxurl,
+            url: seculocoAjax.ajaxurl,
             type: 'POST',
             data: {
                 action: 'seculoco_delete_entry',
                 delete_id: id,
-                nonce: secureLoginAjax.nonce
+                nonce: seculocoAjax.nonce
             },
             success: function (response) {
                 if (response.success) {
@@ -356,13 +356,13 @@ jQuery(document).ready(function ($) {
 
         // Submit to server for encryption and storage
         $.ajax({
-            url: secureLoginAjax.ajaxurl,
+            url: seculocoAjax.ajaxurl,
             type: 'POST',
             data: {
                 action: 'seculoco_save_manual_entry',
                 login_data: loginData,
                 metadata: JSON.stringify(metadata),
-                nonce: secureLoginAjax.nonce
+                nonce: seculocoAjax.nonce
             },
             success: function (response) {
                 if (response.success) {
@@ -489,18 +489,18 @@ jQuery(document).ready(function ($) {
     function authenticateWithPasskeyForBulkDecrypt(data, button) {
         // Check if WebAuthn is supported
         if (!window.PublicKeyCredential) {
-            alert(secureLoginAjax.strings.webauthn_not_supported);
+            alert(seculocoAjax.strings.webauthn_not_supported);
             button.prop('disabled', false).html('<span class="dashicons dashicons-shield-alt"></span> Authenticate with Passkey to Decrypt All');
             return;
         }
 
         // First, get the passkey challenge and credentials from server
         $.ajax({
-            url: secureLoginAjax.ajaxurl,
+            url: seculocoAjax.ajaxurl,
             type: 'POST',
             data: {
                 action: 'passkey_get_challenge',
-                nonce: secureLoginAjax.nonce
+                nonce: seculocoAjax.nonce
             },
             success: function(challengeResponse) {
                 if (!challengeResponse.success) {
@@ -654,7 +654,7 @@ jQuery(document).ready(function ($) {
                     })
                     .catch((err) => {
                         console.error('Bulk passkey authentication failed:', err);
-                        alert(secureLoginAjax.strings.passkey_auth_failed + ' ' + err.message);
+                        alert(seculocoAjax.strings.passkey_auth_failed + ' ' + err.message);
                         button.prop('disabled', false).html('<span class="dashicons dashicons-shield-alt"></span> Authenticate with Passkey to Decrypt All');
                     });
             },
@@ -680,11 +680,11 @@ jQuery(document).ready(function ($) {
             success: function() {
                 // Now call the process_bulk_export AJAX action
                 $.ajax({
-                    url: secureLoginAjax.ajaxurl,
+                    url: seculocoAjax.ajaxurl,
                     type: 'POST',
                     data: {
                         action: 'seculoco_bulk_export',
-                        nonce: secureLoginAjax.nonce
+                        nonce: seculocoAjax.nonce
                     },
                     success: function (response) {
                         if (response.success) {
@@ -810,7 +810,7 @@ $(document).on('click', '#fix-passkey-flag-btn', function() {
         type: 'POST',
         data: {
             action: 'seculoco_fix_passkey_flag',
-            nonce: secureLoginAdmin.nonce
+            nonce: seculocoAdmin.nonce
         },
         success: function(response) {
             if (response.success) {

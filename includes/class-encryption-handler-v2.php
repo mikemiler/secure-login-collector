@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Encryption Handler V2 - AES-256-GCM with RSA-2048 key wrapping.
  */
-class Secure_Login_Encryption_Handler_V2 {
+class Seculoco_Encryption_Handler_V2 {
 
 	/**
 	 * Master Key Manager instance.
@@ -85,8 +85,8 @@ class Secure_Login_Encryption_Handler_V2 {
 	 */
 	public function initialize_free_keys() {
 		// Check if free keys already exist.
-		$public_key_free            = get_option( 'secure_login_public_key_free' );
-		$private_key_free_encrypted = get_option( 'secure_login_private_key_free_encrypted' );
+		$public_key_free            = get_option( 'seculoco_public_key_free' );
+		$private_key_free_encrypted = get_option( 'seculoco_private_key_free_encrypted' );
 
 		if ( $public_key_free && $private_key_free_encrypted ) {
 			return array(
@@ -102,11 +102,11 @@ class Secure_Login_Encryption_Handler_V2 {
 		}
 
 		// Store public key (publicly accessible).
-		update_option( 'secure_login_public_key_free', $keypair['public'] );
+		update_option( 'seculoco_public_key_free', $keypair['public'] );
 
 		// Encrypt private key with WordPress salts for free version.
 		$encrypted_private = $this->encrypt_with_wp_salts( $keypair['private'] );
-		update_option( 'secure_login_private_key_free_encrypted', $encrypted_private );
+		update_option( 'seculoco_private_key_free_encrypted', $encrypted_private );
 
 		// Log initialization.
 		$this->log_key_operation( 'free_keys_initialized' );
@@ -127,8 +127,8 @@ class Secure_Login_Encryption_Handler_V2 {
 	 */
 	public function initialize_pro_keys( $passkey_derived_key ) {
 		// Check if pro keys already exist.
-		$public_key_pro  = get_option( 'secure_login_public_key_pro' );
-		$wrapped_key_pro = get_option( 'secure_login_wrapped_private_key_pro' );
+		$public_key_pro  = get_option( 'seculoco_public_key_pro' );
+		$wrapped_key_pro = get_option( 'seculoco_wrapped_private_key_pro' );
 
 		if ( $public_key_pro && $wrapped_key_pro ) {
 			return array(
@@ -144,20 +144,20 @@ class Secure_Login_Encryption_Handler_V2 {
 		}
 
 		// Store public key (publicly accessible).
-		update_option( 'secure_login_public_key_pro', $keypair['public'] );
+		update_option( 'seculoco_public_key_pro', $keypair['public'] );
 
 		// Wrap private key with passkey-derived key.
 		$wrapped = $this->wrap_private_key( $keypair['private'], $passkey_derived_key );
 		if ( is_wp_error( $wrapped ) ) {
 			// Clean up on failure.
-			delete_option( 'secure_login_public_key_pro' );
+			delete_option( 'seculoco_public_key_pro' );
 			return $wrapped;
 		}
 
-		update_option( 'secure_login_wrapped_private_key_pro', $wrapped );
+		update_option( 'seculoco_wrapped_private_key_pro', $wrapped );
 
 		// Mark pro version as active.
-		update_option( 'secure_login_pro_keys_active', true );
+		update_option( 'seculoco_pro_keys_active', true );
 
 		// Log initialization.
 		$this->log_key_operation( 'pro_keys_initialized' );
@@ -177,9 +177,9 @@ class Secure_Login_Encryption_Handler_V2 {
 	 */
 	public function delete_pro_keys() {
 		// Delete pro keys.
-		delete_option( 'secure_login_public_key_pro' );
-		delete_option( 'secure_login_wrapped_private_key_pro' );
-		delete_option( 'secure_login_pro_keys_active' );
+		delete_option( 'seculoco_public_key_pro' );
+		delete_option( 'seculoco_wrapped_private_key_pro' );
+		delete_option( 'seculoco_pro_keys_active' );
 
 		// Log deletion.
 		$this->log_key_operation( 'pro_keys_deleted' );
@@ -274,8 +274,8 @@ class Secure_Login_Encryption_Handler_V2 {
 	 */
 	public function handle_get_public_key() {
 		// Check if pro keys are active and available.
-		$pro_active     = get_option( 'secure_login_pro_keys_active', false );
-		$public_key_pro = get_option( 'secure_login_public_key_pro' );
+		$pro_active     = get_option( 'seculoco_pro_keys_active', false );
+		$public_key_pro = get_option( 'seculoco_public_key_pro' );
 
 		// Use pro key if available and active.
 		if ( $pro_active && $public_key_pro ) {
@@ -291,7 +291,7 @@ class Secure_Login_Encryption_Handler_V2 {
 		}
 
 		// Otherwise use free key.
-		$public_key_free = get_option( 'secure_login_public_key_free' );
+		$public_key_free = get_option( 'seculoco_public_key_free' );
 
 		// Initialize free keys if not exists.
 		if ( ! $public_key_free ) {
@@ -300,7 +300,7 @@ class Secure_Login_Encryption_Handler_V2 {
 				wp_send_json_error( 'Failed to initialize encryption keys: ' . $result->get_error_message() );
 				return;
 			}
-			$public_key_free = get_option( 'secure_login_public_key_free' );
+			$public_key_free = get_option( 'seculoco_public_key_free' );
 		}
 
 		wp_send_json_success(
@@ -326,9 +326,9 @@ class Secure_Login_Encryption_Handler_V2 {
 
 		// Verify nonce (accept multiple nonce names for compatibility).
 		$nonce = sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) );
-		if ( ! wp_verify_nonce( $nonce, 'secure_login_admin_nonce' ) &&
+		if ( ! wp_verify_nonce( $nonce, 'seculoco_admin_nonce' ) &&
 			! wp_verify_nonce( $nonce, 'seculoco_admin_nonce' ) &&
-			! wp_verify_nonce( $nonce, 'secure_login_nonce' ) ) {
+			! wp_verify_nonce( $nonce, 'seculoco_nonce' ) ) {
 			wp_send_json_error( 'Invalid security token' );
 			return;
 		}
@@ -339,7 +339,7 @@ class Secure_Login_Encryption_Handler_V2 {
 		if ( $entry_id ) {
 			// Check which key was used for this entry.
 			global $wpdb;
-			$table = esc_sql( $wpdb->prefix . 'secure_login_data' );
+			$table = esc_sql( $wpdb->prefix . 'seculoco_data' );
 			// Note: Table names cannot be prepared in WordPress, but this is safe as table name is controlled.
 			$entry = $wpdb->get_row(
 				$wpdb->prepare(
@@ -354,7 +354,7 @@ class Secure_Login_Encryption_Handler_V2 {
 
 				if ( $is_pro ) {
 					// Return pro wrapped key.
-					$wrapped_key = get_option( 'secure_login_wrapped_private_key_pro' );
+					$wrapped_key = get_option( 'seculoco_wrapped_private_key_pro' );
 					if ( $wrapped_key ) {
 						$this->log_key_access( get_current_user_id(), 'pro' );
 						wp_send_json_success(
@@ -371,7 +371,7 @@ class Secure_Login_Encryption_Handler_V2 {
 		}
 
 		// Default to free key.
-		$encrypted_key = get_option( 'secure_login_private_key_free_encrypted' );
+		$encrypted_key = get_option( 'seculoco_private_key_free_encrypted' );
 
 		if ( ! $encrypted_key ) {
 			wp_send_json_error( 'No private key available' );
@@ -470,7 +470,7 @@ class Secure_Login_Encryption_Handler_V2 {
 	 * @param string $type    Type of key accessed ('free' or 'pro').
 	 */
 	private function log_key_access( $user_id, $type = 'unknown' ) {
-		$log = get_option( 'secure_login_key_access_log', array() );
+		$log = get_option( 'seculoco_key_access_log', array() );
 
 		// Keep only last 100 entries.
 		if ( count( $log ) > 100 ) {
@@ -485,7 +485,7 @@ class Secure_Login_Encryption_Handler_V2 {
 			'type'      => $type,
 		);
 
-		update_option( 'secure_login_key_access_log', $log );
+		update_option( 'seculoco_key_access_log', $log );
 	}
 
 	/**
@@ -494,7 +494,7 @@ class Secure_Login_Encryption_Handler_V2 {
 	 * @param string $operation Operation performed.
 	 */
 	private function log_key_operation( $operation ) {
-		$log = get_option( 'secure_login_key_operations_log', array() );
+		$log = get_option( 'seculoco_key_operations_log', array() );
 
 		// Keep only last 50 operations.
 		if ( count( $log ) > 50 ) {
@@ -507,7 +507,7 @@ class Secure_Login_Encryption_Handler_V2 {
 			'user_id'   => get_current_user_id(),
 		);
 
-		update_option( 'secure_login_key_operations_log', $log );
+		update_option( 'seculoco_key_operations_log', $log );
 	}
 
 	/**
@@ -518,22 +518,22 @@ class Secure_Login_Encryption_Handler_V2 {
 	 */
 	public function get_public_key( $prefer_pro = true ) {
 		if ( $prefer_pro ) {
-			$pro_active     = get_option( 'secure_login_pro_keys_active', false );
-			$public_key_pro = get_option( 'secure_login_public_key_pro' );
+			$pro_active     = get_option( 'seculoco_pro_keys_active', false );
+			$public_key_pro = get_option( 'seculoco_public_key_pro' );
 
 			if ( $pro_active && $public_key_pro ) {
 				return $public_key_pro;
 			}
 		}
 
-		$public_key_free = get_option( 'secure_login_public_key_free' );
+		$public_key_free = get_option( 'seculoco_public_key_free' );
 
 		if ( ! $public_key_free ) {
 			// Try to initialize free keys if admin.
 			if ( current_user_can( 'manage_options' ) ) {
 				$result = $this->initialize_free_keys();
 				if ( ! is_wp_error( $result ) ) {
-					return get_option( 'secure_login_public_key_free' );
+					return get_option( 'seculoco_public_key_free' );
 				}
 			}
 			return new WP_Error( 'no_public_key', 'Public key not initialized' );
@@ -548,7 +548,7 @@ class Secure_Login_Encryption_Handler_V2 {
 	 * @return bool True if pro keys are active.
 	 */
 	public static function is_pro_active() {
-		return (bool) get_option( 'secure_login_pro_keys_active', false );
+		return (bool) get_option( 'seculoco_pro_keys_active', false );
 	}
 
 	/**
@@ -559,13 +559,13 @@ class Secure_Login_Encryption_Handler_V2 {
 	public static function get_status() {
 		return array(
 			'free' => array(
-				'has_public_key'  => ! empty( get_option( 'secure_login_public_key_free' ) ),
-				'has_private_key' => ! empty( get_option( 'secure_login_private_key_free_encrypted' ) ),
+				'has_public_key'  => ! empty( get_option( 'seculoco_public_key_free' ) ),
+				'has_private_key' => ! empty( get_option( 'seculoco_private_key_free_encrypted' ) ),
 			),
 			'pro'  => array(
 				'active'          => self::is_pro_active(),
-				'has_public_key'  => ! empty( get_option( 'secure_login_public_key_pro' ) ),
-				'has_wrapped_key' => ! empty( get_option( 'secure_login_wrapped_private_key_pro' ) ),
+				'has_public_key'  => ! empty( get_option( 'seculoco_public_key_pro' ) ),
+				'has_wrapped_key' => ! empty( get_option( 'seculoco_wrapped_private_key_pro' ) ),
 			),
 		);
 	}
@@ -616,9 +616,9 @@ class Secure_Login_Encryption_Handler_V2 {
 		$key_type = sanitize_text_field( wp_unslash( $_POST['key_type'] ?? 'free' ) );
 
 		if ( 'pro' === $key_type ) {
-			$public_key = get_option( 'secure_login_public_key_pro' );
+			$public_key = get_option( 'seculoco_public_key_pro' );
 		} else {
-			$public_key = get_option( 'secure_login_public_key_free' );
+			$public_key = get_option( 'seculoco_public_key_free' );
 		}
 
 		if ( ! $public_key ) {

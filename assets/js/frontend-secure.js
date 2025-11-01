@@ -153,11 +153,11 @@ jQuery(document).ready(function ($) {
         if ($passwordField.attr('type') === 'password') {
             $passwordField.attr('type', 'text');
             $icon.removeClass('dashicons-visibility').addClass('dashicons-hidden');
-            $button.attr('aria-label', secureLoginAjax.strings.hide_password || 'Hide password');
+            $button.attr('aria-label', seculocoAjax.strings.hide_password || 'Hide password');
         } else {
             $passwordField.attr('type', 'password');
             $icon.removeClass('dashicons-hidden').addClass('dashicons-visibility');
-            $button.attr('aria-label', secureLoginAjax.strings.show_password || 'Show password');
+            $button.attr('aria-label', seculocoAjax.strings.show_password || 'Show password');
         }
     });
 
@@ -236,7 +236,7 @@ jQuery(document).ready(function ($) {
             return btoa(String.fromCharCode(...new Uint8Array(encrypted)));
         } catch (error) {
             console.error('RSA encryption failed:', error);
-            throw new Error(secureLoginAjax.strings.encryption_failed || 'Encryption failed');
+            throw new Error(seculocoAjax.strings.encryption_failed || 'Encryption failed');
         }
     }
 
@@ -320,13 +320,13 @@ jQuery(document).ready(function ($) {
         // Basic validation - only check for required fields
         if (!email || !userName || !loginUrl || !usernameEmail || !password) {
             messageDiv.removeClass('success').addClass('error')
-                .text(secureLoginAjax.strings.required_fields_error)
+                .text(seculocoAjax.strings.required_fields_error)
                 .show();
             return;
         }
 
         // Disable submit button and show loading
-        submitBtn.prop('disabled', true).text(secureLoginAjax.strings.submitting);
+        submitBtn.prop('disabled', true).text(seculocoAjax.strings.submitting);
         messageDiv.hide();
 
         // Initialize and show status modal
@@ -341,8 +341,8 @@ jQuery(document).ready(function ($) {
             await statusModal.nextStep();
 
             // Check if RSA public key is available
-            if (!secureLoginAjax.public_key) {
-                throw new Error(secureLoginAjax.strings.rsa_key_not_available);
+            if (!seculocoAjax.public_key) {
+                throw new Error(seculocoAjax.strings.rsa_key_not_available);
             }
 
             // Step 2: Encrypting data
@@ -358,8 +358,8 @@ jQuery(document).ready(function ($) {
             // Encrypt the data
             const encryptedPackage = await encryptLoginData(
                 loginData,
-                secureLoginAjax.public_key,
-                secureLoginAjax.is_pro
+                seculocoAjax.public_key,
+                seculocoAjax.is_pro
             );
 
             // Step 3: Preparing secure package
@@ -388,19 +388,19 @@ jQuery(document).ready(function ($) {
 
             // Submit to server
             $.ajax({
-                url: secureLoginAjax.ajaxurl,
+                url: seculocoAjax.ajaxurl,
                 type: 'POST',
                 data: {
                     action: 'seculoco_save_entry_v2',
                     submission: JSON.stringify(submissionData),
-                    nonce: secureLoginAjax.nonce
+                    nonce: seculocoAjax.nonce
                 },
                 success: function (response) {
                     if (response.success) {
-                        statusModal.showSuccess(secureLoginAjax.strings.success_message);
+                        statusModal.showSuccess(seculocoAjax.strings.success_message);
                         form[0].reset();
                     } else {
-                        const errorMsg = secureLoginAjax.strings.error_prefix + (response.data || secureLoginAjax.strings.unknown_error);
+                        const errorMsg = seculocoAjax.strings.error_prefix + (response.data || seculocoAjax.strings.unknown_error);
                         statusModal.showError(errorMsg);
                         messageDiv.removeClass('success').addClass('error')
                             .text(errorMsg)
@@ -408,24 +408,24 @@ jQuery(document).ready(function ($) {
                     }
                 },
                 error: function () {
-                    statusModal.showError(secureLoginAjax.strings.network_error);
+                    statusModal.showError(seculocoAjax.strings.network_error);
                     messageDiv.removeClass('success').addClass('error')
-                        .text(secureLoginAjax.strings.network_error)
+                        .text(seculocoAjax.strings.network_error)
                         .show();
                 },
                 complete: function () {
-                    submitBtn.prop('disabled', false).text(secureLoginAjax.strings.submit_securely);
+                    submitBtn.prop('disabled', false).text(seculocoAjax.strings.submit_securely);
                 }
             });
 
         } catch (error) {
             console.error('Encryption error:', error);
-            const errorMsg = secureLoginAjax.strings.encryption_error + ': ' + error.message;
+            const errorMsg = seculocoAjax.strings.encryption_error + ': ' + error.message;
             statusModal.showError(errorMsg);
             messageDiv.removeClass('success').addClass('error')
                 .text(errorMsg)
                 .show();
-            submitBtn.prop('disabled', false).text(secureLoginAjax.strings.submit_securely);
+            submitBtn.prop('disabled', false).text(seculocoAjax.strings.submit_securely);
         }
     });
 });

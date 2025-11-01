@@ -17,11 +17,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class Secure_Login_Database_Manager
+ * Class Seculoco_Database_Manager
  *
  * Handles all database operations for the plugin.
  */
-class Secure_Login_Database_Manager {
+class Seculoco_Database_Manager {
 
 	/**
 	 * Database table name.
@@ -40,7 +40,7 @@ class Secure_Login_Database_Manager {
 		$this->table_name = esc_sql( $table_name );
 
 		// Add cron job for automatic cleanup.
-		add_action( 'secure_login_cleanup_cron', array( $this, 'cleanup_old_data' ) );
+		add_action( 'seculoco_cleanup_cron', array( $this, 'cleanup_old_data' ) );
 	}
 
 	/**
@@ -98,7 +98,7 @@ class Secure_Login_Database_Manager {
 			$wpdb->query( $wpdb->prepare( 'ALTER TABLE %i ADD COLUMN retention_until datetime DEFAULT NULL AFTER created_at', $this->table_name ) );
 
 			// Set retention_until for existing records based on created_at + expiration days.
-			$expiration_days = get_option( 'secure_login_expiration_days', 30 );
+			$expiration_days = get_option( 'seculoco_expiration_days', 30 );
 			if ( $expiration_days > 0 ) {
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 				$wpdb->query(
@@ -137,8 +137,8 @@ class Secure_Login_Database_Manager {
 	 * @return void
 	 */
 	public function schedule_cleanup() {
-		if ( ! wp_next_scheduled( 'secure_login_cleanup_cron' ) ) {
-			wp_schedule_event( time(), 'daily', 'secure_login_cleanup_cron' );
+		if ( ! wp_next_scheduled( 'seculoco_cleanup_cron' ) ) {
+			wp_schedule_event( time(), 'daily', 'seculoco_cleanup_cron' );
 		}
 	}
 
@@ -148,7 +148,7 @@ class Secure_Login_Database_Manager {
 	 * @return void
 	 */
 	public function clear_scheduled_cleanup() {
-		wp_clear_scheduled_hook( 'secure_login_cleanup_cron' );
+		wp_clear_scheduled_hook( 'seculoco_cleanup_cron' );
 	}
 
 	/**
@@ -165,7 +165,7 @@ class Secure_Login_Database_Manager {
 		global $wpdb;
 
 		// Check if auto-deletion is enabled.
-		$expiration_days = get_option( 'secure_login_expiration_days', 30 );
+		$expiration_days = get_option( 'seculoco_expiration_days', 30 );
 		if ( $expiration_days <= 0 ) {
 			// Auto-deletion is disabled, don't delete anything.
 			return 0;
@@ -225,7 +225,7 @@ class Secure_Login_Database_Manager {
 		global $wpdb;
 
 		$retention_until = null;
-		$expiration_days = get_option( 'secure_login_expiration_days', 30 );
+		$expiration_days = get_option( 'seculoco_expiration_days', 30 );
 
 		if ( $expiration_days > 0 ) {
 			$retention_until = gmdate( 'Y-m-d H:i:s', strtotime( "+{$expiration_days} days" ) );
@@ -288,7 +288,7 @@ class Secure_Login_Database_Manager {
 	public function extend_retention( $id ) {
 		global $wpdb;
 
-		$expiration_days = get_option( 'secure_login_expiration_days', 30 );
+		$expiration_days = get_option( 'seculoco_expiration_days', 30 );
 		if ( $expiration_days <= 0 ) {
 			return false; // Auto-deletion is disabled.
 		}
@@ -401,11 +401,11 @@ class Secure_Login_Database_Manager {
 	 */
 	public function send_notification( $sender_email, $sender_name = '' ) {
 		// Check if notifications are enabled.
-		if ( ! get_option( 'secure_login_enable_notifications', false ) ) {
+		if ( ! get_option( 'seculoco_enable_notifications', false ) ) {
 			return;
 		}
 
-		$notification_email = get_option( 'secure_login_notification_email', get_option( 'admin_email' ) );
+		$notification_email = get_option( 'seculoco_notification_email', get_option( 'admin_email' ) );
 
 		if ( empty( $notification_email ) || ! is_email( $notification_email ) ) {
 			return;

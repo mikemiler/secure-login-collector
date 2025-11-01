@@ -42,7 +42,7 @@ class Master_Key_Manager {
 	 */
 	public function __construct() {
 		global $wpdb;
-		$this->table_name = $wpdb->prefix . 'secure_login_wrapped_keys';
+		$this->table_name = $wpdb->prefix . 'seculoco_wrapped_keys';
 
 		// Create table if needed.
 		add_action( 'init', array( $this, 'maybe_create_table' ) );

@@ -14,23 +14,23 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class Secure_Login_Settings_Manager
+ * Class Seculoco_Settings_Manager
  *
  * Handles all plugin settings and configuration.
  */
-class Secure_Login_Settings_Manager {
+class Seculoco_Settings_Manager {
 
 	/**
 	 * Encryption handler instance.
 	 *
-	 * @var Secure_Login_Encryption_Handler
+	 * @var Seculoco_Encryption_Handler_V2
 	 */
 	private $encryption_handler;
 
 	/**
 	 * Constructor - initializes settings manager.
 	 *
-	 * @param Secure_Login_Encryption_Handler $encryption_handler Encryption handler instance.
+	 * @param Seculoco_Encryption_Handler_V2 $encryption_handler Encryption handler instance.
 	 */
 	public function __construct( $encryption_handler ) {
 		$this->encryption_handler = $encryption_handler;
@@ -91,56 +91,56 @@ class Secure_Login_Settings_Manager {
 	 */
 	public function register_settings() {
 		register_setting(
-			'secure_login_settings',
-			'secure_login_notification_email',
+			'seculoco_settings',
+			'seculoco_notification_email',
 			array(
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_email',
 			)
 		);
 		register_setting(
-			'secure_login_settings',
-			'secure_login_enable_notifications',
+			'seculoco_settings',
+			'seculoco_enable_notifications',
 			array(
 				'type'              => 'boolean',
 				'sanitize_callback' => array( $this, 'sanitize_boolean' ),
 			)
 		);
 		register_setting(
-			'secure_login_settings',
-			'secure_login_expiration_days',
+			'seculoco_settings',
+			'seculoco_expiration_days',
 			array(
 				'type'              => 'integer',
 				'sanitize_callback' => 'absint',
 			)
 		);
 		register_setting(
-			'secure_login_settings',
-			'secure_login_ultra_secure_mode',
+			'seculoco_settings',
+			'seculoco_ultra_secure_mode',
 			array(
 				'type'              => 'boolean',
 				'sanitize_callback' => array( $this, 'sanitize_boolean' ),
 			)
 		);
 		register_setting(
-			'secure_login_settings',
-			'secure_login_frontend_form_text',
+			'seculoco_settings',
+			'seculoco_frontend_form_text',
 			array(
 				'type'              => 'string',
 				'sanitize_callback' => array( $this, 'sanitize_frontend_form_text' ),
 			)
 		);
 		register_setting(
-			'secure_login_settings',
-			'secure_login_frontend_text_type',
+			'seculoco_settings',
+			'seculoco_frontend_text_type',
 			array(
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_text_field',
 			)
 		);
 		register_setting(
-			'secure_login_settings',
-			'secure_login_delete_on_uninstall',
+			'seculoco_settings',
+			'seculoco_delete_on_uninstall',
 			array(
 				'type'              => 'boolean',
 				'sanitize_callback' => array( $this, 'sanitize_boolean' ),
@@ -148,91 +148,91 @@ class Secure_Login_Settings_Manager {
 		);
 
 		add_settings_section(
-			'secure_login_notification_section',
+			'seculoco_notification_section',
 			__( 'Email Notifications', 'secure-login-collector' ),
 			array( $this, 'notification_section_callback' ),
-			'secure_login_settings'
+			'seculoco_settings'
 		);
 
 		add_settings_section(
-			'secure_login_frontend_section',
+			'seculoco_frontend_section',
 			__( 'Frontend Customization', 'secure-login-collector' ),
 			array( $this, 'frontend_section_callback' ),
-			'secure_login_settings'
+			'seculoco_settings'
 		);
 
 		add_settings_section(
-			'secure_login_expiration_section',
+			'seculoco_expiration_section',
 			__( 'Data Expiration', 'secure-login-collector' ),
 			array( $this, 'expiration_section_callback' ),
-			'secure_login_settings'
+			'seculoco_settings'
 		);
 
 		// Allow pro version to register its settings.
-		do_action( 'secure_login_register_settings' );
+		do_action( 'seculoco_register_settings' );
 
 		// Add encryption settings section (for all users now).
 		add_settings_section(
-			'secure_login_encryption_section',
+			'seculoco_encryption_section',
 			__( 'Encryption Settings', 'secure-login-collector' ),
 			array( $this, 'encryption_section_callback' ),
-			'secure_login_settings'
+			'seculoco_settings'
 		);
 
 		// Add plugin management section.
 		add_settings_section(
-			'secure_login_plugin_management_section',
+			'seculoco_plugin_management_section',
 			__( 'Plugin Management', 'secure-login-collector' ),
 			array( $this, 'plugin_management_section_callback' ),
-			'secure_login_settings'
+			'seculoco_settings'
 		);
 
 		add_settings_field(
-			'secure_login_delete_on_uninstall',
+			'seculoco_delete_on_uninstall',
 			__( 'Delete Data on Uninstall', 'secure-login-collector' ),
 			array( $this, 'delete_on_uninstall_callback' ),
-			'secure_login_settings',
-			'secure_login_plugin_management_section'
+			'seculoco_settings',
+			'seculoco_plugin_management_section'
 		);
 
 		add_settings_field(
-			'secure_login_enable_notifications',
+			'seculoco_enable_notifications',
 			__( 'Enable Email Notifications', 'secure-login-collector' ),
 			array( $this, 'enable_notifications_callback' ),
-			'secure_login_settings',
-			'secure_login_notification_section'
+			'seculoco_settings',
+			'seculoco_notification_section'
 		);
 
 		add_settings_field(
-			'secure_login_notification_email',
+			'seculoco_notification_email',
 			__( 'Notification Email Address', 'secure-login-collector' ),
 			array( $this, 'notification_email_callback' ),
-			'secure_login_settings',
-			'secure_login_notification_section'
+			'seculoco_settings',
+			'seculoco_notification_section'
 		);
 
 		add_settings_field(
-			'secure_login_frontend_text_type',
+			'seculoco_frontend_text_type',
 			__( 'Text Type', 'secure-login-collector' ),
 			array( $this, 'frontend_text_type_callback' ),
-			'secure_login_settings',
-			'secure_login_frontend_section'
+			'seculoco_settings',
+			'seculoco_frontend_section'
 		);
 
 		add_settings_field(
-			'secure_login_frontend_form_text',
+			'seculoco_frontend_form_text',
 			__( 'Custom Description Text', 'secure-login-collector' ),
 			array( $this, 'frontend_form_text_callback' ),
-			'secure_login_settings',
-			'secure_login_frontend_section'
+			'seculoco_settings',
+			'seculoco_frontend_section'
 		);
 
 		add_settings_field(
-			'secure_login_expiration_days',
+			'seculoco_expiration_days',
 			__( 'Auto-Delete After (Days)', 'secure-login-collector' ),
 			array( $this, 'expiration_days_callback' ),
-			'secure_login_settings',
-			'secure_login_expiration_section'
+			'seculoco_settings',
+			'seculoco_expiration_section'
 		);
 	}
 
@@ -240,13 +240,13 @@ class Secure_Login_Settings_Manager {
 	 * Notification settings section callback.
 	 */
 	public function notification_section_callback() {
-		echo '<div class="slc-card" style="margin-top: 20px;">';
-		echo '<div class="slc-card-header">';
-		echo '<h3 class="slc-card-title">';
+		echo '<div class="seculoco-card" style="margin-top: 20px;">';
+		echo '<div class="seculoco-card-header">';
+		echo '<h3 class="seculoco-card-title">';
 		echo esc_html__( 'Email Notifications', 'secure-login-collector' );
 		echo '</h3>';
 		echo '</div>';
-		echo '<div class="slc-card-body">';
+		echo '<div class="seculoco-card-body">';
 		echo '<p>' . esc_html__( 'Configure email notifications for new login data submissions.', 'secure-login-collector' ) . '</p>';
 		// Don't close the card-body div here - let the form-table be inside it.
 	}
@@ -255,13 +255,13 @@ class Secure_Login_Settings_Manager {
 	 * Frontend settings section callback.
 	 */
 	public function frontend_section_callback() {
-		echo '<div class="slc-card" style="margin-top: 20px;">';
-		echo '<div class="slc-card-header">';
-		echo '<h3 class="slc-card-title">';
+		echo '<div class="seculoco-card" style="margin-top: 20px;">';
+		echo '<div class="seculoco-card-header">';
+		echo '<h3 class="seculoco-card-title">';
 		echo esc_html__( 'Frontend Form Settings', 'secure-login-collector' );
 		echo '</h3>';
 		echo '</div>';
-		echo '<div class="slc-card-body">';
+		echo '<div class="seculoco-card-body">';
 		echo '<p>' . esc_html__( 'Customize the frontend form appearance and text.', 'secure-login-collector' ) . '</p>';
 		// Don't close the card-body div here - let the form-table be inside it.
 	}
@@ -270,13 +270,13 @@ class Secure_Login_Settings_Manager {
 	 * Expiration settings section callback.
 	 */
 	public function expiration_section_callback() {
-		echo '<div class="slc-card" style="margin-top: 20px;">';
-		echo '<div class="slc-card-header">';
-		echo '<h3 class="slc-card-title">';
+		echo '<div class="seculoco-card" style="margin-top: 20px;">';
+		echo '<div class="seculoco-card-header">';
+		echo '<h3 class="seculoco-card-title">';
 		echo esc_html__( 'Data Retention Settings', 'secure-login-collector' );
 		echo '</h3>';
 		echo '</div>';
-		echo '<div class="slc-card-body">';
+		echo '<div class="seculoco-card-body">';
 		echo '<p>' . esc_html__( 'Configure automatic deletion of old login data.', 'secure-login-collector' ) . '</p>';
 		// Don't close the card-body div here - let the form-table be inside it.
 	}
@@ -285,11 +285,11 @@ class Secure_Login_Settings_Manager {
 	 * Encryption settings section callback.
 	 */
 	public function encryption_section_callback() {
-		echo '<div class="slc-card" style="margin-top: 20px;">';
-		echo '<div class="slc-card-header">';
-		echo '<h3 class="slc-card-title">' . esc_html__( 'Encryption Settings', 'secure-login-collector' ) . '</h3>';
+		echo '<div class="seculoco-card" style="margin-top: 20px;">';
+		echo '<div class="seculoco-card-header">';
+		echo '<h3 class="seculoco-card-title">' . esc_html__( 'Encryption Settings', 'secure-login-collector' ) . '</h3>';
 		echo '</div>';
-		echo '<div class="slc-card-body">';
+		echo '<div class="seculoco-card-body">';
 		echo '<p>' . esc_html__( 'Manage RSA encryption keys for secure data transmission.', 'secure-login-collector' ) . '</p>';
 
 		// Output all the encryption content inline.
@@ -394,42 +394,58 @@ class Secure_Login_Settings_Manager {
 	 * Display encryption content inside the card
 	 */
 	private function display_encryption_content() {
-		echo '<div class="slc-passkey-benefits">';
+		// Grid layout for side-by-side cards
+		echo '<div class="seculoco-passkey-benefits" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">';
 
-		// RSA-2048 (Free version).
-		echo '<div class="slc-passkey-benefit" style="border-color: var(--slc-info);">';
-		echo '<span class="slc-passkey-benefit-icon"></span>';
-		echo '<div class="slc-passkey-benefit-text">';
-		echo '<div class="slc-passkey-benefit-title">';
-		echo '<span class="slc-badge slc-badge-info">SECURE</span> ';
+		// Get key status for both levels
+		$free_public_key  = get_option( 'seculoco_public_key_free' );
+		$free_private_key = get_option( 'seculoco_private_key_free_encrypted' );
+		$free_status = ( $free_public_key && $free_private_key ) ? 'active' : 'needs-init';
+
+		// RSA-2048 (Free version) with status badge
+		echo '<div class="seculoco-passkey-benefit" style="border-color: var(--seculoco-info);">';
+		echo '<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">';
+		echo '<span class="seculoco-badge slc-badge-info">SECURE</span> ';
+		if ( 'active' === $free_status ) {
+			echo '<span style="background: #d1ecf1; color: #0c5460; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600;">' . esc_html__( 'ACTIVE', 'secure-login-collector' ) . '</span>';
+		} else {
+			echo '<span style="background: #fff3cd; color: #856404; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600;">' . esc_html__( 'NEEDS INIT', 'secure-login-collector' ) . '</span>';
+		}
+		echo '</div>';
+		echo '<span class="seculoco-passkey-benefit-icon"></span>';
+		echo '<div class="seculoco-passkey-benefit-text">';
+		echo '<div class="seculoco-passkey-benefit-title">';
 		echo esc_html__( 'RSA-2048 + AES-256-GCM', 'secure-login-collector' );
 		echo '</div>';
-		echo '<div class="slc-passkey-benefit-desc">' . esc_html__( 'Industry-standard RSA encryption with 2048-bit keys and AES-256-GCM for data encryption. Secure for most use cases.', 'secure-login-collector' ) . '</div>';
+		echo '<div class="seculoco-passkey-benefit-desc">' . esc_html__( 'Industry-standard RSA encryption with 2048-bit keys and AES-256-GCM for data encryption. Secure for most use cases.', 'secure-login-collector' ) . '</div>';
 		echo '</div>';
-		echo '</div>'; // Close slc-passkey-benefit
+		echo '</div>'; // Close seculoco-passkey-benefit
 
 		// Ultra-Secure (Show upgrade notice in free version, pro version will hide this).
-		$show_pro_upgrade = apply_filters( 'secure_login_show_pro_upgrade', true );
+		$show_pro_upgrade = apply_filters( 'seculoco_show_pro_upgrade', true );
 		if ( $show_pro_upgrade ) {
-			echo '<div class="slc-passkey-benefit" style="border-color: #ccc; opacity: 0.7;">';
-			echo '<span class="slc-passkey-benefit-icon"></span>';
-			echo '<div class="slc-passkey-benefit-text">';
-			echo '<div class="slc-passkey-benefit-title">';
-			echo '<span class="slc-badge" style="background: #ccc; color: #666;">PRO ONLY</span> ';
+			echo '<div class="seculoco-passkey-benefit" style="border-color: #ccc; opacity: 0.7;">';
+			echo '<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">';
+			echo '<span class="seculoco-badge" style="background: #ccc; color: #666;">PRO ONLY</span> ';
+			echo '<span style="background: #f8f9fa; color: #6c757d; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600;">' . esc_html__( 'NOT AVAILABLE', 'secure-login-collector' ) . '</span>';
+			echo '</div>';
+			echo '<span class="seculoco-passkey-benefit-icon"></span>';
+			echo '<div class="seculoco-passkey-benefit-text">';
+			echo '<div class="seculoco-passkey-benefit-title">';
 			echo esc_html__( 'Ultra-Secure (Passkey-Protected)', 'secure-login-collector' );
 			echo '</div>';
-			echo '<div class="slc-passkey-benefit-desc">' . esc_html__( 'Passkey-protected encryption with WebAuthn/FIDO2. True zero-knowledge - server cannot decrypt without your physical device.', 'secure-login-collector' ) . '</div>';
+			echo '<div class="seculoco-passkey-benefit-desc">' . esc_html__( 'Passkey-protected encryption with WebAuthn/FIDO2. True zero-knowledge - server cannot decrypt without your physical device.', 'secure-login-collector' ) . '</div>';
 			$upgrade_url = function_exists( 'seculoco_fs' ) && seculoco_fs() ? seculoco_fs()->get_upgrade_url() : '#';
 			echo '<div style="margin-top: 8px;"><a href="' . esc_url( $upgrade_url ) . '" class="button button-secondary">' . esc_html__( 'Upgrade to Pro', 'secure-login-collector' ) . '</a></div>';
 			echo '</div>';
-			echo '</div>'; // Close slc-passkey-benefit
+			echo '</div>'; // Close seculoco-passkey-benefit
 		}
 
-		echo '</div>'; // Close slc-passkey-benefits
+		echo '</div>'; // Close seculoco-passkey-benefits
 
 		// Display key status.
-		$free_public_key  = get_option( 'secure_login_public_key_free' );
-		$free_private_key = get_option( 'secure_login_private_key_free_encrypted' );
+		$free_public_key  = get_option( 'seculoco_public_key_free' );
+		$free_private_key = get_option( 'seculoco_private_key_free_encrypted' );
 
 		// Display RSA Keys Status.
 		echo '<div class="rsa-keys-status" style="margin: 20px 0;">';
@@ -471,7 +487,7 @@ class Secure_Login_Settings_Manager {
 		}
 
 		// Allow pro version to add key management messages via hook.
-		do_action( 'secure_login_encryption_key_management_messages' );
+		do_action( 'seculoco_encryption_key_management_messages' );
 
 		echo '</div>';
 
@@ -481,21 +497,11 @@ class Secure_Login_Settings_Manager {
 			echo '<button type="button" class="button button-secondary" id="export-free-public-key">' . esc_html__( 'Export Public Key', 'secure-login-collector' ) . '</button> ';
 		}
 		// Allow pro version to add export button via hook.
-		do_action( 'secure_login_encryption_export_buttons' );
+		do_action( 'seculoco_encryption_export_buttons' );
 		echo '</p>';
 
 		// Allow pro version to add passkey management section via hook.
-		do_action( 'secure_login_encryption_section_after_keys' );
-
-		// Show upgrade notice in free version (pro version will suppress this via filter).
-		if ( apply_filters( 'secure_login_show_pro_upgrade', true ) ) {
-			echo '<div class="notice notice-warning inline" style="margin-top: 20px;">';
-			echo '<p><strong>' . esc_html__( 'Want Ultra-Secure Encryption?', 'secure-login-collector' ) . '</strong></p>';
-			echo '<p>' . esc_html__( 'Upgrade to Pro to enable passkey-protected encryption with WebAuthn/FIDO2 authentication for true zero-knowledge security.', 'secure-login-collector' ) . '</p>';
-			$upgrade_url = function_exists( 'seculoco_fs' ) && seculoco_fs() ? seculoco_fs()->get_upgrade_url() : '#';
-			echo '<p><a href="' . esc_url( $upgrade_url ) . '" class="button button-primary">' . esc_html__( 'Upgrade to Pro Version', 'secure-login-collector' ) . '</a></p>';
-			echo '</div>';
-		}
+		do_action( 'seculoco_encryption_section_after_keys' );
 
 		// Add JavaScript for key management via wp_add_inline_script.
 		$this->add_key_management_inline_script();
@@ -505,14 +511,14 @@ class Secure_Login_Settings_Manager {
 	 * Advanced security settings section callback.
 	 */
 	public function pro_section_callback() {
-		echo '<div class="slc-card" style="margin-top: 20px;">';
-		echo '<div class="slc-card-header">';
-		echo '<h3 class="slc-card-title">';
+		echo '<div class="seculoco-card" style="margin-top: 20px;">';
+		echo '<div class="seculoco-card-header">';
+		echo '<h3 class="seculoco-card-title">';
 		echo esc_html__( 'Advanced Security Features', 'secure-login-collector' );
 		echo '</h3>';
-		echo '<span class="slc-badge slc-badge-success">ADVANCED</span>';
+		echo '<span class="seculoco-badge slc-badge-success">ADVANCED</span>';
 		echo '</div>';
-		echo '<div class="slc-card-body">';
+		echo '<div class="seculoco-card-body">';
 		echo '<p>' . esc_html__( 'Advanced security settings including passkey authentication for enhanced protection.', 'secure-login-collector' ) . '</p>';
 
 		// Don't close the card-body div here - let the form-table be inside it.
@@ -526,17 +532,17 @@ class Secure_Login_Settings_Manager {
 	 * Enable notifications field callback.
 	 */
 	public function enable_notifications_callback() {
-		$enabled = get_option( 'secure_login_enable_notifications', false );
-		echo '<input type="checkbox" id="secure_login_enable_notifications" name="secure_login_enable_notifications" value="1" ' . checked( 1, $enabled, false ) . ' />';
-		echo '<label for="secure_login_enable_notifications"> ' . esc_html__( 'Send email notifications when new login data is received', 'secure-login-collector' ) . '</label>';
+		$enabled = get_option( 'seculoco_enable_notifications', false );
+		echo '<input type="checkbox" id="seculoco_enable_notifications" name="seculoco_enable_notifications" value="1" ' . checked( 1, $enabled, false ) . ' />';
+		echo '<label for="seculoco_enable_notifications"> ' . esc_html__( 'Send email notifications when new login data is received', 'secure-login-collector' ) . '</label>';
 	}
 
 	/**
 	 * Notification email field callback.
 	 */
 	public function notification_email_callback() {
-		$email = get_option( 'secure_login_notification_email', get_option( 'admin_email' ) );
-		echo '<input type="email" id="secure_login_notification_email" name="secure_login_notification_email" value="' . esc_attr( $email ) . '" class="regular-text" />';
+		$email = get_option( 'seculoco_notification_email', get_option( 'admin_email' ) );
+		echo '<input type="email" id="seculoco_notification_email" name="seculoco_notification_email" value="' . esc_attr( $email ) . '" class="regular-text" />';
 		echo '<p class="description">' . esc_html__( 'Email address to receive notifications. Defaults to site admin email.', 'secure-login-collector' ) . '</p>';
 	}
 
@@ -550,11 +556,11 @@ class Secure_Login_Settings_Manager {
 		$script = "
 		jQuery(document).ready(function($) {
 			var defaultText = " . wp_json_encode( $default_text ) . ";
-			var originalText = $('#secure_login_frontend_form_text').val();
+			var originalText = $('#seculoco_frontend_form_text').val();
 
 			function toggleTextarea() {
-				var selectedType = $('input[name=\"secure_login_frontend_text_type\"]:checked').val();
-				var textarea = $('#secure_login_frontend_form_text');
+				var selectedType = $('input[name=\"seculoco_frontend_text_type\"]:checked').val();
+				var textarea = $('#seculoco_frontend_form_text');
 
 				if (selectedType === 'default') {
 					textarea.prop('disabled', true).css('background-color', '#f1f1f1');
@@ -567,7 +573,7 @@ class Secure_Login_Settings_Manager {
 			}
 
 			toggleTextarea();
-			$('input[name=\"secure_login_frontend_text_type\"]').on('change', toggleTextarea);
+			$('input[name=\"seculoco_frontend_text_type\"]').on('change', toggleTextarea);
 		});
 		";
 
@@ -578,8 +584,8 @@ class Secure_Login_Settings_Manager {
 	 * Frontend form text field callback.
 	 */
 	public function frontend_form_text_callback() {
-		$text      = get_option( 'secure_login_frontend_form_text', '' );
-		$text_type = get_option( 'secure_login_frontend_text_type', 'default' );
+		$text      = get_option( 'seculoco_frontend_form_text', '' );
+		$text_type = get_option( 'seculoco_frontend_text_type', 'default' );
 
 		// Generate the default text with placeholder for dynamic expiration text.
 		$default_text  = '<p><strong>' . __( 'What happens to your data:', 'secure-login-collector' ) . '</strong> ' . __( 'Your login data is encrypted in your browser before being sent to our server. We use strong RSA-2048 encryption to ensure maximum security.', 'secure-login-collector' ) . '</p>';
@@ -589,7 +595,7 @@ class Secure_Login_Settings_Manager {
 		$display_text = ! empty( $text ) ? $text : $default_text;
 		$is_disabled  = ( 'default' === $text_type ) ? 'disabled' : '';
 
-		echo '<textarea id="secure_login_frontend_form_text" name="secure_login_frontend_form_text" rows="6" class="large-text" style="width: 100%;" ' . esc_attr( $is_disabled ) . '>' . esc_textarea( $display_text ) . '</textarea>';
+		echo '<textarea id="seculoco_frontend_form_text" name="seculoco_frontend_form_text" rows="6" class="large-text" style="width: 100%;" ' . esc_attr( $is_disabled ) . '>' . esc_textarea( $display_text ) . '</textarea>';
 		echo '<p class="description">' . esc_html__( 'Custom text to display above the login form. Basic HTML allowed (p, strong, em, br, a). This field is automatically populated with the default text when no custom text is provided. Use {EXPIRATION_TEXT} placeholder for automatic expiration information.', 'secure-login-collector' ) . '</p>';
 
 		// Add JavaScript for radio button interaction via wp_add_inline_script.
@@ -600,16 +606,16 @@ class Secure_Login_Settings_Manager {
 	 * Frontend text type field callback.
 	 */
 	public function frontend_text_type_callback() {
-		$text_type = get_option( 'secure_login_frontend_text_type', 'default' );
+		$text_type = get_option( 'seculoco_frontend_text_type', 'default' );
 
 		echo '<fieldset>';
 		echo '<label>';
-		echo '<input type="radio" name="secure_login_frontend_text_type" value="default" ' . checked( 'default', $text_type, false ) . '> ';
+		echo '<input type="radio" name="seculoco_frontend_text_type" value="default" ' . checked( 'default', $text_type, false ) . '> ';
 		echo esc_html__( 'Default (Automatic encryption & expiration details)', 'secure-login-collector' );
 		echo '</label><br><br>';
 
 		echo '<label>';
-		echo '<input type="radio" name="secure_login_frontend_text_type" value="custom" ' . checked( 'custom', $text_type, false ) . '> ';
+		echo '<input type="radio" name="seculoco_frontend_text_type" value="custom" ' . checked( 'custom', $text_type, false ) . '> ';
 		echo esc_html__( 'Custom Text (Use the text below)', 'secure-login-collector' );
 		echo '</label>';
 		echo '</fieldset>';
@@ -621,8 +627,8 @@ class Secure_Login_Settings_Manager {
 	 * Expiration days field callback.
 	 */
 	public function expiration_days_callback() {
-		$days = get_option( 'secure_login_expiration_days', 30 );
-		echo '<input type="number" id="secure_login_expiration_days" name="secure_login_expiration_days" value="' . esc_attr( $days ) . '" min="0" class="small-text" />';
+		$days = get_option( 'seculoco_expiration_days', 30 );
+		echo '<input type="number" id="seculoco_expiration_days" name="seculoco_expiration_days" value="' . esc_attr( $days ) . '" min="0" class="small-text" />';
 		echo '<p class="description">' . esc_html__( 'Number of days after which login data will be automatically deleted. Set to 0 to disable automatic deletion (data will be retained until manually deleted).', 'secure-login-collector' ) . '</p>';
 	}
 
@@ -630,17 +636,17 @@ class Secure_Login_Settings_Manager {
 	 * Ultra secure mode field callback.
 	 */
 	public function ultra_secure_mode_callback() {
-		$enabled = get_option( 'secure_login_ultra_secure_mode', false );
-		echo '<input type="checkbox" id="secure_login_ultra_secure_mode" name="secure_login_ultra_secure_mode" value="1" ' . checked( 1, $enabled, false ) . ' />';
-		echo '<label for="secure_login_ultra_secure_mode"> ' . esc_html__( 'Enable passkey-protected encryption (zero-knowledge)', 'secure-login-collector' ) . '</label>';
+		$enabled = get_option( 'seculoco_ultra_secure_mode', false );
+		echo '<input type="checkbox" id="seculoco_ultra_secure_mode" name="seculoco_ultra_secure_mode" value="1" ' . checked( 1, $enabled, false ) . ' />';
+		echo '<label for="seculoco_ultra_secure_mode"> ' . esc_html__( 'Enable passkey-protected encryption (zero-knowledge)', 'secure-login-collector' ) . '</label>';
 		echo '<p class="description">' . esc_html__( 'When enabled, the RSA private key is wrapped with passkey authentication. This provides true zero-knowledge - the server cannot decrypt data without your physical passkey device. Requires passkey registration.', 'secure-login-collector' ) . '</p>';
 
-		$passkey_registered = get_option( 'secure_login_passkey_registered', false );
+		$passkey_registered = get_option( 'seculoco_passkey_registered', false );
 		if ( ! $passkey_registered ) {
-			echo '<div class="slc-alert slc-alert-warning" style="margin-top: 12px;">';
-			echo '<span class="slc-alert-icon"></span>';
-			echo '<div class="slc-alert-content">';
-			echo '<div class="slc-alert-message">';
+			echo '<div class="seculoco-alert slc-alert-warning" style="margin-top: 12px;">';
+			echo '<span class="seculoco-alert-icon"></span>';
+			echo '<div class="seculoco-alert-content">';
+			echo '<div class="seculoco-alert-message">';
 			echo '<strong>' . esc_html__( 'Warning:', 'secure-login-collector' ) . '</strong> ' . esc_html__( 'You must register a passkey before enabling ultra-secure mode.', 'secure-login-collector' );
 			echo '</div>';
 			echo '</div>';
@@ -652,13 +658,13 @@ class Secure_Login_Settings_Manager {
 	 * Plugin management section callback.
 	 */
 	public function plugin_management_section_callback() {
-		echo '<div class="slc-card" style="margin-top: 20px;">';
-		echo '<div class="slc-card-header">';
-		echo '<h3 class="slc-card-title">';
+		echo '<div class="seculoco-card" style="margin-top: 20px;">';
+		echo '<div class="seculoco-card-header">';
+		echo '<h3 class="seculoco-card-title">';
 		echo esc_html__( 'Plugin Management', 'secure-login-collector' );
 		echo '</h3>';
 		echo '</div>';
-		echo '<div class="slc-card-body">';
+		echo '<div class="seculoco-card-body">';
 		echo '<p>' . esc_html__( 'Configure how the plugin handles data when it is uninstalled.', 'secure-login-collector' ) . '</p>';
 		// Don't close the card-body div here - let the form-table be inside it.
 	}
@@ -667,9 +673,9 @@ class Secure_Login_Settings_Manager {
 	 * Delete on uninstall field callback.
 	 */
 	public function delete_on_uninstall_callback() {
-		$enabled = get_option( 'secure_login_delete_on_uninstall', false );
-		echo '<input type="checkbox" id="secure_login_delete_on_uninstall" name="secure_login_delete_on_uninstall" value="1" ' . checked( 1, $enabled, false ) . ' />';
-		echo '<label for="secure_login_delete_on_uninstall"> ' . esc_html__( 'Completely remove all plugin data when uninstalling', 'secure-login-collector' ) . '</label>';
+		$enabled = get_option( 'seculoco_delete_on_uninstall', false );
+		echo '<input type="checkbox" id="seculoco_delete_on_uninstall" name="seculoco_delete_on_uninstall" value="1" ' . checked( 1, $enabled, false ) . ' />';
+		echo '<label for="seculoco_delete_on_uninstall"> ' . esc_html__( 'Completely remove all plugin data when uninstalling', 'secure-login-collector' ) . '</label>';
 		echo '<p class="description">' . esc_html__( 'When checked, all login data, encryption keys, settings, and database tables will be permanently deleted when the plugin is uninstalled. This action cannot be undone.', 'secure-login-collector' ) . '</p>';
 		echo '<div class="notice notice-warning inline" style="margin-top: 10px;">';
 		echo '<p><strong>' . esc_html__( 'Warning:', 'secure-login-collector' ) . '</strong> ' . esc_html__( 'If you enable this option, all encrypted login data will be permanently lost when you uninstall the plugin. Make sure to export any important data before uninstalling.', 'secure-login-collector' ) . '</p>';
@@ -685,38 +691,38 @@ class Secure_Login_Settings_Manager {
 			<h1><?php echo esc_html__( 'Secure Login Collector Settings', 'secure-login-collector' ); ?></h1>
 			
 			<!-- Shortcode Display Section -->
-			<div class="slc-card">
-				<div class="slc-card-header">
-					<h3 class="slc-card-title">
+			<div class="seculoco-card">
+				<div class="seculoco-card-header">
+					<h3 class="seculoco-card-title">
 						
 						<?php echo esc_html__( 'Frontend Form Shortcode', 'secure-login-collector' ); ?>
 					</h3>
-					<span class="slc-badge slc-badge-info"><?php echo esc_html__( 'Required', 'secure-login-collector' ); ?></span>
+					<span class="seculoco-badge slc-badge-info"><?php echo esc_html__( 'Required', 'secure-login-collector' ); ?></span>
 				</div>
-				<div class="slc-card-body">
+				<div class="seculoco-card-body">
 					<p><?php echo esc_html__( 'Use this shortcode to display the secure login form on any page or post:', 'secure-login-collector' ); ?></p>
-					<div style="background: var(--slc-bg-light); padding: 12px 16px; border-radius: var(--slc-radius-sm); display: inline-block; font-family: 'Monaco', 'Menlo', monospace; font-size: 16px; border: 2px solid var(--slc-border); font-weight: 500;">
-						[secure_login_form]
+					<div style="background: var(--seculoco-bg-light); padding: 12px 16px; border-radius: var(--seculoco-radius-sm); display: inline-block; font-family: 'Monaco', 'Menlo', monospace; font-size: 16px; border: 2px solid var(--seculoco-border); font-weight: 500;">
+						[seculoco_form]
 					</div>
 					<div style="margin-top: 12px;">
-						<button type="button" class="button" onclick="navigator.clipboard.writeText('[secure_login_form]'); this.innerHTML = '<?php echo esc_js( __( 'Copied!', 'secure-login-collector' ) ); ?>'; setTimeout(() => { this.innerHTML = '<?php echo esc_js( __( 'Copy Shortcode', 'secure-login-collector' ) ); ?>'; }, 2000);">
+						<button type="button" class="button" onclick="navigator.clipboard.writeText('[seculoco_form]'); this.innerHTML = '<?php echo esc_js( __( 'Copied!', 'secure-login-collector' ) ); ?>'; setTimeout(() => { this.innerHTML = '<?php echo esc_js( __( 'Copy Shortcode', 'secure-login-collector' ) ); ?>'; }, 2000);">
 							<?php echo esc_html__( 'Copy Shortcode', 'secure-login-collector' ); ?>
 						</button>
 					</div>
-					<p class="slc-form-help" style="margin-top: 16px;">
+					<p class="seculoco-form-help" style="margin-top: 16px;">
 						<?php echo esc_html__( 'Simply paste this shortcode into any page or post where you want clients to submit their login credentials.', 'secure-login-collector' ); ?>
 					</p>
 				</div>
 			</div>
 			
-			<form method="post" action="options.php" class="slc-settings-form">
-				<div class="slc-settings-sections">
+			<form method="post" action="options.php" class="seculoco-settings-form">
+				<div class="seculoco-settings-sections">
 					<?php
-					settings_fields( 'secure_login_settings' );
+					settings_fields( 'seculoco_settings' );
 
 					// Custom rendering of settings sections to properly wrap in cards.
 					global $wp_settings_sections, $wp_settings_fields;
-					$page = 'secure_login_settings';
+					$page = 'seculoco_settings';
 
 					if ( ! isset( $wp_settings_sections[ $page ] ) ) {
 						return;
@@ -767,7 +773,7 @@ class Secure_Login_Settings_Manager {
 	public function sanitize_frontend_form_text( $text ) {
 		// Get the text type selection.
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled by WordPress settings API.
-		$text_type = isset( $_POST['secure_login_frontend_text_type'] ) ? sanitize_text_field( wp_unslash( $_POST['secure_login_frontend_text_type'] ) ) : 'default';
+		$text_type = isset( $_POST['seculoco_frontend_text_type'] ) ? sanitize_text_field( wp_unslash( $_POST['seculoco_frontend_text_type'] ) ) : 'default';
 
 		// If "default" is selected, don't save any custom text (save empty string).
 		if ( 'default' === $text_type ) {

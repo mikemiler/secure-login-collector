@@ -14,16 +14,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class Secure_Login_Settings_Manager_Pro
+ * Class Seculoco_Settings_Manager_Pro
  *
  * Handles pro-specific settings functionality via hooks.
  */
-class Secure_Login_Settings_Manager_Pro {
+class Seculoco_Settings_Manager_Pro {
 
 	/**
 	 * Encryption handler instance.
 	 *
-	 * @var Secure_Login_Encryption_Handler_V2
+	 * @var Seculoco_Encryption_Handler_V2
 	 */
 	private $encryption_handler;
 
@@ -32,31 +32,31 @@ class Secure_Login_Settings_Manager_Pro {
 	 */
 	public function __construct() {
 		// Store encryption handler reference.
-		add_action( 'secure_login_encryption_handler_ready', array( $this, 'set_encryption_handler' ) );
+		add_action( 'seculoco_encryption_handler_ready', array( $this, 'set_encryption_handler' ) );
 
 		// Register pro settings.
-		add_action( 'secure_login_register_settings', array( $this, 'register_pro_settings' ) );
+		add_action( 'seculoco_register_settings', array( $this, 'register_pro_settings' ) );
 
 		// Add pro settings sections.
-		add_action( 'secure_login_add_settings_sections', array( $this, 'add_pro_settings_sections' ) );
+		add_action( 'seculoco_add_settings_sections', array( $this, 'add_pro_settings_sections' ) );
 
 		// Add pro key management messages in encryption section.
-		add_action( 'secure_login_encryption_key_management_messages', array( $this, 'add_pro_key_management_messages' ) );
+		add_action( 'seculoco_encryption_key_management_messages', array( $this, 'add_pro_key_management_messages' ) );
 
 		// Add pro export button in encryption section.
-		add_action( 'secure_login_encryption_export_buttons', array( $this, 'add_pro_export_button' ) );
+		add_action( 'seculoco_encryption_export_buttons', array( $this, 'add_pro_export_button' ) );
 
 		// Add passkey management section to encryption settings.
-		add_action( 'secure_login_encryption_section_after_keys', array( $this, 'add_passkey_management_section' ) );
+		add_action( 'seculoco_encryption_section_after_keys', array( $this, 'add_passkey_management_section' ) );
 
 		// Remove upgrade notices (since this is pro).
-		add_filter( 'secure_login_show_pro_upgrade', '__return_false' );
+		add_filter( 'seculoco_show_pro_upgrade', '__return_false' );
 	}
 
 	/**
 	 * Store encryption handler reference when it's ready.
 	 *
-	 * @param Secure_Login_Encryption_Handler_V2 $handler Encryption handler instance.
+	 * @param Seculoco_Encryption_Handler_V2 $handler Encryption handler instance.
 	 */
 	public function set_encryption_handler( $handler ) {
 		$this->encryption_handler = $handler;
@@ -67,8 +67,8 @@ class Secure_Login_Settings_Manager_Pro {
 	 */
 	public function register_pro_settings() {
 		register_setting(
-			'secure_login_settings',
-			'secure_login_ultra_secure_mode',
+			'seculoco_settings',
+			'seculoco_ultra_secure_mode',
 			array(
 				'type'              => 'boolean',
 				'sanitize_callback' => array( $this, 'sanitize_boolean' ),
@@ -82,18 +82,18 @@ class Secure_Login_Settings_Manager_Pro {
 	public function add_pro_settings_sections() {
 		// Add advanced security settings section.
 		add_settings_section(
-			'secure_login_pro_section',
+			'seculoco_pro_section',
 			__( 'Advanced Security Settings', 'secure-login-collector' ),
 			array( $this, 'pro_section_callback' ),
-			'secure_login_settings'
+			'seculoco_settings'
 		);
 
 		add_settings_field(
-			'secure_login_ultra_secure_mode',
+			'seculoco_ultra_secure_mode',
 			__( 'Ultra-Secure Mode', 'secure-login-collector' ),
 			array( $this, 'ultra_secure_mode_callback' ),
-			'secure_login_settings',
-			'secure_login_pro_section'
+			'seculoco_settings',
+			'seculoco_pro_section'
 		);
 	}
 
@@ -101,14 +101,14 @@ class Secure_Login_Settings_Manager_Pro {
 	 * Advanced security settings section callback.
 	 */
 	public function pro_section_callback() {
-		echo '<div class="slc-card" style="margin-top: 20px;">';
-		echo '<div class="slc-card-header">';
-		echo '<h3 class="slc-card-title">';
+		echo '<div class="seculoco-card" style="margin-top: 20px;">';
+		echo '<div class="seculoco-card-header">';
+		echo '<h3 class="seculoco-card-title">';
 		echo esc_html__( 'Advanced Security Features', 'secure-login-collector' );
 		echo '</h3>';
-		echo '<span class="slc-badge slc-badge-success">PRO</span>';
+		echo '<span class="seculoco-badge slc-badge-success">PRO</span>';
 		echo '</div>';
-		echo '<div class="slc-card-body">';
+		echo '<div class="seculoco-card-body">';
 		echo '<p>' . esc_html__( 'Advanced security settings including passkey authentication for enhanced protection.', 'secure-login-collector' ) . '</p>';
 	}
 
@@ -116,17 +116,17 @@ class Secure_Login_Settings_Manager_Pro {
 	 * Ultra secure mode field callback.
 	 */
 	public function ultra_secure_mode_callback() {
-		$enabled = get_option( 'secure_login_ultra_secure_mode', false );
-		echo '<input type="checkbox" id="secure_login_ultra_secure_mode" name="secure_login_ultra_secure_mode" value="1" ' . checked( 1, $enabled, false ) . ' />';
-		echo '<label for="secure_login_ultra_secure_mode"> ' . esc_html__( 'Enable passkey-protected encryption (zero-knowledge)', 'secure-login-collector' ) . '</label>';
+		$enabled = get_option( 'seculoco_ultra_secure_mode', false );
+		echo '<input type="checkbox" id="seculoco_ultra_secure_mode" name="seculoco_ultra_secure_mode" value="1" ' . checked( 1, $enabled, false ) . ' />';
+		echo '<label for="seculoco_ultra_secure_mode"> ' . esc_html__( 'Enable passkey-protected encryption (zero-knowledge)', 'secure-login-collector' ) . '</label>';
 		echo '<p class="description">' . esc_html__( 'When enabled, the RSA private key is wrapped with passkey authentication. This provides true zero-knowledge - the server cannot decrypt data without your physical passkey device. Requires passkey registration.', 'secure-login-collector' ) . '</p>';
 
-		$passkey_registered = get_option( 'secure_login_passkey_registered', false );
+		$passkey_registered = get_option( 'seculoco_passkey_registered', false );
 		if ( ! $passkey_registered ) {
-			echo '<div class="slc-alert slc-alert-warning" style="margin-top: 12px;">';
-			echo '<span class="slc-alert-icon"></span>';
-			echo '<div class="slc-alert-content">';
-			echo '<div class="slc-alert-message">';
+			echo '<div class="seculoco-alert slc-alert-warning" style="margin-top: 12px;">';
+			echo '<span class="seculoco-alert-icon"></span>';
+			echo '<div class="seculoco-alert-content">';
+			echo '<div class="seculoco-alert-message">';
 			echo '<strong>' . esc_html__( 'Warning:', 'secure-login-collector' ) . '</strong> ' . esc_html__( 'You must register a passkey before enabling ultra-secure mode.', 'secure-login-collector' );
 			echo '</div>';
 			echo '</div>';
@@ -138,8 +138,8 @@ class Secure_Login_Settings_Manager_Pro {
 	 * Add pro key management messages.
 	 */
 	public function add_pro_key_management_messages() {
-		$pro_public_key     = get_option( 'secure_login_public_key_pro' );
-		$passkey_registered = get_option( 'secure_login_passkey_registered', false );
+		$pro_public_key     = get_option( 'seculoco_public_key_pro' );
+		$passkey_registered = get_option( 'seculoco_passkey_registered', false );
 
 		if ( ! $pro_public_key && $passkey_registered ) {
 			echo '<p>' . esc_html__( 'Ultra-secure RSA keys need to be initialized with your passkey.', 'secure-login-collector' ) . '</p>';
@@ -154,7 +154,7 @@ class Secure_Login_Settings_Manager_Pro {
 	 * Add pro export button.
 	 */
 	public function add_pro_export_button() {
-		$pro_public_key = get_option( 'secure_login_public_key_pro' );
+		$pro_public_key = get_option( 'seculoco_public_key_pro' );
 		if ( $pro_public_key ) {
 			echo '<button type="button" class="button button-secondary" id="export-pro-public-key">' . esc_html__( 'Export Pro Public Key', 'secure-login-collector' ) . '</button>';
 		}
@@ -164,23 +164,47 @@ class Secure_Login_Settings_Manager_Pro {
 	 * Add passkey management section after key status.
 	 */
 	public function add_passkey_management_section() {
-		// Display pro encryption benefit.
-		echo '<div class="slc-passkey-benefit" style="border-color: var(--slc-success); margin-top: 20px;">';
-		echo '<span class="slc-passkey-benefit-icon"></span>';
-		echo '<div class="slc-passkey-benefit-text">';
-		echo '<div class="slc-passkey-benefit-title">';
-		echo '<span class="slc-badge slc-badge-success">ULTRA-SECURE</span> ';
+		// Get pro key status
+		$pro_public_key     = get_option( 'seculoco_public_key_pro' );
+		$pro_private_key    = get_option( 'seculoco_wrapped_private_key_pro' );
+		$pro_keys_active    = get_option( 'seculoco_pro_keys_active', false );
+		$passkey_registered = get_option( 'seculoco_passkey_registered', false );
+
+		// Determine status
+		if ( $pro_public_key && $pro_private_key && $pro_keys_active ) {
+			$status = 'active';
+			$status_label = __( 'ACTIVE', 'secure-login-collector' );
+			$status_style = 'background: #d1ecf1; color: #0c5460;';
+		} elseif ( $passkey_registered ) {
+			$status = 'needs-init';
+			$status_label = __( 'NEEDS INIT', 'secure-login-collector' );
+			$status_style = 'background: #fff3cd; color: #856404;';
+		} else {
+			$status = 'not-available';
+			$status_label = __( 'NOT AVAILABLE', 'secure-login-collector' );
+			$status_style = 'background: #f8f9fa; color: #6c757d;';
+		}
+
+		// Display pro encryption benefit in grid with status badge
+		echo '<div class="seculoco-passkey-benefit" style="border-color: var(--seculoco-success); margin-top: 0;">';
+		echo '<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">';
+		echo '<span class="seculoco-badge slc-badge-success">ULTRA-SECURE</span> ';
+		echo '<span style="' . esc_attr( $status_style ) . ' padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600;">' . esc_html( $status_label ) . '</span>';
+		echo '</div>';
+		echo '<span class="seculoco-passkey-benefit-icon"></span>';
+		echo '<div class="seculoco-passkey-benefit-text">';
+		echo '<div class="seculoco-passkey-benefit-title">';
 		echo esc_html__( 'Passkey-Protected Encryption', 'secure-login-collector' );
 		echo '</div>';
-		echo '<div class="slc-passkey-benefit-desc">' . esc_html__( 'Wraps private keys with passkey authentication. True zero-knowledge - server cannot decrypt without your physical device.', 'secure-login-collector' ) . '</div>';
+		echo '<div class="seculoco-passkey-benefit-desc">' . esc_html__( 'Wraps private keys with passkey authentication. True zero-knowledge - server cannot decrypt without your physical device.', 'secure-login-collector' ) . '</div>';
 		echo '</div>';
 		echo '</div>';
 
 		// Display pro key status.
-		$pro_public_key     = get_option( 'secure_login_public_key_pro' );
-		$pro_private_key    = get_option( 'secure_login_wrapped_private_key_pro' );
-		$pro_keys_active    = get_option( 'secure_login_pro_keys_active', false );
-		$passkey_registered = get_option( 'secure_login_passkey_registered', false );
+		$pro_public_key     = get_option( 'seculoco_public_key_pro' );
+		$pro_private_key    = get_option( 'seculoco_wrapped_private_key_pro' );
+		$pro_keys_active    = get_option( 'seculoco_pro_keys_active', false );
+		$passkey_registered = get_option( 'seculoco_passkey_registered', false );
 
 		echo '<div style="background: white; border: 1px solid #c3c4c7; border-radius: 4px; padding: 15px; margin-top: 15px;">';
 		echo '<div style="display: flex; justify-content: space-between; align-items: center;">';
@@ -227,4 +251,4 @@ class Secure_Login_Settings_Manager_Pro {
 }
 
 // Initialize pro settings manager.
-new Secure_Login_Settings_Manager_Pro();
+new Seculoco_Settings_Manager_Pro();

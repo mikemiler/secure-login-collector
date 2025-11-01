@@ -54,8 +54,8 @@ function seculoco_fs_custom_pricing_page() {
 	<div class="wrap">
 		<h1><?php esc_html_e( 'Secure Login Collector Pro', 'secure-login-collector' ); ?></h1>
 
-		<div class="slc-pricing-wrapper">
-			<div class="slc-pricing-card free">
+		<div class="seculoco-pricing-wrapper">
+			<div class="seculoco-pricing-card free">
 				<h2><?php esc_html_e( 'Free Version', 'secure-login-collector' ); ?></h2>
 				<ul>
 					<li>✅ <?php esc_html_e( 'RSA-2048 Encryption', 'secure-login-collector' ); ?></li>
@@ -65,7 +65,7 @@ function seculoco_fs_custom_pricing_page() {
 				</ul>
 			</div>
 
-			<div class="slc-pricing-card pro">
+			<div class="seculoco-pricing-card pro">
 				<h2><?php esc_html_e( 'Pro Version', 'secure-login-collector' ); ?></h2>
 				<p class="price">$49/year</p>
 				<ul>
@@ -212,7 +212,7 @@ function seculoco_fs_admin_notices() {
 
 	// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET parameter for page detection.
 	if ( ! seculoco_fs()->is_paying() && isset( $_GET['page'] ) && 'secure-login-collector-account' === $_GET['page'] ) {
-		$passkey_registered = get_option( 'secure_login_passkey_registered', false );
+		$passkey_registered = get_option( 'seculoco_passkey_registered', false );
 
 		if ( $passkey_registered ) {
 			?>
@@ -252,7 +252,7 @@ function seculoco_fs_plugin_action_links( $links ) {
 
 	return $links;
 }
-add_filter( 'plugin_action_links_' . plugin_basename( SECURE_LOGIN_PLUGIN_DIR . 'secure-login-collector.php' ), 'seculoco_fs_plugin_action_links' );
+add_filter( 'plugin_action_links_' . plugin_basename( SECULOCO_PLUGIN_DIR . 'secure-login-collector.php' ), 'seculoco_fs_plugin_action_links' );
 
 /**
  * Custom menu items

@@ -26,7 +26,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 function seculoco_fs_uninstall_cleanup() {
 	try {
 		// Check if user has opted to delete all data on uninstall.
-		$delete_on_uninstall = get_option( 'secure_login_delete_on_uninstall', false );
+		$delete_on_uninstall = get_option( 'seculoco_delete_on_uninstall', false );
 
 		if ( ! $delete_on_uninstall ) {
 			// User has chosen to keep data, so exit without deleting anything.
@@ -39,7 +39,7 @@ function seculoco_fs_uninstall_cleanup() {
 		global $wpdb;
 
 		// 1. Delete the custom database table.
-		$table_name = $wpdb->prefix . 'secure_login_data';
+		$table_name = $wpdb->prefix . 'seculoco_data';
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
 		$result = $wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS %i', $table_name ) );
 
@@ -52,31 +52,31 @@ function seculoco_fs_uninstall_cleanup() {
 		// 2. Delete all plugin options.
 		$plugin_options = array(
 			// Settings.
-			'secure_login_notification_email',
-			'secure_login_enable_notifications',
-			'secure_login_expiration_days',
-			'secure_login_ultra_secure_mode',
-			'secure_login_frontend_form_text',
-			'secure_login_frontend_text_type',
-			'secure_login_delete_on_uninstall',
+			'seculoco_notification_email',
+			'seculoco_enable_notifications',
+			'seculoco_expiration_days',
+			'seculoco_ultra_secure_mode',
+			'seculoco_frontend_form_text',
+			'seculoco_frontend_text_type',
+			'seculoco_delete_on_uninstall',
 
 			// Encryption keys and related data.
-			'secure_login_public_key',
-			'secure_login_private_key',
-			'secure_login_wrapped_private_key',
-			'secure_login_private_key_encrypted',
-			'secure_login_public_key_free',
-			'secure_login_private_key_free_encrypted',
-			'secure_login_public_key_pro',
-			'secure_login_wrapped_private_key_pro',
-			'secure_login_pro_keys_active',
-			'secure_login_passkey_registered',
-			'secure_login_master_key_wrapped',
-			'secure_login_key_access_log',
-			'secure_login_session_keys',
+			'seculoco_public_key',
+			'seculoco_private_key',
+			'seculoco_wrapped_private_key',
+			'seculoco_private_key_encrypted',
+			'seculoco_public_key_free',
+			'seculoco_private_key_free_encrypted',
+			'seculoco_public_key_pro',
+			'seculoco_wrapped_private_key_pro',
+			'seculoco_pro_keys_active',
+			'seculoco_passkey_registered',
+			'seculoco_master_key_wrapped',
+			'seculoco_key_access_log',
+			'seculoco_session_keys',
 
 			// Database version.
-			'secure_login_db_version',
+			'seculoco_db_version',
 
 			// Freemius related options.
 			'fs_accounts',
@@ -102,13 +102,13 @@ function seculoco_fs_uninstall_cleanup() {
 		$user_meta_deleted = 0;
 
 		foreach ( $users as $user ) {
-			if ( delete_user_meta( $user->ID, 'secure_login_passkeys' ) ) {
+			if ( delete_user_meta( $user->ID, 'seculoco_passkeys' ) ) {
 				++$user_meta_deleted;
 			}
-			if ( delete_user_meta( $user->ID, 'secure_login_passkey_challenge' ) ) {
+			if ( delete_user_meta( $user->ID, 'seculoco_passkey_challenge' ) ) {
 				++$user_meta_deleted;
 			}
-			if ( delete_user_meta( $user->ID, 'secure_login_wrapped_master_key' ) ) {
+			if ( delete_user_meta( $user->ID, 'seculoco_wrapped_master_key' ) ) {
 				++$user_meta_deleted;
 			}
 		}
@@ -130,9 +130,9 @@ function seculoco_fs_uninstall_cleanup() {
 		}
 
 		// 5. Clear any scheduled cron jobs.
-		$timestamp = wp_next_scheduled( 'secure_login_cleanup_expired' );
+		$timestamp = wp_next_scheduled( 'seculoco_cleanup_expired' );
 		if ( $timestamp ) {
-			$unscheduled = wp_unschedule_event( $timestamp, 'secure_login_cleanup_expired' );
+			$unscheduled = wp_unschedule_event( $timestamp, 'seculoco_cleanup_expired' );
 			if ( ! $unscheduled && defined( 'WP_DEBUG' ) && WP_DEBUG === true ) {
 				error_log( 'Secure Login Collector: Failed to unschedule cron job.' );
 			}

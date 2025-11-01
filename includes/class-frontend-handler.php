@@ -20,11 +20,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class Secure_Login_Frontend_Handler
+ * Class Seculoco_Frontend_Handler
  *
  * Handles all frontend-related functionality.
  */
-class Secure_Login_Frontend_Handler {
+class Seculoco_Frontend_Handler {
 
 	/**
 	 * Database table name.
@@ -36,14 +36,14 @@ class Secure_Login_Frontend_Handler {
 	/**
 	 * Encryption handler instance.
 	 *
-	 * @var Secure_Login_Encryption_Handler
+	 * @var Seculoco_Encryption_Handler_V2
 	 */
 	private $encryption_handler;
 
 	/**
 	 * Database manager instance.
 	 *
-	 * @var Secure_Login_Database_Manager
+	 * @var Seculoco_Database_Manager
 	 */
 	private $database_manager;
 
@@ -51,8 +51,8 @@ class Secure_Login_Frontend_Handler {
 	 * Constructor - initializes frontend handler.
 	 *
 	 * @param string                          $table_name         Database table name.
-	 * @param Secure_Login_Encryption_Handler $encryption_handler Encryption handler instance.
-	 * @param Secure_Login_Database_Manager   $database_manager   Database manager instance.
+	 * @param Seculoco_Encryption_Handler_V2 $encryption_handler Encryption handler instance.
+	 * @param Seculoco_Database_Manager   $database_manager   Database manager instance.
 	 */
 	public function __construct( $table_name, $encryption_handler, $database_manager ) {
 		$this->table_name         = $table_name;
@@ -61,7 +61,7 @@ class Secure_Login_Frontend_Handler {
 
 		// Register hooks.
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_frontend_scripts' ) );
-		add_shortcode( 'secure_login_form', array( $this, 'frontend_form_shortcode' ) );
+		add_shortcode( 'seculoco_form', array( $this, 'frontend_form_shortcode' ) );
 
 		// Register v2 AJAX handlers for new encryption format (only v2 supported now).
 		// Using seculoco_ prefix (WordPress.org compliant, 4+ chars, unique).
@@ -81,7 +81,7 @@ class Secure_Login_Frontend_Handler {
 	public function enqueue_frontend_scripts() {
 		// Only enqueue if shortcode is present on the page.
 		global $post;
-		if ( is_a( $post, 'WP_Post' ) && has_shortcode( $post->post_content, 'secure_login_form' ) ) {
+		if ( is_a( $post, 'WP_Post' ) && has_shortcode( $post->post_content, 'seculoco_form' ) ) {
 			wp_enqueue_script( 'jquery' );
 
 			// Enqueue dashicons for password toggle.
@@ -90,18 +90,18 @@ class Secure_Login_Frontend_Handler {
 			// Enqueue frontend CSS.
 			wp_enqueue_style(
 				'secure-login-frontend-css',
-				SECURE_LOGIN_PLUGIN_URL . 'assets/css/frontend.css',
+				SECULOCO_PLUGIN_URL . 'assets/css/frontend.css',
 				array( 'dashicons' ),
-				SECURE_LOGIN_VERSION
+				SECULOCO_VERSION
 			);
 
 			// Use the new secure frontend script with proper encryption flow.
-			wp_enqueue_script( 'secure-login-frontend', SECURE_LOGIN_PLUGIN_URL . 'assets/js/frontend-secure.js', array( 'jquery' ), SECURE_LOGIN_VERSION, true );
+			wp_enqueue_script( 'secure-login-frontend', SECULOCO_PLUGIN_URL . 'assets/js/frontend-secure.js', array( 'jquery' ), SECULOCO_VERSION, true );
 
 			// Prepare localization data.
 			$localize_data = array(
 				'ajaxurl' => admin_url( 'admin-ajax.php' ),
-				'nonce'   => wp_create_nonce( 'secure_login_nonce' ),
+				'nonce'   => wp_create_nonce( 'seculoco_nonce' ),
 				'is_pro'  => false, // Free version default - pro version filters this.
 				'strings' => array(
 					'required_fields_error'   => __( 'Please fill in all required fields (Email Address, Name, Login URL, Username/Email, and Password).', 'secure-login-collector' ),
@@ -130,7 +130,7 @@ class Secure_Login_Frontend_Handler {
 			// No need to send passkey info to frontend - clients don't have passkeys.
 
 			// Allow pro version to modify JS config.
-			$localize_data = apply_filters( 'secure_login_frontend_js_config', $localize_data );
+			$localize_data = apply_filters( 'seculoco_frontend_js_config', $localize_data );
 
 			// Localize script with data.
 			wp_localize_script( 'secure-login-frontend', 'secureLoginAjax', $localize_data );
@@ -158,13 +158,13 @@ class Secure_Login_Frontend_Handler {
 		<div class="secure-login-form-container">
 			<h3><?php echo esc_html( $atts['title'] ); ?></h3>
 			<div class="security-info">
-				<img src="<?php echo esc_url( SECURE_LOGIN_PLUGIN_URL . 'assets/img/slc-secure-data-transfer-300.png' ); ?>" alt="<?php echo esc_attr__( 'Secure Encrypted Data Transmission', 'secure-login-collector' ); ?>" class="security-badge-icon" />
+				<img src="<?php echo esc_url( SECULOCO_PLUGIN_URL . 'assets/img/slc-secure-data-transfer-300.png' ); ?>" alt="<?php echo esc_attr__( 'Secure Encrypted Data Transmission', 'secure-login-collector' ); ?>" class="security-badge-icon" />
 				<div class="security-info-text">
 				<?php
 				// Check text type selection.
-				$text_type       = get_option( 'secure_login_frontend_text_type', 'default' );
-				$custom_text     = get_option( 'secure_login_frontend_form_text', '' );
-				$expiration_days = get_option( 'secure_login_expiration_days', 30 );
+				$text_type       = get_option( 'seculoco_frontend_text_type', 'default' );
+				$custom_text     = get_option( 'seculoco_frontend_form_text', '' );
+				$expiration_days = get_option( 'seculoco_expiration_days', 30 );
 
 				if ( 'custom' === $text_type && ! empty( $custom_text ) ) :
 					// Handle placeholder replacement for custom text.
@@ -269,7 +269,7 @@ class Secure_Login_Frontend_Handler {
 	 */
 	public function handle_save_login_data_v2() {
 		// Verify nonce for security.
-		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'secure_login_nonce' ) ) {
+		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'seculoco_nonce' ) ) {
 			wp_send_json_error( __( 'Invalid security token.', 'secure-login-collector' ) );
 			return;
 		}
@@ -318,7 +318,7 @@ class Secure_Login_Frontend_Handler {
 
 			// Allow pro version to modify encryption metadata.
 		$encryption_metadata = apply_filters(
-			'secure_login_encryption_metadata',
+			'seculoco_encryption_metadata',
 			array(
 				'is_pro_encrypted'     => false,
 				'server_credential_id' => null,

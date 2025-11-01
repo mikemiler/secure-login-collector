@@ -26,7 +26,7 @@ if ( ! class_exists( 'WP_List_Table' ) ) {
  *
  * Custom list table for displaying secure login data with WordPress admin styling.
  */
-class Secure_Login_List_Table extends WP_List_Table {
+class Seculoco_List_Table extends WP_List_Table {
 
 
 	/**
@@ -39,14 +39,14 @@ class Secure_Login_List_Table extends WP_List_Table {
 	/**
 	 * Database manager instance.
 	 *
-	 * @var Secure_Login_Database_Manager
+	 * @var Seculoco_Database_Manager
 	 */
 	private $database_manager;
 
 	/**
 	 * Encryption handler instance.
 	 *
-	 * @var Secure_Login_Encryption_Handler
+	 * @var Seculoco_Encryption_Handler_V2
 	 */
 	private $encryption_handler;
 
@@ -54,8 +54,8 @@ class Secure_Login_List_Table extends WP_List_Table {
 	 * Constructor - initializes list table.
 	 *
 	 * @param string                          $table_name         Database table name.
-	 * @param Secure_Login_Database_Manager   $database_manager   Database manager instance.
-	 * @param Secure_Login_Encryption_Handler $encryption_handler Encryption handler instance.
+	 * @param Seculoco_Database_Manager   $database_manager   Database manager instance.
+	 * @param Seculoco_Encryption_Handler_V2 $encryption_handler Encryption handler instance.
 	 */
 	public function __construct( $table_name, $database_manager, $encryption_handler ) {
 		$this->table_name         = $table_name;
@@ -286,7 +286,7 @@ class Secure_Login_List_Table extends WP_List_Table {
 		}
 
 		// Extend button (only for non-expired entries if expiration is enabled) with icon.
-		$expiration_days = get_option( 'secure_login_expiration_days', 30 );
+		$expiration_days = get_option( 'seculoco_expiration_days', 30 );
 		if ( $expiration_days > 0 && ! $is_expired ) {
 			$actions[] = sprintf(
 				'<button type="button" class="button button-secondary extend-btn" data-id="%s" title="%s"><span class="dashicons dashicons-calendar-alt"></span></button>',
@@ -470,14 +470,14 @@ class Secure_Login_List_Table extends WP_List_Table {
 				count( $ids )
 			);
 
-			add_settings_error( 'secure_login_bulk', 'bulk_delete', $message, 'updated' );
+			add_settings_error( 'seculoco_bulk', 'bulk_delete', $message, 'updated' );
 		} elseif ( strpos( $action, 'export-' ) === 0 ) {
 			// Handle CSV exports via AJAX (will be processed by JavaScript).
 			$manager = str_replace( 'export-', '', $action );
 
 			// Store export request in transient for AJAX processing.
 			set_transient(
-				'secure_login_bulk_export_' . get_current_user_id(),
+				'seculoco_bulk_export_' . get_current_user_id(),
 				array(
 					'manager' => $manager,
 					'ids'     => $ids,
@@ -491,7 +491,7 @@ class Secure_Login_List_Table extends WP_List_Table {
 				count( $ids )
 			);
 
-			add_settings_error( 'secure_login_bulk', 'bulk_export', $message, 'updated' );
+			add_settings_error( 'seculoco_bulk', 'bulk_export', $message, 'updated' );
 		}
 	}
 
@@ -553,12 +553,12 @@ class Secure_Login_List_Table extends WP_List_Table {
 }
 
 /**
- * Class Secure_Login_Admin_Interface
+ * Class Seculoco_Admin_Interface
  *
  * Handles the admin interface for the secure login collector plugin.
  */
 // phpcs:ignore WordPress.Files.OneObjectStructurePerFile.MultipleFound -- List table class included for functionality.
-class Secure_Login_Admin_Interface {
+class Seculoco_Admin_Interface {
 
 
 	/**
@@ -571,21 +571,21 @@ class Secure_Login_Admin_Interface {
 	/**
 	 * Encryption handler instance.
 	 *
-	 * @var Secure_Login_Encryption_Handler
+	 * @var Seculoco_Encryption_Handler_V2
 	 */
 	private $encryption_handler;
 
 	/**
 	 * Database manager instance.
 	 *
-	 * @var Secure_Login_Database_Manager
+	 * @var Seculoco_Database_Manager
 	 */
 	private $database_manager;
 
 	/**
 	 * List table instance.
 	 *
-	 * @var Secure_Login_List_Table
+	 * @var Seculoco_List_Table
 	 */
 	private $list_table;
 
@@ -593,8 +593,8 @@ class Secure_Login_Admin_Interface {
 	 * Constructor - initializes admin interface.
 	 *
 	 * @param string                          $table_name         Database table name.
-	 * @param Secure_Login_Encryption_Handler $encryption_handler Encryption handler instance.
-	 * @param Secure_Login_Database_Manager   $database_manager   Database manager instance.
+	 * @param Seculoco_Encryption_Handler_V2 $encryption_handler Encryption handler instance.
+	 * @param Seculoco_Database_Manager   $database_manager   Database manager instance.
 	 */
 	public function __construct( $table_name, $encryption_handler, $database_manager ) {
 		$this->table_name         = $table_name;
@@ -637,7 +637,7 @@ class Secure_Login_Admin_Interface {
 		);
 
 		// Initialize the list table.
-		$this->list_table = new Secure_Login_List_Table(
+		$this->list_table = new Seculoco_List_Table(
 			$this->table_name,
 			$this->database_manager,
 			$this->encryption_handler
@@ -704,7 +704,7 @@ class Secure_Login_Admin_Interface {
 			'secureLoginAdmin',
 			array(
 				'ajaxurl' => admin_url( 'admin-ajax.php' ),
-				'nonce'   => wp_create_nonce( 'secure_login_admin_nonce' ),
+				'nonce'   => wp_create_nonce( 'seculoco_admin_nonce' ),
 			)
 		);
 
@@ -714,7 +714,7 @@ class Secure_Login_Admin_Interface {
 			'secureLoginAjax',
 			array(
 				'ajaxurl' => admin_url( 'admin-ajax.php' ),
-				'nonce'   => wp_create_nonce( 'secure_login_nonce' ),
+				'nonce'   => wp_create_nonce( 'seculoco_nonce' ),
 				'strings' => array(
 					'not_provided'                  => __( 'Not provided', 'secure-login-collector' ),
 					'saving'                        => __( 'Saving...', 'secure-login-collector' ),
@@ -749,12 +749,12 @@ class Secure_Login_Admin_Interface {
 		// Localize script with configuration data.
 		$admin_config = array(
 			'isProVersion'      => false,
-			'passkeyRegistered' => get_option( 'secure_login_passkey_registered', false ),
+			'passkeyRegistered' => get_option( 'seculoco_passkey_registered', false ),
 			'currentUserId'     => get_current_user_id(),
 		);
 
 		// Allow pro version to modify config.
-		$admin_config = apply_filters( 'secure_login_admin_js_config', $admin_config );
+		$admin_config = apply_filters( 'seculoco_admin_js_config', $admin_config );
 
 		wp_localize_script(
 			'secure-login-admin-js',
@@ -782,7 +782,7 @@ class Secure_Login_Admin_Interface {
 		);
 
 		// Add inline script to make nonce available globally (kept for backward compatibility).
-		wp_add_inline_script( 'secure-login-admin-js', 'window.secureLoginNonce = "' . wp_create_nonce( 'secure_login_nonce' ) . '";' );
+		wp_add_inline_script( 'secure-login-admin-js', 'window.secureLoginNonce = "' . wp_create_nonce( 'seculoco_nonce' ) . '";' );
 	}
 
 	/**
@@ -791,7 +791,7 @@ class Secure_Login_Admin_Interface {
 	public function admin_page() {
 		// Initialize list table if not already done.
 		if ( ! $this->list_table ) {
-			$this->list_table = new Secure_Login_List_Table(
+			$this->list_table = new Seculoco_List_Table(
 				$this->table_name,
 				$this->database_manager,
 				$this->encryption_handler
@@ -802,10 +802,10 @@ class Secure_Login_Admin_Interface {
 		$this->list_table->prepare_items();
 
 		// Display admin notices.
-		settings_errors( 'secure_login_bulk' );
+		settings_errors( 'seculoco_bulk' );
 
 		?>
-		<div class="wrap slc-admin-wrap">
+		<div class="wrap seculoco-admin-wrap">
 			<h1 class="wp-heading-inline"><?php echo esc_html__( 'Secure Login Data', 'secure-login-collector' ); ?></h1>
 			<a href="#" class="page-title-action" id="add-new-entry-btn"><?php echo esc_html__( 'Add New Entry', 'secure-login-collector' ); ?></a>
 			<hr class="wp-header-end">
@@ -814,11 +814,11 @@ class Secure_Login_Admin_Interface {
 
 			<?php
 			// Allow pro version to show diagnostic info and fix button.
-			do_action( 'secure_login_dashboard_diagnostics' );
+			do_action( 'seculoco_dashboard_diagnostics' );
 			?>
 
-			<div class="slc-card">
-				<div class="slc-card-body">
+			<div class="seculoco-card">
+				<div class="seculoco-card-body">
 					<form method="post" class="secure-login-admin-table">
 						<?php // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET parameter for page navigation. ?>
 						<input type="hidden" name="page" value="<?php echo esc_attr( sanitize_text_field( wp_unslash( $_GET['page'] ?? '' ) ) ); ?>" />
@@ -897,7 +897,7 @@ class Secure_Login_Admin_Interface {
 								<td>
 									<?php
 									$encryption_info = apply_filters(
-										'secure_login_manual_entry_encryption_display',
+										'seculoco_manual_entry_encryption_display',
 										array(
 											'title'       => __( 'Secure (AES-256 + RSA-2048)', 'secure-login-collector' ),
 											'description' => __( 'Standard encryption with AES-256 and RSA-2048 protection.', 'secure-login-collector' ),
@@ -933,7 +933,7 @@ class Secure_Login_Admin_Interface {
 	 */
 	public function handle_bulk_export_ajax() {
 		// Verify nonce for security.
-		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) ), 'secure_login_nonce' ) ) {
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) ), 'seculoco_nonce' ) ) {
 			wp_send_json_error( __( 'Invalid security token.', 'secure-login-collector' ) );
 			return;
 		}
@@ -945,7 +945,7 @@ class Secure_Login_Admin_Interface {
 		}
 
 		// Get the export request from transient.
-		$export_data = get_transient( 'secure_login_bulk_export_' . get_current_user_id() );
+		$export_data = get_transient( 'seculoco_bulk_export_' . get_current_user_id() );
 
 		if ( ! $export_data ) {
 			wp_send_json_error( __( 'Export request not found or expired.', 'secure-login-collector' ) );
@@ -956,7 +956,7 @@ class Secure_Login_Admin_Interface {
 		$ids     = $export_data['ids'];
 
 		// Clean up the transient.
-		delete_transient( 'secure_login_bulk_export_' . get_current_user_id() );
+		delete_transient( 'seculoco_bulk_export_' . get_current_user_id() );
 
 		// Collect export data.
 		$csv_data = array();
@@ -999,7 +999,7 @@ class Secure_Login_Admin_Interface {
 	 */
 	public function handle_bulk_decrypt_with_passkey_ajax() {
 		// Verify nonce for security.
-		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) ), 'secure_login_nonce' ) ) {
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) ), 'seculoco_nonce' ) ) {
 			wp_send_json_error( __( 'Invalid security token.', 'secure-login-collector' ) );
 			return;
 		}
@@ -1011,13 +1011,13 @@ class Secure_Login_Admin_Interface {
 		}
 
 		// Check if pro features are available.
-		$can_use_passkey = apply_filters( 'secure_login_can_use_passkey_decrypt', false );
+		$can_use_passkey = apply_filters( 'seculoco_can_use_passkey_decrypt', false );
 		if ( ! $can_use_passkey ) {
 			wp_send_json_error( __( 'Pro version required.', 'secure-login-collector' ) );
 			return;
 		}
 
-		if ( ! get_option( 'secure_login_passkey_registered', false ) ) {
+		if ( ! get_option( 'seculoco_passkey_registered', false ) ) {
 			wp_send_json_error( __( 'Passkey not registered.', 'secure-login-collector' ) );
 			return;
 		}
@@ -1039,7 +1039,7 @@ class Secure_Login_Admin_Interface {
 			}
 
 			set_transient(
-				'secure_login_bulk_decrypt_request_' . get_current_user_id(),
+				'seculoco_bulk_decrypt_request_' . get_current_user_id(),
 				array(
 					'entry_ids' => $entry_ids,
 					'manager'   => $manager,
@@ -1068,17 +1068,17 @@ class Secure_Login_Admin_Interface {
 		}
 
 		// Get the stored request.
-		$bulk_request = get_transient( 'secure_login_bulk_decrypt_request_' . get_current_user_id() );
+		$bulk_request = get_transient( 'seculoco_bulk_decrypt_request_' . get_current_user_id() );
 		if ( ! $bulk_request ) {
 			wp_send_json_error( __( 'Bulk decrypt request not found or expired.', 'secure-login-collector' ) );
 			return;
 		}
 
 		// Clean up the transient.
-		delete_transient( 'secure_login_bulk_decrypt_request_' . get_current_user_id() );
+		delete_transient( 'seculoco_bulk_decrypt_request_' . get_current_user_id() );
 
 		// Set authentication flag that the encryption handler expects.
-		set_transient( 'secure_login_passkey_authenticated_' . get_current_user_id(), true, 300 ); // 5 minutes.
+		set_transient( 'seculoco_passkey_authenticated_' . get_current_user_id(), true, 300 ); // 5 minutes.
 
 		// Decrypt all entries.
 		$csv_data         = array();
@@ -1128,7 +1128,7 @@ class Secure_Login_Admin_Interface {
 		}
 
 		// Clean up the authentication flag after all decryptions are complete.
-		delete_transient( 'secure_login_passkey_authenticated_' . get_current_user_id() );
+		delete_transient( 'seculoco_passkey_authenticated_' . get_current_user_id() );
 
 		$message = '';
 		if ( $successful_count > 0 && 0 === $failed_count ) {
@@ -1157,7 +1157,7 @@ class Secure_Login_Admin_Interface {
 	 * Handle delete AJAX request.
 	 */
 	public function handle_delete_ajax() {
-		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) ), 'secure_login_nonce' ) || ! current_user_can( 'manage_options' ) ) {
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) ), 'seculoco_nonce' ) || ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( __( 'Invalid security token or insufficient permissions.', 'secure-login-collector' ) );
 			return;
 		}
@@ -1181,7 +1181,7 @@ class Secure_Login_Admin_Interface {
 	 * Handle extend retention AJAX request.
 	 */
 	public function handle_extend_ajax() {
-		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) ), 'secure_login_nonce' ) || ! current_user_can( 'manage_options' ) ) {
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) ), 'seculoco_nonce' ) || ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( __( 'Invalid security token or insufficient permissions.', 'secure-login-collector' ) );
 			return;
 		}
@@ -1202,7 +1202,7 @@ class Secure_Login_Admin_Interface {
 		$row                    = $this->database_manager->get_entry( $extend_id );
 		$is_expired             = isset( $row->is_expired ) ? $row->is_expired : 0;
 		$new_expiration_display = $this->database_manager->calculate_expiration( $row->retention_until, $is_expired );
-		$expiration_days        = get_option( 'secure_login_expiration_days', 30 );
+		$expiration_days        = get_option( 'seculoco_expiration_days', 30 );
 		/* translators: %d: number of days retention period extended */
 		wp_send_json_success(
 			array(
@@ -1216,7 +1216,7 @@ class Secure_Login_Admin_Interface {
 	 * Handle save manual login data AJAX request.
 	 */
 	public function handle_save_manual_login_data() {
-		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) ), 'secure_login_nonce' ) || ! current_user_can( 'manage_options' ) ) {
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) ), 'seculoco_nonce' ) || ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( __( 'Invalid security token or insufficient permissions.', 'secure-login-collector' ) );
 			return;
 		}
@@ -1294,7 +1294,7 @@ class Secure_Login_Admin_Interface {
 		// Check if ultra-secure mode is enabled (Pro with passkey).
 		// Allow pro version to set encryption metadata.
 		$encryption_meta = apply_filters(
-			'secure_login_manual_entry_metadata',
+			'seculoco_manual_entry_metadata',
 			array(
 				'is_pro_encrypted'     => false,
 				'server_credential_id' => null,
@@ -1334,7 +1334,7 @@ class Secure_Login_Admin_Interface {
 		$metadata = wp_json_encode( $metadata_array );
 
 		// Calculate retention_until based on expiration settings.
-		$expiration_days = get_option( 'secure_login_expiration_days', 30 );
+		$expiration_days = get_option( 'seculoco_expiration_days', 30 );
 		$retention_until = null;
 		if ( $expiration_days > 0 ) {
 			$retention_until = gmdate( 'Y-m-d H:i:s', strtotime( "+{$expiration_days} days" ) );
@@ -1366,7 +1366,7 @@ class Secure_Login_Admin_Interface {
 	 * Handle update metadata AJAX request.
 	 */
 	public function handle_update_metadata_ajax() {
-		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) ), 'secure_login_nonce' ) || ! current_user_can( 'manage_options' ) ) {
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) ), 'seculoco_nonce' ) || ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( __( 'Invalid security token or insufficient permissions.', 'secure-login-collector' ) );
 			return;
 		}
@@ -1418,7 +1418,7 @@ class Secure_Login_Admin_Interface {
 		if (
 			! current_user_can( 'manage_options' ) ||
 			! isset( $_POST['nonce'] ) ||
-			! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'secure_login_nonce' )
+			! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'seculoco_nonce' )
 		) {
 			wp_send_json_error( __( 'Invalid security token or insufficient permissions.', 'secure-login-collector' ) );
 			return;
@@ -1462,13 +1462,13 @@ class Secure_Login_Admin_Interface {
 		if (
 			! current_user_can( 'manage_options' ) ||
 			! isset( $_POST['nonce'] ) ||
-			! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'secure_login_nonce' )
+			! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'seculoco_nonce' )
 		) {
 			wp_send_json_error( __( 'Invalid security token or insufficient permissions.', 'secure-login-collector' ) );
 			return;
 		}
 
-		$can_use_passkey = apply_filters( 'secure_login_can_use_passkey_decrypt', false );
+		$can_use_passkey = apply_filters( 'seculoco_can_use_passkey_decrypt', false );
 		if ( ! $can_use_passkey ) {
 			wp_send_json_error( __( 'Pro version required for passkey authentication.', 'secure-login-collector' ) );
 			return;
@@ -1488,7 +1488,7 @@ class Secure_Login_Admin_Interface {
 		$user_id = get_current_user_id();
 
 		// Get stored passkey data.
-		$passkey = get_user_meta( $user_id, 'secure_login_passkey', true );
+		$passkey = get_user_meta( $user_id, 'seculoco_passkey', true );
 		if ( empty( $passkey ) || $passkey['credential_id'] !== $credential_id ) {
 			wp_send_json_error( __( 'Passkey not found or mismatch.', 'secure-login-collector' ) );
 			return;
@@ -1533,7 +1533,7 @@ class Secure_Login_Admin_Interface {
 		}
 
 		// Store authentication success timestamp for audit logging.
-		update_user_meta( $user_id, 'secure_login_last_passkey_auth', current_time( 'mysql' ) );
+		update_user_meta( $user_id, 'seculoco_last_passkey_auth', current_time( 'mysql' ) );
 
 		// Verify signature.
 		$public_key_data = $passkey['public_key'] ?? '';
@@ -1566,7 +1566,7 @@ class Secure_Login_Admin_Interface {
 		delete_transient( 'passkey_challenge_' . $user_id );
 
 		// Get the wrapped private key (PRO version).
-		$wrapped_key_pro = get_option( 'secure_login_wrapped_private_key_pro' );
+		$wrapped_key_pro = get_option( 'seculoco_wrapped_private_key_pro' );
 		if ( ! $wrapped_key_pro ) {
 			wp_send_json_error( __( 'Pro encryption keys not found.', 'secure-login-collector' ) );
 			return;
@@ -1608,8 +1608,8 @@ class Secure_Login_Admin_Interface {
 
 		// Verify nonce - accept both admin nonces (from admin.js and admin-decrypt.js).
 		$nonce = sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) );
-		if ( ! wp_verify_nonce( $nonce, 'secure_login_admin_nonce' ) &&
-			! wp_verify_nonce( $nonce, 'secure_login_nonce' ) ) {
+		if ( ! wp_verify_nonce( $nonce, 'seculoco_admin_nonce' ) &&
+			! wp_verify_nonce( $nonce, 'seculoco_nonce' ) ) {
 			wp_send_json_error( __( 'Invalid security token.', 'secure-login-collector' ) );
 			return;
 		}
@@ -1659,8 +1659,8 @@ class Secure_Login_Admin_Interface {
 
 		// Verify nonce - accept both admin nonces (from admin.js and admin-decrypt.js).
 		$nonce = sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) );
-		if ( ! wp_verify_nonce( $nonce, 'secure_login_admin_nonce' ) &&
-			! wp_verify_nonce( $nonce, 'secure_login_nonce' ) ) {
+		if ( ! wp_verify_nonce( $nonce, 'seculoco_admin_nonce' ) &&
+			! wp_verify_nonce( $nonce, 'seculoco_nonce' ) ) {
 			wp_send_json_error( __( 'Invalid security token.', 'secure-login-collector' ) );
 			return;
 		}
@@ -1673,7 +1673,7 @@ class Secure_Login_Admin_Interface {
 
 		// Get user's registered credential (single passkey).
 		$user_id = get_current_user_id();
-		$passkey = get_user_meta( $user_id, 'secure_login_passkey', true );
+		$passkey = get_user_meta( $user_id, 'seculoco_passkey', true );
 
 		// Format credential for client.
 		$formatted_credentials = array();
@@ -1699,7 +1699,7 @@ class Secure_Login_Admin_Interface {
 	 * One-time fix for installations where passkeys are registered but flag wasn't set.
 	 */
 	public function handle_fix_passkey_flag() {
-		check_ajax_referer( 'secure_login_admin_nonce', 'nonce' );
+		check_ajax_referer( 'seculoco_admin_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( 'Insufficient permissions' );
@@ -1717,7 +1717,7 @@ class Secure_Login_Admin_Interface {
 				WHERE meta_key = %s
 				AND meta_value != ''",
 				$wpdb->usermeta,
-				'secure_login_passkey'
+				'seculoco_passkey'
 			)
 		);
 
@@ -1732,8 +1732,8 @@ class Secure_Login_Admin_Interface {
 		}
 
 		// Check current flag status.
-		$passkey_flag  = get_option( 'secure_login_passkey_registered', false );
-		$pro_keys_flag = get_option( 'secure_login_pro_keys_active', false );
+		$passkey_flag  = get_option( 'seculoco_passkey_registered', false );
+		$pro_keys_flag = get_option( 'seculoco_pro_keys_active', false );
 
 		$message  = "Found $total_passkeys passkey(s) across $users_count user(s). ";
 		$message .= 'Passkey flag: ' . ( $passkey_flag ? 'true' : 'false' ) . ', ';
@@ -1741,11 +1741,11 @@ class Secure_Login_Admin_Interface {
 
 		if ( $total_passkeys > 0 && ( ! $passkey_flag || ! $pro_keys_flag ) ) {
 			if ( ! $passkey_flag ) {
-				update_option( 'secure_login_passkey_registered', true );
-				update_option( 'secure_login_passkey_registered_at', current_time( 'mysql' ) );
+				update_option( 'seculoco_passkey_registered', true );
+				update_option( 'seculoco_passkey_registered_at', current_time( 'mysql' ) );
 			}
 			if ( ! $pro_keys_flag ) {
-				update_option( 'secure_login_pro_keys_active', true );
+				update_option( 'seculoco_pro_keys_active', true );
 			}
 			$message .= 'Missing flags updated successfully!';
 			wp_send_json_success( $message );

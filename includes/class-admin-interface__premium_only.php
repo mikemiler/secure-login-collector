@@ -14,30 +14,30 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class Secure_Login_Admin_Interface_Pro
+ * Class Seculoco_Admin_Interface_Pro
  *
  * Handles pro-specific admin functionality via hooks.
  */
-class Secure_Login_Admin_Interface_Pro {
+class Seculoco_Admin_Interface_Pro {
 
 	/**
 	 * Constructor - hooks into free version's actions/filters.
 	 */
 	public function __construct() {
 		// Add pro flag to admin JS config.
-		add_filter( 'secure_login_admin_js_config', array( $this, 'add_pro_js_config' ) );
+		add_filter( 'seculoco_admin_js_config', array( $this, 'add_pro_js_config' ) );
 
 		// Add pro diagnostic info to dashboard.
-		add_action( 'secure_login_dashboard_diagnostics', array( $this, 'render_dashboard_diagnostics' ) );
+		add_action( 'seculoco_dashboard_diagnostics', array( $this, 'render_dashboard_diagnostics' ) );
 
 		// Filter encryption method display for manual entries.
-		add_filter( 'secure_login_manual_entry_encryption_display', array( $this, 'filter_encryption_display' ) );
+		add_filter( 'seculoco_manual_entry_encryption_display', array( $this, 'filter_encryption_display' ) );
 
 		// Allow passkey decryption features.
-		add_filter( 'secure_login_can_use_passkey_decrypt', '__return_true' );
+		add_filter( 'seculoco_can_use_passkey_decrypt', '__return_true' );
 
 		// Filter manual entry metadata for pro encryption.
-		add_filter( 'secure_login_manual_entry_metadata', array( $this, 'add_pro_manual_entry_metadata' ) );
+		add_filter( 'seculoco_manual_entry_metadata', array( $this, 'add_pro_manual_entry_metadata' ) );
 
 		// Register AJAX handlers for pro features.
 		add_action( 'wp_ajax_seculoco_start_passkey_unwrap', array( $this, 'ajax_start_passkey_unwrap' ) );
@@ -52,7 +52,7 @@ class Secure_Login_Admin_Interface_Pro {
 	 */
 	public function add_pro_js_config( $config ) {
 		$config['isProVersion']      = true;
-		$config['passkeyRegistered'] = get_option( 'secure_login_passkey_registered', false );
+		$config['passkeyRegistered'] = get_option( 'seculoco_passkey_registered', false );
 		return $config;
 	}
 
@@ -60,8 +60,8 @@ class Secure_Login_Admin_Interface_Pro {
 	 * Render dashboard diagnostics for pro encryption issues.
 	 */
 	public function render_dashboard_diagnostics() {
-		$passkey_registered = get_option( 'secure_login_passkey_registered', false );
-		$pro_keys_active    = get_option( 'secure_login_pro_keys_active', false );
+		$passkey_registered = get_option( 'seculoco_passkey_registered', false );
+		$pro_keys_active    = get_option( 'seculoco_pro_keys_active', false );
 
 		if ( ! $passkey_registered || ! $pro_keys_active ) {
 			// Check if passkeys actually exist.
@@ -71,7 +71,7 @@ class Secure_Login_Admin_Interface_Pro {
 				$wpdb->prepare(
 					"SELECT COUNT(*) FROM %i WHERE meta_key = %s AND meta_value != ''",
 					$wpdb->usermeta,
-					'secure_login_passkey'
+					'seculoco_passkey'
 				)
 			);
 
@@ -99,7 +99,7 @@ class Secure_Login_Admin_Interface_Pro {
 	 * @return array Modified encryption display info.
 	 */
 	public function filter_encryption_display( $default ) {
-		if ( get_option( 'secure_login_ultra_secure_mode', false ) && get_option( 'secure_login_passkey_registered', false ) ) {
+		if ( get_option( 'seculoco_ultra_secure_mode', false ) && get_option( 'seculoco_passkey_registered', false ) ) {
 			return array(
 				'title'       => __( 'Ultra-Secure (AES-256 + RSA-2048 + Passkey)', 'secure-login-collector' ),
 				'description' => __( 'Ultra-secure mode is enabled. All entries will be encrypted with triple-layer protection.', 'secure-login-collector' ),
@@ -126,7 +126,7 @@ class Secure_Login_Admin_Interface_Pro {
 		}
 
 		// Get passkey credential ID.
-		$credential_id = get_option( 'secure_login_passkey_credential_id' );
+		$credential_id = get_option( 'seculoco_passkey_credential_id' );
 		if ( ! $credential_id ) {
 			wp_send_json_error( __( 'No passkey registered', 'secure-login-collector' ) );
 			return;
@@ -190,11 +190,11 @@ class Secure_Login_Admin_Interface_Pro {
 	 */
 	public function add_pro_manual_entry_metadata( $metadata ) {
 		// Check if pro keys and passkey are available.
-		if ( get_option( 'secure_login_passkey_registered', false ) ) {
+		if ( get_option( 'seculoco_passkey_registered', false ) ) {
 			// For ultra-secure mode, mark as pro encrypted.
 			// Passkey authentication required for decryption.
 			$metadata['is_pro_encrypted']     = true;
-			$metadata['server_credential_id'] = get_option( 'secure_login_passkey_credential_id', '' );
+			$metadata['server_credential_id'] = get_option( 'seculoco_passkey_credential_id', '' );
 		}
 
 		return $metadata;
@@ -202,4 +202,4 @@ class Secure_Login_Admin_Interface_Pro {
 }
 
 // Initialize pro admin interface.
-new Secure_Login_Admin_Interface_Pro();
+new Seculoco_Admin_Interface_Pro();
