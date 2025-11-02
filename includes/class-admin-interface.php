@@ -716,36 +716,6 @@ class Seculoco_Admin_Interface {
 			true
 		);
 
-		// Enqueue the new decrypt script for v2 encryption (Premium only).
-		if ( Seculoco_License_Manager::has_pro_license() ) {
-			wp_enqueue_script(
-				'secure-login-admin-decrypt',
-				plugin_dir_url( __FILE__ ) . '../assets/js/admin-decrypt__premium_only.js',
-				array( 'jquery', 'secure-login-admin-js' ),
-				'1.0.0',
-				true
-			);
-
-			// Enqueue bulk export with passkey script (Premium only).
-			wp_enqueue_script(
-				'secure-login-admin-bulk-export',
-				plugin_dir_url( __FILE__ ) . '../assets/js/admin-bulk-export__premium_only.js',
-				array( 'jquery', 'secure-login-admin-js', 'secure-login-admin-decrypt' ),
-				'1.0.0',
-				true
-			);
-		}
-
-		// Localize script for admin-decrypt.js.
-		wp_localize_script(
-			'secure-login-admin-decrypt',
-			'seculocoAdmin',
-			array(
-				'ajaxurl' => admin_url( 'admin-ajax.php' ),
-				'nonce'   => wp_create_nonce( 'seculoco_admin_nonce' ),
-			)
-		);
-
 		// Localize script with AJAX data.
 		wp_localize_script(
 			'secure-login-admin-js',

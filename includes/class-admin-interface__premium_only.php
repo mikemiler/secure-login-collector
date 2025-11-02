@@ -24,6 +24,9 @@ class Seculoco_Admin_Interface_Pro {
 	 * Constructor - hooks into free version's actions/filters.
 	 */
 	public function __construct() {
+		// Enqueue premium admin scripts.
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_premium_admin_scripts' ) );
+
 		// Add pro flag to admin JS config.
 		add_filter( 'seculoco_admin_js_config', array( $this, 'add_pro_js_config' ) );
 
@@ -42,6 +45,46 @@ class Seculoco_Admin_Interface_Pro {
 		// Register AJAX handlers for pro features.
 		add_action( 'wp_ajax_seculoco_start_passkey_unwrap', array( $this, 'ajax_start_passkey_unwrap' ) );
 		add_action( 'wp_ajax_seculoco_verify_passkey_unwrap', array( $this, 'ajax_verify_passkey_unwrap' ) );
+	}
+
+	/**
+	 * Enqueue premium admin scripts.
+	 *
+	 * @param string $hook Current admin page hook.
+	 */
+	public function enqueue_premium_admin_scripts( $hook ) {
+		// Only load on our admin page.
+		if ( ! in_array( $hook, array( 'toplevel_page_secure-login-collector' ), true ) ) {
+			return;
+		}
+
+		// Enqueue the new decrypt script for v2 encryption (Premium only).
+		wp_enqueue_script(
+			'secure-login-admin-decrypt',
+			plugin_dir_url( __FILE__ ) . '../assets/js/admin-decrypt__premium_only.js',
+			array( 'jquery', 'secure-login-admin-js' ),
+			'1.0.0',
+			true
+		);
+
+		// Enqueue bulk export with passkey script (Premium only).
+		wp_enqueue_script(
+			'secure-login-admin-bulk-export',
+			plugin_dir_url( __FILE__ ) . '../assets/js/admin-bulk-export__premium_only.js',
+			array( 'jquery', 'secure-login-admin-js', 'secure-login-admin-decrypt' ),
+			'1.0.0',
+			true
+		);
+
+		// Localize script for admin-decrypt.js.
+		wp_localize_script(
+			'secure-login-admin-decrypt',
+			'seculocoAdmin',
+			array(
+				'ajaxurl' => admin_url( 'admin-ajax.php' ),
+				'nonce'   => wp_create_nonce( 'seculoco_admin_nonce' ),
+			)
+		);
 	}
 
 	/**
