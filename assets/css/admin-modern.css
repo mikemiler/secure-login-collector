@@ -1005,3 +1005,82 @@ button .dashicons {
 	background: var(--seculoco-primary-hover);
 	transform: translateY(-1px);
 }
+
+/* ==========================================================================
+   Password Manager Export Notifications
+   ========================================================================== */
+
+.seculoco-notification {
+	position: fixed;
+	top: 50px;
+	right: 30px;
+	z-index: 999999;
+	min-width: 300px;
+	max-width: 500px;
+	padding: 16px 20px;
+	background: white;
+	border-left: 4px solid;
+	border-radius: var(--seculoco-radius-sm);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	font-size: 14px;
+	line-height: 1.5;
+	animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+	from {
+		opacity: 0;
+		transform: translateX(100px);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}
+
+.seculoco-notification-success {
+	border-left-color: var(--seculoco-success);
+	background: #f0f9ff;
+	color: #006600;
+}
+
+.seculoco-notification-error {
+	border-left-color: var(--seculoco-danger);
+	background: #fff5f5;
+	color: #991111;
+}
+
+.seculoco-notification-info {
+	border-left-color: var(--seculoco-info);
+	background: #f0f7ff;
+	color: #004499;
+}
+
+.seculoco-notification-warning {
+	border-left-color: var(--seculoco-warning);
+	background: #fffbf0;
+	color: #996600;
+}
+
+/* Export button enhancement */
+.export-to-password-manager {
+	margin-right: 5px;
+}
+
+.export-to-password-manager .dashicons {
+	vertical-align: middle;
+	margin-right: 3px;
+}
+
+.export-to-password-manager.spin .dashicons {
+	animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
+}

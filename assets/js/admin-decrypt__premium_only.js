@@ -26,6 +26,9 @@
         init() {
             // Bind decrypt buttons (both old and new class names)
             $(document).on('click', '.decrypt-btn, .decrypt-btn-v2', (e) => this.handleDecrypt(e));
+
+            // Bind password manager export button (PRO feature)
+            $(document).on('click', '.export-to-password-manager', (e) => this.handlePasswordManagerExport(e));
         }
 
         /**
@@ -34,13 +37,14 @@
         async handleDecrypt(e) {
             e.preventDefault();
             const $btn = $(e.currentTarget);
-            const entryId = $btn.data('id');
-            
+            // Normalize ID to number for consistent storage/retrieval
+            const entryId = parseInt($btn.data('id'), 10);
 
-            
+            console.log('Decrypt clicked for entry ID:', entryId, 'Type:', typeof entryId);
+
             // Check if already decrypted
             if (this.decryptedData.has(entryId)) {
-
+                console.log('Entry already decrypted, displaying...');
                 this.displayDecryptedData(entryId, $btn);
                 return;
             }
@@ -69,7 +73,9 @@
                 const decrypted = await this.decryptData(encryptedPackage, privateKey);
 
                 // Store and display
+                console.log('Storing decrypted data for entry:', entryId, 'Type:', typeof entryId);
                 this.decryptedData.set(entryId, decrypted);
+                console.log('Decrypted data stored. Map now has:', Array.from(this.decryptedData.keys()));
                 this.displayDecryptedData(entryId, $btn);
 
                 $btn.html('<span class="dashicons dashicons-yes"></span>').addClass('success');
@@ -422,8 +428,13 @@
                         <td colspan="8">
                             <div class="decrypted-data-container">
                                 <div class="decrypted-header">
-                                    <strong>Decrypted Data</strong>
-                                    <span class="auto-clear-warning">Auto-clears in <span id="decrypted-area-countdown">60</span> seconds</span>
+                                    <div style="display: flex; align-items: center; gap: 15px;">
+                                        <strong>Decrypted Data</strong>
+                                        <span class="auto-clear-warning">Auto-clears in <span id="decrypted-area-countdown">60</span> seconds</span>
+                                    </div>
+                                    <button type="button" class="button button-primary export-to-password-manager" data-id="${entryId}" title="Export to Password Manager" style="margin: 0;">
+                                        <span class="dashicons dashicons-cloud-upload" style="margin-top: 3px;"></span> Export to Password Manager
+                                    </button>
                                 </div>
                                 <div class="decrypted-content">
                                     <div class="field-group">
@@ -469,7 +480,7 @@
          */
         bindCopyButtons(entryId) {
             const $row = $(`.decrypted-row[data-entry-id="${entryId}"]`);
-            
+
             $row.find('.copy-btn').off('click').on('click', async function(e) {
                 e.preventDefault();
                 const value = $(this).data('value');
@@ -559,6 +570,430 @@
             });
 
             console.log('Decrypted data auto-cleared from memory');
+        }
+
+        /**
+         * Handle Password Manager Export (PRO Feature)
+         * Implements Option 2: Same-Page Form Submission
+         *
+         * Creates a hidden form with credentials, submits it using History API
+         * to trigger browser password manager without page reload.
+         * Universal compatibility: Works in ALL browsers (Chrome, Firefox, Safari, Edge).
+         */
+        async handlePasswordManagerExport(e) {
+            e.preventDefault();
+            const $btn = $(e.currentTarget);
+            // Normalize ID to number (same as decrypt method)
+            const entryId = parseInt($btn.data('id'), 10);
+
+            console.log('Export clicked for entry:', entryId, 'Type:', typeof entryId);
+            console.log('Available decrypted data keys:', Array.from(this.decryptedData.keys()));
+            console.log('Has this entry?', this.decryptedData.has(entryId));
+
+            try {
+                // Get decrypted data using normalized ID
+                const decryptedData = this.decryptedData.get(entryId);
+
+                if ( !decryptedData) {
+                    console.error('No decrypted data found for entry:', entryId);
+                    console.error('Map contents:', this.decryptedData);
+                    alert('No decrypted data available. Please decrypt the data first.');
+                    return;
+                }
+
+                // Get metadata from the table row
+                const $tableRow = $(`#row-${entryId}`);
+                const loginUrl = $tableRow.find('[data-field="login_url"]').text().trim();
+                const name = $tableRow.find('[data-field="name"]').text().trim();
+
+                // Trigger the form submission directly (no confirmation)
+                await this.triggerPasswordManagerViaForm(decryptedData, loginUrl, name);
+
+                // Show success message
+                this.showNotification('✓ Password manager triggered! Check your browser for the save prompt.', 'success');
+
+            } catch (error) {
+                // Don't show error if user cancelled the modal
+                if (error.message === 'User cancelled') {
+                    console.log('User cancelled password manager export');
+                    return;
+                }
+                console.error('Password manager export failed:', error);
+                alert('Export failed: ' + error.message);
+            }
+        }
+
+        /**
+         * Trigger password manager save using same-page form submission
+         * Option 2 from PASSWORD_MANAGER_TRIGGER_PLAN.md
+         *
+         * @param {Object} decryptedData - The decrypted login credentials
+         * @param {string} loginUrl - The website URL
+         * @param {string} name - Account name for identification
+         */
+        async triggerPasswordManagerViaForm(decryptedData, loginUrl, name) {
+            console.log('Triggering password manager with data:', {
+                username: decryptedData.username_email,
+                hasPassword: !!decryptedData.password,
+                loginUrl: loginUrl
+            });
+
+            // Ensure URL has protocol
+            let actionUrl = loginUrl || window.location.href;
+            if (actionUrl && !actionUrl.match(/^https?:\/\//)) {
+                actionUrl = 'https://' + actionUrl;
+            }
+
+            // Remove any existing export form
+            const existingForm = document.getElementById('seculoco-export-form');
+            if (existingForm) {
+                existingForm.remove();
+            }
+
+            // Create a VISIBLE form (password managers need to see it!)
+            const form = document.createElement('form');
+            form.id = 'seculoco-export-form';
+            form.method = 'POST';
+            form.action = '#';
+            form.autocomplete = 'on';
+
+            // Make form visible but styled nicely as an overlay
+            form.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                z-index: 999999;
+                background: white;
+                padding: 30px;
+                border-radius: 8px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                min-width: 500px;
+                max-width: 600px;
+                max-height: 90vh;
+                overflow-y: auto;
+            `;
+
+            // Add heading
+            const heading = document.createElement('h3');
+            heading.textContent = 'Export Login to Password Manager';
+            heading.style.cssText = 'margin: 0 0 20px 0; color: #333;';
+            form.appendChild(heading);
+
+            // Add important notice box
+            const noticeBox = document.createElement('div');
+            noticeBox.style.cssText = 'background: #fff3cd; border: 1px solid #ffc107; border-left: 4px solid #ffc107; padding: 15px; margin-bottom: 20px; border-radius: 4px;';
+            noticeBox.innerHTML = `
+                <div style="display: flex; align-items: flex-start; gap: 10px;">
+                    <span style="font-size: 24px; line-height: 1;">⚠️</span>
+                    <div style="flex: 1;">
+                        <strong style="display: block; margin-bottom: 8px; color: #856404;">Important: URL Editing Required</strong>
+                        <p style="margin: 0 0 10px 0; color: #856404; font-size: 13px; line-height: 1.5;">
+                            Your password manager will pre-fill your website domain instead of the login URL.
+                            <br />
+                            <strong>Before saving:</strong> Copy the Login URL below and edit the pre-filled url before saving the login data to your password manager.
+                        </p>
+                    </div>
+                </div>
+            `;
+            form.appendChild(noticeBox);
+
+            // Add instructions
+            const instructions = document.createElement('p');
+            instructions.textContent = 'Review the details below and click "Submit". Your browser will ask if you want to save this password.';
+            instructions.style.cssText = 'margin: 0 0 20px 0; color: #666; font-size: 14px;';
+            form.appendChild(instructions);
+
+            // Create Login URL field (EDITABLE) with copy button
+            const urlLabel = document.createElement('label');
+            urlLabel.textContent = 'Login URL (Copy this for later):';
+            urlLabel.style.cssText = 'display: block; margin-bottom: 5px; font-weight: bold;';
+            form.appendChild(urlLabel);
+
+            // Container for URL field and copy button
+            const urlContainer = document.createElement('div');
+            urlContainer.style.cssText = 'display: flex; gap: 8px; margin-bottom: 5px;';
+
+            const urlField = document.createElement('input');
+            urlField.type = 'text';
+            urlField.id = 'seculoco-export-url';
+            urlField.value = actionUrl;
+            urlField.style.cssText = 'flex: 1; padding: 8px; border: 1px solid #2271b1; border-radius: 4px; box-sizing: border-box; background: #f0f7ff; font-size: 14px;';
+            urlField.placeholder = 'https://example.com/login';
+            urlContainer.appendChild(urlField);
+
+            // Add copy button
+            const copyUrlButton = document.createElement('button');
+            copyUrlButton.type = 'button';
+            copyUrlButton.textContent = '📋 Copy';
+            copyUrlButton.className = 'button';
+            copyUrlButton.style.cssText = 'padding: 8px 16px; white-space: nowrap;';
+            copyUrlButton.addEventListener('click', () => {
+                urlField.select();
+                navigator.clipboard.writeText(urlField.value).then(() => {
+                    const originalText = copyUrlButton.textContent;
+                    copyUrlButton.textContent = '✓ Copied!';
+                    copyUrlButton.style.background = '#46b450';
+                    copyUrlButton.style.color = 'white';
+                    setTimeout(() => {
+                        copyUrlButton.textContent = originalText;
+                        copyUrlButton.style.background = '';
+                        copyUrlButton.style.color = '';
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Failed to copy:', err);
+                    alert('Failed to copy. Please manually select and copy the URL.');
+                });
+            });
+            urlContainer.appendChild(copyUrlButton);
+
+            form.appendChild(urlContainer);
+
+            const urlHint = document.createElement('small');
+            urlHint.innerHTML = '⚠️ <strong>Remember to copy this URL!</strong> You\'ll need it to edit the password manager entry before saving.';
+            urlHint.style.cssText = 'display: block; margin: 0 0 15px 0; color: #d63638; font-size: 12px; font-weight: 500;';
+            form.appendChild(urlHint);
+
+            // Create username field with proper autocomplete attribute
+            const usernameLabel = document.createElement('label');
+            usernameLabel.textContent = 'Username:';
+            usernameLabel.style.cssText = 'display: block; margin-bottom: 5px; font-weight: bold;';
+            form.appendChild(usernameLabel);
+
+            const usernameField = document.createElement('input');
+            usernameField.type = 'text';
+            usernameField.name = 'username';
+            usernameField.id = 'seculoco-export-username';
+            usernameField.autocomplete = 'username';
+            usernameField.value = decryptedData.username_email || '';
+            usernameField.style.cssText = 'width: 100%; padding: 8px; margin-bottom: 5px; border: 1px solid #8c8f94; border-radius: 4px; box-sizing: border-box; background: #fff;';
+            form.appendChild(usernameField);
+
+            const usernameHint = document.createElement('small');
+            usernameHint.textContent = 'You can edit this field if needed before saving.';
+            usernameHint.style.cssText = 'display: block; margin: 0 0 15px 0; color: #666; font-size: 12px; font-style: italic;';
+            form.appendChild(usernameHint);
+
+            // Create password field with proper autocomplete attribute and visibility toggle
+            const passwordLabel = document.createElement('label');
+            passwordLabel.textContent = 'Password:';
+            passwordLabel.style.cssText = 'display: block; margin-bottom: 5px; font-weight: bold;';
+            form.appendChild(passwordLabel);
+
+            // Container for password field and toggle button
+            const passwordContainer = document.createElement('div');
+            passwordContainer.style.cssText = 'position: relative; margin-bottom: 5px;';
+
+            const passwordField = document.createElement('input');
+            passwordField.type = 'password';
+            passwordField.name = 'password';
+            passwordField.id = 'seculoco-export-password';
+            passwordField.autocomplete = 'current-password';
+            passwordField.value = decryptedData.password || '';
+            passwordField.style.cssText = 'width: 100%; padding: 8px 40px 8px 8px; border: 1px solid #8c8f94; border-radius: 4px; box-sizing: border-box; background: #fff;';
+            passwordContainer.appendChild(passwordField);
+
+            // Add password visibility toggle button
+            const togglePasswordBtn = document.createElement('button');
+            togglePasswordBtn.type = 'button';
+            togglePasswordBtn.innerHTML = '👁️';
+            togglePasswordBtn.title = 'Show/Hide Password';
+            togglePasswordBtn.style.cssText = 'position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 18px; padding: 4px; opacity: 0.6;';
+            togglePasswordBtn.addEventListener('click', () => {
+                if (passwordField.type === 'password') {
+                    passwordField.type = 'text';
+                    togglePasswordBtn.innerHTML = '🙈';
+                    togglePasswordBtn.style.opacity = '1';
+                } else {
+                    passwordField.type = 'password';
+                    togglePasswordBtn.innerHTML = '👁️';
+                    togglePasswordBtn.style.opacity = '0.6';
+                }
+            });
+            togglePasswordBtn.addEventListener('mouseenter', () => {
+                togglePasswordBtn.style.opacity = '1';
+            });
+            togglePasswordBtn.addEventListener('mouseleave', () => {
+                if (passwordField.type === 'password') {
+                    togglePasswordBtn.style.opacity = '0.6';
+                }
+            });
+            passwordContainer.appendChild(togglePasswordBtn);
+
+            form.appendChild(passwordContainer);
+
+            const passwordHint = document.createElement('small');
+            passwordHint.textContent = 'You can edit this field if needed before saving. Click the eye icon to show/hide.';
+            passwordHint.style.cssText = 'display: block; margin: 0 0 15px 0; color: #666; font-size: 12px; font-style: italic;';
+            form.appendChild(passwordHint);
+
+            // Add notes field (READ-ONLY, for reference, NOT submitted)
+            if (decryptedData.additional_notes) {
+                const notesLabel = document.createElement('label');
+                notesLabel.textContent = 'Notes (for reference only):';
+                notesLabel.style.cssText = 'display: block; margin-bottom: 5px; font-weight: bold; color: #666;';
+                form.appendChild(notesLabel);
+
+                const notesField = document.createElement('textarea');
+                notesField.value = decryptedData.additional_notes;
+                notesField.readOnly = true;
+                notesField.style.cssText = 'width: 100%; padding: 8px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; background: #fffbf0; min-height: 80px; font-size: 13px; color: #666;';
+                form.appendChild(notesField);
+
+                const notesHint = document.createElement('small');
+                notesHint.textContent = 'These notes are for your reference and will NOT be sent to the password manager.';
+                notesHint.style.cssText = 'display: block; margin: -10px 0 10px 0; color: #996600; font-size: 12px; font-style: italic;';
+                form.appendChild(notesHint);
+
+                // Add pro-tip for multiple logins
+                const proTip = document.createElement('div');
+                proTip.style.cssText = 'background: #e7f3ff; border-left: 3px solid #2271b1; padding: 12px; margin-bottom: 15px; border-radius: 4px;';
+                proTip.innerHTML = `
+                    <div style="display: flex; align-items: flex-start; gap: 8px;">
+                        <span style="font-size: 16px; line-height: 1;">💡</span>
+                        <div style="flex: 1;">
+                            <strong style="color: #2271b1; font-size: 13px;">Pro Tip: Multiple Logins</strong>
+                            <p style="margin: 5px 0 0 0; color: #135e96; font-size: 12px; line-height: 1.5;">
+                                If your client sent multiple logins in the notes, you can copy each login from the notes and replace the username/password fields above.
+                                Then save to your password manager. Repeat this process for each login to save them all one-by-one.
+                            </p>
+                        </div>
+                    </div>
+                `;
+                form.appendChild(proTip);
+            }
+
+            // Add "no data sent" disclaimer
+            const disclaimer = document.createElement('div');
+            disclaimer.style.cssText = 'background: #f0f6fc; border-left: 3px solid #0969da; padding: 12px; margin-bottom: 20px; border-radius: 4px;';
+            disclaimer.innerHTML = `
+                <div style="display: flex; align-items: flex-start; gap: 8px;">
+                    <span style="font-size: 16px; line-height: 1;">ℹ️</span>
+                    <div style="flex: 1;">
+                        <strong style="color: #0969da; font-size: 13px;">Important Note</strong>
+                        <p style="margin: 5px 0 0 0; color: #135e96; font-size: 12px; line-height: 1.5;">
+                            No data will actually be sent anywhere. This form only triggers your browser's password manager to save the credentials locally on your device.
+                        </p>
+                    </div>
+                </div>
+            `;
+            form.appendChild(disclaimer);
+
+            // Create buttons container
+            const buttonsDiv = document.createElement('div');
+            buttonsDiv.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end;';
+
+            // Create cancel button
+            const cancelButton = document.createElement('button');
+            cancelButton.type = 'button';
+            cancelButton.textContent = 'Cancel';
+            cancelButton.className = 'button';
+            cancelButton.style.cssText = 'padding: 8px 16px;';
+            buttonsDiv.appendChild(cancelButton);
+
+            // Create submit button
+            const submitButton = document.createElement('button');
+            submitButton.type = 'submit';
+            submitButton.textContent = 'Save to Password Manager';
+            submitButton.className = 'button button-primary';
+            submitButton.style.cssText = 'padding: 10px 20px; font-weight: 600;';
+            buttonsDiv.appendChild(submitButton);
+
+            form.appendChild(buttonsDiv);
+
+            // Create backdrop
+            const backdrop = document.createElement('div');
+            backdrop.id = 'seculoco-export-backdrop';
+            backdrop.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0.5);
+                z-index: 999998;
+            `;
+
+            // Add to document
+            document.body.appendChild(backdrop);
+            document.body.appendChild(form);
+
+            // Return promise that resolves after form submission
+            return new Promise((resolve, reject) => {
+                // Handle cancel
+                const cleanup = () => {
+                    if (form.parentNode) document.body.removeChild(form);
+                    if (backdrop.parentNode) document.body.removeChild(backdrop);
+                };
+
+                cancelButton.addEventListener('click', () => {
+                    cleanup();
+                    reject(new Error('User cancelled'));
+                });
+
+                backdrop.addEventListener('click', () => {
+                    cleanup();
+                    reject(new Error('User cancelled'));
+                });
+
+                // Handle form submission
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault(); // Prevent actual navigation
+
+                    // Update form action with the potentially edited URL
+                    const editedUrl = urlField.value.trim();
+                    if (editedUrl) {
+                        let finalUrl = editedUrl;
+                        if (!finalUrl.match(/^https?:\/\//)) {
+                            finalUrl = 'https://' + finalUrl;
+                        }
+                        form.action = finalUrl;
+                        console.log('Form submitted with URL:', finalUrl);
+                    }
+
+                    console.log('Form submitted - password manager should detect this', {
+                        action: form.action,
+                        username: usernameField.value,
+                        hasPassword: !!passwordField.value
+                    });
+
+                    // Close the modal immediately
+                    cleanup();
+
+                    // Small delay to let password manager capture the submission
+                    setTimeout(() => {
+                        resolve();
+                    }, 100);
+                });
+
+                // Focus the submit button
+                submitButton.focus();
+            });
+        }
+
+        /**
+         * Show notification message
+         */
+        showNotification(message, type = 'info') {
+            // Remove any existing notifications
+            $('.seculoco-notification').remove();
+
+            // Create notification element
+            const $notification = $(`
+                <div class="seculoco-notification seculoco-notification-${type}">
+                    ${this.escapeHtml(message)}
+                </div>
+            `);
+
+            // Add to page
+            $('body').append($notification);
+
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                $notification.fadeOut(300, function() {
+                    $(this).remove();
+                });
+            }, 5000);
         }
 
         /**
