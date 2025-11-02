@@ -482,14 +482,12 @@ class Seculoco_Settings_Manager {
 					</div>
 					<div class="seculoco-passkey-benefit-desc">
 						<?php echo esc_html__( 'Passkey-protected encryption with WebAuthn/FIDO2. True zero-knowledge - server cannot decrypt without your physical device.', 'secure-login-collector' ); ?>
-						<br />
-						<a href="<?php echo esc_url( $upgrade_url ); ?>" class="button button-primary">
-							<?php echo esc_html__( 'Upgrade to Pro', 'secure-login-collector' ); ?>
-						</a>
 					</div>
 				</div>
 			</div>
-			
+			<a href="<?php echo esc_url( $upgrade_url ); ?>" class="button button-primary">
+				<?php echo esc_html__( 'Upgrade to Pro', 'secure-login-collector' ); ?>
+			</a>
 			
 		</div>
 		<?php

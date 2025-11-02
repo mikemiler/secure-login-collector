@@ -506,7 +506,6 @@
             });
         }
 
-
         /**
          * Auto-clear sensitive data after timeout
          */

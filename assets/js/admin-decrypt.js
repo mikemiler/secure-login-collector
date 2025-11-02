@@ -223,14 +223,13 @@
                                         <strong>Decrypted Data</strong>
                                         <span class="auto-clear-warning">Auto-clears in <span id="decrypted-area-countdown">60</span> seconds</span>
                                     </div>
-                                    <button type="button" class="button hide-decrypted" data-id="${entryId}" title="Hide">Hide</button>
                                 </div>
                                 <div class="decrypted-content">
                                     <div class="field-group">
                                         <label>Username/Email:</label>
                                         <div class="field-value">
                                             <input type="text" readonly value="${this.escapeHtml(data.username_email || '')}" />
-                                            <button class="copy-field-btn" data-copy-value="${this.escapeHtml(data.username_email || '')}">Copy</button>
+                                            <button class="copy-btn" data-value="${this.escapeHtml(data.username_email || '')}">Copy</button>
                                         </div>
                                     </div>
                                     <div class="field-group">
@@ -238,7 +237,7 @@
                                         <div class="field-value">
                                             <input type="password" class="password-field" readonly value="${this.escapeHtml(data.password || '')}" />
                                             <button class="toggle-password-btn">Show</button>
-                                            <button class="copy-field-btn" data-copy-value="${this.escapeHtml(data.password || '')}">Copy</button>
+                                            <button class="copy-btn" data-value="${this.escapeHtml(data.password || '')}">Copy</button>
                                         </div>
                                     </div>
                                     <div class="field-group">
@@ -269,6 +268,18 @@
          */
         bindCopyButtons(entryId) {
             const $row = $(`.decrypted-row[data-entry-id="${entryId}"]`);
+            
+            $row.find('.copy-btn').off('click').on('click', async function(e) {
+                e.preventDefault();
+                const value = $(this).data('value');
+                try {
+                    await navigator.clipboard.writeText(value);
+                    $(this).text('Copied!');
+                    setTimeout(() => $(this).text('Copy'), 2000);
+                } catch (err) {
+                    alert('Failed to copy');
+                }
+            });
 
             $row.find('.toggle-password-btn').off('click').on('click', function(e) {
                 e.preventDefault();
