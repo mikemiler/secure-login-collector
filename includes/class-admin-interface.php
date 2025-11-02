@@ -111,17 +111,11 @@ class Seculoco_List_Table extends WP_List_Table {
 	 * @return array Bulk action definitions.
 	 */
 	public function get_bulk_actions() {
-		return array(
-			'export-bitwarden' => __( 'Export Bitwarden CSV', 'secure-login-collector' ),
-			'export-1password' => __( 'Export 1Password CSV', 'secure-login-collector' ),
-			'export-lastpass'  => __( 'Export LastPass CSV', 'secure-login-collector' ),
-			'export-chrome'    => __( 'Export Chrome CSV', 'secure-login-collector' ),
-			'export-firefox'   => __( 'Export Firefox CSV', 'secure-login-collector' ),
-			'export-safari'    => __( 'Export Safari CSV', 'secure-login-collector' ),
-			'export-dashlane'  => __( 'Export Dashlane CSV', 'secure-login-collector' ),
-			'export-keepass'   => __( 'Export KeePass CSV', 'secure-login-collector' ),
+		
+		$bulk_actions = array(
 			'delete'           => __( 'Delete', 'secure-login-collector' ),
 		);
+		return apply_filters('suculoco_bulk_actions', $bulk_actions);
 	}
 
 	/**

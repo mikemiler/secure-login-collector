@@ -39,6 +39,9 @@ class Seculoco_Admin_Interface_Pro {
 		// Allow passkey decryption features.
 		add_filter( 'seculoco_can_use_passkey_decrypt', '__return_true' );
 
+		// Add bulk actions for pro version.
+		add_filter( 'seculoco_bulk_actions', array( $this, 'add_bulk_actions' ) );
+
 		// Filter manual entry metadata for pro encryption.
 		add_filter( 'seculoco_manual_entry_metadata', array( $this, 'add_pro_manual_entry_metadata' ) );
 
@@ -47,6 +50,19 @@ class Seculoco_Admin_Interface_Pro {
 		add_action( 'wp_ajax_seculoco_verify_passkey_unwrap', array( $this, 'ajax_verify_passkey_unwrap' ) );
 	}
 
+
+	public function add_bulk_actions( $actions ) {
+		$actions['export-bitwarden'] = __( 'Export Bitwarden CSV', 'secure-login-collector' );
+		$actions['export-1password'] = __( 'Export 1Password CSV', 'secure-login-collector' );
+		$actions['export-lastpass']  = __( 'Export LastPass CSV', 'secure-login-collector' );
+		$actions['export-chrome']    = __( 'Export Chrome CSV', 'secure-login-collector' );
+		$actions['export-firefox']   = __( 'Export Firefox CSV', 'secure-login-collector' );
+		$actions['export-safari']    = __( 'Export Safari CSV', 'secure-login-collector' );
+		$actions['export-dashlane']  = __( 'Export Dashlane CSV', 'secure-login-collector' );
+		$actions['export-keepass']   = __( 'Export KeePass CSV', 'secure-login-collector' );
+		return $actions;
+	}
+	
 	/**
 	 * Enqueue premium admin scripts.
 	 *
