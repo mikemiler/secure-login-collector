@@ -312,8 +312,19 @@ class Seculoco_List_Table extends WP_List_Table {
 	 * @return array Encryption method information.
 	 */
 	private function get_encryption_method_info( $encryption_type ) {
+		// Check if pro keys are active (passkey encryption enabled).
+		$pro_keys_active = get_option( 'seculoco_pro_keys_active', false );
+
 		switch ( $encryption_type ) {
 			case 'aes-rsa-v2':
+				// Free version encryption - show as inactive if passkey is active.
+				if ( $pro_keys_active ) {
+					return array(
+						'name'        => __( 'Inactive', 'secure-login-collector' ),
+						'class'       => 'encryption-inactive',
+						'description' => __( 'Passkey encryption is active. Free encryption is disabled.', 'secure-login-collector' ),
+					);
+				}
 				return array(
 					'name'        => __( 'Secure', 'secure-login-collector' ),
 					'class'       => 'encryption-rsa',
@@ -332,12 +343,28 @@ class Seculoco_List_Table extends WP_List_Table {
 					'description' => __( 'Passkey-derived encryption for maximum security.', 'secure-login-collector' ),
 				);
 			case 'rsa':
+				// Free version encryption - show as inactive if passkey is active.
+				if ( $pro_keys_active ) {
+					return array(
+						'name'        => __( 'Inactive', 'secure-login-collector' ),
+						'class'       => 'encryption-inactive',
+						'description' => __( 'Passkey encryption is active. Free encryption is disabled.', 'secure-login-collector' ),
+					);
+				}
 				return array(
 					'name'        => __( 'RSA-2048', 'secure-login-collector' ),
 					'class'       => 'encryption-rsa',
 					'description' => __( 'Industry-standard RSA encryption.', 'secure-login-collector' ),
 				);
 			default:
+				// Free version encryption - show as inactive if passkey is active.
+				if ( $pro_keys_active ) {
+					return array(
+						'name'        => __( 'Inactive', 'secure-login-collector' ),
+						'class'       => 'encryption-inactive',
+						'description' => __( 'Passkey encryption is active. Free encryption is disabled.', 'secure-login-collector' ),
+					);
+				}
 				return array(
 					'name'        => __( 'RSA-2048', 'secure-login-collector' ),
 					'class'       => 'encryption-rsa',
@@ -689,19 +716,30 @@ class Seculoco_Admin_Interface {
 			true
 		);
 
-		// Enqueue the new decrypt script for v2 encryption.
-		wp_enqueue_script(
-			'secure-login-admin-decrypt',
-			plugin_dir_url( __FILE__ ) . '../assets/js/admin-decrypt.js',
-			array( 'jquery', 'secure-login-admin-js' ),
-			'1.0.0',
-			true
-		);
+		// Enqueue the new decrypt script for v2 encryption (Premium only).
+		if ( Seculoco_License_Manager::has_pro_license() ) {
+			wp_enqueue_script(
+				'secure-login-admin-decrypt',
+				plugin_dir_url( __FILE__ ) . '../assets/js/admin-decrypt__premium_only.js',
+				array( 'jquery', 'secure-login-admin-js' ),
+				'1.0.0',
+				true
+			);
+
+			// Enqueue bulk export with passkey script (Premium only).
+			wp_enqueue_script(
+				'secure-login-admin-bulk-export',
+				plugin_dir_url( __FILE__ ) . '../assets/js/admin-bulk-export__premium_only.js',
+				array( 'jquery', 'secure-login-admin-js', 'secure-login-admin-decrypt' ),
+				'1.0.0',
+				true
+			);
+		}
 
 		// Localize script for admin-decrypt.js.
 		wp_localize_script(
 			'secure-login-admin-decrypt',
-			'secureLoginAdmin',
+			'seculocoAdmin',
 			array(
 				'ajaxurl' => admin_url( 'admin-ajax.php' ),
 				'nonce'   => wp_create_nonce( 'seculoco_admin_nonce' ),
@@ -711,7 +749,7 @@ class Seculoco_Admin_Interface {
 		// Localize script with AJAX data.
 		wp_localize_script(
 			'secure-login-admin-js',
-			'secureLoginAjax',
+			'seculocoAjax',
 			array(
 				'ajaxurl' => admin_url( 'admin-ajax.php' ),
 				'nonce'   => wp_create_nonce( 'seculoco_nonce' ),

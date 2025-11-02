@@ -148,6 +148,11 @@ class SecureLoginCollector {
 					include_once SECULOCO_PLUGIN_DIR . $file;
 				}
 			}
+
+			// Initialize Passkey Manager globally to register admin hooks.
+			if ( class_exists( 'Passkey_Manager' ) ) {
+				new Passkey_Manager();
+			}
 		}
 
 		// Load Freemius hooks if available.

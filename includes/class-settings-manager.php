@@ -116,14 +116,6 @@ class Seculoco_Settings_Manager {
 		);
 		register_setting(
 			'seculoco_settings',
-			'seculoco_ultra_secure_mode',
-			array(
-				'type'              => 'boolean',
-				'sanitize_callback' => array( $this, 'sanitize_boolean' ),
-			)
-		);
-		register_setting(
-			'seculoco_settings',
 			'seculoco_frontend_form_text',
 			array(
 				'type'              => 'string',
@@ -394,64 +386,30 @@ class Seculoco_Settings_Manager {
 	 * Display encryption content inside the card
 	 */
 	private function display_encryption_content() {
-		// Grid layout for side-by-side cards
-		echo '<div class="seculoco-passkey-benefits" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">';
-
-		// Get key status for both levels
+		// Get key status for free version.
 		$free_public_key  = get_option( 'seculoco_public_key_free' );
 		$free_private_key = get_option( 'seculoco_private_key_free_encrypted' );
-		$free_status = ( $free_public_key && $free_private_key ) ? 'active' : 'needs-init';
 
-		// RSA-2048 (Free version) with status badge
-		echo '<div class="seculoco-passkey-benefit" style="border-color: var(--seculoco-info);">';
-		echo '<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">';
-		echo '<span class="seculoco-badge slc-badge-info">SECURE</span> ';
-		if ( 'active' === $free_status ) {
-			echo '<span style="background: #d1ecf1; color: #0c5460; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600;">' . esc_html__( 'ACTIVE', 'secure-login-collector' ) . '</span>';
+		// Check if passkey encryption is active (pro keys).
+		$pro_keys_active = get_option( 'seculoco_pro_keys_active', false );
+
+		// If passkey encryption is active, free encryption should be shown as inactive.
+		// Otherwise, show actual free encryption status.
+		if ( $pro_keys_active ) {
+			$free_status = 'inactive';
 		} else {
-			echo '<span style="background: #fff3cd; color: #856404; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600;">' . esc_html__( 'NEEDS INIT', 'secure-login-collector' ) . '</span>';
-		}
-		echo '</div>';
-		echo '<span class="seculoco-passkey-benefit-icon"></span>';
-		echo '<div class="seculoco-passkey-benefit-text">';
-		echo '<div class="seculoco-passkey-benefit-title">';
-		echo esc_html__( 'RSA-2048 + AES-256-GCM', 'secure-login-collector' );
-		echo '</div>';
-		echo '<div class="seculoco-passkey-benefit-desc">' . esc_html__( 'Industry-standard RSA encryption with 2048-bit keys and AES-256-GCM for data encryption. Secure for most use cases.', 'secure-login-collector' ) . '</div>';
-		echo '</div>';
-		echo '</div>'; // Close seculoco-passkey-benefit
-
-		// Ultra-Secure (Show upgrade notice in free version, pro version will hide this).
-		$show_pro_upgrade = apply_filters( 'seculoco_show_pro_upgrade', true );
-		if ( $show_pro_upgrade ) {
-			echo '<div class="seculoco-passkey-benefit" style="border-color: #ccc; opacity: 0.7;">';
-			echo '<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">';
-			echo '<span class="seculoco-badge" style="background: #ccc; color: #666;">PRO ONLY</span> ';
-			echo '<span style="background: #f8f9fa; color: #6c757d; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600;">' . esc_html__( 'NOT AVAILABLE', 'secure-login-collector' ) . '</span>';
-			echo '</div>';
-			echo '<span class="seculoco-passkey-benefit-icon"></span>';
-			echo '<div class="seculoco-passkey-benefit-text">';
-			echo '<div class="seculoco-passkey-benefit-title">';
-			echo esc_html__( 'Ultra-Secure (Passkey-Protected)', 'secure-login-collector' );
-			echo '</div>';
-			echo '<div class="seculoco-passkey-benefit-desc">' . esc_html__( 'Passkey-protected encryption with WebAuthn/FIDO2. True zero-knowledge - server cannot decrypt without your physical device.', 'secure-login-collector' ) . '</div>';
-			$upgrade_url = function_exists( 'seculoco_fs' ) && seculoco_fs() ? seculoco_fs()->get_upgrade_url() : '#';
-			echo '<div style="margin-top: 8px;"><a href="' . esc_url( $upgrade_url ) . '" class="button button-secondary">' . esc_html__( 'Upgrade to Pro', 'secure-login-collector' ) . '</a></div>';
-			echo '</div>';
-			echo '</div>'; // Close seculoco-passkey-benefit
+			$free_status = ( $free_public_key && $free_private_key ) ? 'active' : 'needs-init';
 		}
 
-		echo '</div>'; // Close seculoco-passkey-benefits
+		// 2-column layout: Free on left, Pro on right.
+		echo '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 20px;">';
 
-		// Display key status.
-		$free_public_key  = get_option( 'seculoco_public_key_free' );
-		$free_private_key = get_option( 'seculoco_private_key_free_encrypted' );
+		// ===== LEFT COLUMN: FREE VERSION =====
+		echo '<div class="seculoco-encryption-column">';
 
-		// Display RSA Keys Status.
-		echo '<div class="rsa-keys-status" style="margin: 20px 0;">';
-		echo '<h4 style="margin-bottom: 15px;">' . esc_html__( 'RSA Keys Status', 'secure-login-collector' ) . '</h4>';
+		
 
-		// Free RSA Keys Status.
+		// Free RSA Keys detailed status.
 		echo '<div style="background: white; border: 1px solid #c3c4c7; border-radius: 4px; padding: 15px; margin-bottom: 15px;">';
 		echo '<div style="display: flex; justify-content: space-between; align-items: center;">';
 		echo '<div>';
@@ -459,9 +417,15 @@ class Seculoco_Settings_Manager {
 		echo '<p style="margin: 5px 0 0; color: #666; font-size: 12px;">' . esc_html__( 'RSA-2048 + AES-256-GCM encryption', 'secure-login-collector' ) . '</p>';
 		echo '</div>';
 
-		if ( $free_public_key && $free_private_key ) {
+		// Display status based on $free_status variable.
+		if ( 'active' === $free_status ) {
 			echo '<div style="text-align: right;">';
 			echo '<span style="background: #d4edda; color: #155724; padding: 4px 12px; border-radius: 3px; font-size: 12px; font-weight: 600;">' . esc_html__( 'ACTIVE', 'secure-login-collector' ) . '</span>';
+			echo '</div>';
+		} elseif ( 'inactive' === $free_status ) {
+			echo '<div style="text-align: right;">';
+			echo '<span style="background: #f8d7da; color: #721c24; padding: 4px 12px; border-radius: 3px; font-size: 12px; font-weight: 600;">' . esc_html__( 'INACTIVE', 'secure-login-collector' ) . '</span>';
+			echo '<p style="margin: 5px 0 0; font-size: 11px; color: #666;">' . esc_html__( 'Passkey encryption is active', 'secure-login-collector' ) . '</p>';
 			echo '</div>';
 		} else {
 			echo '<div style="text-align: right;">';
@@ -471,40 +435,77 @@ class Seculoco_Settings_Manager {
 		}
 		echo '</div>';
 		echo '</div>';
+		
 
-		echo '</div>'; // Close rsa-keys-status
-
-		// Key management section.
-		echo '<div class="notice notice-info inline">';
-		echo '<p><strong>' . esc_html__( 'Key Management:', 'secure-login-collector' ) . '</strong></p>';
-
-		// Show different messages based on key status.
-		if ( ! $free_public_key ) {
-			echo '<p>' . esc_html__( 'RSA keys will be automatically initialized on first form submission.', 'secure-login-collector' ) . '</p>';
-			echo '<p><button type="button" class="button button-primary" id="initialize-free-keys">' . esc_html__( 'Initialize Keys Now', 'secure-login-collector' ) . '</button></p>';
-		} else {
-			echo '<p>' . esc_html__( 'RSA keys are active and ready for use.', 'secure-login-collector' ) . '</p>';
-		}
-
-		// Allow pro version to add key management messages via hook.
-		do_action( 'seculoco_encryption_key_management_messages' );
-
-		echo '</div>';
-
-		// Export buttons based on available keys.
-		echo '<p>';
+		// Free export button.
 		if ( $free_public_key ) {
-			echo '<button type="button" class="button button-secondary" id="export-free-public-key">' . esc_html__( 'Export Public Key', 'secure-login-collector' ) . '</button> ';
+			echo '<p>';
+			echo '<button type="button" class="button button-secondary" id="export-free-public-key">' . esc_html__( 'Export Public Key', 'secure-login-collector' ) . '</button>';
+			echo '</p>';
 		}
-		// Allow pro version to add export button via hook.
-		do_action( 'seculoco_encryption_export_buttons' );
-		echo '</p>';
 
-		// Allow pro version to add passkey management section via hook.
-		do_action( 'seculoco_encryption_section_after_keys' );
+		echo '</div>'; // Close left column
+
+		// ===== RIGHT COLUMN: PRO VERSION =====
+		// Allow pro version to add its entire column or show upgrade notice.
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in get_pro_encryption_column().
+		echo apply_filters( 'seculoco_encryption_pro_column', $this->get_pro_encryption_column() );
+
+		echo '</div>'; // Close 2-column grid
 
 		// Add JavaScript for key management via wp_add_inline_script.
 		$this->add_key_management_inline_script();
+	}
+
+	/**
+	 * Get the default pro encryption column HTML (right column).
+	 * Pro version will filter this out and replace with actual pro content.
+	 *
+	 * @return string HTML for the pro column upgrade notice.
+	 */
+	private function get_pro_encryption_column() {
+		$upgrade_url = function_exists( 'seculoco_fs' ) && seculoco_fs() ? seculoco_fs()->get_upgrade_url() : '#';
+
+		ob_start();
+		?>
+		<div class="seculoco-encryption-column">
+			<!-- Pro status card with upgrade notice -->
+			<div class="seculoco-passkey-benefit" style="border-color: #ccc; opacity: 0.7; margin-bottom: 15px;">
+				<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+					<span class="seculoco-badge" style="background: #ccc; color: #666;"><?php echo esc_html__( 'PRO ONLY', 'secure-login-collector' ); ?></span>
+					<span style="background: #f8f9fa; color: #6c757d; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600;"><?php echo esc_html__( 'NOT AVAILABLE', 'secure-login-collector' ); ?></span>
+				</div>
+				<span class="seculoco-passkey-benefit-icon"></span>
+				<div class="seculoco-passkey-benefit-text">
+					<div class="seculoco-passkey-benefit-title">
+						<?php echo esc_html__( 'Ultra-Secure (Passkey-Protected)', 'secure-login-collector' ); ?>
+					</div>
+					<div class="seculoco-passkey-benefit-desc">
+						<?php echo esc_html__( 'Passkey-protected encryption with WebAuthn/FIDO2. True zero-knowledge - server cannot decrypt without your physical device.', 'secure-login-collector' ); ?>
+					</div>
+				</div>
+			</div>
+
+			<!-- Pro features placeholder -->
+			<div style="background: white; border: 1px solid #c3c4c7; border-radius: 4px; padding: 15px; margin-bottom: 15px; opacity: 0.7;">
+				<div style="text-align: center; color: #666;">
+					<p style="margin: 0 0 10px 0; font-size: 14px;">
+						<strong><?php echo esc_html__( 'Pro Features Include:', 'secure-login-collector' ); ?></strong>
+					</p>
+					<ul style="list-style: none; padding: 0; margin: 0 0 15px 0; text-align: left;">
+						<li style="padding: 5px 0;">🔐 <?php echo esc_html__( 'Passkey-protected RSA keys', 'secure-login-collector' ); ?></li>
+						<li style="padding: 5px 0;">🛡️ <?php echo esc_html__( 'True zero-knowledge encryption', 'secure-login-collector' ); ?></li>
+						<li style="padding: 5px 0;">🔑 <?php echo esc_html__( 'WebAuthn/FIDO2 authentication', 'secure-login-collector' ); ?></li>
+						<li style="padding: 5px 0;">📱 <?php echo esc_html__( 'Hardware security key support', 'secure-login-collector' ); ?></li>
+					</ul>
+					<a href="<?php echo esc_url( $upgrade_url ); ?>" class="button button-primary">
+						<?php echo esc_html__( 'Upgrade to Pro', 'secure-login-collector' ); ?>
+					</a>
+				</div>
+			</div>
+		</div>
+		<?php
+		return ob_get_clean();
 	}
 
 	/**
@@ -630,28 +631,6 @@ class Seculoco_Settings_Manager {
 		$days = get_option( 'seculoco_expiration_days', 30 );
 		echo '<input type="number" id="seculoco_expiration_days" name="seculoco_expiration_days" value="' . esc_attr( $days ) . '" min="0" class="small-text" />';
 		echo '<p class="description">' . esc_html__( 'Number of days after which login data will be automatically deleted. Set to 0 to disable automatic deletion (data will be retained until manually deleted).', 'secure-login-collector' ) . '</p>';
-	}
-
-	/**
-	 * Ultra secure mode field callback.
-	 */
-	public function ultra_secure_mode_callback() {
-		$enabled = get_option( 'seculoco_ultra_secure_mode', false );
-		echo '<input type="checkbox" id="seculoco_ultra_secure_mode" name="seculoco_ultra_secure_mode" value="1" ' . checked( 1, $enabled, false ) . ' />';
-		echo '<label for="seculoco_ultra_secure_mode"> ' . esc_html__( 'Enable passkey-protected encryption (zero-knowledge)', 'secure-login-collector' ) . '</label>';
-		echo '<p class="description">' . esc_html__( 'When enabled, the RSA private key is wrapped with passkey authentication. This provides true zero-knowledge - the server cannot decrypt data without your physical passkey device. Requires passkey registration.', 'secure-login-collector' ) . '</p>';
-
-		$passkey_registered = get_option( 'seculoco_passkey_registered', false );
-		if ( ! $passkey_registered ) {
-			echo '<div class="seculoco-alert slc-alert-warning" style="margin-top: 12px;">';
-			echo '<span class="seculoco-alert-icon"></span>';
-			echo '<div class="seculoco-alert-content">';
-			echo '<div class="seculoco-alert-message">';
-			echo '<strong>' . esc_html__( 'Warning:', 'secure-login-collector' ) . '</strong> ' . esc_html__( 'You must register a passkey before enabling ultra-secure mode.', 'secure-login-collector' );
-			echo '</div>';
-			echo '</div>';
-			echo '</div>';
-		}
 	}
 
 	/**

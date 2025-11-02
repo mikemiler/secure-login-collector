@@ -133,7 +133,7 @@ class Seculoco_Frontend_Handler {
 			$localize_data = apply_filters( 'seculoco_frontend_js_config', $localize_data );
 
 			// Localize script with data.
-			wp_localize_script( 'secure-login-frontend', 'secureLoginAjax', $localize_data );
+			wp_localize_script( 'secure-login-frontend', 'seculocoAjax', $localize_data );
 		}
 	}
 

@@ -65,8 +65,8 @@ class Passkey_Manager {
 	 */
 	public function enqueue_admin_styles( $hook ) {
 		// Load CSS on all Secure Login Collector admin pages.
-		if ( strpos( $hook, 'secure-login-collector' ) === false &&
-		'toplevel_page_secure-login-collector' !== $hook ) {
+		// Check for: toplevel_page_secure-login-collector, login-data_page_secure-login-collector-settings.
+		if ( strpos( $hook, 'secure-login-collector' ) === false ) {
 			return;
 		}
 
@@ -88,252 +88,60 @@ class Passkey_Manager {
 	 */
 	public function enqueue_admin_scripts( $hook ) {
 		// Load JS on all Secure Login Collector admin pages.
-		if ( strpos( $hook, 'secure-login-collector' ) === false &&
-		'toplevel_page_secure-login-collector' !== $hook ) {
+		// Check for: toplevel_page_secure-login-collector, login-data_page_secure-login-collector-settings.
+		if ( strpos( $hook, 'secure-login-collector' ) === false ) {
 			return;
 		}
 
-		// Register empty script handle for passkey functionality.
-		wp_register_script( 'slc-passkey-js', '', array( 'jquery' ), SECULOCO_VERSION, true );
-		wp_enqueue_script( 'slc-passkey-js' );
+		// Only load passkey scripts for pro license users.
+		if ( ! Seculoco_License_Manager::has_pro_license() ) {
+			return;
+		}
 
-		// Add inline script for passkey management.
-		$this->add_passkey_inline_script();
+		// Enqueue passkey management script.
+		wp_enqueue_script(
+			'slc-passkey-pro-js',
+			plugin_dir_url( __FILE__ ) . '../assets/js/admin-passkey__premium_only.js',
+			array( 'jquery' ),
+			filemtime( plugin_dir_path( __FILE__ ) . '../assets/js/admin-passkey__premium_only.js' ),
+			true
+		);
+
+		// Localize script data.
+		$this->localize_passkey_script();
 	}
 
 	/**
-	 * Add inline script for passkey management functionality.
+	 * Localize passkey script data.
+	 * Passes PHP data to JavaScript in a safe, escaped manner.
 	 */
-	private function add_passkey_inline_script() {
-		if ( ! function_exists( 'wp_add_inline_script' ) ) {
-			return;
-		}
-
+	private function localize_passkey_script() {
 		// Check if there are any encrypted entries for the warning message.
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'seculoco_data';
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$has_encrypted_data = $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i', $table_name ) ) > 0;
 
-		$user_id = get_current_user_id();
-		$passkey = $this->get_user_passkey( $user_id );
-
-		// Prepare dynamic values for script.
-		$ajax_url          = admin_url( 'admin-ajax.php' );
-		$nonce             = wp_create_nonce( 'passkey_admin_nonce' );
-		$has_encrypted     = $has_encrypted_data ? 'true' : 'false';
-		$has_passkey       = $passkey ? 'true' : 'false';
-
-		// Localized strings.
-		$strings = array(
-			'warningDataLoss'      => __( 'WARNING: Deleting this passkey will make ALL existing encrypted data permanently inaccessible!\n\nThis action CANNOT be undone. There is NO recovery method.\n\nAre you absolutely sure you want to proceed?', 'secure-login-collector' ),
-			'warningSimple'        => __( 'Are you sure you want to delete this passkey?\n\nYou can register a new passkey afterward.', 'secure-login-collector' ),
-			'deleting'             => __( 'Deleting...', 'secure-login-collector' ),
-			'deletePasskey'        => __( 'Delete Passkey', 'secure-login-collector' ),
-			'deleteSuccess'        => __( 'Passkey deleted successfully!', 'secure-login-collector' ),
-			'deleteFailed'         => __( 'Failed to delete passkey:', 'secure-login-collector' ),
-			'networkError'         => __( 'Network error occurred. Please try again.', 'secure-login-collector' ),
-			'noWebAuthn'           => __( 'Your browser does not support WebAuthn/Passkeys.', 'secure-login-collector' ),
-			'registerSuccess'      => __( 'Passkey registered successfully!', 'secure-login-collector' ),
+		// Prepare localized data.
+		$script_data = array(
+			'ajaxUrl'          => admin_url( 'admin-ajax.php' ),
+			'nonce'            => wp_create_nonce( 'passkey_admin_nonce' ),
+			'hasEncryptedData' => $has_encrypted_data,
+			'strings'          => array(
+				'warningDataLoss'  => __( 'WARNING: Deleting this passkey will make ALL existing encrypted data permanently inaccessible! This action CANNOT be undone. There is NO recovery method. Are you absolutely sure you want to proceed?', 'secure-login-collector' ),
+				'warningSimple'    => __( 'Are you sure you want to delete this passkey?\n\nYou can register a new passkey afterward.', 'secure-login-collector' ),
+				'deleting'         => __( 'Deleting...', 'secure-login-collector' ),
+				'deletePasskey'    => __( 'Delete Passkey', 'secure-login-collector' ),
+				'deleteSuccess'    => __( 'Passkey deleted successfully!', 'secure-login-collector' ),
+				'deleteFailed'     => __( 'Failed to delete passkey:', 'secure-login-collector' ),
+				'networkError'     => __( 'Network error occurred. Please try again.', 'secure-login-collector' ),
+				'noWebAuthn'       => __( 'Your browser does not support WebAuthn/Passkeys.', 'secure-login-collector' ),
+				'registerSuccess'  => __( 'Passkey registered successfully!', 'secure-login-collector' ),
+			),
 		);
 
-		$script = <<<JAVASCRIPT
-jQuery(document).ready(function($) {
-	var ajaxUrl = '{$ajax_url}';
-	var nonce = '{$nonce}';
-	var hasEncryptedData = {$has_encrypted};
-
-	// Localized strings
-	var strings = {
-		warningDataLoss: '{$strings['warningDataLoss']}',
-		warningSimple: '{$strings['warningSimple']}',
-		deleting: '{$strings['deleting']}',
-		deletePasskey: '{$strings['deletePasskey']}',
-		deleteSuccess: '{$strings['deleteSuccess']}',
-		deleteFailed: '{$strings['deleteFailed']}',
-		networkError: '{$strings['networkError']}',
-		noWebAuthn: '{$strings['noWebAuthn']}',
-		registerSuccess: '{$strings['registerSuccess']}'
-	};
-
-	// Direct delete button handler.
-	$('#delete-passkey-btn').on('click', function(e) {
-		e.preventDefault();
-
-		var \$button = $(this);
-		var credentialId = \$button.data('credential-id');
-
-		if (!credentialId) {
-			alert('No credential ID found. Please refresh the page and try again.');
-			return;
-		}
-
-		var warningMessage = hasEncryptedData ? strings.warningDataLoss : strings.warningSimple;
-
-		if (!confirm(warningMessage)) {
-			return;
-		}
-
-		\$button.prop('disabled', true).text(strings.deleting);
-
-		$.ajax({
-			url: ajaxUrl,
-			type: 'POST',
-			data: {
-				action: 'passkey_delete',
-				nonce: nonce,
-				credential_id: credentialId
-			},
-			success: function(response) {
-				if (response.success) {
-					$('#passkey-status-message').html('<div class="notice notice-success inline"><p>' + strings.deleteSuccess + '</p></div>');
-					setTimeout(function() {
-						window.location.reload();
-					}, 1500);
-				} else {
-					alert(strings.deleteFailed + ' ' + (response.data || 'Unknown error'));
-					\$button.prop('disabled', false).text(strings.deletePasskey);
-				}
-			},
-			error: function(xhr, status, error) {
-				console.error('Delete error:', error);
-				alert(strings.networkError);
-				\$button.prop('disabled', false).text(strings.deletePasskey);
-			}
-		});
-	});
-
-	// Handle register button inline with full implementation.
-	$('#register-passkey-btn').on('click', async function(e) {
-		e.preventDefault();
-
-		var \$button = $(this);
-		var \$spinner = $('.passkey-registration-form .spinner');
-		var \$statusMessage = $('#passkey-status-message');
-
-		// Clear any previous messages.
-		\$statusMessage.empty();
-
-		// Check WebAuthn support.
-		if (!window.PublicKeyCredential) {
-			\$statusMessage.html('<div class="notice notice-error inline"><p>' + strings.noWebAuthn + '</p></div>');
-			return;
-		}
-
-		\$button.prop('disabled', true);
-		\$spinner.addClass('is-active');
-
-		try {
-			// Start registration to get challenge.
-			const startResponse = await $.ajax({
-				url: ajaxUrl,
-				type: 'POST',
-				data: {
-					action: 'passkey_start_registration',
-					nonce: nonce
-				}
-			});
-
-			if (!startResponse.success) {
-				throw new Error(startResponse.data || 'Failed to start registration');
-			}
-
-			const options = startResponse.data;
-
-			// Convert base64 strings to ArrayBuffers.
-			options.challenge = base64ToArrayBuffer(options.challenge);
-			options.user.id = base64ToArrayBuffer(options.user.id);
-
-			// Create credential.
-			const credential = await navigator.credentials.create({
-				publicKey: options
-			});
-
-			// Initialize the zero-knowledge setup.
-			const initResponse = await $.ajax({
-				url: ajaxUrl,
-				type: 'POST',
-				data: {
-					action: 'passkey_init_setup',
-					nonce: nonce,
-					credential_id: arrayBufferToBase64(credential.rawId)
-				}
-			});
-
-			// Check initialization response.
-			if (!initResponse.success) {
-				if (typeof initResponse.data === 'string' && initResponse.data.includes('Already initialized')) {
-					console.warn('Keys already initialized, continuing with registration');
-				} else {
-					throw new Error(initResponse.data || 'Failed to initialize encryption');
-				}
-			}
-
-			// Complete passkey registration with auto-generated name.
-			let publicKeyData;
-			if (credential.response.publicKey) {
-				publicKeyData = arrayBufferToBase64(credential.response.publicKey);
-			} else if (credential.response.getPublicKey) {
-				publicKeyData = arrayBufferToBase64(credential.response.getPublicKey());
-			} else {
-				publicKeyData = 'not_available';
-			}
-
-			const completeResponse = await $.ajax({
-				url: ajaxUrl,
-				type: 'POST',
-				data: {
-					action: 'passkey_complete_registration',
-					nonce: nonce,
-					name: 'Passkey ' + new Date().toLocaleDateString(),
-					credential_id: arrayBufferToBase64(credential.rawId),
-					public_key: publicKeyData,
-					client_data: arrayBufferToBase64(credential.response.clientDataJSON),
-					attestation: arrayBufferToBase64(credential.response.attestationObject)
-				}
-			});
-
-			if (!completeResponse.success) {
-				throw new Error(completeResponse.data || 'Failed to complete registration');
-			}
-
-			\$statusMessage.html('<div class="notice notice-success inline"><p>' + strings.registerSuccess + '</p></div>');
-
-			// Reload page after success.
-			setTimeout(function() {
-				window.location.reload();
-			}, 1500);
-
-		} catch (error) {
-			console.error('Registration error:', error);
-			\$statusMessage.html('<div class="notice notice-error inline"><p>' + error.message + '</p></div>');
-			\$button.prop('disabled', false);
-			\$spinner.removeClass('is-active');
-		}
-	});
-
-	// Helper functions for ArrayBuffer conversion.
-	function base64ToArrayBuffer(base64) {
-		const binaryString = atob(base64);
-		const bytes = new Uint8Array(binaryString.length);
-		for (let i = 0; i < binaryString.length; i++) {
-			bytes[i] = binaryString.charCodeAt(i);
-		}
-		return bytes.buffer;
-	}
-
-	function arrayBufferToBase64(buffer) {
-		const bytes = new Uint8Array(buffer);
-		let binary = '';
-		for (let i = 0; i < bytes.length; i++) {
-			binary += String.fromCharCode(bytes[i]);
-		}
-		return btoa(binary);
-	}
-});
-JAVASCRIPT;
-
-		wp_add_inline_script( 'slc-passkey-js', $script );
+		// Use wp_localize_script for proper escaping.
+		wp_localize_script( 'slc-passkey-pro-js', 'secureLoginPasskeyData', $script_data );
 	}
 
 	/**
@@ -433,24 +241,7 @@ JAVASCRIPT;
 					
 					<div id="passkey-status-message"></div>
 				</div>
-			</div>
-			
-			<!-- Critical Warning About Passkey Loss -->
-			<div class="seculoco-alert seculoco-alert-warning">
-				<span class="seculoco-alert-icon">⚠️</span>
-				<div class="seculoco-alert-content">
-					<div class="seculoco-alert-title"><?php esc_html_e( 'Important: No Recovery Options', 'secure-login-collector' ); ?></div>
-					<div class="seculoco-alert-message">
-						<p><?php esc_html_e( 'If you lose access to your passkey:', 'secure-login-collector' ); ?></p>
-						<ul>
-							<li><?php esc_html_e( 'All data encrypted with that passkey becomes permanently inaccessible', 'secure-login-collector' ); ?></li>
-							<li><?php esc_html_e( 'There is NO recovery mechanism or master password', 'secure-login-collector' ); ?></li>
-							<li><?php esc_html_e( 'Even site administrators cannot decrypt the data', 'secure-login-collector' ); ?></li>
-						</ul>
-						<p><strong><?php esc_html_e( 'Keep your passkey device secure and consider having a backup authentication method.', 'secure-login-collector' ); ?></strong></p>
-					</div>
-				</div>
-			</div>
+			</div>			
 		</div>
 
 		<?php

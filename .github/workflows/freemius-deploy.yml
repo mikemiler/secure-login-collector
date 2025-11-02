@@ -27,7 +27,7 @@ jobs:
           BUILD_DIR="/tmp/plugin-build-${{ steps.get_version.outputs.version }}"
           mkdir -p "$BUILD_DIR/secure-login-collector"
 
-          # Copy plugin files (exclude dev files)
+          # Copy plugin files (exclude dev files only - Freemius handles premium/free separation)
           rsync -av \
             --exclude='.git*' \
             --exclude='node_modules' \
@@ -42,6 +42,7 @@ jobs:
             --exclude='package-lock.json' \
             --exclude='.github' \
             --exclude='deploy' \
+            --exclude='docs' \
             ./ "$BUILD_DIR/secure-login-collector/"
 
           # Create ZIP file in workflow root (not in plugin structure)

@@ -40,17 +40,8 @@ class Seculoco_Settings_Manager_Pro {
 		// Add pro settings sections.
 		add_action( 'seculoco_add_settings_sections', array( $this, 'add_pro_settings_sections' ) );
 
-		// Add pro key management messages in encryption section.
-		add_action( 'seculoco_encryption_key_management_messages', array( $this, 'add_pro_key_management_messages' ) );
-
-		// Add pro export button in encryption section.
-		add_action( 'seculoco_encryption_export_buttons', array( $this, 'add_pro_export_button' ) );
-
-		// Add passkey management section to encryption settings.
-		add_action( 'seculoco_encryption_section_after_keys', array( $this, 'add_passkey_management_section' ) );
-
-		// Remove upgrade notices (since this is pro).
-		add_filter( 'seculoco_show_pro_upgrade', '__return_false' );
+		// Replace free version's pro column with actual pro content.
+		add_filter( 'seculoco_encryption_pro_column', array( $this, 'get_pro_encryption_column' ) );
 	}
 
 	/**
@@ -135,6 +126,83 @@ class Seculoco_Settings_Manager_Pro {
 	}
 
 	/**
+	 * Get the pro encryption column HTML (right column).
+	 * Replaces the upgrade notice with actual pro features.
+	 *
+	 * @return string HTML for the pro column.
+	 */
+	public function get_pro_encryption_column() {
+		ob_start();
+		?>
+		<div class="seculoco-encryption-column">
+			
+			<?php $this->render_pro_key_status(); ?>
+			<?php $this->render_pro_export_button(); ?>
+			<?php $this->render_passkey_management(); ?>
+		</div>
+		<?php
+		return ob_get_clean();
+	}
+
+	/**
+	 * Render pro key status box.
+	 */
+	private function render_pro_key_status() {
+		$pro_public_key     = get_option( 'seculoco_public_key_pro' );
+		$pro_private_key    = get_option( 'seculoco_wrapped_private_key_pro' );
+		$pro_keys_active    = get_option( 'seculoco_pro_keys_active', false );
+		$passkey_registered = get_option( 'seculoco_passkey_registered', false );
+
+		echo '<div style="background: white; border: 1px solid #c3c4c7; border-radius: 4px; padding: 15px; margin-bottom: 15px;">';
+		echo '<div style="display: flex; justify-content: space-between; align-items: center;">';
+		echo '<div>';
+		echo '<strong style="font-size: 14px;">' . esc_html__( 'Ultra-Secure RSA Keys', 'secure-login-collector' ) . '</strong>';
+		echo '<p style="margin: 5px 0 0; color: #666; font-size: 12px;">' . esc_html__( 'Passkey-protected RSA-2048 for ultra-secure encryption', 'secure-login-collector' ) . '</p>';
+		echo '</div>';
+
+		if ( $pro_public_key && $pro_private_key && $pro_keys_active ) {
+			echo '<div style="text-align: right;">';
+			echo '<span style="background: #d1ecf1; color: #0c5460; padding: 4px 12px; border-radius: 3px; font-size: 12px; font-weight: 600;">' . esc_html__( 'ACTIVE', 'secure-login-collector' ) . '</span>';
+			echo '<p style="margin: 5px 0 0; font-size: 11px; color: #666;">' . esc_html__( 'Using passkey protection', 'secure-login-collector' ) . '</p>';
+			echo '</div>';
+		} elseif ( $passkey_registered ) {
+			echo '<div style="text-align: right;">';
+			echo '<span style="background: #fff3cd; color: #856404; padding: 4px 12px; border-radius: 3px; font-size: 12px; font-weight: 600;">' . esc_html__( 'NEEDS INITIALIZATION', 'secure-login-collector' ) . '</span>';
+			echo '<p style="margin: 5px 0 0; font-size: 11px; color: #666;">' . esc_html__( 'Passkey registered but keys not initialized', 'secure-login-collector' ) . '</p>';
+			echo '</div>';
+		} else {
+			echo '<div style="text-align: right;">';
+			echo '<span style="background: #f8f9fa; color: #6c757d; padding: 4px 12px; border-radius: 3px; font-size: 12px; font-weight: 600;">' . esc_html__( 'NOT AVAILABLE', 'secure-login-collector' ) . '</span>';
+			echo '<p style="margin: 5px 0 0; font-size: 11px; color: #666;">' . esc_html__( 'Register passkey to enable', 'secure-login-collector' ) . '</p>';
+			echo '</div>';
+		}
+		echo '</div>';
+		echo '</div>';
+	}
+
+	/**
+	 * Render pro export button.
+	 */
+	private function render_pro_export_button() {
+		$pro_public_key = get_option( 'seculoco_public_key_pro' );
+		if ( $pro_public_key ) {
+			echo '<p>';
+			echo '<button type="button" class="button button-secondary" id="export-pro-public-key">' . esc_html__( 'Export Pro Public Key', 'secure-login-collector' ) . '</button>';
+			echo '</p>';
+		}
+	}
+
+	/**
+	 * Render passkey management section.
+	 */
+	private function render_passkey_management() {
+		if ( class_exists( 'Passkey_Manager' ) ) {
+			$passkey_manager = new Passkey_Manager();
+			$passkey_manager->render_passkey_section();
+		}
+	}
+
+	/**
 	 * Add pro key management messages.
 	 */
 	public function add_pro_key_management_messages() {
@@ -160,84 +228,7 @@ class Seculoco_Settings_Manager_Pro {
 		}
 	}
 
-	/**
-	 * Add passkey management section after key status.
-	 */
-	public function add_passkey_management_section() {
-		// Get pro key status
-		$pro_public_key     = get_option( 'seculoco_public_key_pro' );
-		$pro_private_key    = get_option( 'seculoco_wrapped_private_key_pro' );
-		$pro_keys_active    = get_option( 'seculoco_pro_keys_active', false );
-		$passkey_registered = get_option( 'seculoco_passkey_registered', false );
-
-		// Determine status
-		if ( $pro_public_key && $pro_private_key && $pro_keys_active ) {
-			$status = 'active';
-			$status_label = __( 'ACTIVE', 'secure-login-collector' );
-			$status_style = 'background: #d1ecf1; color: #0c5460;';
-		} elseif ( $passkey_registered ) {
-			$status = 'needs-init';
-			$status_label = __( 'NEEDS INIT', 'secure-login-collector' );
-			$status_style = 'background: #fff3cd; color: #856404;';
-		} else {
-			$status = 'not-available';
-			$status_label = __( 'NOT AVAILABLE', 'secure-login-collector' );
-			$status_style = 'background: #f8f9fa; color: #6c757d;';
-		}
-
-		// Display pro encryption benefit in grid with status badge
-		echo '<div class="seculoco-passkey-benefit" style="border-color: var(--seculoco-success); margin-top: 0;">';
-		echo '<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">';
-		echo '<span class="seculoco-badge slc-badge-success">ULTRA-SECURE</span> ';
-		echo '<span style="' . esc_attr( $status_style ) . ' padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600;">' . esc_html( $status_label ) . '</span>';
-		echo '</div>';
-		echo '<span class="seculoco-passkey-benefit-icon"></span>';
-		echo '<div class="seculoco-passkey-benefit-text">';
-		echo '<div class="seculoco-passkey-benefit-title">';
-		echo esc_html__( 'Passkey-Protected Encryption', 'secure-login-collector' );
-		echo '</div>';
-		echo '<div class="seculoco-passkey-benefit-desc">' . esc_html__( 'Wraps private keys with passkey authentication. True zero-knowledge - server cannot decrypt without your physical device.', 'secure-login-collector' ) . '</div>';
-		echo '</div>';
-		echo '</div>';
-
-		// Display pro key status.
-		$pro_public_key     = get_option( 'seculoco_public_key_pro' );
-		$pro_private_key    = get_option( 'seculoco_wrapped_private_key_pro' );
-		$pro_keys_active    = get_option( 'seculoco_pro_keys_active', false );
-		$passkey_registered = get_option( 'seculoco_passkey_registered', false );
-
-		echo '<div style="background: white; border: 1px solid #c3c4c7; border-radius: 4px; padding: 15px; margin-top: 15px;">';
-		echo '<div style="display: flex; justify-content: space-between; align-items: center;">';
-		echo '<div>';
-		echo '<strong style="font-size: 14px;">' . esc_html__( 'Ultra-Secure RSA Keys', 'secure-login-collector' ) . '</strong>';
-		echo '<p style="margin: 5px 0 0; color: #666; font-size: 12px;">' . esc_html__( 'Passkey-protected RSA-2048 for ultra-secure encryption', 'secure-login-collector' ) . '</p>';
-		echo '</div>';
-
-		if ( $pro_public_key && $pro_private_key && $pro_keys_active ) {
-			echo '<div style="text-align: right;">';
-			echo '<span style="background: #d1ecf1; color: #0c5460; padding: 4px 12px; border-radius: 3px; font-size: 12px; font-weight: 600;">' . esc_html__( 'ACTIVE', 'secure-login-collector' ) . '</span>';
-			echo '<p style="margin: 5px 0 0; font-size: 11px; color: #666;">' . esc_html__( 'Using passkey protection', 'secure-login-collector' ) . '</p>';
-			echo '</div>';
-		} elseif ( $passkey_registered ) {
-			echo '<div style="text-align: right;">';
-			echo '<span style="background: #fff3cd; color: #856404; padding: 4px 12px; border-radius: 3px; font-size: 12px; font-weight: 600;">' . esc_html__( 'NEEDS INITIALIZATION', 'secure-login-collector' ) . '</span>';
-			echo '<p style="margin: 5px 0 0; font-size: 11px; color: #666;">' . esc_html__( 'Passkey registered but keys not initialized', 'secure-login-collector' ) . '</p>';
-			echo '</div>';
-		} else {
-			echo '<div style="text-align: right;">';
-			echo '<span style="background: #f8f9fa; color: #6c757d; padding: 4px 12px; border-radius: 3px; font-size: 12px; font-weight: 600;">' . esc_html__( 'NOT AVAILABLE', 'secure-login-collector' ) . '</span>';
-			echo '<p style="margin: 5px 0 0; font-size: 11px; color: #666;">' . esc_html__( 'Register passkey to enable', 'secure-login-collector' ) . '</p>';
-			echo '</div>';
-		}
-		echo '</div>';
-		echo '</div>';
-
-		// Render passkey management section.
-		if ( class_exists( 'Passkey_Manager' ) ) {
-			$passkey_manager = new Passkey_Manager();
-			$passkey_manager->render_passkey_section();
-		}
-	}
+	
 
 	/**
 	 * Sanitize boolean values.
