@@ -41,7 +41,7 @@ function seculoco_fs_uninstall_cleanup() {
 		// 1. Delete the custom database table.
 		$table_name = $wpdb->prefix . 'seculoco_data';
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
-		$result = $wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS %i', $table_name ) );
+		$result = $wpdb->query( 'DROP TABLE IF EXISTS `' . esc_sql( $table_name ) . '`' );
 
 		if ( false === $result ) {
 			if ( defined( 'WP_DEBUG' ) && WP_DEBUG === true ) {
@@ -120,9 +120,11 @@ function seculoco_fs_uninstall_cleanup() {
 		// 4. Delete any transients that might exist.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$transients_result = $wpdb->query(
-			"DELETE FROM {$wpdb->options}
-			WHERE option_name LIKE '_transient_secure_login_%'
-			OR option_name LIKE '_transient_timeout_secure_login_%'"
+			$wpdb->prepare(
+				"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s",
+				'_transient_seculoco_%',
+				'_transient_timeout_seculoco_%'
+			)
 		);
 
 		if ( false === $transients_result && defined( 'WP_DEBUG' ) && WP_DEBUG === true ) {
