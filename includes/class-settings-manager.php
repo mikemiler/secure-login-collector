@@ -482,27 +482,15 @@ class Seculoco_Settings_Manager {
 					</div>
 					<div class="seculoco-passkey-benefit-desc">
 						<?php echo esc_html__( 'Passkey-protected encryption with WebAuthn/FIDO2. True zero-knowledge - server cannot decrypt without your physical device.', 'secure-login-collector' ); ?>
+						<br />
+						<a href="<?php echo esc_url( $upgrade_url ); ?>" class="button button-primary">
+							<?php echo esc_html__( 'Upgrade to Pro', 'secure-login-collector' ); ?>
+						</a>
 					</div>
 				</div>
 			</div>
-
-			<!-- Pro features placeholder -->
-			<div style="background: white; border: 1px solid #c3c4c7; border-radius: 4px; padding: 15px; margin-bottom: 15px; opacity: 0.7;">
-				<div style="text-align: center; color: #666;">
-					<p style="margin: 0 0 10px 0; font-size: 14px;">
-						<strong><?php echo esc_html__( 'Pro Features Include:', 'secure-login-collector' ); ?></strong>
-					</p>
-					<ul style="list-style: none; padding: 0; margin: 0 0 15px 0; text-align: left;">
-						<li style="padding: 5px 0;">🔐 <?php echo esc_html__( 'Passkey-protected RSA keys', 'secure-login-collector' ); ?></li>
-						<li style="padding: 5px 0;">🛡️ <?php echo esc_html__( 'True zero-knowledge encryption', 'secure-login-collector' ); ?></li>
-						<li style="padding: 5px 0;">🔑 <?php echo esc_html__( 'WebAuthn/FIDO2 authentication', 'secure-login-collector' ); ?></li>
-						<li style="padding: 5px 0;">📱 <?php echo esc_html__( 'Hardware security key support', 'secure-login-collector' ); ?></li>
-					</ul>
-					<a href="<?php echo esc_url( $upgrade_url ); ?>" class="button button-primary">
-						<?php echo esc_html__( 'Upgrade to Pro', 'secure-login-collector' ); ?>
-					</a>
-				</div>
-			</div>
+			
+			
 		</div>
 		<?php
 		return ob_get_clean();
