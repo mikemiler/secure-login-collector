@@ -182,7 +182,14 @@ class SecureLoginCollector {
 	private function init_components() {
 		$this->encryption_handler = new Seculoco_Encryption_Handler_V2();
 		$this->database_manager   = new Seculoco_Database_Manager( $this->table_name );
-		$this->admin_interface    = new Seculoco_Admin_Interface( $this->table_name, $this->encryption_handler, $this->database_manager );
+
+		// Initialize admin interface - use premium class if available.
+		if ( class_exists( 'Seculoco_Admin_Interface_Premium' ) ) {
+			$this->admin_interface = new Seculoco_Admin_Interface_Premium( $this->table_name, $this->encryption_handler, $this->database_manager );
+		} else {
+			$this->admin_interface = new Seculoco_Admin_Interface( $this->table_name, $this->encryption_handler, $this->database_manager );
+		}
+
 		$this->frontend_handler   = new Seculoco_Frontend_Handler( $this->table_name, $this->encryption_handler, $this->database_manager );
 		$this->settings_manager   = new Seculoco_Settings_Manager( $this->encryption_handler );
 

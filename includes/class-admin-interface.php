@@ -115,7 +115,7 @@ class Seculoco_List_Table extends WP_List_Table {
 		$bulk_actions = array(
 			'delete'           => __( 'Delete', 'secure-login-collector' ),
 		);
-		return apply_filters('suculoco_bulk_actions', $bulk_actions);
+		return apply_filters('seculoco_bulk_actions', $bulk_actions);
 	}
 
 	/**
@@ -314,9 +314,9 @@ class Seculoco_List_Table extends WP_List_Table {
 				// Free version encryption - show as inactive if passkey is active.
 				if ( $pro_keys_active ) {
 					return array(
-						'name'        => __( 'Inactive', 'secure-login-collector' ),
-						'class'       => 'encryption-inactive',
-						'description' => __( 'Passkey encryption is active. Free encryption is disabled.', 'secure-login-collector' ),
+						'name'        => __( 'Secure', 'secure-login-collector' ),
+						'class'       => 'encryption-rsa',
+						'description' => __( 'Free version encryption. Passkey encryption available for new entries.', 'secure-login-collector' ),
 					);
 				}
 				return array(
@@ -340,9 +340,9 @@ class Seculoco_List_Table extends WP_List_Table {
 				// Free version encryption - show as inactive if passkey is active.
 				if ( $pro_keys_active ) {
 					return array(
-						'name'        => __( 'Inactive', 'secure-login-collector' ),
-						'class'       => 'encryption-inactive',
-						'description' => __( 'Passkey encryption is active. Free encryption is disabled.', 'secure-login-collector' ),
+						'name'        => __( 'Secure', 'secure-login-collector' ),
+						'class'       => 'encryption-rsa',
+						'description' => __( 'Free version encryption. Passkey encryption available for new entries.', 'secure-login-collector' ),
 					);
 				}
 				return array(
@@ -354,9 +354,9 @@ class Seculoco_List_Table extends WP_List_Table {
 				// Free version encryption - show as inactive if passkey is active.
 				if ( $pro_keys_active ) {
 					return array(
-						'name'        => __( 'Inactive', 'secure-login-collector' ),
-						'class'       => 'encryption-inactive',
-						'description' => __( 'Passkey encryption is active. Free encryption is disabled.', 'secure-login-collector' ),
+						'name'        => __( 'Secure', 'secure-login-collector' ),
+						'class'       => 'encryption-rsa',
+						'description' => __( 'Free version encryption. Passkey encryption available for new entries.', 'secure-login-collector' ),
 					);
 				}
 				return array(
@@ -629,16 +629,12 @@ class Seculoco_Admin_Interface {
 		// Register AJAX handlers.
 		// Decryption is handled client-side only - server never decrypts.
 		add_action( 'wp_ajax_seculoco_get_encrypted_entry', array( $this, 'handle_get_encrypted_entry' ) );
-		add_action( 'wp_ajax_passkey_get_challenge', array( $this, 'handle_passkey_challenge' ) );
 		add_action( 'wp_ajax_seculoco_get_encryption_info', array( $this, 'handle_get_encryption_info' ) );
 		add_action( 'wp_ajax_seculoco_delete_entry', array( $this, 'handle_delete_ajax' ) );
 		add_action( 'wp_ajax_seculoco_extend_entry', array( $this, 'handle_extend_ajax' ) );
 		add_action( 'wp_ajax_seculoco_save_manual_entry', array( $this, 'handle_save_manual_login_data' ) );
 		add_action( 'wp_ajax_seculoco_update_metadata', array( $this, 'handle_update_metadata_ajax' ) );
 		add_action( 'wp_ajax_seculoco_bulk_export', array( $this, 'handle_bulk_export_ajax' ) );
-		add_action( 'wp_ajax_seculoco_bulk_decrypt_passkey', array( $this, 'handle_bulk_decrypt_with_passkey_ajax' ) );
-		add_action( 'wp_ajax_seculoco_auth_passkey_decrypt', array( $this, 'handle_passkey_auth_for_decrypt' ) );
-		add_action( 'wp_ajax_seculoco_fix_passkey_flag', array( $this, 'handle_fix_passkey_flag' ) );
 
 		// Add screen option for items per page.
 		add_action( 'load-toplevel_page_secure-login-collector', array( $this, 'add_screen_options' ) );
@@ -720,42 +716,43 @@ class Seculoco_Admin_Interface {
 		);
 
 		// Localize script with AJAX data.
-		wp_localize_script(
-			'secure-login-admin-js',
-			'seculocoAjax',
-			array(
-				'ajaxurl' => admin_url( 'admin-ajax.php' ),
-				'nonce'   => wp_create_nonce( 'seculoco_nonce' ),
-				'strings' => array(
-					'not_provided'                  => __( 'Not provided', 'secure-login-collector' ),
-					'saving'                        => __( 'Saving...', 'secure-login-collector' ),
-					'save_failed'                   => __( 'Save failed: ', 'secure-login-collector' ),
-					'unknown_error'                 => __( 'Unknown error', 'secure-login-collector' ),
-					'network_error_save'            => __( 'Network error occurred during save.', 'secure-login-collector' ),
-					'requesting_passkey'            => __( 'Requesting passkey...', 'secure-login-collector' ),
-					'passkey_setup_failed'          => __( 'Passkey authentication setup failed: ', 'secure-login-collector' ),
-					'decrypt_data'                  => __( 'Decrypt data', 'secure-login-collector' ),
-					'network_error_passkey'         => __( 'Network error occurred during passkey setup.', 'secure-login-collector' ),
-					'pro_no_passkey_continue'       => __( 'Pro version detected but no passkey registered. Continue with traditional decryption?', 'secure-login-collector' ),
-					'enter_encryption_key'          => __( 'This entry was created before automatic key reconstruction was available. Please enter the encryption key manually:', 'secure-login-collector' ),
-					'decrypting'                    => __( 'Decrypting...', 'secure-login-collector' ),
-					'data_decrypted'                => __( 'Data decrypted', 'secure-login-collector' ),
-					'decryption_failed'             => __( 'Decryption failed: ', 'secure-login-collector' ),
-					'network_error_decryption'      => __( 'Network error occurred during decryption.', 'secure-login-collector' ),
-					'error_processing_decryption'   => __( 'Error processing decryption: ', 'secure-login-collector' ),
-					'authenticate_with_passkey'     => __( 'Authenticate with passkey...', 'secure-login-collector' ),
-					'webauthn_not_supported'        => __( 'WebAuthn/Passkeys are not supported in this browser.', 'secure-login-collector' ),
-					'verifying_passkey'             => __( 'Verifying passkey and decrypting...', 'secure-login-collector' ),
-					'data_decrypted_passkey'        => __( 'Data decrypted with passkey', 'secure-login-collector' ),
-					'passkey_decryption_failed'     => __( 'Passkey decryption failed: ', 'secure-login-collector' ),
-					'network_error_passkey_decrypt' => __( 'Network error occurred during passkey decryption.', 'secure-login-collector' ),
-					'passkey_auth_failed'           => __( 'Passkey authentication failed:', 'secure-login-collector' ),
-					'confirm_extend_retention'      => __( 'Are you sure you want to extend the retention period for this entry?', 'secure-login-collector' ),
-					'extending'                     => __( 'Extending...', 'secure-login-collector' ),
-					'retention_extended'            => __( 'Retention period extended successfully.', 'secure-login-collector' ),
-				),
-			)
+		$ajax_data = array(
+			'ajaxurl' => admin_url( 'admin-ajax.php' ),
+			'nonce'   => wp_create_nonce( 'seculoco_nonce' ),
+			'strings' => array(
+				'not_provided'                  => __( 'Not provided', 'secure-login-collector' ),
+				'saving'                        => __( 'Saving...', 'secure-login-collector' ),
+				'save_failed'                   => __( 'Save failed: ', 'secure-login-collector' ),
+				'unknown_error'                 => __( 'Unknown error', 'secure-login-collector' ),
+				'network_error_save'            => __( 'Network error occurred during save.', 'secure-login-collector' ),
+				'requesting_passkey'            => __( 'Requesting passkey...', 'secure-login-collector' ),
+				'passkey_setup_failed'          => __( 'Passkey authentication setup failed: ', 'secure-login-collector' ),
+				'decrypt_data'                  => __( 'Decrypt data', 'secure-login-collector' ),
+				'network_error_passkey'         => __( 'Network error occurred during passkey setup.', 'secure-login-collector' ),
+				'pro_no_passkey_continue'       => __( 'Pro version detected but no passkey registered. Continue with traditional decryption?', 'secure-login-collector' ),
+				'enter_encryption_key'          => __( 'This entry was created before automatic key reconstruction was available. Please enter the encryption key manually:', 'secure-login-collector' ),
+				'decrypting'                    => __( 'Decrypting...', 'secure-login-collector' ),
+				'data_decrypted'                => __( 'Data decrypted', 'secure-login-collector' ),
+				'decryption_failed'             => __( 'Decryption failed: ', 'secure-login-collector' ),
+				'network_error_decryption'      => __( 'Network error occurred during decryption.', 'secure-login-collector' ),
+				'error_processing_decryption'   => __( 'Error processing decryption: ', 'secure-login-collector' ),
+				'authenticate_with_passkey'     => __( 'Authenticate with passkey...', 'secure-login-collector' ),
+				'webauthn_not_supported'        => __( 'WebAuthn/Passkeys are not supported in this browser.', 'secure-login-collector' ),
+				'verifying_passkey'             => __( 'Verifying passkey and decrypting...', 'secure-login-collector' ),
+				'data_decrypted_passkey'        => __( 'Data decrypted with passkey', 'secure-login-collector' ),
+				'passkey_decryption_failed'     => __( 'Passkey decryption failed: ', 'secure-login-collector' ),
+				'network_error_passkey_decrypt' => __( 'Network error occurred during passkey decryption.', 'secure-login-collector' ),
+				'passkey_auth_failed'           => __( 'Passkey authentication failed:', 'secure-login-collector' ),
+				'confirm_extend_retention'      => __( 'Are you sure you want to extend the retention period for this entry?', 'secure-login-collector' ),
+				'extending'                     => __( 'Extending...', 'secure-login-collector' ),
+				'retention_extended'            => __( 'Retention period extended successfully.', 'secure-login-collector' ),
+			),
 		);
+
+		wp_localize_script( 'secure-login-admin-js', 'seculocoAjax', $ajax_data );
+
+		// Also provide as seculocoAdmin for backward compatibility with premium scripts.
+		wp_localize_script( 'secure-login-admin-js', 'seculocoAdmin', $ajax_data );
 
 		// Localize script with configuration data.
 		$admin_config = array(
@@ -955,19 +952,26 @@ class Seculoco_Admin_Interface {
 			return;
 		}
 
-		// Get the export request from transient.
-		$export_data = get_transient( 'seculoco_bulk_export_' . get_current_user_id() );
+		// Get entry IDs and manager - either from POST (new method) or transient (legacy).
+		if ( isset( $_POST['entry_ids'] ) && isset( $_POST['manager'] ) ) {
+			// New method: entry IDs passed directly from JavaScript.
+			$ids     = isset( $_POST['entry_ids'] ) ? array_map( 'intval', wp_unslash( $_POST['entry_ids'] ) ) : array();
+			$manager = isset( $_POST['manager'] ) ? sanitize_text_field( wp_unslash( $_POST['manager'] ) ) : '';
+		} else {
+			// Legacy method: read from transient (created by form submission).
+			$export_data = get_transient( 'seculoco_bulk_export_' . get_current_user_id() );
 
-		if ( ! $export_data ) {
-			wp_send_json_error( __( 'Export request not found or expired.', 'secure-login-collector' ) );
-			return;
+			if ( ! $export_data ) {
+				wp_send_json_error( __( 'Export request not found or expired.', 'secure-login-collector' ) );
+				return;
+			}
+
+			$manager = $export_data['manager'];
+			$ids     = $export_data['ids'];
+
+			// Clean up the transient.
+			delete_transient( 'seculoco_bulk_export_' . get_current_user_id() );
 		}
-
-		$manager = $export_data['manager'];
-		$ids     = $export_data['ids'];
-
-		// Clean up the transient.
-		delete_transient( 'seculoco_bulk_export_' . get_current_user_id() );
 
 		// Collect export data.
 		$csv_data = array();
@@ -978,20 +982,19 @@ class Seculoco_Admin_Interface {
 				continue;
 			}
 
-			$metadata = json_decode( $row->metadata, true );
+			$metadata        = json_decode( $row->metadata, true );
+			$encryption_type = $metadata['encryption_type'] ?? 'aes-rsa-v2';
 
-			// For bulk export, we need to pass encrypted data to be decrypted client-side.
+			// CRITICAL: Server NEVER decrypts. Always return encrypted packages for client-side decryption.
+			// This maintains zero-knowledge architecture for both FREE and PRO entries.
 			$csv_data[] = array(
 				'id'                => $id,
 				'name'              => $metadata['name'] ?? 'Unknown',
 				'website'           => $metadata['login_url'] ?? $metadata['service_name'] ?? '',
-				'username'          => '[ENCRYPTED - Decrypt client-side]',
-				'password'          => '[ENCRYPTED - Decrypt client-side]',
-				'notes'             => 'Entry ID: ' . $id . ' - Requires client-side decryption',
 				'encrypted_data'    => $row->encrypted_data,
 				'encrypted_aes_key' => $row->encrypted_aes_key ?? null,
 				'iv'                => $row->iv ?? null,
-				'encryption_type'   => $row->encryption_type ?? 'standard',
+				'encryption_type'   => $encryption_type,
 			);
 		}
 
@@ -1001,164 +1004,6 @@ class Seculoco_Admin_Interface {
 				'data'    => $csv_data,
 				/* translators: %d: number of entries */
 				'message' => sprintf( __( 'Bulk export prepared for %d entries.', 'secure-login-collector' ), count( $csv_data ) ),
-			)
-		);
-	}
-
-	/**
-	 * Handle bulk decrypt with passkey AJAX request.
-	 */
-	public function handle_bulk_decrypt_with_passkey_ajax() {
-		// Verify nonce for security.
-		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) ), 'seculoco_nonce' ) ) {
-			wp_send_json_error( __( 'Invalid security token.', 'secure-login-collector' ) );
-			return;
-		}
-
-		// Check if user has admin capabilities.
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( __( 'Insufficient permissions.', 'secure-login-collector' ) );
-			return;
-		}
-
-		// Check if pro features are available.
-		$can_use_passkey = apply_filters( 'seculoco_can_use_passkey_decrypt', false );
-		if ( ! $can_use_passkey ) {
-			wp_send_json_error( __( 'Pro version required.', 'secure-login-collector' ) );
-			return;
-		}
-
-		if ( ! get_option( 'seculoco_passkey_registered', false ) ) {
-			wp_send_json_error( __( 'Passkey not registered.', 'secure-login-collector' ) );
-			return;
-		}
-
-		$entry_ids        = isset( $_POST['entry_ids'] ) ? array_map( 'intval', wp_unslash( $_POST['entry_ids'] ) ) : array();
-		$manager          = isset( $_POST['manager'] ) ? sanitize_text_field( wp_unslash( $_POST['manager'] ) ) : '';
-		$passkey_verified = isset( $_POST['passkey_verified'] ) && sanitize_text_field( wp_unslash( $_POST['passkey_verified'] ) ) === 'true';
-
-		if ( empty( $manager ) ) {
-			wp_send_json_error( __( 'Missing export manager.', 'secure-login-collector' ) );
-			return;
-		}
-
-		// If passkey is not yet verified, validate entry_ids from POST and store the request.
-		if ( ! $passkey_verified ) {
-			if ( empty( $entry_ids ) ) {
-				wp_send_json_error( __( 'No entries selected for export.', 'secure-login-collector' ) );
-				return;
-			}
-
-			set_transient(
-				'seculoco_bulk_decrypt_request_' . get_current_user_id(),
-				array(
-					'entry_ids' => $entry_ids,
-					'manager'   => $manager,
-				),
-				300
-			); // 5 minutes.
-
-			/* translators: 1: number of entries, 2: manager format name */
-			wp_send_json_success(
-				array(
-					'requires_passkey' => true,
-					'entry_count'      => count( $entry_ids ),
-					'manager'          => $manager,
-					// translators: %1$d: number of entries selected, %2$s: password manager name.
-					'message'          => sprintf( __( 'You have selected %1$d entries for bulk export. All selected entries will be decrypted using your passkey and then exported to %2$s format.', 'secure-login-collector' ), count( $entry_ids ), $manager ),
-				)
-			);
-			return;
-		}
-
-		// Passkey is verified, proceed with bulk decryption.
-		$signature = isset( $_POST['signature'] ) ? sanitize_text_field( wp_unslash( $_POST['signature'] ) ) : '';
-		if ( empty( $signature ) ) {
-			wp_send_json_error( __( 'Missing passkey signature.', 'secure-login-collector' ) );
-			return;
-		}
-
-		// Get the stored request.
-		$bulk_request = get_transient( 'seculoco_bulk_decrypt_request_' . get_current_user_id() );
-		if ( ! $bulk_request ) {
-			wp_send_json_error( __( 'Bulk decrypt request not found or expired.', 'secure-login-collector' ) );
-			return;
-		}
-
-		// Clean up the transient.
-		delete_transient( 'seculoco_bulk_decrypt_request_' . get_current_user_id() );
-
-		// Set authentication flag that the encryption handler expects.
-		set_transient( 'seculoco_passkey_authenticated_' . get_current_user_id(), true, 300 ); // 5 minutes.
-
-		// Decrypt all entries.
-		$csv_data         = array();
-		$successful_count = 0;
-		$failed_count     = 0;
-
-		foreach ( $bulk_request['entry_ids'] as $id ) {
-			$row = $this->database_manager->get_entry( $id );
-			if ( ! $row ) {
-				++$failed_count;
-				continue;
-			}
-
-			$metadata        = json_decode( $row->metadata, true );
-			$encryption_type = isset( $metadata['encryption_type'] ) ? $metadata['encryption_type'] : 'rsa';
-
-			// SERVER CANNOT DECRYPT - Zero-knowledge architecture.
-			// Bulk export needs to be implemented client-side.
-			// For now, mark as encrypted in export.
-			$login_data = array(
-				'username_email'   => '[ENCRYPTED - Decrypt client-side]',
-				'password'         => '[ENCRYPTED - Decrypt client-side]',
-				'additional_notes' => 'Entry ID: ' . $row->id . ' - Requires client-side decryption',
-			);
-
-			// Prepare CSV data based on manager format.
-			$name     = $metadata['name'] ?? 'Unknown';
-			$website  = $metadata['login_url'] ?? $metadata['service_name'] ?? '';
-			$username = $login_data['username_email'] ?? '';
-			$password = $login_data['password'] ?? '';
-			$notes    = $login_data['additional_notes'] ?? '';
-
-			// Ensure website has protocol.
-			if ( $website && ! preg_match( '/^https?:\/\//', $website ) ) {
-				$website = 'https://' . $website;
-			}
-
-			$csv_data[] = array(
-				'name'     => $name,
-				'website'  => $website,
-				'username' => $username,
-				'password' => $password,
-				'notes'    => $notes,
-			);
-
-			++$successful_count;
-		}
-
-		// Clean up the authentication flag after all decryptions are complete.
-		delete_transient( 'seculoco_passkey_authenticated_' . get_current_user_id() );
-
-		$message = '';
-		if ( $successful_count > 0 && 0 === $failed_count ) {
-			// translators: %d: number of entries successfully decrypted.
-			$message = sprintf( __( 'Successfully decrypted %d entries. Generating CSV...', 'secure-login-collector' ), $successful_count );
-		} elseif ( $successful_count > 0 && $failed_count > 0 ) {
-			$message = __( 'Bulk decryption failed for some entries. Only successfully decrypted entries were exported.', 'secure-login-collector' );
-		} else {
-			wp_send_json_error( __( 'Bulk decryption failed for all entries.', 'secure-login-collector' ) );
-			return;
-		}
-
-		wp_send_json_success(
-			array(
-				'csv_data'         => $csv_data,
-				'manager'          => $bulk_request['manager'],
-				'successful_count' => $successful_count,
-				'failed_count'     => $failed_count,
-				'message'          => $message,
 			)
 		);
 	}
@@ -1465,149 +1310,6 @@ class Seculoco_Admin_Interface {
 	}
 
 	/**
-	 * Handle passkey authentication for decryption.
-	 * Validates WebAuthn assertion and returns wrapped private key (NOT the MWK).
-	 */
-	public function handle_passkey_auth_for_decrypt() {
-		// Check permissions and nonce.
-		if (
-			! current_user_can( 'manage_options' ) ||
-			! isset( $_POST['nonce'] ) ||
-			! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'seculoco_nonce' )
-		) {
-			wp_send_json_error( __( 'Invalid security token or insufficient permissions.', 'secure-login-collector' ) );
-			return;
-		}
-
-		$can_use_passkey = apply_filters( 'seculoco_can_use_passkey_decrypt', false );
-		if ( ! $can_use_passkey ) {
-			wp_send_json_error( __( 'Pro version required for passkey authentication.', 'secure-login-collector' ) );
-			return;
-		}
-
-		// Get WebAuthn assertion data.
-		$credential_id      = isset( $_POST['credential_id'] ) ? sanitize_text_field( wp_unslash( $_POST['credential_id'] ) ) : '';
-		$client_data_json   = isset( $_POST['clientDataJSON'] ) ? sanitize_text_field( wp_unslash( $_POST['clientDataJSON'] ) ) : '';
-		$authenticator_data = isset( $_POST['authenticatorData'] ) ? sanitize_text_field( wp_unslash( $_POST['authenticatorData'] ) ) : '';
-		$signature          = isset( $_POST['signature'] ) ? sanitize_text_field( wp_unslash( $_POST['signature'] ) ) : '';
-
-		if ( empty( $credential_id ) || empty( $client_data_json ) || empty( $authenticator_data ) || empty( $signature ) ) {
-			wp_send_json_error( __( 'Missing required WebAuthn assertion data.', 'secure-login-collector' ) );
-			return;
-		}
-
-		$user_id = get_current_user_id();
-
-		// Get stored passkey data.
-		$passkey = get_user_meta( $user_id, 'seculoco_passkey', true );
-		if ( empty( $passkey ) || $passkey['credential_id'] !== $credential_id ) {
-			wp_send_json_error( __( 'Passkey not found or mismatch.', 'secure-login-collector' ) );
-			return;
-		}
-
-		// Decode and validate clientDataJSON.
-		$client_data_decoded = json_decode( base64_decode( $client_data_json ), true );
-		if ( ! $client_data_decoded ) {
-			wp_send_json_error( __( 'Invalid client data format.', 'secure-login-collector' ) );
-			return;
-		}
-
-		// Validate challenge.
-		$expected_challenge = get_transient( 'passkey_challenge_' . $user_id );
-		if ( ! $expected_challenge ) {
-			wp_send_json_error( __( 'Challenge expired or not found.', 'secure-login-collector' ) );
-			return;
-		}
-
-		// Normalize challenge for comparison (base64url).
-		$received_challenge     = $client_data_decoded['challenge'] ?? '';
-		$expected_challenge_url = rtrim( strtr( $expected_challenge, '+/', '-_' ), '=' );
-
-		if ( $received_challenge !== $expected_challenge_url ) {
-			wp_send_json_error( __( 'Challenge verification failed.', 'secure-login-collector' ) );
-			return;
-		}
-
-		// Validate origin.
-		$expected_origin = home_url();
-		$received_origin = $client_data_decoded['origin'] ?? '';
-		if ( $received_origin !== $expected_origin ) {
-			wp_send_json_error( __( 'Origin verification failed.', 'secure-login-collector' ) );
-			return;
-		}
-
-		// Validate type.
-		$received_type = $client_data_decoded['type'] ?? '';
-		if ( 'webauthn.get' !== $received_type ) {
-			wp_send_json_error( __( 'Invalid WebAuthn operation type.', 'secure-login-collector' ) );
-			return;
-		}
-
-		// Store authentication success timestamp for audit logging.
-		update_user_meta( $user_id, 'seculoco_last_passkey_auth', current_time( 'mysql' ) );
-
-		// Verify signature.
-		$public_key_data = $passkey['public_key'] ?? '';
-		if ( empty( $public_key_data ) || 'stored_in_attestation' === $public_key_data || 'not_available' === $public_key_data ) {
-			// Public key not available - fall back to challenge validation only.
-			// This is less secure but maintains compatibility with existing registrations.
-		} else {
-			// Construct the data that was signed.
-			$client_data_hash       = hash( 'sha256', base64_decode( $client_data_json ), true );
-			$authenticator_data_raw = base64_decode( $authenticator_data );
-			$signed_data            = $authenticator_data_raw . $client_data_hash;
-
-			// Decode signature.
-			$signature_raw = base64_decode( $signature );
-
-			// For EC256 keys (most common), verify using openssl.
-			// Note: This is a simplified verification - full WebAuthn verification would parse COSE format.
-			// For production, consider using a WebAuthn library like web-auth/webauthn-lib.
-			$public_key_pem = $this->convert_cose_to_pem( $public_key_data );
-			if ( $public_key_pem ) {
-				$verify_result = openssl_verify( $signed_data, $signature_raw, $public_key_pem, OPENSSL_ALGO_SHA256 );
-				if ( 1 !== $verify_result ) {
-					wp_send_json_error( __( 'Signature verification failed.', 'secure-login-collector' ) );
-					return;
-				}
-			}
-		}
-
-		// Clear the challenge after successful validation.
-		delete_transient( 'passkey_challenge_' . $user_id );
-
-		// Get the wrapped private key (PRO version).
-		$wrapped_key_pro = get_option( 'seculoco_wrapped_private_key_pro' );
-		if ( ! $wrapped_key_pro ) {
-			wp_send_json_error( __( 'Pro encryption keys not found.', 'secure-login-collector' ) );
-			return;
-		}
-
-		// Return the wrapped key and credential_id.
-		// Client will derive the passkey key locally and unwrap.
-		wp_send_json_success(
-			array(
-				'wrapped_key'   => $wrapped_key_pro,
-				'credential_id' => $credential_id,
-				'message'       => __( 'Passkey authenticated successfully.', 'secure-login-collector' ),
-			)
-		);
-	}
-
-	/**
-	 * Convert COSE public key to PEM format (simplified).
-	 *
-	 * @param string $cose_key Base64-encoded COSE key. // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found -- Reserved for future CBOR parsing implementation.
-	 * @return string|false PEM-formatted public key or false on failure.
-	 */
-	private function convert_cose_to_pem( $cose_key ) {
-		// This is a placeholder for COSE to PEM conversion.
-		// Full implementation would require CBOR parsing.
-		// For now, return false to skip signature verification for existing keys.
-		return false;
-	}
-
-	/**
 	 * Handle getting encrypted entry for client-side decryption.
 	 */
 	public function handle_get_encrypted_entry() {
@@ -1658,116 +1360,4 @@ class Seculoco_Admin_Interface {
 		);
 	}
 
-	/**
-	 * Handle passkey authentication challenge.
-	 */
-	public function handle_passkey_challenge() {
-		// Check permissions.
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( __( 'Insufficient permissions.', 'secure-login-collector' ) );
-			return;
-		}
-
-		// Verify nonce - accept both admin nonces (from admin.js and admin-decrypt.js).
-		$nonce = sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) );
-		if ( ! wp_verify_nonce( $nonce, 'seculoco_admin_nonce' ) &&
-			! wp_verify_nonce( $nonce, 'seculoco_nonce' ) ) {
-			wp_send_json_error( __( 'Invalid security token.', 'secure-login-collector' ) );
-			return;
-		}
-
-		// Generate challenge.
-		$challenge = base64_encode( random_bytes( 32 ) );
-
-		// Store challenge in transient (expires in 5 minutes).
-		set_transient( 'passkey_challenge_' . get_current_user_id(), $challenge, 300 );
-
-		// Get user's registered credential (single passkey).
-		$user_id = get_current_user_id();
-		$passkey = get_user_meta( $user_id, 'seculoco_passkey', true );
-
-		// Format credential for client.
-		$formatted_credentials = array();
-		if ( ! empty( $passkey ) && isset( $passkey['credential_id'] ) ) {
-			$formatted_credentials[] = array(
-				'id'   => $passkey['credential_id'],
-				'type' => 'public-key',
-			);
-		}
-
-		wp_send_json_success(
-			array(
-				'challenge'        => $challenge,
-				'credentials'      => $formatted_credentials,
-				'timeout'          => 60000,
-				'userVerification' => 'required',
-			)
-		);
-	}
-
-	/**
-	 * Handle fix passkey flag AJAX request.
-	 * One-time fix for installations where passkeys are registered but flag wasn't set.
-	 */
-	public function handle_fix_passkey_flag() {
-		check_ajax_referer( 'seculoco_admin_nonce', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( 'Insufficient permissions' );
-		}
-
-		global $wpdb;
-
-		// Check if anyone has passkey registered (single passkey).
-		// SECURITY FIX: Using $wpdb->prepare() to prevent SQL injection.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$users_with_passkey = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT user_id, meta_value
-				FROM %i
-				WHERE meta_key = %s
-				AND meta_value != ''",
-				$wpdb->usermeta,
-				'seculoco_passkey'
-			)
-		);
-
-		$total_passkeys = 0;
-		$users_count    = 0;
-		foreach ( $users_with_passkey as $user_meta ) {
-			$passkey = maybe_unserialize( $user_meta->meta_value );
-			if ( is_array( $passkey ) && ! empty( $passkey ) ) {
-				++$total_passkeys;
-				++$users_count;
-			}
-		}
-
-		// Check current flag status.
-		$passkey_flag  = get_option( 'seculoco_passkey_registered', false );
-		$pro_keys_flag = get_option( 'seculoco_pro_keys_active', false );
-
-		$message  = "Found $total_passkeys passkey(s) across $users_count user(s). ";
-		$message .= 'Passkey flag: ' . ( $passkey_flag ? 'true' : 'false' ) . ', ';
-		$message .= 'Pro keys flag: ' . ( $pro_keys_flag ? 'true' : 'false' ) . '. ';
-
-		if ( $total_passkeys > 0 && ( ! $passkey_flag || ! $pro_keys_flag ) ) {
-			if ( ! $passkey_flag ) {
-				update_option( 'seculoco_passkey_registered', true );
-				update_option( 'seculoco_passkey_registered_at', current_time( 'mysql' ) );
-			}
-			if ( ! $pro_keys_flag ) {
-				update_option( 'seculoco_pro_keys_active', true );
-			}
-			$message .= 'Missing flags updated successfully!';
-			wp_send_json_success( $message );
-		} elseif ( $total_passkeys > 0 && $passkey_flag && $pro_keys_flag ) {
-			$message .= 'All flags already set correctly!';
-			wp_send_json_success( $message );
-		} elseif ( 0 === $total_passkeys ) {
-			$message .= 'No passkeys found - flag should remain false.';
-			wp_send_json_success( $message );
-		} else {
-			wp_send_json_error( $message );
-		}
-	}
 }

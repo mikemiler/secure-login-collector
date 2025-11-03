@@ -28,28 +28,77 @@ jQuery(document).ready(function ($) {
                 entryIds.push($(this).val());
             });
 
-            // Check if this is pro version with passkey registered
-            var isProVersion = window.secureLoginConfig.isProVersion;
-            var passkeyRegistered = window.secureLoginConfig.passkeyRegistered;
-
-            if (isProVersion && passkeyRegistered) {
-                // Use new passkey bulk decryption workflow
-                handleBulkExportWithPasskey(entryIds, manager);
-            } else {
-                // Fall back to traditional bulk export (without actual decryption)
-                handleTraditionalBulkExport(entryIds, manager);
-            }
+            // Always use client-side decryption workflow
+            // This works for both FREE and PRO users
+            // FREE entries decrypt without passkey, PRO entries require passkey
+            handleBulkExportWithPasskey(entryIds, manager);
         }
     });
 
+    // Check encryption types for selected entries
+    async function checkEncryptionTypes(entryIds) {
+        var proCount = 0;
+        var freeCount = 0;
+
+        // Query each entry to determine encryption type
+        for (var i = 0; i < entryIds.length; i++) {
+            try {
+                var response = await $.ajax({
+                    url: seculocoAjax.ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'seculoco_get_wrapped_private_key',
+                        entry_id: entryIds[i],
+                        nonce: seculocoAjax.nonce
+                    }
+                });
+
+                if (response.success && response.data.type) {
+                    if (response.data.type === 'pro') {
+                        proCount++;
+                    } else {
+                        freeCount++;
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to check encryption type for entry ' + entryIds[i], error);
+                // Assume PRO to be safe (will prompt for passkey)
+                proCount++;
+            }
+        }
+
+        return {
+            hasPro: proCount > 0,
+            hasFree: freeCount > 0,
+            counts: { pro: proCount, free: freeCount },
+            total: entryIds.length
+        };
+    }
+
     // Handle bulk export with passkey authentication
-    function handleBulkExportWithPasskey(entryIds, manager) {
-        // Show passkey authentication modal directly with entry IDs
+    async function handleBulkExportWithPasskey(entryIds, manager) {
+        // Check encryption types first
+        var encryptionCheck = await checkEncryptionTypes(entryIds);
+
+        var message;
+        if (!encryptionCheck.hasPro && encryptionCheck.hasFree) {
+            // All FREE entries - no passkey needed
+            message = 'You have selected ' + entryIds.length + ' FREE entries for bulk export. All entries will be decrypted client-side (no passkey required) and exported to ' + manager + ' format.';
+        } else if (encryptionCheck.hasPro && !encryptionCheck.hasFree) {
+            // All PRO entries
+            message = 'You have selected ' + entryIds.length + ' PRO entries for bulk export. All entries will be decrypted using your passkey and then exported to ' + manager + ' format.';
+        } else {
+            // Mixed FREE and PRO
+            message = 'You have selected ' + entryIds.length + ' entries (' + encryptionCheck.counts.pro + ' PRO, ' + encryptionCheck.counts.free + ' FREE) for bulk export. PRO entries will be decrypted using your passkey, FREE entries will be decrypted client-side, then exported to ' + manager + ' format.';
+        }
+
+        // Show passkey authentication modal with encryption info
         showPasskeyBulkDecryptModal({
             entry_ids: entryIds,
             entry_count: entryIds.length,
             manager: manager,
-            message: 'You have selected ' + entryIds.length + ' entries for bulk export. All selected entries will be decrypted using your passkey and then exported to ' + manager + ' format.'
+            message: message,
+            encryption_check: encryptionCheck
         });
     }
 
@@ -72,15 +121,39 @@ jQuery(document).ready(function ($) {
         // Remove any existing modal
         $('#bulk-passkey-modal').remove();
 
-        // Create modal
+        var encryptionCheck = data.encryption_check || { hasPro: true, hasFree: false };
+
+        // If all FREE entries, skip modal and proceed directly to decryption
+        if (!encryptionCheck.hasPro && encryptionCheck.hasFree) {
+            // All FREE - no passkey needed
+            console.log('All entries are FREE encrypted - skipping passkey authentication');
+            proceedWithBulkDecryption(data, null);
+            return;
+        }
+
+        // Create modal for PRO or mixed entries
         var modal = $('<div id="bulk-passkey-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 999999; display: flex; align-items: center; justify-content: center;">');
         var modalContent = $('<div style="background: white; padding: 30px; border-radius: 8px; max-width: 500px; text-align: center;">');
 
+        var modalTitle = encryptionCheck.hasPro && encryptionCheck.hasFree
+            ? '🔐 Bulk Decrypt with Mixed Encryption'
+            : '🔐 ' + (window.secureLoginMessages.bulkDecryptWithPasskey || 'Bulk Decrypt with Passkey');
+
+        var buttonText = encryptionCheck.hasPro && encryptionCheck.hasFree
+            ? 'Authenticate with Passkey (for ' + encryptionCheck.counts.pro + ' PRO entries)'
+            : (window.secureLoginMessages.authenticateWithPasskeyToDecryptAll || 'Authenticate with Passkey to Decrypt All');
+
         modalContent.html(
-            '<h3 style="margin: 0 0 20px 0;">🔐 ' + (window.secureLoginMessages.bulkDecryptWithPasskey || 'Bulk Decrypt with Passkey') + '</h3>' +
+            '<h3 style="margin: 0 0 20px 0;">' + modalTitle + '</h3>' +
             '<p style="margin: 0 0 20px 0;">' + data.message + '</p>' +
+            '<div id="bulk-progress-info" style="margin: 0 0 20px 0; padding: 15px; background: #f0f6fc; border-radius: 4px; display: none;">' +
+            '<div style="font-weight: bold; margin-bottom: 10px; font-size: 16px;" id="bulk-progress-text">Preparing...</div>' +
+            '<div style="background: #ddd; height: 8px; border-radius: 4px; overflow: hidden;">' +
+            '<div id="bulk-progress-bar" style="background: #2271b1; height: 100%; width: 0%; transition: width 0.3s;"></div>' +
+            '</div>' +
+            '</div>' +
             '<button id="bulk-passkey-auth-btn" class="button button-primary" style="font-size: 16px; padding: 10px 20px;">' +
-            (window.secureLoginMessages.authenticateWithPasskeyToDecryptAll || 'Authenticate with Passkey to Decrypt All') +
+            buttonText +
             '</button>' +
             '<div style="margin-top: 15px;"><button id="bulk-passkey-cancel-btn" class="button">Cancel</button></div>'
         );
@@ -92,6 +165,10 @@ jQuery(document).ready(function ($) {
         $('#bulk-passkey-auth-btn').on('click', function () {
             var button = $(this);
             button.prop('disabled', true).html('<span class="dashicons dashicons-update-alt spin"></span> Authenticating...');
+
+            // Show progress area
+            $('#bulk-progress-info').show();
+            $('#bulk-progress-text').text('Authenticating with passkey...');
 
             authenticateWithPasskeyForBulkDecrypt(data, button);
         });
@@ -109,12 +186,198 @@ jQuery(document).ready(function ($) {
         });
     }
 
+    // Proceed with bulk decryption (with or without passkey)
+    async function proceedWithBulkDecryption(data, preAuthData) {
+        // Show a simple progress modal if none exists
+        if ($('#bulk-passkey-modal').length === 0) {
+            var modal = $('<div id="bulk-passkey-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 999999; display: flex; align-items: center; justify-content: center;">');
+            var modalContent = $('<div style="background: white; padding: 30px; border-radius: 8px; max-width: 500px; text-align: center;">');
+
+            modalContent.html(
+                '<h3 style="margin: 0 0 20px 0;">🔓 Bulk Decryption Progress</h3>' +
+                '<div id="bulk-progress-info" style="margin: 0 0 20px 0; padding: 15px; background: #f0f6fc; border-radius: 4px;">' +
+                '<div style="font-weight: bold; margin-bottom: 10px; font-size: 16px;" id="bulk-progress-text">Initializing...</div>' +
+                '<div style="background: #ddd; height: 8px; border-radius: 4px; overflow: hidden;">' +
+                '<div id="bulk-progress-bar" style="background: #2271b1; height: 100%; width: 0%; transition: width 0.3s;"></div>' +
+                '</div>' +
+                '</div>'
+            );
+
+            modal.append(modalContent);
+            $('body').append(modal);
+        }
+
+        try {
+            // Store the entry IDs and manager for processing
+            const entryIds = data.entry_ids || [];
+            const manager = data.manager;
+
+            // Use existing SecureAdminDecryption for bulk decryption
+            let decryptedEntries = [];
+            let successCount = 0;
+            let failedCount = 0;
+            let failedEntryIds = [];
+
+            // Check if SecureAdminDecryption is available
+            if (!window.secureAdminDecryption && window.SecureAdminDecryption) {
+                window.secureAdminDecryption = new SecureAdminDecryption();
+            }
+
+            if (!window.secureAdminDecryption) {
+                throw new Error('Decryption module not available. Please refresh the page.');
+            }
+
+            const decryptor = window.secureAdminDecryption;
+
+            $('#bulk-progress-text').text('Starting decryption...');
+            $('#bulk-progress-bar').css('width', '5%');
+
+            console.log('Starting bulk decryption for ' + entryIds.length + ' entries');
+
+            let processed = 0;
+
+            // Decrypt each entry using existing decrypt logic
+            for (const entryId of entryIds) {
+                processed++;
+                const progressPercent = Math.round((processed / entryIds.length) * 90) + 5; // 5-95%
+
+                try {
+                    // Check if already decrypted
+                    if (decryptor.decryptedData.has(entryId)) {
+                        const decrypted = decryptor.decryptedData.get(entryId);
+                        const $row = $('tr').filter(function() {
+                            return $(this).find('.decrypt-btn[data-id="' + entryId + '"], .decrypt-btn-v2[data-id="' + entryId + '"]').length > 0;
+                        });
+
+                        decryptedEntries.push({
+                            name: $row.find('[data-field="name"]').text() || 'Entry ' + entryId,
+                            website: $row.find('[data-field="login_url"]').text() || '',
+                            username: decrypted.username_email || '',
+                            password: decrypted.password || '',
+                            notes: decrypted.additional_notes || ''
+                        });
+                        successCount++;
+                        $('#bulk-progress-text').text('Entry ' + processed + ' of ' + entryIds.length + ' (cached)');
+                        $('#bulk-progress-bar').css('width', progressPercent + '%');
+                        continue;
+                    }
+
+                    // Get encrypted data
+                    const encryptedPackage = await decryptor.getEncryptedData(entryId);
+
+                    // Get key type
+                    const keyInfo = await decryptor.getKeyType(entryId);
+                    const keyType = keyInfo.type;
+
+                    // Update progress with key type
+                    $('#bulk-progress-text').text('Decrypting entry ' + processed + ' of ' + entryIds.length + ' (' + keyType.toUpperCase() + ' encryption)');
+                    $('#bulk-progress-bar').css('width', progressPercent + '%');
+
+                    // Unwrap key if needed (once per key type) - pass preAuthData to avoid re-authentication
+                    if (!decryptor.unwrappedKeys[keyType]) {
+                        console.log('Unwrapping ' + keyType + ' key for entry ' + entryId + (preAuthData ? ' with pre-auth data' : ' without pre-auth'));
+                        await decryptor.unwrapPrivateKey(entryId, keyType, preAuthData);
+                        console.log('Successfully unwrapped ' + keyType + ' key');
+                    }
+
+                    const privateKey = decryptor.unwrappedKeys[keyType];
+
+                    if (!privateKey) {
+                        throw new Error('Failed to unwrap private key for key type: ' + keyType);
+                    }
+
+                    // Decrypt the data
+                    const decrypted = await decryptor.decryptData(encryptedPackage, privateKey);
+
+                    // Store in cache
+                    decryptor.decryptedData.set(entryId, decrypted);
+
+                    // Get metadata from table
+                    const $row = $('tr').filter(function() {
+                        return $(this).find('.decrypt-btn[data-id="' + entryId + '"], .decrypt-btn-v2[data-id="' + entryId + '"]').length > 0;
+                    });
+
+                    const name = $row.find('[data-field="name"]').text() ||
+                                encryptedPackage.metadata?.name ||
+                                'Entry ' + entryId;
+                    const website = $row.find('[data-field="login_url"]').text() ||
+                                   encryptedPackage.metadata?.login_url ||
+                                   '';
+
+                    // Add to results
+                    decryptedEntries.push({
+                        name: name,
+                        website: website,
+                        username: decrypted.username_email || '',
+                        password: decrypted.password || '',
+                        notes: decrypted.additional_notes || ''
+                    });
+
+                    successCount++;
+                    console.log('Successfully decrypted entry ' + entryId + ' (' + successCount + ' of ' + entryIds.length + ')');
+
+                } catch (error) {
+                    failedCount++;
+                    failedEntryIds.push(entryId);
+                    console.error('Failed to decrypt entry ' + entryId + ':', error);
+                    // Continue with next entry instead of failing completely
+                }
+            }
+
+            // Show results summary
+            $('#bulk-passkey-modal').remove();
+
+            if (decryptedEntries.length > 0) {
+                // Generate CSV with actual decrypted data
+                $('#bulk-progress-text').text('Generating CSV file...');
+                $('#bulk-progress-bar').css('width', '100%');
+
+                const csvContent = generateCSVForManager(manager, decryptedEntries);
+                const filename = 'bulk_export_' + manager + '_decrypted_' + new Date().getTime() + '.csv';
+                downloadCSVFile(csvContent, filename);
+
+                // Show success summary
+                let summaryMessage = 'Bulk export completed!\n\n';
+                summaryMessage += 'Successfully decrypted: ' + successCount + ' entries\n';
+                if (failedCount > 0) {
+                    summaryMessage += 'Failed to decrypt: ' + failedCount + ' entries\n';
+                    summaryMessage += 'Failed entry IDs: ' + failedEntryIds.join(', ') + '\n\n';
+                    summaryMessage += 'The CSV file contains only successfully decrypted entries.';
+                } else {
+                    summaryMessage += '\nAll entries were successfully decrypted and exported.';
+                }
+
+                alert(summaryMessage);
+                console.log('Bulk export summary:', {
+                    total: entryIds.length,
+                    success: successCount,
+                    failed: failedCount,
+                    failedIds: failedEntryIds
+                });
+
+            } else {
+                // All entries failed
+                let errorMessage = 'Failed to decrypt any entries.\n\n';
+                errorMessage += 'Total entries attempted: ' + entryIds.length + '\n';
+                errorMessage += 'Failed entries: ' + failedCount + '\n';
+                errorMessage += 'Failed entry IDs: ' + failedEntryIds.join(', ') + '\n\n';
+                errorMessage += 'Please check the console for detailed error messages.';
+
+                alert(errorMessage);
+            }
+        } catch (error) {
+            console.error('Bulk decryption error:', error);
+            alert('Bulk decryption failed: ' + error.message);
+            $('#bulk-passkey-modal').remove();
+        }
+    }
+
     // Authenticate with passkey for bulk decrypt
     function authenticateWithPasskeyForBulkDecrypt(data, button) {
         // Check if WebAuthn is supported
         if (!window.PublicKeyCredential) {
             alert(seculocoAjax.strings.webauthn_not_supported);
-            button.prop('disabled', false).html('<span class="dashicons dashicons-shield-alt"></span> Authenticate with Passkey to Decrypt All');
+            button.prop('disabled', false).html('<span class="dashicons dashicons-shield-alt"></span> Authenticate with Passkey');
             return;
         }
 
@@ -129,7 +392,7 @@ jQuery(document).ready(function ($) {
             success: function(challengeResponse) {
                 if (!challengeResponse.success) {
                     alert('Failed to get passkey challenge: ' + (challengeResponse.data || 'Unknown error'));
-                    button.prop('disabled', false).html('<span class="dashicons dashicons-shield-alt"></span> Authenticate with Passkey to Decrypt All');
+                    button.prop('disabled', false).html('<span class="dashicons dashicons-shield-alt"></span> Authenticate with Passkey');
                     return;
                 }
 
@@ -159,16 +422,12 @@ jQuery(document).ready(function ($) {
 
                 navigator.credentials.get(getCredentialDefaultArgs)
                     .then(async (assertion) => {
-                        // After successful passkey authentication, perform client-side bulk decryption
+                        // After successful passkey authentication, derive key and proceed
                         try {
-                            button.html('<span class="dashicons dashicons-update-alt spin"></span> Initializing...');
-
-                            // Store the entry IDs and manager for processing
-                            const entryIds = data.entry_ids || [];
-                            const manager = data.manager;
-
-                            // Use existing SecureAdminDecryption for bulk decryption
-                            let decryptedEntries = [];
+                            button.html('<span class="dashicons dashicons-admin-network spin"></span> Deriving key...');
+                            $('#bulk-progress-info').show();
+                            $('#bulk-progress-text').text('Deriving encryption key from passkey...');
+                            $('#bulk-progress-bar').css('width', '5%');
 
                             // Check if SecureAdminDecryption is available
                             if (!window.secureAdminDecryption && window.SecureAdminDecryption) {
@@ -182,160 +441,69 @@ jQuery(document).ready(function ($) {
                             const decryptor = window.secureAdminDecryption;
 
                             // Derive the unwrapping key from the assertion ONCE
-                            button.html('<span class="dashicons dashicons-admin-network spin"></span> Deriving key...');
                             const derivedKey = await decryptor.deriveUnwrappingKeyFromAssertion(assertion);
+
+                            // Create preAuthData object to pass to bulk decryption
                             const preAuthData = { derivedKey: derivedKey };
 
-                            let processed = 0;
+                            console.log('Derived unwrapping key successfully for bulk decryption');
 
-                            // Decrypt each entry using existing decrypt logic
-                            for (const entryId of entryIds) {
-                                processed++;
-                                button.html('<span class="dashicons dashicons-unlock spin"></span> ' + processed + '/' + entryIds.length);
+                            // Proceed with bulk decryption
+                            await proceedWithBulkDecryption(data, preAuthData);
 
-                                try {
-                                    // Check if already decrypted
-                                    if (decryptor.decryptedData.has(entryId)) {
-                                        const decrypted = decryptor.decryptedData.get(entryId);
-                                        const $row = $('tr').filter(function() {
-                                            return $(this).find('.decrypt-btn[data-id="' + entryId + '"], .decrypt-btn-v2[data-id="' + entryId + '"]').length > 0;
-                                        });
-
-                                        decryptedEntries.push({
-                                            name: $row.find('[data-field="name"]').text() || 'Entry ' + entryId,
-                                            website: $row.find('[data-field="login_url"]').text() || '',
-                                            username: decrypted.username_email || '',
-                                            password: decrypted.password || '',
-                                            notes: decrypted.additional_notes || ''
-                                        });
-                                        continue;
-                                    }
-
-                                    // Get encrypted data
-                                    const encryptedPackage = await decryptor.getEncryptedData(entryId);
-
-                                    // Get key type
-                                    const keyInfo = await decryptor.getKeyType(entryId);
-                                    const keyType = keyInfo.type;
-
-                                    // Unwrap key if needed (once per key type) - pass preAuthData to avoid re-authentication
-                                    if (!decryptor.unwrappedKeys[keyType]) {
-                                        await decryptor.unwrapPrivateKey(entryId, keyType, preAuthData);
-                                    }
-
-                                    const privateKey = decryptor.unwrappedKeys[keyType];
-
-                                    // Decrypt the data
-                                    const decrypted = await decryptor.decryptData(encryptedPackage, privateKey);
-
-                                    // Store in cache
-                                    decryptor.decryptedData.set(entryId, decrypted);
-
-                                    // Get metadata from table
-                                    const $row = $('tr').filter(function() {
-                                        return $(this).find('.decrypt-btn[data-id="' + entryId + '"], .decrypt-btn-v2[data-id="' + entryId + '"]').length > 0;
-                                    });
-
-                                    const name = $row.find('[data-field="name"]').text() ||
-                                                encryptedPackage.metadata?.name ||
-                                                'Entry ' + entryId;
-                                    const website = $row.find('[data-field="login_url"]').text() ||
-                                                   encryptedPackage.metadata?.login_url ||
-                                                   '';
-
-                                    // Add to results
-                                    decryptedEntries.push({
-                                        name: name,
-                                        website: website,
-                                        username: decrypted.username_email || '',
-                                        password: decrypted.password || '',
-                                        notes: decrypted.additional_notes || ''
-                                    });
-
-                                } catch (error) {
-                                    console.error('Failed to decrypt entry ' + entryId + ':', error);
-                                }
-                            }
-
-                            if (decryptedEntries.length > 0) {
-                                $('#bulk-passkey-modal').remove();
-
-                                // Generate CSV with actual decrypted data
-                                const csvContent = generateCSVForManager(manager, decryptedEntries);
-                                const filename = 'bulk_export_' + manager + '_decrypted_' + new Date().getTime() + '.csv';
-                                downloadCSVFile(csvContent, filename);
-
-
-                            } else {
-                                alert('Failed to decrypt any entries.');
-                                button.prop('disabled', false).html('<span class="dashicons dashicons-shield-alt"></span> Authenticate with Passkey to Decrypt All');
-                            }
                         } catch (error) {
-                            console.error('Bulk decryption error:', error);
-                            alert('Bulk decryption failed: ' + error.message);
-                            button.prop('disabled', false).html('<span class="dashicons dashicons-shield-alt"></span> Authenticate with Passkey to Decrypt All');
+                            console.error('Passkey authentication error:', error);
+                            alert('Authentication failed: ' + error.message);
+                            button.prop('disabled', false).html('<span class="dashicons dashicons-shield-alt"></span> Authenticate with Passkey');
                         }
                     })
                     .catch((err) => {
                         console.error('Bulk passkey authentication failed:', err);
                         alert(seculocoAjax.strings.passkey_auth_failed + ' ' + err.message);
-                        button.prop('disabled', false).html('<span class="dashicons dashicons-shield-alt"></span> Authenticate with Passkey to Decrypt All');
+                        button.prop('disabled', false).html('<span class="dashicons dashicons-shield-alt"></span> Authenticate with Passkey');
                     });
             },
             error: function(xhr, status, error) {
                 console.error('Failed to get passkey challenge:', error);
                 alert('Failed to get passkey challenge. Please try again.');
-                button.prop('disabled', false).html('<span class="dashicons dashicons-shield-alt"></span> Authenticate with Passkey to Decrypt All');
+                button.prop('disabled', false).html('<span class="dashicons dashicons-shield-alt"></span> Authenticate with Passkey');
             }
         });
     }
 
     // Handle traditional bulk export (fallback)
     function handleTraditionalBulkExport(entryIds, manager) {
-        // First, submit the form to create the transient
-        var form = $('#posts-filter');
-        form.off('submit'); // Remove our handler temporarily
-
-        // Submit form via AJAX to set up the transient
+        // Call AJAX endpoint directly with entry IDs and manager
         $.ajax({
-            url: form.attr('action'),
+            url: seculocoAjax.ajaxurl,
             type: 'POST',
-            data: form.serialize(),
-            success: function() {
-                // Now call the process_bulk_export AJAX action
-                $.ajax({
-                    url: seculocoAjax.ajaxurl,
-                    type: 'POST',
-                    data: {
-                        action: 'seculoco_bulk_export',
-                        nonce: seculocoAjax.nonce
-                    },
-                    success: function (response) {
-                        if (response.success) {
-                            // Process the exported data
-                            var csvData = response.data.data;
-                            if (csvData && csvData.length > 0) {
-                                // Generate and download CSV
-                                var csvContent = generateCSVForManager(response.data.manager, csvData);
-                                var filename = 'export_' + response.data.manager + '_' + new Date().getTime() + '.csv';
-                                downloadCSVFile(csvContent, filename);
-
-                                // Show completion message
-                                setTimeout(function () {
-                                    alert('Export completed. CSV file downloaded.\n\nNote: Login credentials are encrypted and marked as "[ENCRYPTED - Decrypt client-side]".\nTo export with decrypted data, decrypt individual entries first.');
-                                }, 500);
-                            }
-                        } else {
-                            alert('Export failed: ' + (response.data || 'Unknown error'));
-                        }
-                    },
-                    error: function () {
-                        alert('Network error occurred during export.');
-                    }
-                });
+            data: {
+                action: 'seculoco_bulk_export',
+                nonce: seculocoAjax.nonce,
+                entry_ids: entryIds,
+                manager: manager
             },
-            error: function() {
-                alert('Failed to initiate export.');
+            success: function (response) {
+                if (response.success) {
+                    // Process the exported data
+                    var csvData = response.data.data;
+                    if (csvData && csvData.length > 0) {
+                        // Generate and download CSV
+                        var csvContent = generateCSVForManager(response.data.manager, csvData);
+                        var filename = 'export_' + response.data.manager + '_' + new Date().getTime() + '.csv';
+                        downloadCSVFile(csvContent, filename);
+
+                        // Show completion message
+                        setTimeout(function () {
+                            alert('Export completed. CSV file downloaded.\n\nNote: Login credentials are encrypted and marked as "[ENCRYPTED - Decrypt client-side]".\nTo export with decrypted data, use passkey authentication.');
+                        }, 500);
+                    }
+                } else {
+                    alert('Export failed: ' + (response.data || 'Unknown error'));
+                }
+            },
+            error: function () {
+                alert('Network error occurred during export.');
             }
         });
     }
