@@ -1,28 +1,133 @@
 /**
- * Free Version Admin Decryption
- * Handles decryption for free version entries (no passkey required)
+ * Base Admin Decryption Framework
+ * Progressive enhancement architecture with hook/plugin system
+ *
+ * FREE VERSION: Uses all base functionality with no extensions
+ * PRO VERSION: Extends via hooks and registered providers
  */
 (function($) {
     'use strict';
 
-    class FreeAdminDecryption {
+    /**
+     * BaseAdminDecryption - Core decryption framework
+     *
+     * Extension Points:
+     * - hooks: Event-based extension system for PRO features
+     * - extensions: Provider-based functionality injection
+     *
+     * Hook Points:
+     * - beforeDecrypt: Modify/validate before decryption starts
+     * - afterDecrypt: Process decrypted data, add features
+     * - beforeDisplay: Modify display HTML, add UI elements
+     * - afterDisplay: Bind additional UI handlers (e.g., export button)
+     * - beforeClear: Cleanup before clearing data
+     * - afterClear: Finalize after data cleared
+     */
+    class BaseAdminDecryption {
         constructor() {
+            // Core state management
             this.decryptedData = new Map();
-            this.privateKey = null; // Cache the free private key
+            this.privateKey = null; // Cache the private key
             this.autoClearTimeout = 60000; // 60 seconds
             this.countdownSeconds = 60;
             this.clearTimer = null;
             this.countdownInterval = null;
-            this.init();
+
+            // Extension Registry - PRO features register here
+            this.extensions = {
+                keyProvider: null,      // PRO: Custom key management
+                uiEnhancer: null,       // PRO: UI modifications
+                featureProvider: null,  // PRO: Additional features (export, etc.)
+                storageProvider: null   // PRO: Custom storage backends
+            };
+
+            // Hook System - PRO features can register callbacks
+            this.hooks = {
+                beforeDecrypt: [],   // fn(entryId, encryptedPackage) => modified/validated data
+                afterDecrypt: [],    // fn(entryId, decryptedData) => processed data
+                beforeDisplay: [],   // fn(entryId, html, data) => modified html
+                afterDisplay: [],    // fn(entryId, $container, data) => void (bind handlers)
+                beforeClear: [],     // fn() => void (cleanup)
+                afterClear: []       // fn() => void (post-cleanup)
+            };
         }
 
+        /**
+         * Initialize the decryption system
+         */
         init() {
             // Bind decrypt button clicks
             $(document).on('click', '.decrypt-btn-v2', (e) => this.handleDecrypt(e));
+
+            // Trigger initialization hook for extensions
+            this.triggerHook('afterInit', this);
+        }
+
+        /**
+         * Register a hook callback
+         * @param {string} hookName - Name of the hook
+         * @param {Function} callback - Callback function to execute
+         */
+        registerHook(hookName, callback) {
+            if (!this.hooks[hookName]) {
+                console.warn(`Hook "${hookName}" does not exist`);
+                return;
+            }
+
+            if (typeof callback !== 'function') {
+                console.warn('Hook callback must be a function');
+                return;
+            }
+
+            this.hooks[hookName].push(callback);
+        }
+
+        /**
+         * Trigger a hook with arguments
+         * @param {string} hookName - Name of the hook to trigger
+         * @param {...any} args - Arguments to pass to hook callbacks
+         * @returns {Promise<any>} - Result from hooks (can be modified data)
+         */
+        triggerHook(hookName, ...args) {
+            if (!this.hooks[hookName]) {
+                return args[0]; // Return first arg unchanged if hook doesn't exist
+            }
+
+            let result = args[0]; // Initial value
+
+            for (const callback of this.hooks[hookName]) {
+                try {
+                    const hookResult = callback(...args);
+                    // If hook returns a value, use it as the new result
+                    if (hookResult !== undefined) {
+                        result = hookResult;
+                        args[0] = hookResult; // Update first arg for next hook
+                    }
+                } catch (error) {
+                    console.error(`Error in hook "${hookName}":`, error);
+                }
+            }
+
+            return result;
+        }
+
+        /**
+         * Register an extension provider
+         * @param {string} type - Type of extension (keyProvider, uiEnhancer, etc.)
+         * @param {Object} provider - Extension provider object
+         */
+        registerExtension(type, provider) {
+            if (!this.extensions.hasOwnProperty(type)) {
+                console.warn(`Extension type "${type}" is not valid`);
+                return;
+            }
+
+            this.extensions[type] = provider;
         }
 
         /**
          * Handle decrypt button click
+         * CORE FUNCTIONALITY - Used by both FREE and PRO
          */
         async handleDecrypt(e) {
             e.preventDefault();
@@ -39,16 +144,22 @@
                 $btn.prop('disabled', true).html('<span class="dashicons dashicons-unlock spin"></span>');
 
                 // Step 1: Get encrypted data from server
-                const encryptedPackage = await this.getEncryptedData(entryId);
+                let encryptedPackage = await this.getEncryptedData(entryId);
+                
+                // HOOK: beforeDecrypt - PRO can modify/validate data
+                encryptedPackage = await this.triggerHook('beforeDecrypt', encryptedPackage, entryId);
 
-                // Step 2: Get free private key (cache it if we don't have it)
+                // Step 2: Get private key (uses extension or default)
                 if (!this.privateKey) {
-                    this.privateKey = await this.getFreePrivateKey();
+                    this.privateKey = await this.getPrivateKey(entryId);
                 }
+                
+                // Step 3: Decrypt the data (CORE CRYPTO - shared by FREE/PRO)
+                let decrypted = await this.decryptData(encryptedPackage, this.privateKey);
 
-                // Step 3: Decrypt the data
-                const decrypted = await this.decryptData(encryptedPackage, this.privateKey);
-
+                // HOOK: afterDecrypt - PRO can process/enhance decrypted data
+                decrypted = this.triggerHook('afterDecrypt', decrypted, entryId);
+                console.log('decrypted', decrypted);
                 // Store and display
                 this.decryptedData.set(entryId, decrypted);
                 this.displayDecryptedData(entryId, $btn);
@@ -67,6 +178,7 @@
 
         /**
          * Get encrypted data from server
+         * CORE FUNCTIONALITY - Used by both FREE and PRO
          */
         async getEncryptedData(entryId) {
             const response = await $.ajax({
@@ -87,7 +199,22 @@
         }
 
         /**
+         * Get private key - uses extension or default FREE method
+         * EXTENSION POINT - PRO can override via keyProvider
+         */
+        async getPrivateKey(entryId) {
+            // If PRO extension registered, use it
+            if (this.extensions.keyProvider && typeof this.extensions.keyProvider.getKey === 'function') {
+                return await this.extensions.keyProvider.getKey(entryId);
+            }
+
+            // DEFAULT: Use FREE version key
+            return await this.getFreePrivateKey();
+        }
+
+        /**
          * Get free private key from server (already unwrapped)
+         * CORE FUNCTIONALITY - FREE version uses this directly
          */
         async getFreePrivateKey() {
             // Use a dummy entry ID for free version (server returns free key regardless)
@@ -116,6 +243,7 @@
 
         /**
          * Import RSA private key from PEM
+         * CORE CRYPTO - Used by both FREE and PRO
          */
         async importRSAPrivateKey(pem) {
             // Remove PEM headers and decode base64
@@ -125,7 +253,7 @@
                 .replace('-----BEGIN RSA PRIVATE KEY-----', '')
                 .replace('-----END RSA PRIVATE KEY-----', '')
                 .replace(/\s/g, '');
-            
+
             const binaryDer = this.base64ToArrayBuffer(pemContents);
 
             return await crypto.subtle.importKey(
@@ -141,7 +269,9 @@
         }
 
         /**
-         * Decrypt the actual data
+         * Decrypt the actual data using RSA-OAEP + AES-GCM
+         * CORE CRYPTO - Used by both FREE and PRO
+         * This is the heart of the decryption system
          */
         async decryptData(encryptedPackage, privateKey) {
             // First: RSA decrypt the AES key
@@ -164,7 +294,7 @@
             // Decrypt data with AES
             const iv = this.base64ToArrayBuffer(encryptedPackage.iv);
             const encryptedData = this.base64ToArrayBuffer(encryptedPackage.encrypted_data);
-            
+
             const decrypted = await crypto.subtle.decrypt(
                 { name: 'AES-GCM', iv: iv },
                 aesKey,
@@ -175,27 +305,29 @@
         }
 
         /**
-         * Display decrypted data
+         * Display decrypted data in the UI
+         * CORE FUNCTIONALITY with EXTENSION POINTS
          */
         displayDecryptedData(entryId, $btn = null) {
             const data = this.decryptedData.get(entryId);
             if (!data) {
+                
                 return;
             }
 
             let $row;
-            
+
             // If we have the button reference, use it to find the row
             if ($btn && $btn.length > 0) {
                 $row = $btn.closest('tr');
             } else {
                 // Try multiple selectors to find the table row
                 $row = $(`tr[data-id="${entryId}"]`);
-                
+
                 if ($row.length === 0) {
                     $row = $(`tr[data-entry-id="${entryId}"]`);
                 }
-                
+
                 if ($row.length === 0) {
                     // Try finding by button data attribute
                     const $foundBtn = $(`.decrypt-btn-v2[data-id="${entryId}"]`);
@@ -204,17 +336,17 @@
                     }
                 }
             }
-            
+
             if ($row.length === 0) {
                 console.error('Could not find table row for entry:', entryId);
                 return;
             }
-            
+
             const $container = $row.find('.decrypted-data-container');
 
             if ($container.length === 0) {
-                // Create container if doesn't exist
-                const html = `
+                // Build base HTML
+                let html = `
                     <tr class="decrypted-row" data-entry-id="${entryId}">
                         <td colspan="8">
                             <div class="decrypted-data-container">
@@ -251,24 +383,35 @@
                         </td>
                     </tr>
                 `;
+
+                // HOOK: beforeDisplay - PRO can modify HTML (add export button, etc.)
+                html =  this.triggerHook('beforeDisplay', html, entryId, data);
+
                 $row.after(html);
+
+                // Get the newly created container
+                const $newContainer = $row.next('.decrypted-row').find('.decrypted-data-container');
+
+                // HOOK: afterDisplay - PRO can bind additional UI handlers
+                 this.triggerHook('afterDisplay', entryId, $newContainer, data);
             } else {
                 $container.parent().parent().toggle();
             }
 
-            // Bind copy and toggle buttons
+            // Bind copy and toggle buttons (CORE functionality)
             this.bindCopyButtons(entryId);
-            
+
             // Reset auto-clear timer
             this.resetAutoClear();
         }
 
         /**
          * Bind copy and toggle buttons
+         * CORE FUNCTIONALITY - Used by both FREE and PRO
          */
         bindCopyButtons(entryId) {
             const $row = $(`.decrypted-row[data-entry-id="${entryId}"]`);
-            
+
             $row.find('.copy-btn').off('click').on('click', async function(e) {
                 e.preventDefault();
                 const value = $(this).data('value');
@@ -296,6 +439,7 @@
 
         /**
          * Auto-clear sensitive data after timeout
+         * CORE FUNCTIONALITY - Used by both FREE and PRO
          */
         startAutoClear() {
             // Clear any existing timers
@@ -328,6 +472,10 @@
             }, this.autoClearTimeout);
         }
 
+        /**
+         * Stop auto-clear timer
+         * CORE FUNCTIONALITY - Used by both FREE and PRO
+         */
         stopAutoClear() {
             clearTimeout(this.clearTimer);
             clearInterval(this.countdownInterval);
@@ -335,6 +483,10 @@
             this.countdownInterval = null;
         }
 
+        /**
+         * Reset auto-clear timer
+         * CORE FUNCTIONALITY - Used by both FREE and PRO
+         */
         resetAutoClear() {
             this.stopAutoClear();
             this.startAutoClear();
@@ -342,8 +494,12 @@
 
         /**
          * Clear all decrypted data from memory and UI
+         * CORE FUNCTIONALITY with EXTENSION POINTS
          */
-        clearAllDecryptedData() {
+        async clearAllDecryptedData() {
+            // HOOK: beforeClear - PRO can cleanup custom data
+            await this.triggerHook('beforeClear');
+
             // Clear decrypted data from memory
             this.decryptedData.clear();
             this.privateKey = null; // Clear cached key
@@ -356,10 +512,14 @@
             });
 
             this.stopAutoClear();
+
+            // HOOK: afterClear - PRO can perform post-cleanup
+            await this.triggerHook('afterClear');
         }
 
         /**
          * Helper: Convert base64 to ArrayBuffer
+         * CORE UTILITY - Used by both FREE and PRO
          */
         base64ToArrayBuffer(base64) {
             const binaryString = atob(base64);
@@ -372,6 +532,7 @@
 
         /**
          * Helper: Escape HTML
+         * CORE UTILITY - Used by both FREE and PRO
          */
         escapeHtml(text) {
             const map = {
@@ -383,12 +544,32 @@
             };
             return String(text || '').replace(/[&<>"']/g, (m) => map[m]);
         }
+
+        /**
+         * Public API: Get decrypted data for an entry
+         * Useful for PRO extensions that need access to decrypted data
+         */
+        getDecryptedData(entryId) {
+            return this.decryptedData.get(entryId);
+        }
+
+        /**
+         * Public API: Check if entry is decrypted
+         * Useful for PRO extensions
+         */
+        isDecrypted(entryId) {
+            return this.decryptedData.has(entryId);
+        }
     }
 
     // Initialize when DOM is ready
     $(document).ready(function() {
-        window.freeAdminDecryption = new FreeAdminDecryption();
+        // Create global instance - accessible to PRO extensions
+        window.seculocoDecrypt = new BaseAdminDecryption();
+        window.seculocoDecrypt.init();
+
+        // Backwards compatibility alias
+        window.freeAdminDecryption = window.seculocoDecrypt;
     });
 
 })(jQuery);
-

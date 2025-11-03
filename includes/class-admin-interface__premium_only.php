@@ -23,6 +23,14 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Seculoco_Admin_Interface_Premium extends Seculoco_Admin_Interface {
 
+
+	/**
+	 * Database manager instance.
+	 *
+	 * @var Seculoco_Database_Manager
+	 */
+	private $database_manager;
+
 	/**
 	 * Constructor - registers pro AJAX handlers.
 	 *
@@ -33,6 +41,8 @@ class Seculoco_Admin_Interface_Premium extends Seculoco_Admin_Interface {
 	public function __construct( $table_name, $encryption_handler, $database_manager ) {
 
 		parent::__construct( $table_name, $encryption_handler, $database_manager );
+
+		$this->database_manager = $database_manager;
 
 		// Register pro passkey AJAX handlers.
 		add_action( 'wp_ajax_seculoco_bulk_decrypt_with_passkey', array( $this, 'handle_bulk_decrypt_with_passkey_ajax' ) );
@@ -50,7 +60,7 @@ class Seculoco_Admin_Interface_Premium extends Seculoco_Admin_Interface {
 	 * @param string $hook The current admin page hook.
 	 */
 	public function enqueue_admin_scripts( $hook ) {
-		// Call parent to load base scripts.
+		// Call parent to load base scripts (admin.js and admin-decrypt.js).
 		parent::enqueue_admin_scripts( $hook );
 
 		// Only load on our admin page.
@@ -63,15 +73,29 @@ class Seculoco_Admin_Interface_Premium extends Seculoco_Admin_Interface {
 			return;
 		}
 
-		// Enqueue premium decrypt script (passkey-based decryption).
+		// Enqueue premium decrypt script (passkey-based decryption plugin).
+		// CRITICAL: This depends on base admin-decrypt.js (seculoco-admin-decrypt).
 		$decrypt_script_path = plugin_dir_path( __FILE__ ) . '../assets/js/admin-decrypt__premium_only.js';
 		if ( file_exists( $decrypt_script_path ) ) {
 			wp_enqueue_script(
-				'secure-login-admin-decrypt-premium',
+				'seculoco-admin-decrypt-pro',
 				plugin_dir_url( __FILE__ ) . '../assets/js/admin-decrypt__premium_only.js',
-				array( 'jquery', 'secure-login-admin-js' ),
+				array( 'jquery', 'seculoco-admin-decrypt' ),  // Depends on base framework.
 				filemtime( $decrypt_script_path ),
 				true
+			);
+
+			// Pass feature flags to PRO script.
+			wp_localize_script(
+				'seculoco-admin-decrypt-pro',
+				'seculocoFeatures',
+				array(
+					'isPro'       => true,
+					'hasPasskey'  => true,
+					'hasExport'   => true,
+					'version'     => 'pro',
+					'buildDate'   => gmdate( 'Y-m-d H:i:s' ),
+				)
 			);
 		}
 
@@ -79,7 +103,7 @@ class Seculoco_Admin_Interface_Premium extends Seculoco_Admin_Interface {
 		$bulk_export_script_path = plugin_dir_path( __FILE__ ) . '../assets/js/admin-bulk-export__premium_only.js';
 		if ( file_exists( $bulk_export_script_path ) ) {
 			wp_enqueue_script(
-				'secure-login-admin-bulk-export',
+				'seculoco-admin-bulk-export',
 				plugin_dir_url( __FILE__ ) . '../assets/js/admin-bulk-export__premium_only.js',
 				array( 'jquery', 'secure-login-admin-js' ),
 				filemtime( $bulk_export_script_path ),

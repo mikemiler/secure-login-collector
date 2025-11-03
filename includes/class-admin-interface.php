@@ -706,12 +706,12 @@ class Seculoco_Admin_Interface {
 			true
 		);
 
-		// Enqueue free version decrypt script (no passkey required).
+		// Enqueue base decryption framework (loaded for everyone).
 		wp_enqueue_script(
-			'secure-login-admin-decrypt',
+			'seculoco-admin-decrypt',
 			plugin_dir_url( __FILE__ ) . '../assets/js/admin-decrypt.js',
-			array( 'jquery', 'secure-login-admin-js' ),
-			'1.0.0',
+			array( 'jquery' ),
+			filemtime( plugin_dir_path( __FILE__ ) . '../assets/js/admin-decrypt.js' ),
 			true
 		);
 

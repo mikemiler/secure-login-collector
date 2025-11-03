@@ -226,15 +226,44 @@ class Passkey_Manager {
 						</div>
 					<?php else : ?>
 						<p><?php esc_html_e( 'Register a hardware security key or platform authenticator for ultra-secure encryption.', 'secure-login-collector' ); ?></p>
-						
+
 						<div class="passkey-registration-form" style="margin: 20px 0;">
-							<button type="button" 
-									id="register-passkey-btn" 
+							<div class="seculoco-form-group" style="margin-bottom: 15px;">
+								<label class="seculoco-form-label">
+									<?php esc_html_e( 'Select Authenticator Type:', 'secure-login-collector' ); ?>
+								</label>
+								<div class="seculoco-radio-group" style="margin-top: 8px;">
+									<label style="display: block; margin-bottom: 8px;">
+										<input type="radio" name="authenticator_type" value="platform" checked>
+										<strong><?php esc_html_e( 'Platform Authenticator', 'secure-login-collector' ); ?></strong>
+										<span class="seculoco-form-help" style="display: block; margin-left: 20px;">
+											<?php esc_html_e( 'Use Touch ID, Face ID, or Windows Hello built into your device', 'secure-login-collector' ); ?>
+										</span>
+									</label>
+									<label style="display: block; margin-bottom: 8px;">
+										<input type="radio" name="authenticator_type" value="cross-platform">
+										<strong><?php esc_html_e( 'Security Key', 'secure-login-collector' ); ?></strong>
+										<span class="seculoco-form-help" style="display: block; margin-left: 20px;">
+											<?php esc_html_e( 'Use a physical security key like YubiKey or similar device', 'secure-login-collector' ); ?>
+										</span>
+									</label>
+									<label style="display: block; margin-bottom: 8px;">
+										<input type="radio" name="authenticator_type" value="auto">
+										<strong><?php esc_html_e( 'Auto-Detect', 'secure-login-collector' ); ?></strong>
+										<span class="seculoco-form-help" style="display: block; margin-left: 20px;">
+											<?php esc_html_e( 'Let browser choose (includes password managers)', 'secure-login-collector' ); ?>
+										</span>
+									</label>
+								</div>
+							</div>
+
+							<button type="button"
+									id="register-passkey-btn"
 									class="seculoco-btn slc-btn-primary slc-btn-lg">
 								<span>🔑</span>
 								<?php esc_html_e( 'Register Passkey', 'secure-login-collector' ); ?>
 							</button>
-							
+
 							<span class="spinner" style="float: none; margin-left: 10px;"></span>
 						</div>
 					<?php endif; ?>
@@ -281,11 +310,30 @@ class Passkey_Manager {
 			wp_send_json_error( 'Insufficient permissions' );
 		}
 
+		// Get authenticator type from request (platform, cross-platform, or auto).
+		$authenticator_type = isset( $_POST['authenticator_type'] ) ? sanitize_text_field( wp_unslash( $_POST['authenticator_type'] ) ) : 'auto';
+
 		// Generate challenge.
 		$challenge = base64_encode( random_bytes( 32 ) );
 		set_transient( 'passkey_reg_challenge_' . get_current_user_id(), $challenge, 300 );
 
 		$user = wp_get_current_user();
+
+		// Build authenticatorSelection based on user choice.
+		$authenticator_selection = array(
+			'userVerification'   => 'required',  // Always require biometric/PIN verification
+			'requireResidentKey' => false,
+		);
+
+		// Set authenticatorAttachment based on user choice.
+		if ( 'platform' === $authenticator_type ) {
+			// Platform authenticators: Touch ID, Face ID, Windows Hello
+			$authenticator_selection['authenticatorAttachment'] = 'platform';
+		} elseif ( 'cross-platform' === $authenticator_type ) {
+			// Cross-platform authenticators: YubiKey, security keys
+			$authenticator_selection['authenticatorAttachment'] = 'cross-platform';
+		}
+		// If 'auto', omit authenticatorAttachment to allow any type including password managers
 
 		wp_send_json_success(
 			array(
@@ -309,11 +357,7 @@ class Passkey_Manager {
 						'type' => 'public-key',
 					), // RS256
 				),
-				'authenticatorSelection' => array(
-					'authenticatorAttachment' => 'cross-platform',
-					'userVerification'        => 'required',
-					'requireResidentKey'      => false,
-				),
+				'authenticatorSelection' => $authenticator_selection,
 				'timeout'                => 60000,
 			)
 		);

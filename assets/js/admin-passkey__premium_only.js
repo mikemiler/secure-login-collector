@@ -86,6 +86,9 @@ jQuery(document).ready(function($) {
 			return;
 		}
 
+		// Get selected authenticator type
+		var authenticatorType = $('input[name="authenticator_type"]:checked').val() || 'auto';
+
 		$button.prop('disabled', true);
 		$spinner.addClass('is-active');
 
@@ -96,7 +99,8 @@ jQuery(document).ready(function($) {
 				type: 'POST',
 				data: {
 					action: 'passkey_start_registration',
-					nonce: nonce
+					nonce: nonce,
+					authenticator_type: authenticatorType
 				}
 			});
 

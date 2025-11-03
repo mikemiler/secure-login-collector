@@ -132,9 +132,8 @@ jQuery(document).ready(function ($) {
         var decryptedRow = $('#decrypted-row-' + id);
         var decryptBtn = $('.decrypt-btn-v2[data-id="' + id + '"]');
 
-        // Don't remove the decrypted data - just hide the display
-        // This allows the export button to still work after hiding
-        // decryptedRow.removeData('decrypted-data');
+       
+        decryptedRow.removeData('decrypted-data');
 
         decryptedRow.hide();
         decryptBtn.prop('disabled', false).removeClass('button-success');
