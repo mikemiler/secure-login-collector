@@ -725,10 +725,6 @@ button .dashicons {
    Decrypted Data Display
    ========================================================================== */
 
-.decrypted-data-row {
-	background-color: var(--seculoco-bg-light);
-}
-
 .decrypted-content {
 	padding: 25px;
 	background: linear-gradient(135deg, var(--seculoco-bg-white) 0%, var(--seculoco-bg-light) 100%);

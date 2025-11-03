@@ -28,10 +28,14 @@
             // Core state management
             this.decryptedData = new Map();
             this.privateKey = null; // Cache the private key
-            this.autoClearTimeout = 60000; // 60 seconds
-            this.countdownSeconds = 60;
-            this.clearTimer = null;
-            this.countdownInterval = null;
+            this.autoClearTimeout = 60000; // 60 seconds per entry
+
+            // Per-entry timers: entryId -> { seconds, clearTimer, countdownInterval }
+            this.entryTimers = new Map();
+
+            // Key cache timer (separate from per-entry UI timers)
+            this.keyCacheTimeout = 60000; // 60 seconds
+            this.keyCacheTimer = null;
 
             // Extension Registry - PRO features register here
             this.extensions = {
@@ -166,8 +170,11 @@
 
                 $btn.html('<span class="dashicons dashicons-yes"></span>').addClass('button-success');
 
-                // Start/reset auto-clear countdown
-                this.resetAutoClear();
+                // Start/reset per-entry auto-clear countdown
+                this.resetEntryTimer(entryId);
+
+                // Reset key cache timer (keeps privateKey for a short window)
+                this.resetKeyCacheTimer();
 
             } catch (error) {
                 console.error('Decryption failed:', error);
@@ -353,7 +360,8 @@
                                 <div class="decrypted-header">
                                     <div style="display: flex; align-items: center; gap: 15px;">
                                         <strong>Decrypted Data</strong>
-                                        <span class="auto-clear-warning">Auto-clears in <span id="decrypted-area-countdown">60</span> seconds</span>
+                                        <span class="auto-clear-warning" data-entry-id="${entryId}">Auto-clears in <span id="decrypted-area-countdown-${entryId}">60</span> seconds</span>
+                                        <button type="button" class="button clear-now-btn" data-id="${entryId}" style="margin-left: 8px;">Clear now</button>
                                     </div>
                                 </div>
                                 <div class="decrypted-content">
@@ -401,8 +409,8 @@
             // Bind copy and toggle buttons (CORE functionality)
             this.bindCopyButtons(entryId);
 
-            // Reset auto-clear timer
-            this.resetAutoClear();
+            // Reset per-entry auto-clear timer when toggling display
+            this.resetEntryTimer(entryId);
         }
 
         /**
@@ -435,61 +443,112 @@
                     $(this).text('Show');
                 }
             });
+
+            // Bind clear-now button
+            $row.find('.clear-now-btn').off('click').on('click', (e) => {
+                e.preventDefault();
+                const id = parseInt($(e.currentTarget).data('id'), 10);
+                if (!isNaN(id)) {
+                    this.clearEntryData(id);
+                }
+            });
         }
 
         /**
          * Auto-clear sensitive data after timeout
          * CORE FUNCTIONALITY - Used by both FREE and PRO
          */
-        startAutoClear() {
-            // Clear any existing timers
-            this.stopAutoClear();
+        startEntryTimer(entryId) {
+            // Stop existing timers for this entry
+            this.stopEntryTimer(entryId);
 
-            // Reset countdown
-            this.countdownSeconds = 60;
-            $('#decrypted-area-countdown').text(this.countdownSeconds);
+            // Initialize countdown
+            const countdownSelector = `#decrypted-area-countdown-${entryId}`;
+            const warningSelector = `.decrypted-row[data-entry-id="${entryId}"] .auto-clear-warning`;
 
-            // Start countdown interval (updates every second)
-            this.countdownInterval = setInterval(() => {
-                this.countdownSeconds--;
-                $('#decrypted-area-countdown').text(this.countdownSeconds);
+            const timerState = {
+                seconds: Math.floor(this.autoClearTimeout / 1000),
+                clearTimer: null,
+                countdownInterval: null
+            };
+
+            // Set initial display
+            $(countdownSelector).text(timerState.seconds);
+
+            // Start countdown interval
+            timerState.countdownInterval = setInterval(() => {
+                timerState.seconds--;
+                $(countdownSelector).text(timerState.seconds);
 
                 // Change color when less than 10 seconds
-                if (this.countdownSeconds <= 10) {
-                    $('.auto-clear-warning').css('color', '#d63638');
+                if (timerState.seconds <= 10) {
+                    $(warningSelector).css('color', '#d63638');
                 } else {
-                    $('.auto-clear-warning').css('color', '#996800');
+                    $(warningSelector).css('color', '#996800');
                 }
 
-                if (this.countdownSeconds <= 0) {
-                    this.clearAllDecryptedData();
+                if (timerState.seconds <= 0) {
+                    this.clearEntryData(entryId);
                 }
             }, 1000);
 
-            // Set main clear timer
-            this.clearTimer = setTimeout(() => {
-                this.clearAllDecryptedData();
+            // Set timeout to clear this entry
+            timerState.clearTimer = setTimeout(() => {
+                this.clearEntryData(entryId);
             }, this.autoClearTimeout);
+
+            this.entryTimers.set(entryId, timerState);
         }
 
         /**
          * Stop auto-clear timer
          * CORE FUNCTIONALITY - Used by both FREE and PRO
          */
-        stopAutoClear() {
-            clearTimeout(this.clearTimer);
-            clearInterval(this.countdownInterval);
-            this.clearTimer = null;
-            this.countdownInterval = null;
+        stopEntryTimer(entryId) {
+            const t = this.entryTimers.get(entryId);
+            if (t) {
+                clearTimeout(t.clearTimer);
+                clearInterval(t.countdownInterval);
+                this.entryTimers.delete(entryId);
+            }
         }
 
         /**
          * Reset auto-clear timer
          * CORE FUNCTIONALITY - Used by both FREE and PRO
          */
-        resetAutoClear() {
-            this.stopAutoClear();
-            this.startAutoClear();
+        resetEntryTimer(entryId) {
+            this.startEntryTimer(entryId);
+        }
+
+        // Clear a single entry's decrypted data and UI
+        clearEntryData(entryId) {
+            this.stopEntryTimer(entryId);
+            this.decryptedData.delete(entryId);
+
+            // Remove row UI for this entry
+            const $row = $(`.decrypted-row[data-entry-id="${entryId}"]`);
+            if ($row.length > 0) {
+                $row.remove();
+            }
+
+            // Re-enable decrypt button for this entry if present
+            const $btn = $(`.decrypt-btn-v2[data-id="${entryId}"]`);
+            if ($btn.length > 0) {
+                $btn.prop('disabled', false).removeClass('button-success');
+                $btn.html('<span class="dashicons dashicons-unlock"></span>');
+            }
+        }
+
+        // Key cache timer: clears privateKey only (not UI)
+        resetKeyCacheTimer() {
+            if (this.keyCacheTimer) {
+                clearTimeout(this.keyCacheTimer);
+            }
+            this.keyCacheTimer = setTimeout(() => {
+                this.privateKey = null;
+                this.keyCacheTimer = null;
+            }, this.keyCacheTimeout);
         }
 
         /**
@@ -500,18 +559,18 @@
             // HOOK: beforeClear - PRO can cleanup custom data
             await this.triggerHook('beforeClear');
 
-            // Clear decrypted data from memory
+            // Clear all entry timers and UI
+            for (const entryId of Array.from(this.decryptedData.keys())) {
+                this.clearEntryData(entryId);
+            }
+
+            // Clear decrypted data and key cache
             this.decryptedData.clear();
-            this.privateKey = null; // Clear cached key
-
-            // Remove from UI
-            $('.decrypted-row').remove();
-            $('.decrypt-btn-v2').each(function() {
-                $(this).prop('disabled', false).removeClass('button-success');
-                $(this).html('<span class="dashicons dashicons-unlock"></span>');
-            });
-
-            this.stopAutoClear();
+            this.privateKey = null;
+            if (this.keyCacheTimer) {
+                clearTimeout(this.keyCacheTimer);
+                this.keyCacheTimer = null;
+            }
 
             // HOOK: afterClear - PRO can perform post-cleanup
             await this.triggerHook('afterClear');
