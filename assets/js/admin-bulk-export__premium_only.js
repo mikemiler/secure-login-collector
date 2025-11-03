@@ -212,22 +212,18 @@ jQuery(document).ready(function ($) {
             const entryIds = data.entry_ids || [];
             const manager = data.manager;
 
-            // Use existing SecureAdminDecryption for bulk decryption
+            // Use current decryption framework
+            const base = window.seculocoDecrypt;
+            const pro = window.seculocoDecryptPro;
+
             let decryptedEntries = [];
             let successCount = 0;
             let failedCount = 0;
             let failedEntryIds = [];
 
-            // Check if SecureAdminDecryption is available
-            if (!window.secureAdminDecryption && window.SecureAdminDecryption) {
-                window.secureAdminDecryption = new SecureAdminDecryption();
-            }
-
-            if (!window.secureAdminDecryption) {
+            if (!base) {
                 throw new Error('Decryption module not available. Please refresh the page.');
             }
-
-            const decryptor = window.secureAdminDecryption;
 
             $('#bulk-progress-text').text('Starting decryption...');
             $('#bulk-progress-bar').css('width', '5%');
@@ -243,8 +239,8 @@ jQuery(document).ready(function ($) {
 
                 try {
                     // Check if already decrypted
-                    if (decryptor.decryptedData.has(entryId)) {
-                        const decrypted = decryptor.decryptedData.get(entryId);
+                    if (base.decryptedData.has(entryId)) {
+                        const decrypted = base.decryptedData.get(entryId);
                         const $row = $('tr').filter(function() {
                             return $(this).find('.decrypt-btn[data-id="' + entryId + '"], .decrypt-btn-v2[data-id="' + entryId + '"]').length > 0;
                         });
@@ -263,34 +259,46 @@ jQuery(document).ready(function ($) {
                     }
 
                     // Get encrypted data
-                    const encryptedPackage = await decryptor.getEncryptedData(entryId);
+                    const encryptedPackage = await base.getEncryptedData(entryId);
 
-                    // Get key type
-                    const keyInfo = await decryptor.getKeyType(entryId);
-                    const keyType = keyInfo.type;
+                    // Query key info for this entry
+                    const keyInfoResp = await $.ajax({
+                        url: seculocoAjax.ajaxurl,
+                        type: 'POST',
+                        data: {
+                            action: 'seculoco_get_wrapped_private_key',
+                            entry_id: entryId,
+                            nonce: seculocoAjax.nonce
+                        }
+                    });
+                    if (!keyInfoResp.success || !keyInfoResp.data) {
+                        throw new Error('Failed to get key info');
+                    }
+                    const keyType = keyInfoResp.data.type || 'free';
 
                     // Update progress with key type
                     $('#bulk-progress-text').text('Decrypting entry ' + processed + ' of ' + entryIds.length + ' (' + keyType.toUpperCase() + ' encryption)');
                     $('#bulk-progress-bar').css('width', progressPercent + '%');
 
-                    // Unwrap key if needed (once per key type) - pass preAuthData to avoid re-authentication
-                    if (!decryptor.unwrappedKeys[keyType]) {
-                        console.log('Unwrapping ' + keyType + ' key for entry ' + entryId + (preAuthData ? ' with pre-auth data' : ' without pre-auth'));
-                        await decryptor.unwrapPrivateKey(entryId, keyType, preAuthData);
-                        console.log('Successfully unwrapped ' + keyType + ' key');
-                    }
-
-                    const privateKey = decryptor.unwrappedKeys[keyType];
-
-                    if (!privateKey) {
-                        throw new Error('Failed to unwrap private key for key type: ' + keyType);
+                    // Get/import private key for this entry
+                    let privateKey;
+                    if (keyType === 'pro') {
+                        if (!preAuthData || !preAuthData.derivedKey) {
+                            throw new Error('Passkey not authenticated for PRO entries.');
+                        }
+                        const wrappedKey = keyInfoResp.data.wrapped_key;
+                        privateKey = await pro.unwrapKey(wrappedKey, preAuthData.derivedKey);
+                    } else {
+                        const privateKeyB64 = keyInfoResp.data.private_key;
+                        const privateKeyPem = atob(privateKeyB64);
+                        privateKey = await base.importRSAPrivateKey(privateKeyPem);
                     }
 
                     // Decrypt the data
-                    const decrypted = await decryptor.decryptData(encryptedPackage, privateKey);
+                    const decrypted = await base.decryptData(encryptedPackage, privateKey);
 
                     // Store in cache
-                    decryptor.decryptedData.set(entryId, decrypted);
+                    base.decryptedData.set(entryId, decrypted);
 
                     // Get metadata from table
                     const $row = $('tr').filter(function() {
@@ -383,11 +391,12 @@ jQuery(document).ready(function ($) {
 
         // First, get the passkey challenge and credentials from server
         $.ajax({
-            url: seculocoAjax.ajaxurl,
+            url: (typeof secureLoginPasskeyData !== 'undefined' ? secureLoginPasskeyData.ajaxUrl : (typeof seculocoAdmin !== 'undefined' ? seculocoAdmin.ajaxurl : seculocoAjax.ajaxurl)),
             type: 'POST',
             data: {
-                action: 'passkey_get_challenge',
-                nonce: seculocoAjax.nonce
+                action: 'seculoco_passkey_challenge',
+                // This endpoint accepts seculoco_admin_nonce or seculoco_nonce
+                nonce: (typeof seculocoAdmin !== 'undefined' ? seculocoAdmin.nonce : seculocoAjax.nonce)
             },
             success: function(challengeResponse) {
                 if (!challengeResponse.success) {
@@ -429,19 +438,12 @@ jQuery(document).ready(function ($) {
                             $('#bulk-progress-text').text('Deriving encryption key from passkey...');
                             $('#bulk-progress-bar').css('width', '5%');
 
-                            // Check if SecureAdminDecryption is available
-                            if (!window.secureAdminDecryption && window.SecureAdminDecryption) {
-                                window.secureAdminDecryption = new SecureAdminDecryption();
-                            }
-
-                            if (!window.secureAdminDecryption) {
+                            if (!window.seculocoDecryptPro) {
                                 throw new Error('Decryption module not available. Please refresh the page.');
                             }
 
-                            const decryptor = window.secureAdminDecryption;
-
-                            // Derive the unwrapping key from the assertion ONCE
-                            const derivedKey = await decryptor.deriveUnwrappingKeyFromAssertion(assertion);
+                            // Derive the unwrapping key from the assertion ONCE using PRO plugin
+                            const derivedKey = await window.seculocoDecryptPro.deriveUnwrappingKey(assertion);
 
                             // Create preAuthData object to pass to bulk decryption
                             const preAuthData = { derivedKey: derivedKey };
