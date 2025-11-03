@@ -145,8 +145,8 @@ jQuery(document).ready(function ($) {
     }
 
     // Use the global base64ToArrayBuffer function if not already defined
-    if (typeof window.base64ToArrayBuffer === 'undefined') {
-        window.base64ToArrayBuffer = function(base64) {
+    if (typeof window.seculocoBase64ToArrayBuffer === 'undefined') {
+        window.seculocoBase64ToArrayBuffer = function(base64) {
             var binaryString = window.atob(base64);
             var bytes = new Uint8Array(binaryString.length);
             for (var i = 0; i < binaryString.length; i++) {
@@ -154,6 +154,11 @@ jQuery(document).ready(function ($) {
             }
             return bytes.buffer;
         };
+    }
+
+    // Legacy alias for backwards compatibility within this file
+    if (typeof window.base64ToArrayBuffer === 'undefined') {
+        window.base64ToArrayBuffer = window.seculocoBase64ToArrayBuffer;
     }
 
     // Local reference is now global, no need for duplicate
@@ -623,8 +628,8 @@ jQuery(document).ready(function ($) {
     }
 
     // Function to download CSV file (uses global if available)
-    if (typeof window.downloadCSVFile === 'undefined') {
-        window.downloadCSVFile = function(content, filename) {
+    if (typeof window.seculocoDownloadCSVFile === 'undefined') {
+        window.seculocoDownloadCSVFile = function(content, filename) {
             var blob = new Blob([content], { type: 'text/csv' });
             var url = window.URL.createObjectURL(blob);
             var a = document.createElement('a');
@@ -635,6 +640,11 @@ jQuery(document).ready(function ($) {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
         };
+    }
+
+    // Legacy alias for backwards compatibility within this file
+    if (typeof window.downloadCSVFile === 'undefined') {
+        window.downloadCSVFile = window.seculocoDownloadCSVFile;
     }
 
     /**

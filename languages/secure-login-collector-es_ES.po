@@ -6,7 +6,7 @@ msgstr ""
 "Project-Id-Version: Secure Login Collector 2.5.2\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/secure-login-"
 "collector\n"
-"POT-Creation-Date: 2025-07-28T07:55:54+00:00\n"
+"POT-Creation-Date: 2025-11-03T18:44:00+00:00\n"
 "PO-Revision-Date: 2025-07-28 09:23+0000\n"
 "Last-Translator: \n"
 "Language-Team: Spanish (Spain)\n"
@@ -16,144 +16,607 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Loco https://localise.biz/\n"
-"X-Loco-Version: 2.8.0; wp-6.8.1; php-8.3.17"
+"X-Loco-Version: 2.8.0; wp-6.8.1; php-8.3.17\n"
 
-#: class-database-manager.php:295
-msgid "%1$d days, %2$d hours"
-msgstr "%1$d días, %2$d horas"
+#. Plugin Name of the plugin
+#: secure-login-collector.php
+#, fuzzy
+msgid "Secure Login Collector"
+msgstr "Secure Login Collector:"
 
-#: class-admin-interface.php:429
+#. Plugin URI of the plugin
+#: secure-login-collector.php
+msgid "https://wp-mike.com"
+msgstr ""
+
+#. Description of the plugin
+#: secure-login-collector.php
+msgid ""
+"Securely collects and stores encrypted login credentials from clients via "
+"frontend form with email notifications."
+msgstr ""
+
+#. Author of the plugin
+#: secure-login-collector.php
+msgid "Mike Miler"
+msgstr ""
+
+#: includes/class-admin-interface.php:82 includes/class-admin-interface.php:864
+msgid "Email Address"
+msgstr "Dirección de correo electrónico"
+
+#: includes/class-admin-interface.php:83 includes/class-admin-interface.php:872
+msgid "Name"
+msgstr "Nombre"
+
+#: includes/class-admin-interface.php:84 includes/class-admin-interface.php:880
+msgid "Login URL"
+msgstr "URL de acceso"
+
+#: includes/class-admin-interface.php:85
+msgid "Date"
+msgstr "Fecha"
+
+#: includes/class-admin-interface.php:86 includes/class-admin-interface.php:916
+msgid "Encryption Method"
+msgstr "Método de cifrado"
+
+#: includes/class-admin-interface.php:87
+msgid "Expires In"
+msgstr "Expira en"
+
+#: includes/class-admin-interface.php:88
+msgid "Actions"
+msgstr "Acciones"
+
+#: includes/class-admin-interface.php:116
+msgid "Delete"
+msgstr "Eliminar"
+
+#: includes/class-admin-interface.php:143
+#: includes/class-admin-interface.php:160
+msgid "N/A"
+msgstr "N/A"
+
+#: includes/class-admin-interface.php:177
+#: includes/class-admin-interface.php:730
+#: includes/class-database-manager.php:431
+msgid "Not provided"
+msgstr "No proporcionado"
+
+#: includes/class-admin-interface.php:266
+msgid "Edit entry"
+msgstr "Editar entrada"
+
+#: includes/class-admin-interface.php:273
+msgid "Save changes"
+msgstr "Guardar cambios"
+
+#: includes/class-admin-interface.php:279
+msgid "Cancel editing"
+msgstr "Cancelar edición"
+
+#: includes/class-admin-interface.php:288
+msgid "Data has been purged (expired)"
+msgstr ""
+
+#: includes/class-admin-interface.php:296
+msgid "Cannot decrypt: passkey was deleted"
+msgstr ""
+
+#: includes/class-admin-interface.php:306
+#: includes/class-admin-interface.php:737
+msgid "Decrypt data"
+msgstr "Descifrar datos"
+
+#: includes/class-admin-interface.php:316
+msgid "Extend retention period"
+msgstr "Extender período de retención"
+
+#: includes/class-admin-interface.php:322
+#, fuzzy
+msgid "Cannot extend retention period"
+msgstr "Extender período de retención"
+
+#: includes/class-admin-interface.php:330
+msgid "Delete entry"
+msgstr "Eliminar entrada"
+
+#: includes/class-admin-interface.php:346
+#, fuzzy
+msgid "Secure"
+msgstr "🔐 Seguro"
+
+#: includes/class-admin-interface.php:348
+msgid "AES-256-GCM encryption with RSA key protection."
+msgstr "Cifrado AES-256-GCM con protección de clave RSA."
+
+#: includes/class-admin-interface.php:352
+#: includes/class-admin-interface.php:358
+#, fuzzy
+msgid "Ultra-Secure"
+msgstr "Modo ultra seguro"
+
+#: includes/class-admin-interface.php:354
+msgid "AES-256-GCM + RSA with passkey authentication required for decryption."
+msgstr ""
+"AES-256-GCM + RSA con autenticación por Passkey requerida para el descifrado."
+
+#: includes/class-admin-interface.php:360
+msgid "Passkey-derived encryption for maximum security."
+msgstr "Cifrado derivado de Passkey para máxima seguridad."
+
+#: includes/class-admin-interface.php:364
+#: includes/class-admin-interface.php:370
+msgid "RSA-2048"
+msgstr "RSA-2048"
+
+#: includes/class-admin-interface.php:366
+#: includes/class-admin-interface.php:372
+msgid "Industry-standard RSA encryption."
+msgstr "Cifrado RSA estándar de la industria."
+
+#: includes/class-admin-interface.php:481
+msgid "Security check failed."
+msgstr "La verificación de seguridad falló."
+
+#: includes/class-admin-interface.php:497
+#, php-format
 msgid "%d entry deleted."
 msgid_plural "%d entries deleted."
 msgstr[0] "%d entrada eliminada."
 msgstr[1] "%d entradas eliminadas."
 
-#: class-database-manager.php:298
-msgid "%d hours"
-msgstr "%d horas"
+#: includes/class-admin-interface.php:518
+#, php-format
+msgid "Bulk export initiated for %d entries. Please wait..."
+msgstr "Exportación masiva iniciada para %d entradas. Por favor, espere..."
 
-#: class-settings-manager.php:371
-msgid "(see instructions below)"
-msgstr "(ver instrucciones a continuación)"
+#: includes/class-admin-interface.php:550
+msgid "Search in email, name, login URL..."
+msgstr "Buscar en correo, nombre, URL de acceso..."
 
-#: class-admin-interface.php:1307
-msgid "AES encryption failed."
-msgstr "El cifrado AES falló."
+#: includes/class-admin-interface.php:571
+msgid "Decrypted Data:"
+msgstr "Datos descifrados:"
 
-#: class-admin-interface.php:335 class-admin-interface.php:900
-msgid "AES-256-GCM + RSA with passkey authentication required for decryption."
-msgstr ""
-"AES-256-GCM + RSA con autenticación por Passkey requerida para el descifrado."
+#: includes/class-admin-interface.php:574
+msgid "Export to Password Manager"
+msgstr "Exportar a gestor de contraseñas"
 
-#: class-admin-interface.php:329 class-admin-interface.php:894
-msgid "AES-256-GCM encryption with RSA key protection."
-msgstr "Cifrado AES-256-GCM con protección de clave RSA."
+#: includes/class-admin-interface.php:575
+msgid "Hide decrypted data"
+msgstr "Ocultar datos descifrados"
 
-#: freemius-account-redirect.php:38 freemius-account-redirect.php:73
-msgid "Account"
-msgstr "Cuenta"
+#: includes/class-admin-interface.php:657
+msgid "Entries per page"
+msgstr "Entradas por página"
 
-#: account-page-simple.php:18
-msgid "Account & License"
-msgstr "Cuenta y Licencia"
+#: includes/class-admin-interface.php:675
+msgid "Login Data"
+msgstr "Datos de acceso"
 
-#: freemius-account-redirect.php:51
-msgid "Account Setup Required"
-msgstr "Configuración de cuenta requerida"
+#: includes/class-admin-interface.php:678
+#: includes/class-admin-interface.php:830
+msgid "Secure Login Data"
+msgstr "Datos de acceso seguros"
 
-#: class-admin-interface.php:99
-msgid "Actions"
-msgstr "Acciones"
+#: includes/class-admin-interface.php:731
+#: includes/class-admin-interface.php:793
+msgid "Saving..."
+msgstr "Guardando..."
 
-#: class-settings-manager.php:242
-msgid "Active"
-msgstr "Activo"
+#: includes/class-admin-interface.php:732
+#, fuzzy
+msgid "Save failed: "
+msgstr "Error al guardar:"
 
-#: class-admin-interface.php:770
-msgid "Add New Entry"
-msgstr "Añadir nueva entrada"
+#: includes/class-admin-interface.php:733
+#: includes/class-admin-interface.php:796
+#: includes/class-frontend-handler.php:112
+msgid "Unknown error"
+msgstr "Error desconocido"
 
-#: class-admin-interface.php:787
-msgid "Add New Login Data Entry"
-msgstr "Añadir nueva entrada de datos de acceso"
+#: includes/class-admin-interface.php:734
+msgid "Network error occurred during save."
+msgstr "Error de red durante el guardado."
 
-#: class-admin-interface.php:836
-msgid "Additional Notes"
-msgstr "Notas adicionales"
+#: includes/class-admin-interface.php:735
+msgid "Requesting passkey..."
+msgstr "Solicitando Passkey..."
 
-#: class-frontend-handler.php:340
-msgid "Additional Notes:"
-msgstr "Notas adicionales:"
+#: includes/class-admin-interface.php:736
+#, fuzzy
+msgid "Passkey authentication setup failed: "
+msgstr "La configuración de autenticación con Passkey falló:"
 
-#: class-settings-manager.php:326
+#: includes/class-admin-interface.php:738
+msgid "Network error occurred during passkey setup."
+msgstr "Error de red durante la configuración de Passkey."
+
+#: includes/class-admin-interface.php:739
 msgid ""
-"Advanced security settings for the pro version including passkey "
-"authentication."
+"Pro version detected but no passkey registered. Continue with traditional "
+"decryption?"
 msgstr ""
-"Configuración de seguridad avanzada para la versión pro incluyendo "
-"autenticación por Passkey."
+"Versión Pro detectada pero sin Passkey registrada. ¿Continuar con el "
+"descifrado tradicional?"
 
-#: class-admin-interface.php:839 class-frontend-handler.php:341
+#: includes/class-admin-interface.php:740
 msgid ""
-"Any additional information, security questions, backup codes, etc. (optional)"
+"This entry was created before automatic key reconstruction was available. "
+"Please enter the encryption key manually:"
 msgstr ""
-"Cualquier información adicional, preguntas de seguridad, códigos de respaldo,"
-" etc. (opcional)"
+"Esta entrada fue creada antes de que la reconstrucción automática de claves "
+"estuviera disponible. Por favor, ingrese la clave de cifrado manualmente:"
 
-#: class-admin-interface.php:705
+#: includes/class-admin-interface.php:741
+msgid "Decrypting..."
+msgstr "Descifrando..."
+
+#: includes/class-admin-interface.php:742
+msgid "Data decrypted"
+msgstr "Datos descifrados"
+
+#: includes/class-admin-interface.php:743
+#, fuzzy
+msgid "Decryption failed: "
+msgstr "El descifrado falló:"
+
+#: includes/class-admin-interface.php:744
+msgid "Network error occurred during decryption."
+msgstr "Error de red durante el descifrado."
+
+#: includes/class-admin-interface.php:745
+#, fuzzy
+msgid "Error processing decryption: "
+msgstr "Error al procesar el descifrado:"
+
+#: includes/class-admin-interface.php:746
+msgid "Authenticate with passkey..."
+msgstr "Autenticarse con Passkey..."
+
+#: includes/class-admin-interface.php:747
+msgid "WebAuthn/Passkeys are not supported in this browser."
+msgstr "WebAuthn/Passkeys no son compatibles con este navegador."
+
+#: includes/class-admin-interface.php:748
+msgid "Verifying passkey and decrypting..."
+msgstr "Verificando Passkey y descifrando..."
+
+#: includes/class-admin-interface.php:749
+msgid "Data decrypted with passkey"
+msgstr "Datos descifrados con Passkey"
+
+#: includes/class-admin-interface.php:750
+#, fuzzy
+msgid "Passkey decryption failed: "
+msgstr "El descifrado con Passkey falló:"
+
+#: includes/class-admin-interface.php:751
+msgid "Network error occurred during passkey decryption."
+msgstr "Error de red durante el descifrado con Passkey."
+
+#: includes/class-admin-interface.php:752
+msgid "Passkey authentication failed:"
+msgstr "La autenticación con Passkey falló:"
+
+#: includes/class-admin-interface.php:753
 msgid "Are you sure you want to extend the retention period for this entry?"
 msgstr ""
 "¿Está seguro de que desea extender el período de retención para esta entrada?"
 
-#: class-admin-interface.php:737
-msgid "Authenticate with Passkey to Decrypt All"
-msgstr "Autenticarse con Passkey para descifrar todo"
+#: includes/class-admin-interface.php:754
+msgid "Extending..."
+msgstr "Extendiendo..."
 
-#: class-admin-interface.php:698
-msgid "Authenticate with passkey..."
-msgstr "Autenticarse con Passkey..."
+#: includes/class-admin-interface.php:755
+msgid "Retention period extended successfully."
+msgstr "Período de retención extendido correctamente."
 
-#: class-settings-manager.php:172
-msgid "Auto-Delete After (Days)"
-msgstr "Eliminación automática después de (días)"
-
-#: freemius-hooks.php:115
-msgid "Auto-deletion"
-msgstr "Eliminación automática"
-
-#: class-frontend-handler.php:268
-msgid ""
-"Auto-deletion is disabled, so data will be retained until manually deleted "
-"by the administrator"
+#: includes/class-admin-interface.php:791
+msgid "No decrypted data available. Please decrypt the data first."
 msgstr ""
-"La eliminación automática está desactivada, por lo que los datos se "
-"conservarán hasta que el administrador los elimine manualmente"
+"No hay datos descifrados disponibles. Por favor, descifre los datos primero."
 
-#: freemius-hooks.php:170
-msgid "Automatic upgrade URL not available."
-msgstr "URL de actualización automática no disponible."
+#: includes/class-admin-interface.php:792
+msgid "Please fill in all required fields."
+msgstr "Por favor, complete todos los campos requeridos."
 
-#: class-settings-manager.php:208
-msgid "Available Encryption Methods:"
-msgstr "Métodos de cifrado disponibles:"
+#: includes/class-admin-interface.php:794
+msgid "Login data saved successfully!"
+msgstr "¡Datos de acceso guardados correctamente!"
 
-#: class-admin-interface.php:736
+#: includes/class-admin-interface.php:795
+#: includes/class-frontend-handler.php:111
+#, fuzzy
+msgid "Error saving data: "
+msgstr "Error al guardar los datos:"
+
+#: includes/class-admin-interface.php:797
+msgid "Network error occurred while saving data."
+msgstr "Error de red al guardar los datos."
+
+#: includes/class-admin-interface.php:798
+#: includes/class-admin-interface.php:927
+msgid "Save Entry"
+msgstr "Guardar entrada"
+
+#: includes/class-admin-interface.php:799
 msgid "Bulk Decrypt with Passkey"
 msgstr "Descifrado masivo con Passkey"
 
-#: class-admin-interface.php:1063
-msgid "Bulk decrypt request not found or expired."
-msgstr "Solicitud de descifrado masivo no encontrada o expirada."
+#: includes/class-admin-interface.php:800
+msgid "Authenticate with Passkey to Decrypt All"
+msgstr "Autenticarse con Passkey para descifrar todo"
 
-#: class-admin-interface.php:738
+#: includes/class-admin-interface.php:801
 msgid "Bulk decryption completed. CSV file downloaded."
 msgstr "Descifrado masivo completado. Archivo CSV descargado."
 
-#: class-admin-interface.php:1144
-msgid "Bulk decryption failed for all entries."
-msgstr "El descifrado masivo falló para todas las entradas."
+#: includes/class-admin-interface.php:831
+msgid "Add New Entry"
+msgstr "Añadir nueva entrada"
 
-#: class-admin-interface.php:1142
+#: includes/class-admin-interface.php:847
+msgid "Search entries"
+msgstr "Buscar entradas"
+
+#: includes/class-admin-interface.php:858
+msgid "Add New Login Data Entry"
+msgstr "Añadir nueva entrada de datos de acceso"
+
+#: includes/class-admin-interface.php:884
+msgid "Login URL or service name where these credentials are used."
+msgstr "URL de acceso o nombre del servicio donde se usan estas credenciales."
+
+#: includes/class-admin-interface.php:889
+msgid "Username/Email"
+msgstr "Usuario/Correo"
+
+#: includes/class-admin-interface.php:893
+#: includes/class-frontend-handler.php:232
+msgid "The username or email address used to log into this service."
+msgstr ""
+"El nombre de usuario o dirección de correo usado para acceder a este "
+"servicio."
+
+#: includes/class-admin-interface.php:898
+msgid "Password"
+msgstr "Contraseña"
+
+#: includes/class-admin-interface.php:902
+#: includes/class-frontend-handler.php:243
+msgid "The password for this account."
+msgstr "La contraseña para esta cuenta."
+
+#: includes/class-admin-interface.php:907
+msgid "Additional Notes"
+msgstr "Notas adicionales"
+
+#: includes/class-admin-interface.php:910
+#: includes/class-frontend-handler.php:248
+msgid ""
+"Any additional information, security questions, backup codes, etc. (optional)"
+msgstr ""
+"Cualquier información adicional, preguntas de seguridad, códigos de "
+"respaldo, etc. (opcional)"
+
+#: includes/class-admin-interface.php:911
+#: includes/class-frontend-handler.php:249
+msgid ""
+"Optional: Any additional information like security questions, backup codes, "
+"or special instructions."
+msgstr ""
+"Opcional: Cualquier información adicional como preguntas de seguridad, "
+"códigos de respaldo o instrucciones especiales."
+
+#: includes/class-admin-interface.php:919
+#, fuzzy
+msgid "Secure (AES-256 + RSA-2048)"
+msgstr "🔒 Seguro (AES-256 + RSA-2048)"
+
+#: includes/class-admin-interface.php:920
+msgid "Standard encryption with AES-256 and RSA-2048 protection."
+msgstr "Cifrado estándar con protección AES-256 y RSA-2048."
+
+#: includes/class-admin-interface.php:930
+msgid "Cancel"
+msgstr "Cancelar"
+
+#: includes/class-admin-interface.php:949
+#: includes/class-admin-interface.php:1329
+#: includes/class-admin-interface__premium_only.php:145
+#: includes/class-admin-interface__premium_only.php:426
+#: includes/class-frontend-handler.php:272
+msgid "Invalid security token."
+msgstr "Token de seguridad no válido."
+
+#: includes/class-admin-interface.php:955
+#: includes/class-admin-interface.php:1321
+#: includes/class-admin-interface__premium_only.php:151
+#: includes/class-admin-interface__premium_only.php:418
+msgid "Insufficient permissions."
+msgstr "Permisos insuficientes."
+
+#: includes/class-admin-interface.php:969
+msgid "Export request not found or expired."
+msgstr "Solicitud de exportación no encontrada o expirada."
+
+#. translators: %d: number of entries
+#: includes/class-admin-interface.php:1010
+#, php-format
+msgid "Bulk export prepared for %d entries."
+msgstr "Exportación masiva preparada para %d entradas."
+
+#: includes/class-admin-interface.php:1021
+#: includes/class-admin-interface.php:1045
+#: includes/class-admin-interface.php:1080
+#: includes/class-admin-interface.php:1229
+#: includes/class-admin-interface.php:1282
+#: includes/class-admin-interface__premium_only.php:299
+msgid "Invalid security token or insufficient permissions."
+msgstr "Token de seguridad no válido o permisos insuficientes."
+
+#: includes/class-admin-interface.php:1027
+#: includes/class-admin-interface.php:1051
+#: includes/class-admin-interface.php:1089
+#: includes/class-admin-interface.php:1238
+msgid "Missing required data."
+msgstr "Faltan datos requeridos."
+
+#: includes/class-admin-interface.php:1033
+msgid "Failed to delete data."
+msgstr "Error al eliminar los datos."
+
+#: includes/class-admin-interface.php:1037
+msgid "Data deleted successfully."
+msgstr "Datos eliminados correctamente."
+
+#: includes/class-admin-interface.php:1057
+msgid "Failed to extend retention."
+msgstr "Error al extender la retención."
+
+#: includes/class-admin-interface.php:1069
+#, php-format
+msgid "Retention period extended by %d days."
+msgstr "Período de retención extendido por %d días."
+
+#: includes/class-admin-interface.php:1096
+msgid "Invalid metadata format."
+msgstr "Formato de metadatos no válido."
+
+#: includes/class-admin-interface.php:1106
+msgid "Missing required metadata fields."
+msgstr "Faltan campos de metadatos requeridos."
+
+#: includes/class-admin-interface.php:1140
+msgid "AES encryption failed."
+msgstr "El cifrado AES falló."
+
+#: includes/class-admin-interface.php:1150
+msgid "RSA keys not available."
+msgstr "Claves RSA no disponibles."
+
+#: includes/class-admin-interface.php:1157
+msgid "RSA key encryption failed."
+msgstr "El cifrado de clave RSA falló."
+
+#: includes/class-admin-interface.php:1217
+#: includes/class-frontend-handler.php:369
+msgid "Failed to save data to database."
+msgstr "Error al guardar los datos en la base de datos."
+
+#: includes/class-admin-interface.php:1221
+msgid "Login data saved successfully."
+msgstr "Datos de acceso guardados correctamente."
+
+#: includes/class-admin-interface.php:1245
+#: includes/class-admin-interface.php:1295
+#: includes/class-admin-interface.php:1342
+msgid "Entry not found."
+msgstr "Entrada no encontrada."
+
+#: includes/class-admin-interface.php:1261
+msgid "Failed to update metadata."
+msgstr "Error al actualizar los metadatos."
+
+#: includes/class-admin-interface.php:1265
+msgid "Metadata updated successfully."
+msgstr "Metadatos actualizados correctamente."
+
+#: includes/class-admin-interface.php:1288
+#: includes/class-admin-interface.php:1335
+msgid "Invalid entry ID."
+msgstr "ID de entrada no válido."
+
+#: includes/class-admin-interface.php:1302
+msgid "Invalid encryption format."
+msgstr "Formato de cifrado no válido."
+
+#: includes/class-admin-interface.php:1349
+#, fuzzy
+msgid "Invalid encrypted data format."
+msgstr "Formato de cifrado no válido."
+
+#: includes/class-admin-interface__premium_only.php:127
+#, fuzzy
+msgid "Export to Bitwarden"
+msgstr "Exportar CSV Bitwarden"
+
+#: includes/class-admin-interface__premium_only.php:128
+#, fuzzy
+msgid "Export to 1Password"
+msgstr "Exportar CSV 1Password"
+
+#: includes/class-admin-interface__premium_only.php:129
+#, fuzzy
+msgid "Export to LastPass"
+msgstr "Exportar CSV LastPass"
+
+#: includes/class-admin-interface__premium_only.php:130
+#, fuzzy
+msgid "Export to Chrome"
+msgstr "Exportar CSV Chrome"
+
+#: includes/class-admin-interface__premium_only.php:131
+#, fuzzy
+msgid "Export to Firefox"
+msgstr "Exportar CSV Firefox"
+
+#: includes/class-admin-interface__premium_only.php:132
+#, fuzzy
+msgid "Export to Safari"
+msgstr "Exportar CSV Safari"
+
+#: includes/class-admin-interface__premium_only.php:133
+#, fuzzy
+msgid "Export to Dashlane"
+msgstr "Exportar CSV Dashlane"
+
+#: includes/class-admin-interface__premium_only.php:134
+#, fuzzy
+msgid "Export to KeePass"
+msgstr "Exportar CSV KeePass"
+
+#: includes/class-admin-interface__premium_only.php:156
+msgid "Passkey not registered."
+msgstr "Passkey no registrada."
+
+#: includes/class-admin-interface__premium_only.php:165
+msgid "Missing export manager."
+msgstr "Falta el administrador de exportación."
+
+#: includes/class-admin-interface__premium_only.php:172
+msgid "No entries selected for export."
+msgstr "No se seleccionaron entradas para exportar."
+
+#. translators: %1$d: number of entries selected, %2$s: password manager name.
+#: includes/class-admin-interface__premium_only.php:199
+#, php-format
+msgid ""
+"You have selected %1$d entries for bulk export. All selected entries will be "
+"decrypted using your passkey and then exported to %2$s format."
+msgstr ""
+"Ha seleccionado %1$d entradas para exportación masiva. Todas las entradas "
+"seleccionadas se descifrarán usando su Passkey y luego se exportarán al "
+"formato %2$s."
+
+#: includes/class-admin-interface__premium_only.php:208
+msgid "Missing passkey signature."
+msgstr "Falta la firma de Passkey."
+
+#: includes/class-admin-interface__premium_only.php:215
+msgid "Bulk decrypt request not found or expired."
+msgstr "Solicitud de descifrado masivo no encontrada o expirada."
+
+#. translators: %d: number of entries successfully decrypted.
+#: includes/class-admin-interface__premium_only.php:269
+#, php-format
+msgid "Successfully decrypted %d entries. Generating CSV..."
+msgstr "%d entradas descifradas correctamente. Generando CSV..."
+
+#: includes/class-admin-interface__premium_only.php:271
 msgid ""
 "Bulk decryption failed for some entries. Only successfully decrypted entries "
 "were exported."
@@ -161,81 +624,695 @@ msgstr ""
 "El descifrado masivo falló para algunas entradas. Solo se exportaron las "
 "entradas descifradas correctamente."
 
-#: class-admin-interface.php:450
-msgid "Bulk export initiated for %d entries. Please wait..."
-msgstr "Exportación masiva iniciada para %d entradas. Por favor, espere..."
+#: includes/class-admin-interface__premium_only.php:273
+msgid "Bulk decryption failed for all entries."
+msgstr "El descifrado masivo falló para todas las entradas."
 
-#: class-admin-interface.php:982
-msgid "Bulk export prepared for %d entries."
-msgstr "Exportación masiva preparada para %d entradas."
+#: includes/class-admin-interface__premium_only.php:310
+#, fuzzy
+msgid "Missing required WebAuthn assertion data."
+msgstr "Faltan datos requeridos."
 
-#: class-settings-manager.php:366
-msgid "CRITICAL - You MUST remove the old passkey first!"
-msgstr "CRÍTICO - ¡DEBE eliminar primero la Passkey antigua!"
+#: includes/class-admin-interface__premium_only.php:317
+#, fuzzy
+msgid "Passkey not found or mismatch."
+msgstr "Passkey no registrada."
 
-#: class-admin-interface.php:871
-msgid "Cancel"
-msgstr "Cancelar"
+#: includes/class-admin-interface__premium_only.php:326
+#, fuzzy
+msgid "Invalid client data format."
+msgstr "Formato de metadatos no válido."
 
-#: class-admin-interface.php:283
-msgid "Cancel editing"
-msgstr "Cancelar edición"
-
-#: class-settings-manager.php:656
-msgid ""
-"Choose whether to use the default security information text or your custom "
-"text below."
+#: includes/class-admin-interface__premium_only.php:333
+msgid "Challenge expired or not found."
 msgstr ""
-"Elija si desea usar el texto de información de seguridad predeterminado o su "
-"texto personalizado a continuación."
 
-#: class-settings-manager.php:373
-msgid "Click \"Register Passkey\" again"
-msgstr "Haga clic en \"Registrar Passkey\" de nuevo"
+#: includes/class-admin-interface__premium_only.php:342
+#, fuzzy
+msgid "Challenge verification failed."
+msgstr "La activación de la licencia falló"
 
-#: freemius-account-redirect.php:59
-msgid "Click below to complete the setup:"
-msgstr "Haga clic a continuación para completar la configuración:"
+#: includes/class-admin-interface__premium_only.php:350
+#, fuzzy
+msgid "Origin verification failed."
+msgstr "El registro falló:"
 
-#: account-page-simple.php:74 freemius-hooks.php:149
-msgid "Complete Activation"
-msgstr "Completar activación"
+#: includes/class-admin-interface__premium_only.php:357
+#, fuzzy
+msgid "Invalid WebAuthn operation type."
+msgstr "Formato de cifrado no válido."
 
-#: freemius-account-redirect.php:60
-msgid "Complete Setup"
-msgstr "Completar configuración"
+#: includes/class-admin-interface__premium_only.php:385
+#, fuzzy
+msgid "Signature verification failed."
+msgstr "La activación de la licencia falló"
 
-#: class-settings-manager.php:197
-msgid "Configure automatic deletion of old login data."
-msgstr "Configurar la eliminación automática de datos de acceso antiguos."
+#: includes/class-admin-interface__premium_only.php:397
+#, fuzzy
+msgid "Pro encryption keys not found."
+msgstr "No se encontró ninguna solicitud de descifrado pendiente."
 
-#: class-settings-manager.php:183
+#: includes/class-admin-interface__premium_only.php:407
+#, fuzzy
+msgid "Passkey authenticated successfully."
+msgstr "Passkey registrada correctamente."
+
+#: includes/class-admin-interface__premium_only.php:593
+#, php-format
+msgid ""
+"Cannot export: %d selected item is undecryptable. This item was encrypted "
+"with a deleted passkey and cannot be recovered. Please deselect the item "
+"marked as \"Undecryptable\" and try again."
+msgid_plural ""
+"Cannot export: %d selected items are undecryptable. These items were "
+"encrypted with a deleted passkey and cannot be recovered. Please deselect "
+"the items marked as \"Undecryptable\" and try again."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/class-database-manager.php:347
+msgid "Expired (data purged)"
+msgstr ""
+
+#: includes/class-database-manager.php:352
+msgid "Never expires"
+msgstr "Nunca expira"
+
+#: includes/class-database-manager.php:360
+msgid "Expired (pending cleanup)"
+msgstr ""
+
+#. translators: %1$d is the number of days, %2$d is the number of hours.
+#: includes/class-database-manager.php:368
+#, php-format
+msgid "%1$d days, %2$d hours"
+msgstr "%1$d días, %2$d horas"
+
+#. translators: %d is the number of hours.
+#: includes/class-database-manager.php:371
+#, php-format
+msgid "%d hours"
+msgstr "%d horas"
+
+#. translators: %s is the site name.
+#: includes/class-database-manager.php:425
+#, php-format
+msgid "[%s] New Secure Login Data Received"
+msgstr "[%s] Nuevos datos de acceso seguros recibidos"
+
+#: includes/class-database-manager.php:429
+#, fuzzy, php-format
+msgid ""
+"Hello,\n"
+"\n"
+"New secure login data has been submitted to your website.\n"
+"\n"
+"Sender Email: %1$s\n"
+"Sender Name: %2$s\n"
+"Submitted: %3$s\n"
+"\n"
+"To view and decrypt the login data, please visit:\n"
+"%4$s\n"
+"\n"
+"This is an automated notification from %5$s\n"
+"Website: %6$s"
+msgstr ""
+"Hola,\\n\\nSe han enviado nuevos datos de acceso seguro a su sitio web."
+"\\n\\nCorreo del remitente: %1\\$s\\nNombre del remitente: %2\\$s\\nEnviado: "
+"%3\\$s\\n\\nPara ver y descifrar los datos de acceso, por favor visite:"
+"\\n%4\\$s\\n\\nEsta es una notificación automática de %5\\$s\\nSitio web: "
+"%6\\$s"
+
+#: includes/class-frontend-handler.php:107
+msgid ""
+"Please fill in all required fields (Email Address, Name, Login URL, Username/"
+"Email, and Password)."
+msgstr ""
+"Por favor, complete todos los campos requeridos (Dirección de correo, "
+"Nombre, URL de acceso, Usuario/Correo y Contraseña)."
+
+#: includes/class-frontend-handler.php:108
+msgid "Submitting..."
+msgstr "Enviando..."
+
+#: includes/class-frontend-handler.php:109
+#: includes/class-frontend-handler.php:150
+msgid "Submit Securely"
+msgstr "Enviar de forma segura"
+
+#: includes/class-frontend-handler.php:110
+msgid "Login data saved securely! Thank you for your submission."
+msgstr "¡Datos de acceso guardados de forma segura! Gracias por su envío."
+
+#: includes/class-frontend-handler.php:113
+msgid "Network error occurred while saving data. Please try again."
+msgstr "Error de red al guardar los datos. Por favor, inténtelo de nuevo."
+
+#: includes/class-frontend-handler.php:114
+msgid "Encryption failed. Please try again."
+msgstr "El cifrado falló. Por favor, inténtelo de nuevo."
+
+#: includes/class-frontend-handler.php:115
+msgid "Show password"
+msgstr "Mostrar contraseña"
+
+#: includes/class-frontend-handler.php:116
+msgid "Hide password"
+msgstr "Ocultar contraseña"
+
+#: includes/class-frontend-handler.php:117
+msgid "Encryption failed"
+msgstr "El cifrado falló"
+
+#: includes/class-frontend-handler.php:118
+msgid "No encryption method available"
+msgstr "No hay método de cifrado disponible"
+
+#: includes/class-frontend-handler.php:119
+msgid "RSA public key not available. Please contact administrator."
+msgstr "Clave pública RSA no disponible. Por favor, contacte al administrador."
+
+#: includes/class-frontend-handler.php:120
+msgid "Encryption failed. Please try again or contact administrator."
+msgstr ""
+"El cifrado falló. Por favor, inténtelo de nuevo o contacte al administrador."
+
+#: includes/class-frontend-handler.php:149
+msgid "Submit Secure Login Data"
+msgstr "Enviar datos de acceso seguros"
+
+#: includes/class-frontend-handler.php:160
+msgid "Secure Encrypted Data Transmission"
+msgstr ""
+
+#. translators: %d is the number of days after which data will be deleted.
+#: includes/class-frontend-handler.php:172
+#, php-format
+msgid "for %d days, after which it will be automatically deleted"
+msgstr "durante %d días, después de lo cual se eliminará automáticamente"
+
+#: includes/class-frontend-handler.php:174
+msgid ""
+"Auto-deletion is disabled, so data will be retained until manually deleted "
+"by the administrator"
+msgstr ""
+"La eliminación automática está desactivada, por lo que los datos se "
+"conservarán hasta que el administrador los elimine manualmente"
+
+#: includes/class-frontend-handler.php:198
+#: includes/class-settings-manager.php:578
+msgid "What happens to your data:"
+msgstr "Qué pasa con sus datos:"
+
+#: includes/class-frontend-handler.php:198
+#: includes/class-settings-manager.php:578
+msgid ""
+"Your login data is encrypted in your browser before being sent to our "
+"server. We use strong RSA-2048 encryption to ensure maximum security."
+msgstr ""
+"Sus datos de acceso se cifran en su navegador antes de enviarse a nuestro "
+"servidor. Usamos cifrado RSA-2048 fuerte para garantizar la máxima seguridad."
+
+#: includes/class-frontend-handler.php:200
+#: includes/class-frontend-handler.php:207
+#: includes/class-settings-manager.php:579
+msgid "Security & Privacy:"
+msgstr "Seguridad y privacidad:"
+
+#. translators: %d is the number of days after which data will be deleted.
+#: includes/class-frontend-handler.php:203
+#, php-format
+msgid ""
+"Your data is encrypted in your browser before being sent to our server. We "
+"store the encrypted data securely for %d days, after which it will be "
+"automatically deleted."
+msgstr ""
+"Sus datos se cifran en su navegador antes de enviarse a nuestro servidor. "
+"Almacenamos los datos cifrados de forma segura durante %d días, después de "
+"lo cual se eliminarán automáticamente."
+
+#: includes/class-frontend-handler.php:207
+msgid ""
+"Your data is encrypted in your browser before being sent to our server. We "
+"store the encrypted data securely. Auto-deletion is disabled, so data will "
+"be retained until manually deleted by the administrator."
+msgstr ""
+"Sus datos se cifran en su navegador antes de enviarse a nuestro servidor. "
+"Almacenamos los datos cifrados de forma segura. La eliminación automática "
+"está desactivada, por lo que los datos se conservarán hasta que el "
+"administrador los elimine manualmente."
+
+#: includes/class-frontend-handler.php:214
+msgid "Email Address:"
+msgstr "Dirección de correo electrónico:"
+
+#: includes/class-frontend-handler.php:215
+msgid "your@email.com"
+msgstr "su@correo.com"
+
+#: includes/class-frontend-handler.php:219
+#: includes/class-passkey-manager__premium_only.php:181
+msgid "Name:"
+msgstr "Nombre:"
+
+#: includes/class-frontend-handler.php:220
+msgid "Your full name"
+msgstr "Su nombre completo"
+
+#: includes/class-frontend-handler.php:224
+msgid "Login URL / Service Name:"
+msgstr ""
+
+#: includes/class-frontend-handler.php:225
+msgid "https://example.com/login or service name"
+msgstr "https://example.com/login o nombre del servicio"
+
+#: includes/class-frontend-handler.php:226
+msgid "Enter the login URL or service name where these credentials are used."
+msgstr ""
+"Ingrese la URL de acceso o el nombre del servicio donde se usan estas "
+"credenciales."
+
+#: includes/class-frontend-handler.php:230
+msgid "Username/Email:"
+msgstr "Usuario/Correo:"
+
+#: includes/class-frontend-handler.php:231
+msgid "Username or email for login"
+msgstr "Nombre de usuario o correo para acceder"
+
+#: includes/class-frontend-handler.php:236
+msgid "Password:"
+msgstr "Contraseña:"
+
+#: includes/class-frontend-handler.php:238
+msgid "Enter the password"
+msgstr "Ingrese la contraseña"
+
+#: includes/class-frontend-handler.php:239
+msgid "Toggle password visibility"
+msgstr "Alternar visibilidad de contraseña"
+
+#: includes/class-frontend-handler.php:247
+msgid "Additional Notes:"
+msgstr "Notas adicionales:"
+
+#: includes/class-frontend-handler.php:280
+msgid "Missing submission data."
+msgstr "Faltan datos de envío."
+
+#: includes/class-frontend-handler.php:287
+msgid "Invalid submission format."
+msgstr "Formato de envío no válido."
+
+#. translators: %s is the name of the missing field.
+#: includes/class-frontend-handler.php:296
+#, php-format
+msgid "Missing required field: %s"
+msgstr "Falta el campo requerido: %s"
+
+#. translators: %s is the name of the missing metadata field.
+#: includes/class-frontend-handler.php:307
+#, php-format
+msgid "Missing required metadata: %s"
+msgstr "Faltan metadatos requeridos: %s"
+
+#: includes/class-frontend-handler.php:376
+msgid "Login data saved securely with enhanced encryption."
+msgstr "Datos de acceso guardados de forma segura con cifrado mejorado."
+
+#: includes/class-passkey-manager__premium_only.php:119
+msgid ""
+"WARNING: Deleting this passkey will make ALL existing encrypted data "
+"permanently inaccessible! This action CANNOT be undone. There is NO recovery "
+"method. Are you absolutely sure you want to proceed?"
+msgstr ""
+
+#: includes/class-passkey-manager__premium_only.php:120
+msgid ""
+"Are you sure you want to delete this passkey?\\n\\nYou can register a new "
+"passkey afterward."
+msgstr ""
+
+#: includes/class-passkey-manager__premium_only.php:121
+#, fuzzy
+msgid "Deleting..."
+msgstr "Reiniciando..."
+
+#: includes/class-passkey-manager__premium_only.php:122
+#: includes/class-passkey-manager__premium_only.php:250
+#, fuzzy
+msgid "Delete Passkey"
+msgstr "Reiniciar Passkey"
+
+#: includes/class-passkey-manager__premium_only.php:123
+#, fuzzy
+msgid "Passkey deleted successfully!"
+msgstr "¡Passkey registrada correctamente!"
+
+#: includes/class-passkey-manager__premium_only.php:124
+#, fuzzy
+msgid "Failed to delete passkey:"
+msgstr "Error al generar las claves:"
+
+#: includes/class-passkey-manager__premium_only.php:125
+#, fuzzy
+msgid "Network error occurred. Please try again."
+msgstr "Error de red al guardar los datos. Por favor, inténtelo de nuevo."
+
+#: includes/class-passkey-manager__premium_only.php:126
+msgid "Your browser does not support WebAuthn/Passkeys."
+msgstr ""
+
+#: includes/class-passkey-manager__premium_only.php:127
+msgid "Passkey registered successfully!"
+msgstr "¡Passkey registrada correctamente!"
+
+#: includes/class-passkey-manager__premium_only.php:154
+msgid "HTTPS Required"
+msgstr ""
+
+#: includes/class-passkey-manager__premium_only.php:155
+msgid ""
+"WebAuthn requires HTTPS. Please enable SSL on your site to use passkeys."
+msgstr ""
+
+#: includes/class-passkey-manager__premium_only.php:164
+#, fuzzy
+msgid "Passkey Authentication"
+msgstr "La autenticación con Passkey falló:"
+
+#: includes/class-passkey-manager__premium_only.php:167
+msgid "Active"
+msgstr "Activo"
+
+#: includes/class-passkey-manager__premium_only.php:177
+#, fuzzy
+msgid "Passkey Registered"
+msgstr "Passkey no registrada."
+
+#. translators: 1: Password manager name, 2: Browser name
+#. translators: 1: Platform name, 2: Registration date
+#: includes/class-passkey-manager__premium_only.php:193
+#: includes/class-passkey-manager__premium_only.php:210
+#, php-format
+msgid "Registered with: %1$s on %2$s"
+msgstr ""
+
+#. translators: %s: Browser name
+#: includes/class-passkey-manager__premium_only.php:224
+#, php-format
+msgid "Browser: %s"
+msgstr ""
+
+#: includes/class-passkey-manager__premium_only.php:232
+msgid "Registered:"
+msgstr "Registrado:"
+
+#: includes/class-passkey-manager__premium_only.php:233
+msgid "ID:"
+msgstr ""
+
+#: includes/class-passkey-manager__premium_only.php:241
+msgid "CRITICAL WARNING: Data Loss Risk"
+msgstr ""
+
+#: includes/class-passkey-manager__premium_only.php:243
+msgid ""
+"Deleting this passkey will permanently prevent decryption of all existing "
+"login data encrypted with this passkey."
+msgstr ""
+
+#: includes/class-passkey-manager__premium_only.php:245
+msgid "This action CANNOT be undone. There is NO recovery method."
+msgstr ""
+
+#: includes/class-passkey-manager__premium_only.php:256
+msgid ""
+"Register a passkey using your device biometrics or a password manager for "
+"ultra-secure encryption."
+msgstr ""
+
+#: includes/class-passkey-manager__premium_only.php:261
+msgid "Choose Your Passkey Method:"
+msgstr ""
+
+#: includes/class-passkey-manager__premium_only.php:266
+#, fuzzy
+msgid "Password Manager"
+msgstr "Exportar a gestor de contraseñas"
+
+#: includes/class-passkey-manager__premium_only.php:268
+msgid "1Password, Bitwarden, Dashlane, or other password managers"
+msgstr ""
+
+#: includes/class-passkey-manager__premium_only.php:273
+msgid "Device/Platform Biometrics"
+msgstr ""
+
+#: includes/class-passkey-manager__premium_only.php:275
+msgid "iPhone Face ID, Android Fingerprint, Windows Hello, Touch ID"
+msgstr ""
+
+#: includes/class-passkey-manager__premium_only.php:281
+msgid "Tip:"
+msgstr ""
+
+#: includes/class-passkey-manager__premium_only.php:283
+msgid ""
+"If you select \"Device/Platform Biometrics\" and your password manager popup "
+"appears, simply click away from it or press Escape. Your device's biometric "
+"prompt will appear next."
+msgstr ""
+
+#: includes/class-passkey-manager__premium_only.php:292
+msgid "Register Passkey"
+msgstr "Registrar Passkey"
+
+#: includes/class-passkey-manager__premium_only.php:411
+#, fuzzy
+msgid "Pro license required for passkey encryption."
+msgstr "La extensión OpenSSL es necesaria para el cifrado RSA."
+
+#. translators: %d is the number of login entries marked as undecryptable.
+#: includes/class-passkey-manager__premium_only.php:623
+#, php-format
+msgid "%d login entry marked as permanently undecryptable."
+msgid_plural "%d login entries marked as permanently undecryptable."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/class-passkey-manager__premium_only.php:667
+msgid "Pro license required to initialize pro encryption."
+msgstr ""
+
+#: includes/class-settings-manager.php:81
+#: includes/class-settings-manager.php:82
+#: includes/freemius-account-redirect.php:82
+msgid "Settings"
+msgstr "Configuración"
+
+#: includes/class-settings-manager.php:144
+#: includes/class-settings-manager.php:238
+msgid "Email Notifications"
+msgstr "Notificaciones por correo electrónico"
+
+#: includes/class-settings-manager.php:151
+msgid "Frontend Customization"
+msgstr "Personalización del frontend"
+
+#: includes/class-settings-manager.php:158
+msgid "Data Expiration"
+msgstr "Expiración de datos"
+
+#: includes/class-settings-manager.php:169
+#: includes/class-settings-manager.php:282
+msgid "Encryption Settings"
+msgstr "Configuración de cifrado"
+
+#: includes/class-settings-manager.php:177
+#: includes/class-settings-manager.php:629
+msgid "Plugin Management"
+msgstr ""
+
+#: includes/class-settings-manager.php:184
+msgid "Delete Data on Uninstall"
+msgstr ""
+
+#: includes/class-settings-manager.php:192
+msgid "Enable Email Notifications"
+msgstr "Activar notificaciones por correo electrónico"
+
+#: includes/class-settings-manager.php:200
+msgid "Notification Email Address"
+msgstr "Dirección de correo de notificación"
+
+#: includes/class-settings-manager.php:208
+msgid "Text Type"
+msgstr "Tipo de texto"
+
+#: includes/class-settings-manager.php:216
+msgid "Custom Description Text"
+msgstr "Texto de descripción personalizado"
+
+#: includes/class-settings-manager.php:224
+msgid "Auto-Delete After (Days)"
+msgstr "Eliminación automática después de (días)"
+
+#: includes/class-settings-manager.php:242
 msgid "Configure email notifications for new login data submissions."
 msgstr ""
 "Configurar notificaciones por correo electrónico para nuevos envíos de datos "
 "de acceso."
 
-#: class-settings-manager.php:699
-msgid "Copied!"
-msgstr "¡Copiado!"
+#: includes/class-settings-manager.php:253
+#, fuzzy
+msgid "Frontend Form Settings"
+msgstr "Shortcode del formulario frontend"
 
-#: class-settings-manager.php:699 class-settings-manager.php:700
-msgid "Copy Shortcode"
-msgstr "Copiar shortcode"
+#: includes/class-settings-manager.php:257
+msgid "Customize the frontend form appearance and text."
+msgstr "Personalizar la apariencia y el texto del formulario del frontend."
 
-#: class-license-manager.php:87
-msgid "Could not connect to licensing server"
-msgstr "No se pudo conectar al servidor de licencias"
+#: includes/class-settings-manager.php:268
+#, fuzzy
+msgid "Data Retention Settings"
+msgstr "Configuración de cifrado"
 
-#: class-settings-manager.php:164
-msgid "Custom Description Text"
-msgstr "Texto de descripción personalizado"
+#: includes/class-settings-manager.php:272
+msgid "Configure automatic deletion of old login data."
+msgstr "Configurar la eliminación automática de datos de acceso antiguos."
 
-#: class-settings-manager.php:652
-msgid "Custom Text (Use the text below)"
-msgstr "Texto personalizado (usar el texto a continuación)"
+#: includes/class-settings-manager.php:285
+msgid "Manage RSA encryption keys for secure data transmission."
+msgstr "Administrar claves de cifrado RSA para transmisión segura de datos."
 
-#: class-settings-manager.php:602
+#: includes/class-settings-manager.php:303
+msgid "Initializing..."
+msgstr ""
+
+#: includes/class-settings-manager.php:314
+#, fuzzy
+msgid "Free RSA keys initialized successfully!"
+msgstr "¡Claves RSA generadas correctamente!"
+
+#: includes/class-settings-manager.php:317
+#, fuzzy
+msgid "Failed to initialize keys:"
+msgstr "Error al generar las claves:"
+
+#: includes/class-settings-manager.php:318
+#: includes/class-settings-manager.php:323
+msgid "Initialize Free Keys Now"
+msgstr ""
+
+#: includes/class-settings-manager.php:322
+msgid "Network error occurred."
+msgstr "Error de red."
+
+#: includes/class-settings-manager.php:348
+#: includes/class-settings-manager.php:374
+msgid "Failed to export public key:"
+msgstr "Error al exportar la clave pública:"
+
+#: includes/class-settings-manager.php:416
+msgid "Standard RSA Keys"
+msgstr ""
+
+#: includes/class-settings-manager.php:417
+#, fuzzy
+msgid "RSA-2048 + AES-256-GCM encryption"
+msgstr "Cifrado RSA-2048"
+
+#: includes/class-settings-manager.php:423
+#: includes/class-settings-manager__premium_only.php:165
+msgid "ACTIVE"
+msgstr ""
+
+#: includes/class-settings-manager.php:427
+msgid "INACTIVE"
+msgstr ""
+
+#: includes/class-settings-manager.php:428
+#, fuzzy
+msgid "Passkey encryption is active"
+msgstr "La prueba de cifrado con Passkey falló:"
+
+#: includes/class-settings-manager.php:432
+msgid "NOT INITIALIZED"
+msgstr ""
+
+#: includes/class-settings-manager.php:433
+msgid "Will be created on first use"
+msgstr ""
+
+#: includes/class-settings-manager.php:443
+msgid "Export Public Key"
+msgstr "Exportar clave pública"
+
+#: includes/class-settings-manager.php:475
+msgid "PRO ONLY"
+msgstr ""
+
+#: includes/class-settings-manager.php:476
+#: includes/class-settings-manager__premium_only.php:175
+msgid "NOT AVAILABLE"
+msgstr ""
+
+#: includes/class-settings-manager.php:481
+#, fuzzy
+msgid "Ultra-Secure (Passkey-Protected)"
+msgstr "🔐 Ultra seguro (Passkey)"
+
+#: includes/class-settings-manager.php:484
+#, fuzzy
+msgid ""
+"Passkey-protected encryption with WebAuthn/FIDO2. True zero-knowledge - "
+"server cannot decrypt without your physical device."
+msgstr ""
+"Usa su firma de Passkey para derivar claves de cifrado. Máxima seguridad: "
+"incluso un compromiso del servidor no puede descifrar datos sin su "
+"dispositivo físico."
+
+#: includes/class-settings-manager.php:489
+msgid "Upgrade to Pro"
+msgstr "Actualizar a Pro"
+
+#: includes/class-settings-manager.php:504
+#: includes/class-settings-manager__premium_only.php:98
+msgid "Advanced Security Features"
+msgstr ""
+
+#: includes/class-settings-manager.php:509
+#: includes/class-settings-manager__premium_only.php:103
+#, fuzzy
+msgid ""
+"Advanced security settings including passkey authentication for enhanced "
+"protection."
+msgstr ""
+"Configuración de seguridad avanzada para la versión pro incluyendo "
+"autenticación por Passkey."
+
+#: includes/class-settings-manager.php:524
+msgid "Send email notifications when new login data is received"
+msgstr ""
+"Enviar notificaciones por correo cuando se reciban nuevos datos de acceso"
+
+#: includes/class-settings-manager.php:533
+msgid "Email address to receive notifications. Defaults to site admin email."
+msgstr ""
+"Dirección de correo electrónico para recibir notificaciones. Por defecto es "
+"el correo del administrador del sitio."
+
+#: includes/class-settings-manager.php:579
+msgid ""
+"Your data is encrypted in your browser before being sent to our server. We "
+"store the encrypted data securely{EXPIRATION_TEXT}."
+msgstr ""
+"Sus datos se cifran en su navegador antes de enviarse a nuestro servidor. "
+"Almacenamos los datos cifrados de forma segura{EXPIRATION_TEXT}."
+
+#: includes/class-settings-manager.php:586
 msgid ""
 "Custom text to display above the login form. Basic HTML allowed (p, strong, "
 "em, br, a). This field is automatically populated with the default text when "
@@ -247,643 +1324,23 @@ msgstr ""
 "el texto predeterminado cuando no se proporciona texto personalizado. Use el "
 "marcador {EXPIRATION_TEXT} para información de expiración automática."
 
-#: class-settings-manager.php:190
-msgid "Customize the frontend form appearance and text."
-msgstr "Personalizar la apariencia y el texto del formulario del frontend."
-
-#: class-settings-manager.php:107
-msgid "Data Expiration"
-msgstr "Expiración de datos"
-
-#: class-admin-interface.php:694
-msgid "Data decrypted"
-msgstr "Datos descifrados"
-
-#: class-admin-interface.php:701
-msgid "Data decrypted with passkey"
-msgstr "Datos descifrados con Passkey"
-
-#: class-admin-interface.php:1203
-msgid "Data deleted successfully."
-msgstr "Datos eliminados correctamente."
-
-#: class-admin-interface.php:96
-msgid "Date"
-msgstr "Fecha"
-
-#: class-admin-interface.php:293 class-admin-interface.php:689
-msgid "Decrypt data"
-msgstr "Descifrar datos"
-
-#: class-admin-interface.php:502
-msgid "Decrypted Data:"
-msgstr "Datos descifrados:"
-
-#: class-admin-interface.php:693
-msgid "Decrypting..."
-msgstr "Descifrando..."
-
-#: class-encryption-handler.php:619
-msgid "Decryption failed."
-msgstr "El descifrado falló."
-
-#: class-admin-interface.php:695
-msgid "Decryption failed:"
-msgstr "El descifrado falló:"
-
-#: class-settings-manager.php:647
+#: includes/class-settings-manager.php:601
 msgid "Default (Automatic encryption & expiration details)"
 msgstr "Predeterminado (cifrado automático y detalles de expiración)"
 
-#: class-admin-interface.php:136
-msgid "Delete"
-msgstr "Eliminar"
+#: includes/class-settings-manager.php:606
+msgid "Custom Text (Use the text below)"
+msgstr "Texto personalizado (usar el texto a continuación)"
 
-#: class-admin-interface.php:310
-msgid "Delete entry"
-msgstr "Eliminar entrada"
-
-#: account-page-simple.php:111
-msgid "Disabled"
-msgstr "Desactivado"
-
-#: class-admin-interface.php:270
-msgid "Edit entry"
-msgstr "Editar entrada"
-
-#: class-admin-interface.php:93 class-admin-interface.php:793
-msgid "Email Address"
-msgstr "Dirección de correo electrónico"
-
-#: class-frontend-handler.php:307
-msgid "Email Address:"
-msgstr "Dirección de correo electrónico:"
-
-#: class-settings-manager.php:93 freemius-hooks.php:114
-msgid "Email Notifications"
-msgstr "Notificaciones por correo electrónico"
-
-#: class-settings-manager.php:583
-msgid "Email address to receive notifications. Defaults to site admin email."
-msgstr ""
-"Dirección de correo electrónico para recibir notificaciones. Por defecto es "
-"el correo del administrador del sitio."
-
-#: class-settings-manager.php:140
-msgid "Enable Email Notifications"
-msgstr "Activar notificaciones por correo electrónico"
-
-#: class-settings-manager.php:674
-msgid "Enable passkey-derived encryption (maximum security)"
-msgstr "Activar cifrado derivado de Passkey (máxima seguridad)"
-
-#: account-page-simple.php:109
-msgid "Enabled"
-msgstr "Activado"
-
-#: class-admin-interface.php:97 class-admin-interface.php:846
-#: class-admin-interface.php:856
-msgid "Encryption Method"
-msgstr "Método de cifrado"
-
-#: class-settings-manager.php:115
-msgid "Encryption Settings"
-msgstr "Configuración de cifrado"
-
-#: class-frontend-handler.php:122
-msgid "Encryption failed"
-msgstr "El cifrado falló"
-
-#: class-frontend-handler.php:125
-msgid "Encryption failed. Please try again or contact administrator."
-msgstr ""
-"El cifrado falló. Por favor, inténtelo de nuevo o contacte al administrador."
-
-#: class-frontend-handler.php:119
-msgid "Encryption failed. Please try again."
-msgstr "El cifrado falló. Por favor, inténtelo de nuevo."
-
-#: class-frontend-handler.php:319
-msgid "Enter the login URL or service name where these credentials are used."
-msgstr ""
-"Ingrese la URL de acceso o el nombre del servicio donde se usan estas "
-"credenciales."
-
-#: class-frontend-handler.php:331
-msgid "Enter the password"
-msgstr "Ingrese la contraseña"
-
-#: class-admin-interface.php:598
-msgid "Entries per page"
-msgstr "Entradas por página"
-
-#: class-admin-interface.php:1411 class-admin-interface.php:1461
-#: class-admin-interface.php:1506 class-encryption-handler.php:607
-msgid "Entry not found."
-msgstr "Entrada no encontrada."
-
-#: freemius-account-redirect.php:75
-msgid "Error loading account page:"
-msgstr "Error al cargar la página de cuenta:"
-
-#: class-admin-interface.php:697
-msgid "Error processing decryption:"
-msgstr "Error al procesar el descifrado:"
-
-#: class-admin-interface.php:732 class-frontend-handler.php:116
-msgid "Error saving data:"
-msgstr "Error al guardar los datos:"
-
-#: freemius-hooks.php:124
-msgid "Everything in Free"
-msgstr "Todo en la versión gratuita"
-
-#: class-database-manager.php:287
-msgid "Expired"
-msgstr "Expirado"
-
-#: account-page-simple.php:51
-msgid "Expires"
-msgstr "Expira"
-
-#: class-admin-interface.php:98
-msgid "Expires In"
-msgstr "Expira en"
-
-#: class-admin-interface.php:129
-msgid "Export 1Password CSV"
-msgstr "Exportar CSV 1Password"
-
-#: class-admin-interface.php:128
-msgid "Export Bitwarden CSV"
-msgstr "Exportar CSV Bitwarden"
-
-#: class-admin-interface.php:131
-msgid "Export Chrome CSV"
-msgstr "Exportar CSV Chrome"
-
-#: class-admin-interface.php:134
-msgid "Export Dashlane CSV"
-msgstr "Exportar CSV Dashlane"
-
-#: class-admin-interface.php:132
-msgid "Export Firefox CSV"
-msgstr "Exportar CSV Firefox"
-
-#: class-admin-interface.php:135
-msgid "Export KeePass CSV"
-msgstr "Exportar CSV KeePass"
-
-#: class-admin-interface.php:130
-msgid "Export LastPass CSV"
-msgstr "Exportar CSV LastPass"
-
-#: class-settings-manager.php:255
-msgid "Export Public Key"
-msgstr "Exportar clave pública"
-
-#: class-admin-interface.php:133
-msgid "Export Safari CSV"
-msgstr "Exportar CSV Safari"
-
-#: class-admin-interface.php:946
-msgid "Export request not found or expired."
-msgstr "Solicitud de exportación no encontrada o expirada."
-
-#: class-admin-interface.php:505 class-admin-interface.php:505
-msgid "Export to Password Manager"
-msgstr "Exportar a gestor de contraseñas"
-
-#: freemius-hooks.php:116
-msgid "Export to Password Managers"
-msgstr "Exportar a gestores de contraseñas"
-
-#: class-admin-interface.php:302
-msgid "Extend retention period"
-msgstr "Extender período de retención"
-
-#: class-admin-interface.php:706
-msgid "Extending..."
-msgstr "Extendiendo..."
-
-#: class-admin-interface.php:1524
-msgid "Failed to decrypt RSA layer."
-msgstr "Error al descifrar la capa RSA."
-
-#: class-admin-interface.php:1199
-msgid "Failed to delete data."
-msgstr "Error al eliminar los datos."
-
-#: class-settings-manager.php:312
-msgid "Failed to export public key:"
-msgstr "Error al exportar la clave pública:"
-
-#: class-admin-interface.php:1224
-msgid "Failed to extend retention."
-msgstr "Error al extender la retención."
-
-#: class-encryption-handler.php:66
-msgid "Failed to generate RSA key pair."
-msgstr "Error al generar el par de claves RSA."
-
-#: class-settings-manager.php:282
-msgid "Failed to generate keys:"
-msgstr "Error al generar las claves:"
-
-#: class-admin-interface.php:1383 class-frontend-handler.php:226
-#: class-frontend-handler.php:456
-msgid "Failed to save data to database."
-msgstr "Error al guardar los datos en la base de datos."
-
-#: class-admin-interface.php:1427
-msgid "Failed to update metadata."
-msgstr "Error al actualizar los metadatos."
-
-#: account-page-simple.php:32 freemius-hooks.php:111 freemius-config.php:70
-msgid "Free Version"
-msgstr "Versión gratuita"
-
-#: account-page-simple.php:81
-msgid "Freemius Not Configured"
-msgstr "Freemius no configurado"
-
-#: freemius-init-check.php:47
+#: includes/class-settings-manager.php:610
 msgid ""
-"Freemius SDK is not loaded. Please ensure the /vendor/freemius/ directory "
-"exists with the SDK files."
+"Choose whether to use the default security information text or your custom "
+"text below."
 msgstr ""
-"El SDK de Freemius no está cargado. Por favor, asegúrese de que el "
-"directorio /vendor/freemius/ exista con los archivos SDK."
+"Elija si desea usar el texto de información de seguridad predeterminado o su "
+"texto personalizado a continuación."
 
-#: freemius-hooks.php:176
-msgid "Freemius SDK not loaded. Please install the SDK."
-msgstr "SDK de Freemius no cargado. Por favor, instale el SDK."
-
-#: freemius-init-check.php:63
-msgid "Freemius initialization failed. Please check your configuration."
-msgstr ""
-"La inicialización de Freemius falló. Por favor, verifique su configuración."
-
-#: freemius-account-redirect.php:40
-msgid ""
-"Freemius is not properly configured. Please ensure the Freemius SDK is "
-"installed."
-msgstr ""
-"Freemius no está configurado correctamente. Por favor, asegúrese de que el "
-"SDK de Freemius esté instalado."
-
-#: class-settings-manager.php:100
-msgid "Frontend Customization"
-msgstr "Personalización del frontend"
-
-#: class-settings-manager.php:693
-msgid "Frontend Form Shortcode"
-msgstr "Shortcode del formulario frontend"
-
-#: class-settings-manager.php:254 class-settings-manager.php:284
-#: class-settings-manager.php:288
-msgid "Generate New RSA Keys"
-msgstr "Generar nuevas claves RSA"
-
-#: class-settings-manager.php:243
-msgid "Generated:"
-msgstr "Generado:"
-
-#: class-settings-manager.php:268
-msgid "Generating..."
-msgstr "Generando..."
-
-#: freemius-hooks.php:296
-msgid "Go Pro"
-msgstr "Actualizar a Pro"
-
-#: freemius-account-redirect.php:54
-msgid "Go to Plugin Dashboard"
-msgstr "Ir al panel del plugin"
-
-#: freemius-hooks.php:152
-msgid "Go to Plugin Settings"
-msgstr "Ir a la configuración del plugin"
-
-#: class-settings-manager.php:378
-msgid "Go to Settings → Passwords → Manage passkeys → Find this site → Delete"
-msgstr ""
-"Ir a Configuración → Contraseñas → Administrar Passkeys → Buscar este sitio "
-"→ Eliminar"
-
-#: class-database-manager.php:330
-msgid ""
-"Hello,\\n\\nNew secure login data has been submitted to your website."
-"\\n\\nSender Email: %1\\$s\\nSender Name: %2\\$s\\nSubmitted: %3\\$s\\n\\nTo "
-"view and decrypt the login data, please visit:\\n%4\\$s\\n\\nThis is an "
-"automated notification from %5\\$s\\nWebsite: %6\\$s"
-msgstr ""
-"Hola,\\n\\nSe han enviado nuevos datos de acceso seguro a su sitio web."
-"\\n\\nCorreo del remitente: %1\\$s\\nNombre del remitente: %2\\$s\\nEnviado: "
-"%3\\$s\\n\\nPara ver y descifrar los datos de acceso, por favor visite:"
-"\\n%4\\$s\\n\\nEsta es una notificación automática de %5\\$s\\nSitio web: "
-"%6\\$s"
-
-#: freemius-hooks.php:25
-msgid ""
-"Hey %1$s! Please help us improve %2$s by sharing some basic WordPress "
-"environment info. This helps us ensure compatibility and provide better "
-"support."
-msgstr ""
-"¡Hola %1$s! Por favor, ayúdenos a mejorar %2$s compartiendo información "
-"básica sobre su entorno WordPress. Esto nos ayuda a garantizar la "
-"compatibilidad y brindar un mejor soporte."
-
-#: freemius-hooks.php:242
-msgid ""
-"Hey there! Want to try the Pro version of Secure Login Collector? Start your "
-"14-day free trial and experience passkey-derived encryption!"
-msgstr ""
-"¡Hola! ¿Desea probar la versión Pro de Secure Login Collector? ¡Comience su "
-"prueba gratuita de 14 días y experimente el cifrado derivado de Passkey!"
-
-#: class-admin-interface.php:506
-msgid "Hide decrypted data"
-msgstr "Ocultar datos descifrados"
-
-#: class-frontend-handler.php:121
-msgid "Hide password"
-msgstr "Ocultar contraseña"
-
-#: class-settings-manager.php:228
-msgid ""
-"Industry-standard RSA encryption with 2048-bit keys. Secure for most use "
-"cases and available for all users."
-msgstr ""
-"Cifrado RSA estándar de la industria con claves de 2048 bits. Seguro para la "
-"mayoría de los casos de uso y disponible para todos los usuarios."
-
-#: class-admin-interface.php:347 class-admin-interface.php:353
-#: class-admin-interface.php:912 class-admin-interface.php:918
-msgid "Industry-standard RSA encryption."
-msgstr "Cifrado RSA estándar de la industria."
-
-#: class-license-manager.php:176
-msgid "Insufficient permissions"
-msgstr "Permisos insuficientes"
-
-#: class-admin-interface.php:938 class-admin-interface.php:1000
-msgid "Insufficient permissions."
-msgstr "Permisos insuficientes."
-
-#: class-admin-interface.php:1468
-msgid "Invalid encryption format."
-msgstr "Formato de cifrado no válido."
-
-#: class-admin-interface.php:1513
-msgid "Invalid encryption format. This entry uses an older encryption format."
-msgstr ""
-"Formato de cifrado no válido. Esta entrada usa un formato de cifrado más "
-"antiguo."
-
-#: class-admin-interface.php:1454 class-admin-interface.php:1499
-msgid "Invalid entry ID."
-msgstr "ID de entrada no válido."
-
-#: class-license-manager.php:67
-msgid "Invalid license key format"
-msgstr "Formato de clave de licencia no válido"
-
-#: class-admin-interface.php:1263
-msgid "Invalid metadata format."
-msgstr "Formato de metadatos no válido."
-
-#: class-frontend-handler.php:166
-msgid "Invalid metadata format. JSON Error:"
-msgstr "Formato de metadatos no válido. Error JSON:"
-
-#: class-admin-interface.php:1187 class-admin-interface.php:1212
-#: class-admin-interface.php:1247 class-admin-interface.php:1396
-#: class-admin-interface.php:1448 class-admin-interface.php:1493
-#: class-encryption-handler.php:489 class-encryption-handler.php:507
-#: class-encryption-handler.php:525 class-encryption-handler.php:557
-#: class-encryption-handler.php:651 class-encryption-handler.php:697
-msgid "Invalid security token or insufficient permissions."
-msgstr "Token de seguridad no válido o permisos insuficientes."
-
-#: class-admin-interface.php:932 class-admin-interface.php:994
-#: class-frontend-handler.php:150 class-frontend-handler.php:365
-msgid "Invalid security token."
-msgstr "Token de seguridad no válido."
-
-#: class-frontend-handler.php:380
-msgid "Invalid submission format."
-msgstr "Formato de envío no válido."
-
-#: account-page-simple.php:24
-msgid "License Status"
-msgstr "Estado de la licencia"
-
-#: class-license-manager.php:103
-msgid "License activated successfully!"
-msgstr "¡Licencia activada correctamente!"
-
-#: class-license-manager.php:109
-msgid "License activation failed"
-msgstr "La activación de la licencia falló"
-
-#: account-page-simple.php:41
-msgid "Licensed To"
-msgstr "Licencia para"
-
-#: class-admin-interface.php:618
-msgid "Login Data"
-msgstr "Datos de acceso"
-
-#: class-admin-interface.php:95 class-admin-interface.php:809
-msgid "Login URL"
-msgstr "URL de acceso"
-
-#: class-admin-interface.php:813
-msgid "Login URL or service name where these credentials are used."
-msgstr "URL de acceso o nombre del servicio donde se usan estas credenciales."
-
-#: class-frontend-handler.php:317
-msgid "Login URL:"
-msgstr "URL de acceso:"
-
-#: class-frontend-handler.php:463
-msgid "Login data saved securely with enhanced encryption."
-msgstr "Datos de acceso guardados de forma segura con cifrado mejorado."
-
-#: class-frontend-handler.php:115
-msgid "Login data saved securely! Thank you for your submission."
-msgstr "¡Datos de acceso guardados de forma segura! Gracias por su envío."
-
-#: class-frontend-handler.php:233
-msgid "Login data saved securely."
-msgstr "Datos de acceso guardados de forma segura."
-
-#: class-admin-interface.php:731
-msgid "Login data saved successfully!"
-msgstr "¡Datos de acceso guardados correctamente!"
-
-#: class-admin-interface.php:1387
-msgid "Login data saved successfully."
-msgstr "Datos de acceso guardados correctamente."
-
-#: account-page-simple.php:64
-msgid "Manage License"
-msgstr "Administrar licencia"
-
-#: class-settings-manager.php:204
-msgid "Manage RSA encryption keys for secure data transmission."
-msgstr "Administrar claves de cifrado RSA para transmisión segura de datos."
-
-#: class-admin-interface.php:1431
-msgid "Metadata updated successfully."
-msgstr "Metadatos actualizados correctamente."
-
-#: class-frontend-handler.php:175
-msgid "Missing %s in metadata."
-msgstr "Falta %s en los metadatos."
-
-#: class-encryption-handler.php:585
-msgid "Missing authentication data."
-msgstr "Faltan datos de autenticación."
-
-#: class-encryption-handler.php:538
-msgid "Missing credential data."
-msgstr "Faltan datos de credenciales."
-
-#: class-admin-interface.php:1020
-msgid "Missing export manager."
-msgstr "Falta el administrador de exportación."
-
-#: class-admin-interface.php:1056
-msgid "Missing passkey signature."
-msgstr "Falta la firma de Passkey."
-
-#: class-admin-interface.php:1193 class-admin-interface.php:1218
-#: class-admin-interface.php:1256 class-admin-interface.php:1404
-#: class-frontend-handler.php:159
-msgid "Missing required data."
-msgstr "Faltan datos requeridos."
-
-#: class-frontend-handler.php:389
-msgid "Missing required field: %s"
-msgstr "Falta el campo requerido: %s"
-
-#: class-admin-interface.php:1273
-msgid "Missing required metadata fields."
-msgstr "Faltan campos de metadatos requeridos."
-
-#: class-frontend-handler.php:400
-msgid "Missing required metadata: %s"
-msgstr "Faltan metadatos requeridos: %s"
-
-#: class-frontend-handler.php:373
-msgid "Missing submission data."
-msgstr "Faltan datos de envío."
-
-#: class-admin-interface.php:164 class-admin-interface.php:182
-msgid "N/A"
-msgstr "N/A"
-
-#: class-admin-interface.php:94 class-admin-interface.php:801
-msgid "Name"
-msgstr "Nombre"
-
-#: class-frontend-handler.php:312
-msgid "Name:"
-msgstr "Nombre:"
-
-#: class-admin-interface.php:696
-msgid "Network error occurred during decryption."
-msgstr "Error de red durante el descifrado."
-
-#: class-admin-interface.php:703
-msgid "Network error occurred during passkey decryption."
-msgstr "Error de red durante el descifrado con Passkey."
-
-#: class-admin-interface.php:690
-msgid "Network error occurred during passkey setup."
-msgstr "Error de red durante la configuración de Passkey."
-
-#: class-settings-manager.php:485
-msgid "Network error occurred during registration."
-msgstr "Error de red durante el registro."
-
-#: class-settings-manager.php:551
-msgid "Network error occurred during reset."
-msgstr "Error de red durante el reinicio."
-
-#: class-admin-interface.php:686
-msgid "Network error occurred during save."
-msgstr "Error de red durante el guardado."
-
-#: class-settings-manager.php:518
-msgid "Network error occurred during test."
-msgstr "Error de red durante la prueba."
-
-#: class-admin-interface.php:734
-msgid "Network error occurred while saving data."
-msgstr "Error de red al guardar los datos."
-
-#: class-frontend-handler.php:118
-msgid "Network error occurred while saving data. Please try again."
-msgstr "Error de red al guardar los datos. Por favor, inténtelo de nuevo."
-
-#: class-settings-manager.php:287
-msgid "Network error occurred."
-msgstr "Error de red."
-
-#: class-database-manager.php:279
-msgid "Never expires"
-msgstr "Nunca expira"
-
-#: class-admin-interface.php:728
-msgid "No decrypted data available. Please decrypt the data first."
-msgstr ""
-"No hay datos descifrados disponibles. Por favor, descifre los datos primero."
-
-#: class-frontend-handler.php:123
-msgid "No encryption method available"
-msgstr "No hay método de cifrado disponible"
-
-#: class-admin-interface.php:1027
-msgid "No entries selected for export."
-msgstr "No se seleccionaron entradas para exportar."
-
-#: class-encryption-handler.php:576
-msgid "No pending decrypt request found."
-msgstr "No se encontró ninguna solicitud de descifrado pendiente."
-
-#: class-encryption-handler.php:513
-msgid "No public key available."
-msgstr "No hay clave pública disponible."
-
-#: class-settings-manager.php:248
-msgid "Not generated"
-msgstr "No generado"
-
-#: class-admin-interface.php:200 class-admin-interface.php:682
-#: class-database-manager.php:332
-msgid "Not provided"
-msgstr "No proporcionado"
-
-#: class-settings-manager.php:355
-msgid "Not registered"
-msgstr "No registrado"
-
-#: class-settings-manager.php:349
-msgid ""
-"Note: Resetting only removes the passkey from this plugin. The passkey will "
-"remain in your browser/device."
-msgstr ""
-"Nota: Reiniciar solo elimina la Passkey de este plugin. La Passkey "
-"permanecerá en su navegador/dispositivo."
-
-#: class-settings-manager.php:148
-msgid "Notification Email Address"
-msgstr "Dirección de correo de notificación"
-
-#: class-settings-manager.php:665
+#: includes/class-settings-manager.php:619
 msgid ""
 "Number of days after which login data will be automatically deleted. Set to "
 "0 to disable automatic deletion (data will be retained until manually "
@@ -893,361 +1350,63 @@ msgstr ""
 "automáticamente. Establezca en 0 para desactivar la eliminación automática "
 "(los datos se conservarán hasta su eliminación manual)."
 
-#: class-settings-manager.php:380
-msgid "Open your password manager → Find passkey → Delete"
-msgstr "Abra su gestor de contraseñas → Buscar Passkey → Eliminar"
+#: includes/class-settings-manager.php:633
+msgid "Configure how the plugin handles data when it is uninstalled."
+msgstr ""
 
-#: class-encryption-handler.php:55
-msgid "OpenSSL extension is required for RSA encryption."
-msgstr "La extensión OpenSSL es necesaria para el cifrado RSA."
+#: includes/class-settings-manager.php:643
+msgid "Completely remove all plugin data when uninstalling"
+msgstr ""
 
-#: class-admin-interface.php:840 class-frontend-handler.php:342
+#: includes/class-settings-manager.php:644
 msgid ""
-"Optional: Any additional information like security questions, backup codes, "
-"or special instructions."
+"When checked, all login data, encryption keys, settings, and database tables "
+"will be permanently deleted when the plugin is uninstalled. This action "
+"cannot be undone."
 msgstr ""
-"Opcional: Cualquier información adicional como preguntas de seguridad, "
-"códigos de respaldo o instrucciones especiales."
 
-#: class-settings-manager.php:336 class-settings-manager.php:354
-msgid "Passkey Status:"
-msgstr "Estado de Passkey:"
+#: includes/class-settings-manager.php:646
+#: includes/class-settings-manager__premium_only.php:121
+msgid "Warning:"
+msgstr "Advertencia:"
 
-#: class-admin-interface.php:704
-msgid "Passkey authentication failed:"
-msgstr "La autenticación con Passkey falló:"
-
-#: class-admin-interface.php:688
-msgid "Passkey authentication setup failed:"
-msgstr "La configuración de autenticación con Passkey falló:"
-
-#: class-settings-manager.php:494
-msgid "Passkey creation failed:"
-msgstr "La creación de Passkey falló:"
-
-#: class-admin-interface.php:702
-msgid "Passkey decryption failed:"
-msgstr "El descifrado con Passkey falló:"
-
-#: class-settings-manager.php:514
-msgid "Passkey encryption test failed:"
-msgstr "La prueba de cifrado con Passkey falló:"
-
-#: class-settings-manager.php:512
-msgid "Passkey encryption test passed!"
-msgstr "¡Prueba de cifrado con Passkey aprobada!"
-
-#: class-admin-interface.php:1011 class-encryption-handler.php:569
-msgid "Passkey not registered."
-msgstr "Passkey no registrada."
-
-#: class-encryption-handler.php:708
-msgid "Passkey not registered. Please register a passkey first."
-msgstr "Passkey no registrada. Por favor, registre una Passkey primero."
-
-#: class-settings-manager.php:478
-msgid "Passkey registered successfully!"
-msgstr "¡Passkey registrada correctamente!"
-
-#: class-encryption-handler.php:549
-msgid "Passkey registered successfully."
-msgstr "Passkey registrada correctamente."
-
-#: class-encryption-handler.php:681
+#: includes/class-settings-manager.php:646
 msgid ""
-"Passkey unlinked from the plugin. You can now register a new passkey. "
-"Remember to manually remove the old passkey from your browser/device "
-"settings or password manager."
+"If you enable this option, all encrypted login data will be permanently lost "
+"when you uninstall the plugin. Make sure to export any important data before "
+"uninstalling."
 msgstr ""
-"Passkey desvinculada del plugin. Ahora puede registrar una nueva Passkey. "
-"Recuerde eliminar manualmente la Passkey antigua de la configuración de su "
-"navegador/dispositivo o gestor de contraseñas."
 
-#: class-settings-manager.php:544
-msgid ""
-"Passkey unlinked from the plugin. You can now register a new passkey. "
-"Remember to manually remove the old passkey from your browser/device."
-msgstr ""
-"Passkey desvinculada del plugin. Ahora puede registrar una nueva Passkey. "
-"Recuerde eliminar manualmente la Passkey antigua de su navegador/dispositivo."
-
-#: class-settings-manager.php:216
-msgid "Passkey-Derived"
-msgstr "Derivado de Passkey"
-
-#: freemius-hooks.php:125
-msgid "Passkey-Derived Encryption"
-msgstr "Cifrado derivado de Passkey"
-
-#: class-admin-interface.php:341 class-admin-interface.php:906
-msgid "Passkey-derived encryption for maximum security."
-msgstr "Cifrado derivado de Passkey para máxima seguridad."
-
-#: class-admin-interface.php:827
-msgid "Password"
-msgstr "Contraseña"
-
-#: class-frontend-handler.php:329
-msgid "Password:"
-msgstr "Contraseña:"
-
-#: freemius-hooks.php:143
-msgid "Please complete the Freemius opt-in process first."
-msgstr "Por favor, complete primero el proceso de suscripción a Freemius."
-
-#: account-page-simple.php:72
-msgid "Please complete the plugin activation to access account features."
-msgstr ""
-"Por favor, complete la activación del plugin para acceder a las funciones de "
-"la cuenta."
-
-#: freemius-account-redirect.php:53
-msgid "Please complete the plugin setup process first."
-msgstr "Por favor, complete primero el proceso de configuración del plugin."
-
-#: class-license-manager.php:182
-msgid "Please enter a license key"
-msgstr "Por favor, ingrese una clave de licencia"
-
-#: class-frontend-handler.php:112
-msgid ""
-"Please fill in all required fields (Email Address, Name, Login URL, "
-"Username/Email, and Password)."
-msgstr ""
-"Por favor, complete todos los campos requeridos (Dirección de correo, Nombre,"
-" URL de acceso, Usuario/Correo y Contraseña)."
-
-#: class-admin-interface.php:729
-msgid "Please fill in all required fields."
-msgstr "Por favor, complete todos los campos requeridos."
-
-#: freemius-account-redirect.php:80
-msgid "Plugin Dashboard"
-msgstr "Panel del plugin"
-
-#: account-page-simple.php:95
-msgid "Plugin Information"
-msgstr "Información del plugin"
-
-#: freemius-hooks.php:312 freemius-hooks.php:313
-msgid "Pricing"
-msgstr "Precios"
-
-#: freemius-hooks.php:129
-msgid "Priority Support"
-msgstr "Soporte prioritario"
-
-#: account-page-simple.php:102
-msgid "Pro Features"
-msgstr "Características Pro"
-
-#: freemius-hooks.php:121 freemius-config.php:71
-msgid "Pro Version"
-msgstr "Versión Pro"
-
-#: account-page-simple.php:30
-msgid "Pro Version Active"
-msgstr "Versión Pro activa"
-
-#: class-settings-manager.php:124
-msgid "Pro Version Settings"
-msgstr "Configuración de la versión Pro"
-
-#: freemius-config.php:88
-msgid "Pro version activated! Passkey encryption is now available."
-msgstr "¡Versión Pro activada! El cifrado con Passkey ahora está disponible."
-
-#: class-admin-interface.php:691
-msgid ""
-"Pro version detected but no passkey registered. Continue with traditional "
-"decryption?"
-msgstr ""
-"Versión Pro detectada pero sin Passkey registrada. ¿Continuar con el "
-"descifrado tradicional?"
-
-#: class-admin-interface.php:1006 class-encryption-handler.php:530
-#: class-encryption-handler.php:562 class-encryption-handler.php:656
-#: class-encryption-handler.php:702
-msgid "Pro version required."
-msgstr "Se requiere la versión Pro."
-
-#: freemius-account-redirect.php:78
-msgid "Quick Links"
-msgstr "Enlaces rápidos"
-
-#: class-settings-manager.php:377
-msgid "Quick Removal Instructions:"
-msgstr "Instrucciones rápidas de eliminación:"
-
-#: freemius-account-redirect.php:58
-msgid "Quick Setup"
-msgstr "Configuración rápida"
-
-#: class-settings-manager.php:241 class-settings-manager.php:247
-msgid "RSA Keys Status:"
-msgstr "Estado de las claves RSA:"
-
-#: class-admin-interface.php:1335
-msgid "RSA key encryption failed."
-msgstr "El cifrado de clave RSA falló."
-
-#: class-settings-manager.php:279
-msgid "RSA keys generated successfully!"
-msgstr "¡Claves RSA generadas correctamente!"
-
-#: class-encryption-handler.php:499
-msgid "RSA keys generated successfully."
-msgstr "Claves RSA generadas correctamente."
-
-#: class-admin-interface.php:1317
-msgid "RSA keys not available."
-msgstr "Claves RSA no disponibles."
-
-#: class-frontend-handler.php:124
-msgid "RSA public key not available. Please contact administrator."
-msgstr "Clave pública RSA no disponible. Por favor, contacte al administrador."
-
-#: class-settings-manager.php:226
-msgid "RSA-2048"
-msgstr "RSA-2048"
-
-#: freemius-hooks.php:113
-msgid "RSA-2048 Encryption"
-msgstr "Cifrado RSA-2048"
-
-#: class-settings-manager.php:372
-msgid "Refresh this page"
-msgstr "Actualizar esta página"
-
-#: class-settings-manager.php:359 class-settings-manager.php:488
-#: class-settings-manager.php:495
-msgid "Register Passkey"
-msgstr "Registrar Passkey"
-
-#: class-settings-manager.php:337
-msgid "Registered"
-msgstr "Registrado"
-
-#: class-settings-manager.php:339
-msgid "Registered:"
-msgstr "Registrado:"
-
-#: class-settings-manager.php:392
-msgid "Registering..."
-msgstr "Registrando..."
-
-#: class-settings-manager.php:481
-msgid "Registration failed:"
-msgstr "El registro falló:"
-
-#: class-settings-manager.php:370
-msgid "Remove the old passkey from your browser/password manager"
-msgstr "Eliminar la Passkey antigua de su navegador/gestor de contraseñas"
-
-#: class-admin-interface.php:687
-msgid "Requesting passkey..."
-msgstr "Solicitando Passkey..."
-
-#: class-settings-manager.php:368
-msgid "Required Steps:"
-msgstr "Pasos requeridos:"
-
-#: class-settings-manager.php:345 class-settings-manager.php:554
-msgid "Reset Passkey"
-msgstr "Reiniciar Passkey"
-
-#: class-settings-manager.php:547
-msgid "Reset failed:"
-msgstr "El reinicio falló:"
-
-#: class-settings-manager.php:532
-msgid "Resetting..."
-msgstr "Reiniciando..."
-
-#: class-admin-interface.php:1235
-msgid "Retention period extended by %d days."
-msgstr "Período de retención extendido por %d días."
-
-#: class-admin-interface.php:707
-msgid "Retention period extended successfully."
-msgstr "Período de retención extendido correctamente."
-
-#: class-admin-interface.php:735 class-admin-interface.php:868
-msgid "Save Entry"
-msgstr "Guardar entrada"
-
-#: class-admin-interface.php:277
-msgid "Save changes"
-msgstr "Guardar cambios"
-
-#: class-admin-interface.php:684
-msgid "Save failed:"
-msgstr "Error al guardar:"
-
-#: class-settings-manager.php:465
-msgid "Saving registration..."
-msgstr "Guardando registro..."
-
-#: class-admin-interface.php:683 class-admin-interface.php:730
-msgid "Saving..."
-msgstr "Guardando..."
-
-#: class-admin-interface.php:778
-msgid "Search entries"
-msgstr "Buscar entradas"
-
-#: class-admin-interface.php:481
-msgid "Search in email, name, login URL..."
-msgstr "Buscar en correo, nombre, URL de acceso..."
-
-#: freemius-hooks.php:107
-msgid "Secure Login Collector Pro"
-msgstr "Secure Login Collector Pro"
-
-#: class-settings-manager.php:689
+#: includes/class-settings-manager.php:656
 msgid "Secure Login Collector Settings"
 msgstr "Configuración de Secure Login Collector"
 
-#: freemius-init-check.php:46 freemius-init-check.php:62
-msgid "Secure Login Collector:"
-msgstr "Secure Login Collector:"
+#: includes/class-settings-manager.php:663
+msgid "Frontend Form Shortcode"
+msgstr "Shortcode del formulario frontend"
 
-#: class-admin-interface.php:626 class-admin-interface.php:769
-msgid "Secure Login Data"
-msgstr "Datos de acceso seguros"
+#: includes/class-settings-manager.php:665
+#, fuzzy
+msgid "Required"
+msgstr "Pasos requeridos:"
 
-#: freemius-hooks.php:167
-msgid "Secure checkout powered by Freemius"
-msgstr "Pago seguro con tecnología de Freemius"
-
-#: class-frontend-handler.php:294 class-frontend-handler.php:301
-#: class-settings-manager.php:595
-msgid "Security & Privacy:"
-msgstr "Seguridad y privacidad:"
-
-#: class-admin-interface.php:413
-msgid "Security check failed."
-msgstr "La verificación de seguridad falló."
-
-#: class-settings-manager.php:574
-msgid "Send email notifications when new login data is received"
+#: includes/class-settings-manager.php:668
+msgid ""
+"Use this shortcode to display the secure login form on any page or post:"
 msgstr ""
-"Enviar notificaciones por correo cuando se reciban nuevos datos de acceso"
+"Use este shortcode para mostrar el formulario de acceso seguro en cualquier "
+"página o entrada:"
 
-#: class-settings-manager.php:58 class-settings-manager.php:59
-#: freemius-account-redirect.php:81
-msgid "Settings"
-msgstr "Configuración"
+#: includes/class-settings-manager.php:673
+msgid "Copied!"
+msgstr "¡Copiado!"
 
-#: class-settings-manager.php:375
-msgid "Show Removal Instructions"
-msgstr "Mostrar instrucciones de eliminación"
+#: includes/class-settings-manager.php:673
+#: includes/class-settings-manager.php:674
+msgid "Copy Shortcode"
+msgstr "Copiar shortcode"
 
-#: class-frontend-handler.php:120
-msgid "Show password"
-msgstr "Mostrar contraseña"
-
-#: class-settings-manager.php:704
+#: includes/class-settings-manager.php:678
 msgid ""
 "Simply paste this shortcode into any page or post where you want clients to "
 "submit their login credentials."
@@ -1255,234 +1414,173 @@ msgstr ""
 "Simplemente pegue este shortcode en cualquier página o entrada donde desee "
 "que los clientes envíen sus credenciales de acceso."
 
-#: freemius-account-redirect.php:24
-msgid "Sorry, you are not allowed to access this page."
-msgstr "Lo sentimos, no tiene permiso para acceder a esta página."
-
-#: class-admin-interface.php:860
-msgid "Standard encryption with AES-256 and RSA-2048 protection."
-msgstr "Cifrado estándar con protección AES-256 y RSA-2048."
-
-#: account-page-simple.php:27
-msgid "Status"
-msgstr "Estado"
-
-#: class-frontend-handler.php:245
-msgid "Submit Secure Login Data"
-msgstr "Enviar datos de acceso seguros"
-
-#: class-frontend-handler.php:114 class-frontend-handler.php:246
-msgid "Submit Securely"
-msgstr "Enviar de forma segura"
-
-#: class-frontend-handler.php:113
-msgid "Submitting..."
-msgstr "Enviando..."
-
-#: class-admin-interface.php:1140
-msgid "Successfully decrypted %d entries. Generating CSV..."
-msgstr "%d entradas descifradas correctamente. Generando CSV..."
-
-#: class-settings-manager.php:379
-msgid "System Preferences → Passwords → Find this site → Delete"
-msgstr "Preferencias del sistema → Contraseñas → Buscar este sitio → Eliminar"
-
-#: class-settings-manager.php:344 class-settings-manager.php:521
-msgid "Test Passkey Encryption"
-msgstr "Probar cifrado con Passkey"
-
-#: class-settings-manager.php:501
-msgid "Testing..."
-msgstr "Probando..."
-
-#: class-settings-manager.php:156
-msgid "Text Type"
-msgstr "Tipo de texto"
-
-#: account-page-simple.php:84
-msgid "The Freemius SDK is not installed in /vendor/freemius/"
-msgstr "El SDK de Freemius no está instalado en /vendor/freemius/"
-
-#: account-page-simple.php:82
-msgid "The licensing system is not properly configured. This could mean:"
+#: includes/class-settings-manager__premium_only.php:77
+msgid "Advanced Security Settings"
 msgstr ""
-"El sistema de licencias no está configurado correctamente. Esto podría "
-"significar:"
 
-#: class-admin-interface.php:831 class-frontend-handler.php:336
-msgid "The password for this account."
-msgstr "La contraseña para esta cuenta."
-
-#: class-admin-interface.php:822 class-frontend-handler.php:325
-msgid "The username or email address used to log into this service."
-msgstr ""
-"El nombre de usuario o dirección de correo usado para acceder a este "
-"servicio."
-
-#: account-page-simple.php:85
-msgid "There was an error loading the SDK"
-msgstr "Hubo un error al cargar el SDK"
-
-#: class-encryption-handler.php:689
-msgid ""
-"This encryption method is no longer supported. Please use standard form "
-"submission."
-msgstr ""
-"Este método de cifrado ya no es compatible. Por favor, use el envío de "
-"formulario estándar."
-
-#: class-admin-interface.php:692
-msgid ""
-"This entry was created before automatic key reconstruction was available. "
-"Please enter the encryption key manually:"
-msgstr ""
-"Esta entrada fue creada antes de que la reconstrucción automática de claves "
-"estuviera disponible. Por favor, ingrese la clave de cifrado manualmente:"
-
-#: class-admin-interface.php:773
-msgid ""
-"This page shows all encrypted login data collected from clients. Use the "
-"search box to filter entries and bulk actions for management."
-msgstr ""
-"Esta página muestra todos los datos de acceso cifrados recopilados de los "
-"clientes. Use el cuadro de búsqueda para filtrar entradas y acciones masivas "
-"para la gestión."
-
-#: class-settings-manager.php:263
-msgid ""
-"This will generate new RSA keys and invalidate all existing encrypted data. "
-"Continue?"
-msgstr ""
-"Esto generará nuevas claves RSA e invalidará todos los datos cifrados "
-"existentes. ¿Continuar?"
-
-#: class-settings-manager.php:527
-msgid ""
-"This will remove the passkey registration from this plugin. Note: The "
-"passkey will remain in your browser/device and must be removed manually. "
-"Continue?"
-msgstr ""
-"Esto eliminará el registro de Passkey de este plugin. Nota: La Passkey "
-"permanecerá en su navegador/dispositivo y debe eliminarse manualmente. "
-"¿Continuar?"
-
-#: account-page-simple.php:89
-msgid ""
-"To enable Pro features for development/testing, add this to wp-config.php:"
-msgstr ""
-"Para habilitar las características Pro para desarrollo/pruebas, añada esto a "
-"wp-config.php:"
-
-#: class-frontend-handler.php:332
-msgid "Toggle password visibility"
-msgstr "Alternar visibilidad de contraseña"
-
-#: freemius-hooks.php:126
-msgid "Ultra-Secure Double Encryption"
-msgstr "Doble cifrado ultra seguro"
-
-#: class-settings-manager.php:131
+#: includes/class-settings-manager__premium_only.php:84
 msgid "Ultra-Secure Mode"
 msgstr "Modo ultra seguro"
 
-#: class-admin-interface.php:850
+#: includes/class-settings-manager__premium_only.php:112
+#, fuzzy
+msgid "Enable passkey-protected encryption (zero-knowledge)"
+msgstr "Activar cifrado derivado de Passkey (máxima seguridad)"
+
+#: includes/class-settings-manager__premium_only.php:113
+#, fuzzy
 msgid ""
-"Ultra-secure mode is enabled. All entries will be encrypted with triple-"
-"layer protection."
-msgstr ""
-"El modo ultra seguro está activado. Todas las entradas se cifrarán con "
-"protección de triple capa."
-
-#: class-admin-interface.php:685 class-admin-interface.php:733
-#: class-frontend-handler.php:117
-msgid "Unknown error"
-msgstr "Error desconocido"
-
-#: freemius-hooks.php:270
-msgid "Upgrade Now"
-msgstr "Actualizar ahora"
-
-#: account-page-simple.php:60 freemius-hooks.php:165 freemius-hooks.php:172
-msgid "Upgrade to Pro"
-msgstr "Actualizar a Pro"
-
-#: class-settings-manager.php:694
-msgid ""
-"Use this shortcode to display the secure login form on any page or post:"
-msgstr ""
-"Use este shortcode para mostrar el formulario de acceso seguro en cualquier "
-"página o entrada:"
-
-#: class-frontend-handler.php:324
-msgid "Username or email for login"
-msgstr "Nombre de usuario o correo para acceder"
-
-#: class-admin-interface.php:818
-msgid "Username/Email"
-msgstr "Usuario/Correo"
-
-#: class-frontend-handler.php:323
-msgid "Username/Email:"
-msgstr "Usuario/Correo:"
-
-#: class-settings-manager.php:218
-msgid ""
-"Uses your passkey signature to derive encryption keys. Maximum security - "
-"even server compromise cannot decrypt data without your physical device."
-msgstr ""
-"Usa su firma de Passkey para derivar claves de cifrado. Máxima seguridad: "
-"incluso un compromiso del servidor no puede descifrar datos sin su "
-"dispositivo físico."
-
-#: account-page-simple.php:88
-msgid "Using Pro Features Without Freemius"
-msgstr "Usando características Pro sin Freemius"
-
-#: class-admin-interface.php:700
-msgid "Verifying passkey and decrypting..."
-msgstr "Verificando Passkey y descifrando..."
-
-#: account-page-simple.php:98
-msgid "Version"
-msgstr "Versión"
-
-#: account-page-simple.php:61 freemius-account-redirect.php:83
-msgid "View Pricing"
-msgstr "Ver precios"
-
-#: class-settings-manager.php:350
-msgid "View manual removal guide"
-msgstr "Ver guía de eliminación manual"
-
-#: class-settings-manager.php:679
-msgid "Warning:"
-msgstr "Advertencia:"
-
-#: freemius-hooks.php:127
-msgid "WebAuthn Hardware Security"
-msgstr "Seguridad de hardware WebAuthn"
-
-#: class-admin-interface.php:699
-msgid "WebAuthn/Passkeys are not supported in this browser."
-msgstr "WebAuthn/Passkeys no son compatibles con este navegador."
-
-#: class-frontend-handler.php:292 class-settings-manager.php:594
-msgid "What happens to your data:"
-msgstr "Qué pasa con sus datos:"
-
-#: class-settings-manager.php:675
-msgid ""
-"When enabled, data is encrypted using keys derived from your passkey "
-"signature. This provides maximum security - even if hackers modify the "
-"plugin code, they cannot decrypt data without your physical passkey device. "
-"Requires passkey registration."
+"When enabled, the RSA private key is wrapped with passkey authentication. "
+"This provides true zero-knowledge - the server cannot decrypt data without "
+"your physical passkey device. Requires passkey registration."
 msgstr ""
 "Cuando está activado, los datos se cifran usando claves derivadas de su "
 "firma de Passkey. Esto proporciona máxima seguridad: incluso si los hackers "
 "modifican el código del plugin, no pueden descifrar datos sin su dispositivo "
 "Passkey físico. Requiere registro de Passkey."
 
-#: freemius-hooks.php:269
+#: includes/class-settings-manager__premium_only.php:121
+msgid "You must register a passkey before enabling ultra-secure mode."
+msgstr "Debe registrar una Passkey antes de activar el modo ultra seguro."
+
+#: includes/class-settings-manager__premium_only.php:159
+#, fuzzy
+msgid "Ultra-Secure RSA Keys"
+msgstr "Modo ultra seguro"
+
+#: includes/class-settings-manager__premium_only.php:160
+msgid "Passkey-protected RSA-2048 for ultra-secure encryption"
+msgstr ""
+
+#: includes/class-settings-manager__premium_only.php:166
+#, fuzzy
+msgid "Using passkey protection"
+msgstr "Falta la firma de Passkey."
+
+#: includes/class-settings-manager__premium_only.php:170
+msgid "NEEDS INITIALIZATION"
+msgstr ""
+
+#: includes/class-settings-manager__premium_only.php:171
+#, fuzzy
+msgid "Passkey registered but keys not initialized"
+msgstr "¡Passkey registrada correctamente!"
+
+#: includes/class-settings-manager__premium_only.php:176
+#, fuzzy
+msgid "Register passkey to enable"
+msgstr "Registrar Passkey"
+
+#: includes/class-settings-manager__premium_only.php:190
+#: includes/class-settings-manager__premium_only.php:227
+#, fuzzy
+msgid "Export Pro Public Key"
+msgstr "Exportar clave pública"
+
+#: includes/class-settings-manager__premium_only.php:213
+msgid "Ultra-secure RSA keys need to be initialized with your passkey."
+msgstr ""
+
+#: includes/class-settings-manager__premium_only.php:215
+msgid ""
+"To enable ultra-secure encryption, register a passkey in the Pro settings."
+msgstr ""
+
+#: includes/class-settings-manager__premium_only.php:217
+msgid "Ultra-secure RSA keys are active and ready for use."
+msgstr ""
+
+#: includes/freemius-account-redirect.php:25
+msgid "Sorry, you are not allowed to access this page."
+msgstr "Lo sentimos, no tiene permiso para acceder a esta página."
+
+#: includes/freemius-account-redirect.php:39
+#: includes/freemius-account-redirect.php:74
+msgid "Account"
+msgstr "Cuenta"
+
+#: includes/freemius-account-redirect.php:41
+msgid ""
+"Freemius is not properly configured. Please ensure the Freemius SDK is "
+"installed."
+msgstr ""
+"Freemius no está configurado correctamente. Por favor, asegúrese de que el "
+"SDK de Freemius esté instalado."
+
+#: includes/freemius-account-redirect.php:52
+msgid "Account Setup Required"
+msgstr "Configuración de cuenta requerida"
+
+#: includes/freemius-account-redirect.php:54
+msgid "Please complete the plugin setup process first."
+msgstr "Por favor, complete primero el proceso de configuración del plugin."
+
+#: includes/freemius-account-redirect.php:55
+msgid "Go to Plugin Dashboard"
+msgstr "Ir al panel del plugin"
+
+#: includes/freemius-account-redirect.php:59
+msgid "Quick Setup"
+msgstr "Configuración rápida"
+
+#: includes/freemius-account-redirect.php:60
+msgid "Click below to complete the setup:"
+msgstr "Haga clic a continuación para completar la configuración:"
+
+#: includes/freemius-account-redirect.php:61
+msgid "Complete Setup"
+msgstr "Completar configuración"
+
+#: includes/freemius-account-redirect.php:76
+msgid "Error loading account page:"
+msgstr "Error al cargar la página de cuenta:"
+
+#: includes/freemius-account-redirect.php:79
+msgid "Quick Links"
+msgstr "Enlaces rápidos"
+
+#: includes/freemius-account-redirect.php:81
+msgid "Plugin Dashboard"
+msgstr "Panel del plugin"
+
+#: includes/freemius-account-redirect.php:84
+msgid "View Pricing"
+msgstr "Ver precios"
+
+#: includes/freemius-config.php:76
+msgid "Free Version"
+msgstr "Versión gratuita"
+
+#: includes/freemius-config.php:77
+msgid "Pro Version"
+msgstr "Versión Pro"
+
+#: includes/freemius-config.php:101
+msgid "Pro version activated! Passkey encryption is now available."
+msgstr "¡Versión Pro activada! El cifrado con Passkey ahora está disponible."
+
+#: includes/freemius-hooks.php:26
+#, php-format
+msgid ""
+"Hey %1$s! Please help us improve %2$s by sharing some basic WordPress "
+"environment info. This helps us ensure compatibility and provide better "
+"support."
+msgstr ""
+"¡Hola %1$s! Por favor, ayúdenos a mejorar %2$s compartiendo información "
+"básica sobre su entorno WordPress. Esto nos ayuda a garantizar la "
+"compatibilidad y brindar un mejor soporte."
+
+#: includes/freemius-hooks.php:197
+msgid ""
+"Hey there! Want to try the Pro version of Secure Login Collector? Start your "
+"14-day free trial and experience passkey-derived encryption!"
+msgstr ""
+"¡Hola! ¿Desea probar la versión Pro de Secure Login Collector? ¡Comience su "
+"prueba gratuita de 14 días y experimente el cifrado derivado de Passkey!"
+
+#. translators: %s: upgrade link
+#: includes/freemius-hooks.php:224
+#, php-format
 msgid ""
 "You have a passkey registered but need the Pro version to use passkey "
 "encryption. %s"
@@ -1490,113 +1588,391 @@ msgstr ""
 "Tiene una Passkey registrada pero necesita la versión Pro para usar el "
 "cifrado con Passkey. %s"
 
-#: class-admin-interface.php:1047
+#: includes/freemius-hooks.php:225
+msgid "Upgrade Now"
+msgstr "Actualizar ahora"
+
+#: includes/freemius-hooks.php:250
+msgid "Go Pro"
+msgstr "Actualizar a Pro"
+
+#: includes/freemius-hooks.php:265 includes/freemius-hooks.php:266
+msgid "Pricing"
+msgstr "Precios"
+
+#: includes/freemius-init-check.php:46 includes/freemius-init-check.php:62
+msgid "Secure Login Collector:"
+msgstr "Secure Login Collector:"
+
+#: includes/freemius-init-check.php:47
 msgid ""
-"You have selected %1$d entries for bulk export. All selected entries will be "
-"decrypted using your passkey and then exported to %2$s format."
+"Freemius SDK is not loaded. Please ensure the /vendor/freemius/ directory "
+"exists with the SDK files."
 msgstr ""
-"Ha seleccionado %1$d entradas para exportación masiva. Todas las entradas "
-"seleccionadas se descifrarán usando su Passkey y luego se exportarán al "
-"formato %2$s."
+"El SDK de Freemius no está cargado. Por favor, asegúrese de que el "
+"directorio /vendor/freemius/ exista con los archivos SDK."
 
-#: class-settings-manager.php:679
-msgid "You must register a passkey before enabling ultra-secure mode."
-msgstr "Debe registrar una Passkey antes de activar el modo ultra seguro."
-
-#: class-settings-manager.php:367
-msgid ""
-"Your browser/password manager still has the old passkey saved and will not "
-"allow creating a new one until it is removed."
+#: includes/freemius-init-check.php:63
+msgid "Freemius initialization failed. Please check your configuration."
 msgstr ""
-"Su navegador/gestor de contraseñas todavía tiene guardada la Passkey antigua "
-"y no permitirá crear una nueva hasta que se elimine."
+"La inicialización de Freemius falló. Por favor, verifique su configuración."
 
-#: class-frontend-handler.php:297
-msgid ""
-"Your data is encrypted in your browser before being sent to our server. We "
-"store the encrypted data securely for %d days, after which it will be "
-"automatically deleted."
-msgstr ""
-"Sus datos se cifran en su navegador antes de enviarse a nuestro servidor. "
-"Almacenamos los datos cifrados de forma segura durante %d días, después de "
-"lo cual se eliminarán automáticamente."
+#~ msgid "(see instructions below)"
+#~ msgstr "(ver instrucciones a continuación)"
 
-#: class-frontend-handler.php:301
-msgid ""
-"Your data is encrypted in your browser before being sent to our server. We "
-"store the encrypted data securely. Auto-deletion is disabled, so data will "
-"be retained until manually deleted by the administrator."
-msgstr ""
-"Sus datos se cifran en su navegador antes de enviarse a nuestro servidor. "
-"Almacenamos los datos cifrados de forma segura. La eliminación automática "
-"está desactivada, por lo que los datos se conservarán hasta que el "
-"administrador los elimine manualmente."
+#~ msgid "Account & License"
+#~ msgstr "Cuenta y Licencia"
 
-#: class-settings-manager.php:595
-msgid ""
-"Your data is encrypted in your browser before being sent to our server. We "
-"store the encrypted data securely{EXPIRATION_TEXT}."
-msgstr ""
-"Sus datos se cifran en su navegador antes de enviarse a nuestro servidor. "
-"Almacenamos los datos cifrados de forma segura{EXPIRATION_TEXT}."
+#~ msgid "Auto-deletion"
+#~ msgstr "Eliminación automática"
 
-#: class-frontend-handler.php:313
-msgid "Your full name"
-msgstr "Su nombre completo"
+#~ msgid "Automatic upgrade URL not available."
+#~ msgstr "URL de actualización automática no disponible."
 
-#: class-frontend-handler.php:292 class-settings-manager.php:594
-msgid ""
-"Your login data is encrypted in your browser before being sent to our server."
-" We use strong RSA-2048 encryption to ensure maximum security."
-msgstr ""
-"Sus datos de acceso se cifran en su navegador antes de enviarse a nuestro "
-"servidor. Usamos cifrado RSA-2048 fuerte para garantizar la máxima seguridad."
+#~ msgid "Available Encryption Methods:"
+#~ msgstr "Métodos de cifrado disponibles:"
 
-#: freemius-hooks.php:128
-msgid "Zero-Knowledge Architecture"
-msgstr "Arquitectura de conocimiento cero"
+#~ msgid "CRITICAL - You MUST remove the old passkey first!"
+#~ msgstr "CRÍTICO - ¡DEBE eliminar primero la Passkey antigua!"
 
-#: class-database-manager.php:326
-msgid "[%s] New Secure Login Data Received"
-msgstr "[%s] Nuevos datos de acceso seguros recibidos"
+#~ msgid "Click \"Register Passkey\" again"
+#~ msgstr "Haga clic en \"Registrar Passkey\" de nuevo"
 
-#: class-frontend-handler.php:266
-msgid "for %d days, after which it will be automatically deleted"
-msgstr "durante %d días, después de lo cual se eliminará automáticamente"
+#~ msgid "Complete Activation"
+#~ msgstr "Completar activación"
 
-#: class-frontend-handler.php:318
-msgid "https://example.com/login or service name"
-msgstr "https://example.com/login o nombre del servicio"
+#~ msgid "Could not connect to licensing server"
+#~ msgstr "No se pudo conectar al servidor de licencias"
 
-#: class-frontend-handler.php:308
-msgid "your@email.com"
-msgstr "su@correo.com"
+#~ msgid "Decryption failed."
+#~ msgstr "El descifrado falló."
 
-#: class-admin-interface.php:892
-msgid "🔐 AES-256 + RSA"
-msgstr "🔐 AES-256 + RSA"
+#~ msgid "Disabled"
+#~ msgstr "Desactivado"
 
-#: class-admin-interface.php:327
-msgid "🔐 Secure"
-msgstr "🔐 Seguro"
+#~ msgid "Enabled"
+#~ msgstr "Activado"
 
-#: class-admin-interface.php:333 class-admin-interface.php:339
-msgid "🔐 Ultra-Secure"
-msgstr "🔐 Ultra seguro"
+#~ msgid "Everything in Free"
+#~ msgstr "Todo en la versión gratuita"
 
-#: class-admin-interface.php:849
-msgid "🔐 Ultra-Secure (AES-256 + RSA-2048 + Passkey)"
-msgstr "🔐 Ultra seguro (AES-256 + RSA-2048 + Passkey)"
+#~ msgid "Expired"
+#~ msgstr "Expirado"
 
-#: class-admin-interface.php:898 class-admin-interface.php:904
-msgid "🔐 Ultra-Secure (Passkey)"
-msgstr "🔐 Ultra seguro (Passkey)"
+#~ msgid "Expires"
+#~ msgstr "Expira"
 
-#: class-admin-interface.php:345 class-admin-interface.php:351
-#: class-admin-interface.php:910 class-admin-interface.php:916
-msgid "🔒 RSA-2048"
-msgstr "🔒 RSA-2048"
+#~ msgid "Export to Password Managers"
+#~ msgstr "Exportar a gestores de contraseñas"
 
-#: class-admin-interface.php:859
-msgid "🔒 Secure (AES-256 + RSA-2048)"
-msgstr "🔒 Seguro (AES-256 + RSA-2048)"
+#~ msgid "Failed to decrypt RSA layer."
+#~ msgstr "Error al descifrar la capa RSA."
+
+#~ msgid "Failed to generate RSA key pair."
+#~ msgstr "Error al generar el par de claves RSA."
+
+#~ msgid "Freemius Not Configured"
+#~ msgstr "Freemius no configurado"
+
+#~ msgid "Freemius SDK not loaded. Please install the SDK."
+#~ msgstr "SDK de Freemius no cargado. Por favor, instale el SDK."
+
+#~ msgid "Generate New RSA Keys"
+#~ msgstr "Generar nuevas claves RSA"
+
+#~ msgid "Generated:"
+#~ msgstr "Generado:"
+
+#~ msgid "Generating..."
+#~ msgstr "Generando..."
+
+#~ msgid "Go to Plugin Settings"
+#~ msgstr "Ir a la configuración del plugin"
+
+#~ msgid ""
+#~ "Go to Settings → Passwords → Manage passkeys → Find this site → Delete"
+#~ msgstr ""
+#~ "Ir a Configuración → Contraseñas → Administrar Passkeys → Buscar este "
+#~ "sitio → Eliminar"
+
+#~ msgid ""
+#~ "Industry-standard RSA encryption with 2048-bit keys. Secure for most use "
+#~ "cases and available for all users."
+#~ msgstr ""
+#~ "Cifrado RSA estándar de la industria con claves de 2048 bits. Seguro para "
+#~ "la mayoría de los casos de uso y disponible para todos los usuarios."
+
+#~ msgid "Insufficient permissions"
+#~ msgstr "Permisos insuficientes"
+
+#~ msgid ""
+#~ "Invalid encryption format. This entry uses an older encryption format."
+#~ msgstr ""
+#~ "Formato de cifrado no válido. Esta entrada usa un formato de cifrado más "
+#~ "antiguo."
+
+#~ msgid "Invalid license key format"
+#~ msgstr "Formato de clave de licencia no válido"
+
+#~ msgid "Invalid metadata format. JSON Error:"
+#~ msgstr "Formato de metadatos no válido. Error JSON:"
+
+#~ msgid "License Status"
+#~ msgstr "Estado de la licencia"
+
+#~ msgid "License activated successfully!"
+#~ msgstr "¡Licencia activada correctamente!"
+
+#~ msgid "Licensed To"
+#~ msgstr "Licencia para"
+
+#~ msgid "Login URL:"
+#~ msgstr "URL de acceso:"
+
+#~ msgid "Login data saved securely."
+#~ msgstr "Datos de acceso guardados de forma segura."
+
+#~ msgid "Manage License"
+#~ msgstr "Administrar licencia"
+
+#~ msgid "Missing %s in metadata."
+#~ msgstr "Falta %s en los metadatos."
+
+#~ msgid "Missing authentication data."
+#~ msgstr "Faltan datos de autenticación."
+
+#~ msgid "Missing credential data."
+#~ msgstr "Faltan datos de credenciales."
+
+#~ msgid "Network error occurred during registration."
+#~ msgstr "Error de red durante el registro."
+
+#~ msgid "Network error occurred during reset."
+#~ msgstr "Error de red durante el reinicio."
+
+#~ msgid "Network error occurred during test."
+#~ msgstr "Error de red durante la prueba."
+
+#~ msgid "No public key available."
+#~ msgstr "No hay clave pública disponible."
+
+#~ msgid "Not generated"
+#~ msgstr "No generado"
+
+#~ msgid "Not registered"
+#~ msgstr "No registrado"
+
+#~ msgid ""
+#~ "Note: Resetting only removes the passkey from this plugin. The passkey "
+#~ "will remain in your browser/device."
+#~ msgstr ""
+#~ "Nota: Reiniciar solo elimina la Passkey de este plugin. La Passkey "
+#~ "permanecerá en su navegador/dispositivo."
+
+#~ msgid "Open your password manager → Find passkey → Delete"
+#~ msgstr "Abra su gestor de contraseñas → Buscar Passkey → Eliminar"
+
+#~ msgid "Passkey Status:"
+#~ msgstr "Estado de Passkey:"
+
+#~ msgid "Passkey creation failed:"
+#~ msgstr "La creación de Passkey falló:"
+
+#~ msgid "Passkey encryption test passed!"
+#~ msgstr "¡Prueba de cifrado con Passkey aprobada!"
+
+#~ msgid "Passkey not registered. Please register a passkey first."
+#~ msgstr "Passkey no registrada. Por favor, registre una Passkey primero."
+
+#~ msgid ""
+#~ "Passkey unlinked from the plugin. You can now register a new passkey. "
+#~ "Remember to manually remove the old passkey from your browser/device "
+#~ "settings or password manager."
+#~ msgstr ""
+#~ "Passkey desvinculada del plugin. Ahora puede registrar una nueva Passkey. "
+#~ "Recuerde eliminar manualmente la Passkey antigua de la configuración de "
+#~ "su navegador/dispositivo o gestor de contraseñas."
+
+#~ msgid ""
+#~ "Passkey unlinked from the plugin. You can now register a new passkey. "
+#~ "Remember to manually remove the old passkey from your browser/device."
+#~ msgstr ""
+#~ "Passkey desvinculada del plugin. Ahora puede registrar una nueva Passkey. "
+#~ "Recuerde eliminar manualmente la Passkey antigua de su navegador/"
+#~ "dispositivo."
+
+#~ msgid "Passkey-Derived"
+#~ msgstr "Derivado de Passkey"
+
+#~ msgid "Passkey-Derived Encryption"
+#~ msgstr "Cifrado derivado de Passkey"
+
+#~ msgid "Please complete the Freemius opt-in process first."
+#~ msgstr "Por favor, complete primero el proceso de suscripción a Freemius."
+
+#~ msgid "Please complete the plugin activation to access account features."
+#~ msgstr ""
+#~ "Por favor, complete la activación del plugin para acceder a las funciones "
+#~ "de la cuenta."
+
+#~ msgid "Please enter a license key"
+#~ msgstr "Por favor, ingrese una clave de licencia"
+
+#~ msgid "Plugin Information"
+#~ msgstr "Información del plugin"
+
+#~ msgid "Priority Support"
+#~ msgstr "Soporte prioritario"
+
+#~ msgid "Pro Features"
+#~ msgstr "Características Pro"
+
+#~ msgid "Pro Version Active"
+#~ msgstr "Versión Pro activa"
+
+#~ msgid "Pro Version Settings"
+#~ msgstr "Configuración de la versión Pro"
+
+#~ msgid "Pro version required."
+#~ msgstr "Se requiere la versión Pro."
+
+#~ msgid "Quick Removal Instructions:"
+#~ msgstr "Instrucciones rápidas de eliminación:"
+
+#~ msgid "RSA Keys Status:"
+#~ msgstr "Estado de las claves RSA:"
+
+#~ msgid "RSA keys generated successfully."
+#~ msgstr "Claves RSA generadas correctamente."
+
+#~ msgid "Refresh this page"
+#~ msgstr "Actualizar esta página"
+
+#~ msgid "Registered"
+#~ msgstr "Registrado"
+
+#~ msgid "Registering..."
+#~ msgstr "Registrando..."
+
+#~ msgid "Remove the old passkey from your browser/password manager"
+#~ msgstr "Eliminar la Passkey antigua de su navegador/gestor de contraseñas"
+
+#~ msgid "Reset failed:"
+#~ msgstr "El reinicio falló:"
+
+#~ msgid "Saving registration..."
+#~ msgstr "Guardando registro..."
+
+#~ msgid "Secure Login Collector Pro"
+#~ msgstr "Secure Login Collector Pro"
+
+#~ msgid "Secure checkout powered by Freemius"
+#~ msgstr "Pago seguro con tecnología de Freemius"
+
+#~ msgid "Show Removal Instructions"
+#~ msgstr "Mostrar instrucciones de eliminación"
+
+#~ msgid "Status"
+#~ msgstr "Estado"
+
+#~ msgid "System Preferences → Passwords → Find this site → Delete"
+#~ msgstr ""
+#~ "Preferencias del sistema → Contraseñas → Buscar este sitio → Eliminar"
+
+#~ msgid "Test Passkey Encryption"
+#~ msgstr "Probar cifrado con Passkey"
+
+#~ msgid "Testing..."
+#~ msgstr "Probando..."
+
+#~ msgid "The Freemius SDK is not installed in /vendor/freemius/"
+#~ msgstr "El SDK de Freemius no está instalado en /vendor/freemius/"
+
+#~ msgid "The licensing system is not properly configured. This could mean:"
+#~ msgstr ""
+#~ "El sistema de licencias no está configurado correctamente. Esto podría "
+#~ "significar:"
+
+#~ msgid "There was an error loading the SDK"
+#~ msgstr "Hubo un error al cargar el SDK"
+
+#~ msgid ""
+#~ "This encryption method is no longer supported. Please use standard form "
+#~ "submission."
+#~ msgstr ""
+#~ "Este método de cifrado ya no es compatible. Por favor, use el envío de "
+#~ "formulario estándar."
+
+#~ msgid ""
+#~ "This page shows all encrypted login data collected from clients. Use the "
+#~ "search box to filter entries and bulk actions for management."
+#~ msgstr ""
+#~ "Esta página muestra todos los datos de acceso cifrados recopilados de los "
+#~ "clientes. Use el cuadro de búsqueda para filtrar entradas y acciones "
+#~ "masivas para la gestión."
+
+#~ msgid ""
+#~ "This will generate new RSA keys and invalidate all existing encrypted "
+#~ "data. Continue?"
+#~ msgstr ""
+#~ "Esto generará nuevas claves RSA e invalidará todos los datos cifrados "
+#~ "existentes. ¿Continuar?"
+
+#~ msgid ""
+#~ "This will remove the passkey registration from this plugin. Note: The "
+#~ "passkey will remain in your browser/device and must be removed manually. "
+#~ "Continue?"
+#~ msgstr ""
+#~ "Esto eliminará el registro de Passkey de este plugin. Nota: La Passkey "
+#~ "permanecerá en su navegador/dispositivo y debe eliminarse manualmente. "
+#~ "¿Continuar?"
+
+#~ msgid ""
+#~ "To enable Pro features for development/testing, add this to wp-config.php:"
+#~ msgstr ""
+#~ "Para habilitar las características Pro para desarrollo/pruebas, añada "
+#~ "esto a wp-config.php:"
+
+#~ msgid "Ultra-Secure Double Encryption"
+#~ msgstr "Doble cifrado ultra seguro"
+
+#~ msgid ""
+#~ "Ultra-secure mode is enabled. All entries will be encrypted with triple-"
+#~ "layer protection."
+#~ msgstr ""
+#~ "El modo ultra seguro está activado. Todas las entradas se cifrarán con "
+#~ "protección de triple capa."
+
+#~ msgid "Using Pro Features Without Freemius"
+#~ msgstr "Usando características Pro sin Freemius"
+
+#~ msgid "Version"
+#~ msgstr "Versión"
+
+#~ msgid "View manual removal guide"
+#~ msgstr "Ver guía de eliminación manual"
+
+#~ msgid "WebAuthn Hardware Security"
+#~ msgstr "Seguridad de hardware WebAuthn"
+
+#~ msgid ""
+#~ "Your browser/password manager still has the old passkey saved and will "
+#~ "not allow creating a new one until it is removed."
+#~ msgstr ""
+#~ "Su navegador/gestor de contraseñas todavía tiene guardada la Passkey "
+#~ "antigua y no permitirá crear una nueva hasta que se elimine."
+
+#~ msgid "Zero-Knowledge Architecture"
+#~ msgstr "Arquitectura de conocimiento cero"
+
+#~ msgid "🔐 AES-256 + RSA"
+#~ msgstr "🔐 AES-256 + RSA"
+
+#~ msgid "🔐 Ultra-Secure"
+#~ msgstr "🔐 Ultra seguro"
+
+#~ msgid "🔐 Ultra-Secure (AES-256 + RSA-2048 + Passkey)"
+#~ msgstr "🔐 Ultra seguro (AES-256 + RSA-2048 + Passkey)"
+
+#~ msgid "🔒 RSA-2048"
+#~ msgstr "🔒 RSA-2048"

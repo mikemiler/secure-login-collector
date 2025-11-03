@@ -22,7 +22,7 @@ Asking clients to email passwords is:
 - **Risky** - Creates liability if data is compromised
 - **Messy** - Hard to organize and track
 
-This plugin provides military-grade encryption, automatic data expiration, and password manager integration.
+This plugin provides GDPR conform military-grade encryption, automatic data expiration, and password manager integration.
 
 = How the Free Version Works =
 
@@ -50,11 +50,12 @@ The free version uses **server-trusted encryption** suitable for most agencies:
 - Protects against email interception, casual database access, and transmission attacks
 - Perfect for 95% of agencies
 
-= Pro Version - Zero-Knowledge Encryption =
 
-**Pro Version** adds passkey authentication for maximum security:
+= Pro Version - Zero-Knowledge Encryption (Separate Plugin) =
 
-- Requires physical device (YubiKey, Touch ID, Face ID) to decrypt
+**Pro Version** (available as a separate plugin from Freemius) adds passkey authentication for maximum security:
+
+- Requires physical device (e.g. fingerprint, face ID, password manager with passkey support) to decrypt
 - True zero-knowledge: Server cannot decrypt even with full database access
 - Protects against server compromise, admin account takeover, and database theft
 - Uses WebAuthn/FIDO2 standards
@@ -79,7 +80,7 @@ The free version uses **server-trusted encryption** suitable for most agencies:
 3. Create a page and add shortcode: `[secure_login_form]`
 4. Share the page link with clients
 
-For Pro version, register your passkey device after installation.
+For the Pro version (separate plugin available from Freemius), register your passkey device after installation.
 
 == Frequently Asked Questions ==
 
@@ -89,11 +90,11 @@ Email sends passwords in plain text. This plugin encrypts data in the browser us
 
 = What's the difference between Free and Pro? =
 
-Free: WordPress admin access for decryption. Pro: Requires physical passkey device (YubiKey, Touch ID) for zero-knowledge encryption.
+Free: WordPress admin access for decryption. The Pro version (available as a separate plugin) requires physical passkey device (YubiKey, Touch ID) for zero-knowledge encryption.
 
 = Can my team access credentials? =
 
-Yes. Any WordPress admin can decrypt in free version. Pro version supports multiple passkey registrations. Export to password managers for team sharing.
+Yes. Any WordPress admin can decrypt in free version. The Pro version (separate plugin) supports multiple passkey registrations. Export to password managers for team sharing.
 
 = How long is data stored? =
 

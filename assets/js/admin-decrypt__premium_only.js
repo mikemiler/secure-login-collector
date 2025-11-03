@@ -187,7 +187,7 @@
                 url: seculocoAjax.ajaxurl,
                 method: 'POST',
                 data: {
-                    action: 'derive_passkey_unwrapping_key',
+                    action: 'seculoco_derive_passkey_unwrapping_key',
                     credential_id: credentialIdB64,
                     nonce: seculocoAjax.nonce
                 }

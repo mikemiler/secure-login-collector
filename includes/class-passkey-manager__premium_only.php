@@ -37,13 +37,13 @@ class Seculoco_Passkey_Manager {
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_scripts' ) );
 
 		// AJAX handlers.
-		add_action( 'wp_ajax_passkey_start_registration', array( $this, 'handle_start_registration' ) );
-		add_action( 'wp_ajax_passkey_complete_registration', array( $this, 'handle_complete_registration' ) );
-		add_action( 'wp_ajax_passkey_delete', array( $this, 'handle_delete_passkey' ) );
-		add_action( 'wp_ajax_passkey_get_status', array( $this, 'handle_get_passkey_status' ) );
-		add_action( 'wp_ajax_passkey_init_setup', array( $this, 'handle_init_setup' ) );
-		add_action( 'wp_ajax_get_current_user_id', array( $this, 'handle_get_current_user_id' ) );
-		add_action( 'wp_ajax_derive_passkey_unwrapping_key', array( $this, 'handle_derive_passkey_unwrapping_key' ) );
+		add_action( 'wp_ajax_seculoco_passkey_start_registration', array( $this, 'handle_start_registration' ) );
+		add_action( 'wp_ajax_seculoco_passkey_complete_registration', array( $this, 'handle_complete_registration' ) );
+		add_action( 'wp_ajax_seculoco_passkey_delete', array( $this, 'handle_delete_passkey' ) );
+		add_action( 'wp_ajax_seculoco_passkey_get_status', array( $this, 'handle_get_passkey_status' ) );
+		add_action( 'wp_ajax_seculoco_passkey_init_setup', array( $this, 'handle_init_setup' ) );
+		add_action( 'wp_ajax_seculoco_get_current_user_id', array( $this, 'handle_get_current_user_id' ) );
+		add_action( 'wp_ajax_seculoco_derive_passkey_unwrapping_key', array( $this, 'handle_derive_passkey_unwrapping_key' ) );
 	}
 
 	/**
@@ -88,7 +88,7 @@ class Seculoco_Passkey_Manager {
 
 		// Enqueue passkey management script.
 		wp_enqueue_script(
-			'slc-passkey-pro-js',
+			'seculoco-passkey-pro-js',
 			plugin_dir_url( __FILE__ ) . '../assets/js/admin-passkey__premium_only.js',
 			array( 'jquery' ),
 			filemtime( plugin_dir_path( __FILE__ ) . '../assets/js/admin-passkey__premium_only.js' ),
@@ -129,7 +129,7 @@ class Seculoco_Passkey_Manager {
 		);
 
 		// Use wp_localize_script for proper escaping.
-		wp_localize_script( 'slc-passkey-pro-js', 'secureLoginPasskeyData', $script_data );
+		wp_localize_script( 'seculoco-passkey-pro-js', 'secureLoginPasskeyData', $script_data );
 	}
 
 	/**

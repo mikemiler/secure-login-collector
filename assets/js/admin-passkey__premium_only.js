@@ -43,7 +43,7 @@ jQuery(document).ready(function($) {
 			url: ajaxUrl,
 			type: 'POST',
 			data: {
-				action: 'passkey_delete',
+				action: 'seculoco_passkey_delete',
 				nonce: nonce,
 				credential_id: credentialId
 			},
@@ -100,7 +100,7 @@ jQuery(document).ready(function($) {
 				url: ajaxUrl,
 				type: 'POST',
 				data: {
-					action: 'passkey_start_registration',
+					action: 'seculoco_passkey_start_registration',
 					nonce: nonce,
 					authenticator_type: authenticatorType
 				}
@@ -126,7 +126,7 @@ jQuery(document).ready(function($) {
 				url: ajaxUrl,
 				type: 'POST',
 				data: {
-					action: 'passkey_init_setup',
+					action: 'seculoco_passkey_init_setup',
 					nonce: nonce,
 					credential_id: arrayBufferToBase64(credential.rawId)
 				}
@@ -155,7 +155,7 @@ jQuery(document).ready(function($) {
 				url: ajaxUrl,
 				type: 'POST',
 				data: {
-					action: 'passkey_complete_registration',
+					action: 'seculoco_passkey_complete_registration',
 					nonce: nonce,
 					name: 'Passkey ' + new Date().toLocaleDateString(),
 					credential_id: arrayBufferToBase64(credential.rawId),
