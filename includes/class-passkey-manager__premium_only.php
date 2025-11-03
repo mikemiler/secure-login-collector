@@ -240,27 +240,18 @@ class Seculoco_Passkey_Manager {
 								<div class="seculoco-alert-content">
 									<div class="seculoco-alert-title"><?php esc_html_e( 'CRITICAL WARNING: Data Loss Risk', 'secure-login-collector' ); ?></div>
 									<div class="seculoco-alert-message">
-										<p><strong><?php esc_html_e( 'Deleting this passkey will permanently prevent decryption of:', 'secure-login-collector' ); ?></strong></p>
-										<ul>
-											<li><?php esc_html_e( 'All existing login data encrypted with this passkey', 'secure-login-collector' ); ?></li>
-											<li><?php esc_html_e( 'Any future data encrypted before registering a new passkey', 'secure-login-collector' ); ?></li>
-										</ul>
+										<p><strong><?php esc_html_e( 'Deleting this passkey will permanently prevent decryption of all existing login data encrypted with this passkey.', 'secure-login-collector' ); ?></strong></p>
+										
 										<p><strong><?php esc_html_e( 'This action CANNOT be undone. There is NO recovery method.', 'secure-login-collector' ); ?></strong></p>
 									</div>
+									<button type="button" class="seculoco-btn seculoco-btn-danger" id="delete-passkey-btn"
+											data-credential-id="<?php echo esc_attr( $passkey['credential_id'] ); ?>">
+										<span>🗑️</span>
+										<?php esc_html_e( 'Delete Passkey', 'secure-login-collector' ); ?>
+									</button>
 								</div>
 							</div>
 						<?php endif; ?>
-
-						<div class="seculoco-margin-top-20">
-							<button type="button" class="seculoco-btn slc-btn-danger" id="delete-passkey-btn"
-									data-credential-id="<?php echo esc_attr( $passkey['credential_id'] ); ?>">
-								<span>🗑️</span>
-								<?php esc_html_e( 'Delete Passkey', 'secure-login-collector' ); ?>
-							</button>
-							<p class="seculoco-form-help seculoco-margin-top-8">
-								<?php esc_html_e( 'Only delete if you understand the consequences above.', 'secure-login-collector' ); ?>
-							</p>
-						</div>
 					<?php else : ?>
 						<p><?php esc_html_e( 'Register a passkey using your device biometrics or a password manager for ultra-secure encryption.', 'secure-login-collector' ); ?></p>
 

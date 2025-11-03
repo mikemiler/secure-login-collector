@@ -221,7 +221,7 @@ class Seculoco_Frontend_Handler {
 				</div>
 				
 				<div class="form-group">
-					<label for="login_url"><?php echo esc_html__( 'Login URL:', 'secure-login-collector' ); ?> <span class="required">*</span></label>
+					<label for="login_url"><?php echo esc_html__( 'Login URL / Service Name:', 'secure-login-collector' ); ?> <span class="required">*</span></label>
 					<input type="text" id="login_url" name="login_url" placeholder="<?php echo esc_attr__( 'https://example.com/login or service name', 'secure-login-collector' ); ?>" required>
 					<small class="form-help"><?php echo esc_html__( 'Enter the login URL or service name where these credentials are used.', 'secure-login-collector' ); ?></small>
 				</div>
