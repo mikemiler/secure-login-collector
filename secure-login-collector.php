@@ -150,8 +150,8 @@ class SecureLoginCollector {
 			}
 
 			// Initialize Passkey Manager globally to register admin hooks.
-			if ( class_exists( 'Passkey_Manager' ) ) {
-				new Passkey_Manager();
+			if ( class_exists( 'Seculoco_Passkey_Manager' ) ) {
+				new Seculoco_Passkey_Manager();
 			}
 		}
 
@@ -220,11 +220,6 @@ class SecureLoginCollector {
 		// Premium plugin will handle its own table creation (wrapped keys, etc).
 		do_action( 'seculoco_activate' );
 
-		// Pro-specific activation: Create master key manager table if pro version active.
-		if ( class_exists( 'Master_Key_Manager' ) ) {
-			$master_key_manager = new Master_Key_Manager();
-			$master_key_manager->maybe_create_table();
-		}
 	}
 
 	/**

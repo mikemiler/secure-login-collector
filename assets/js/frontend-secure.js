@@ -76,7 +76,7 @@ class StatusModal {
     resetModal() {
         jQuery('#statusIcon').removeClass('success error').addClass('processing');
         jQuery('#statusIcon').html('<div class="spinner"></div>');
-        jQuery('#statusProgressBar').css('width', '0%');
+        jQuery('#statusProgressBar').css('width', '0%').removeClass('seculoco-progress-bar-width-5 seculoco-progress-bar-width-100');
         jQuery('#statusCloseBtn').hide();
         
         // Reset all steps to pending
@@ -92,7 +92,7 @@ class StatusModal {
         
         // Update progress
         const progress = ((stepIndex + 1) / this.steps.length) * 100;
-        jQuery('#statusProgressBar').css('width', progress + '%');
+        jQuery('#statusProgressBar').removeClass('seculoco-progress-bar-width-5 seculoco-progress-bar-width-100').css('width', progress + '%');
     }
 
     async nextStep() {
@@ -130,7 +130,7 @@ class StatusModal {
         jQuery('#statusIcon').removeClass('processing error').addClass('success');
         jQuery('#statusIcon').html('✓');
         jQuery('#statusText').text('Success!');
-        jQuery('#statusProgressBar').css('width', '100%');
+        jQuery('#statusProgressBar').removeClass('seculoco-progress-bar-width-5').addClass('seculoco-progress-bar-width-100').css('width', '');
         jQuery('#statusCloseBtn').show();
     }
 
@@ -267,34 +267,32 @@ jQuery(document).ready(function ($) {
 
 
     // Main encryption function - implements the complete flow
-    async function encryptLoginData(loginData, rsaPublicKey, isPro) {
+    async function encryptLoginData(loginData, rsaPublicKey) {
         try {
-            console.log('Starting encryption process. Pro version:', isPro);
-            
+
             // Step 1: Generate random AES key
             const aesKey = await generateAESKey();
             const rawAesKey = await exportAESKey(aesKey);
-            
+
             // Step 2: Encrypt login data with AES-GCM
             const encryptedData = await encryptWithAES(JSON.stringify(loginData), aesKey);
-            
+
             // Step 3: Generate random salt
             const salt = btoa(String.fromCharCode(...window.crypto.getRandomValues(new Uint8Array(32))));
-            
+
             // Step 4: RSA encrypt the raw AES key directly
             // In Pro version, the passkey encryption happens on the admin side during decryption
             const rsaEncryptedKey = await encryptWithRSA(rawAesKey, rsaPublicKey);
-            
+
             // Return the complete encrypted package
+            // Backend will determine isProEncrypted and credentialId
             return {
                 encryptedData: btoa(String.fromCharCode(...encryptedData.encrypted)),
                 rsaEncryptedKey: rsaEncryptedKey,
                 iv: btoa(String.fromCharCode(...encryptedData.iv)),
-                salt: salt,
-                isProEncrypted: false, // Will be determined server-side
-                credentialId: null // Clients don't have passkeys
+                salt: salt
             };
-            
+
         } catch (error) {
             console.error('Encryption error:', error);
             throw error;
@@ -337,11 +335,26 @@ jQuery(document).ready(function ($) {
         messageDiv.hide();
 
         try {
-            // Step 1: Getting encryption key (wait for animation)
+            // Step 1: Getting encryption key - fetch fresh key from server
             await statusModal.nextStep();
 
-            // Check if RSA public key is available
-            if (!seculocoAjax.public_key) {
+            let rsaPublicKey;
+            try {
+                const keyResponse = await $.ajax({
+                    url: seculocoAjax.ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'seculoco_get_public_key',
+                        nonce: seculocoAjax.nonce
+                    }
+                });
+
+                if (!keyResponse.success || !keyResponse.data || !keyResponse.data.public_key) {
+                    throw new Error(seculocoAjax.strings.rsa_key_not_available);
+                }
+
+                rsaPublicKey = keyResponse.data.public_key;
+            } catch (error) {
                 throw new Error(seculocoAjax.strings.rsa_key_not_available);
             }
 
@@ -355,11 +368,10 @@ jQuery(document).ready(function ($) {
                 timestamp: new Date().toISOString()
             };
 
-            // Encrypt the data
+            // Encrypt the data with freshly fetched key
             const encryptedPackage = await encryptLoginData(
                 loginData,
-                seculocoAjax.public_key,
-                seculocoAjax.is_pro
+                rsaPublicKey
             );
 
             // Step 3: Preparing secure package
@@ -371,8 +383,6 @@ jQuery(document).ready(function ($) {
                 rsaEncryptedKey: encryptedPackage.rsaEncryptedKey,
                 iv: encryptedPackage.iv,
                 salt: encryptedPackage.salt,
-                isProEncrypted: encryptedPackage.isProEncrypted,
-                credentialId: encryptedPackage.credentialId,
                 metadata: {
                     email: email,
                     name: userName,
@@ -380,8 +390,6 @@ jQuery(document).ready(function ($) {
                     created_at: new Date().toISOString()
                 }
             };
-
-            console.log('Submitting encrypted data. Pro encrypted:', submissionData.isProEncrypted);
 
             // Step 4: Sending securely
             await statusModal.nextStep();

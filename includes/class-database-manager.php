@@ -64,11 +64,14 @@ class Seculoco_Database_Manager {
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             retention_until datetime DEFAULT NULL,
             is_expired tinyint(1) DEFAULT 0,
+            undecryptable tinyint(1) DEFAULT 0,
+            undecryptable_at datetime DEFAULT NULL,
             PRIMARY KEY (id),
             KEY user_id (user_id),
             KEY created_at (created_at),
             KEY retention_until (retention_until),
-            KEY is_expired (is_expired)
+            KEY is_expired (is_expired),
+            KEY undecryptable (undecryptable)
         ) $charset_collate;";
 
 		include_once ABSPATH . 'wp-admin/includes/upgrade.php';
@@ -129,6 +132,9 @@ class Seculoco_Database_Manager {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
 			$wpdb->query( $wpdb->prepare( 'ALTER TABLE %i ADD KEY is_expired (is_expired)', $this->table_name ) );
 		}
+
+		// Note: undecryptable columns now included in initial table creation.
+		// This section kept for backwards compatibility but no longer needed for new installations.
 	}
 
 	/**
@@ -561,6 +567,130 @@ class Seculoco_Database_Manager {
 		} else {
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is escaped in constructor via esc_sql().
 			return (int) $wpdb->get_var( $query );
+		}
+	}
+
+	/**
+	 * Mark login data entries as undecryptable for a specific user.
+	 * Called when a passkey is deleted to mark all pro-encrypted data as permanently undecryptable.
+	 *
+	 * @param int $user_id User ID whose passkey was deleted.
+	 * @return int Number of entries marked as undecryptable.
+	 */
+	public function mark_login_data_as_undecryptable( ) {
+		global $wpdb;
+
+		// Find all entries that are pro-encrypted (is_pro_encrypted = true in metadata).
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is escaped in constructor via esc_sql().
+		$entries = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT id, metadata FROM {$this->table_name} WHERE undecryptable = 0"
+			)
+		);
+
+		$affected_count = 0;
+		$current_time   = current_time( 'mysql' );
+
+		foreach ( $entries as $entry ) {
+			$metadata = json_decode( $entry->metadata, true );
+
+			// Check if this entry was encrypted with the pro key.
+			// Use both is_pro_encrypted flag and encryption_type for reliability.
+			$is_pro_encrypted = isset( $metadata['is_pro_encrypted'] ) && $metadata['is_pro_encrypted'];
+			$encryption_type  = isset( $metadata['encryption_type'] ) ? $metadata['encryption_type'] : '';
+			$uses_passkey     = in_array( $encryption_type, array( 'aes-rsa-passkey-v2', 'rsa_passkey_protected' ), true );
+
+			if ( $is_pro_encrypted || $uses_passkey ) {
+				// Mark as undecryptable.
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is escaped in constructor via esc_sql().
+				$result = $wpdb->update(
+					$this->table_name,
+					array(
+						'undecryptable'    => 1,
+						'undecryptable_at' => $current_time,
+					),
+					array( 'id' => $entry->id ),
+					array( '%d', '%s' ),
+					array( '%d' )
+				);
+
+				if ( false !== $result ) {
+					++$affected_count;
+				}
+			}
+		}
+
+		return $affected_count;
+	}
+
+	/**
+	 * Check if a login data entry is undecryptable.
+	 *
+	 * @param int $login_id Login data entry ID.
+	 * @return bool True if undecryptable, false otherwise.
+	 */
+	public function is_login_data_undecryptable( $login_id ) {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is escaped in constructor via esc_sql().
+		$result = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT undecryptable FROM {$this->table_name} WHERE id = %d",
+				$login_id
+			)
+		);
+
+		return 1 === intval( $result );
+	}
+
+	/**
+	 * Get all undecryptable entries for a user.
+	 *
+	 * @param int $user_id User ID.
+	 * @return array List of undecryptable entries.
+	 */
+	public function get_undecryptable_entries( $user_id = null ) {
+		global $wpdb;
+
+		if ( $user_id ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is escaped in constructor via esc_sql().
+			return $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT * FROM {$this->table_name} WHERE user_id = %d AND undecryptable = 1 ORDER BY undecryptable_at DESC",
+					$user_id
+				)
+			);
+		} else {
+			// Get all undecryptable entries.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is escaped in constructor via esc_sql().
+			return $wpdb->get_results(
+				"SELECT * FROM {$this->table_name} WHERE undecryptable = 1 ORDER BY undecryptable_at DESC"
+			);
+		}
+	}
+
+	/**
+	 * Get count of undecryptable entries.
+	 *
+	 * @param int $user_id Optional user ID to filter by.
+	 * @return int Number of undecryptable entries.
+	 */
+	public function get_undecryptable_entries_count( $user_id = null ) {
+		global $wpdb;
+
+		if ( $user_id ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is escaped in constructor via esc_sql().
+			return (int) $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT COUNT(*) FROM {$this->table_name} WHERE user_id = %d AND undecryptable = 1",
+					$user_id
+				)
+			);
+		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is escaped in constructor via esc_sql().
+			return (int) $wpdb->get_var(
+				"SELECT COUNT(*) FROM {$this->table_name} WHERE undecryptable = 1"
+			);
 		}
 	}
 }

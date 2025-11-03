@@ -121,11 +121,10 @@ class Seculoco_Frontend_Handler {
 				),
 			);
 
-			// Add public key for RSA encryption.
-			$public_key = $this->encryption_handler->get_public_key();
-			if ( ! is_wp_error( $public_key ) ) {
-				$localize_data['public_key'] = $public_key;
-			}
+			// Public key is fetched dynamically via AJAX to avoid caching issues.
+			// AJAX endpoints are registered in constructor:
+			// - wp_ajax_seculoco_get_public_key
+			// - wp_ajax_nopriv_seculoco_get_public_key
 
 			// No need to send passkey info to frontend - clients don't have passkeys.
 
@@ -254,7 +253,7 @@ class Seculoco_Frontend_Handler {
 					<button type="submit" class="secure-submit-btn"><?php echo esc_html( $atts['button_text'] ); ?></button>
 				</div>
 				
-				<div id="form-message" class="form-message" style="display: none;"></div>
+				<div id="form-message" class="form-message seculoco-hidden"></div>
 			</form>
 		</div>
 		<?php
@@ -316,18 +315,22 @@ class Seculoco_Frontend_Handler {
 		$metadata['login_url']  = sanitize_text_field( $metadata['login_url'] );
 		$metadata['created_at'] = isset( $metadata['created_at'] ) ? sanitize_text_field( $metadata['created_at'] ) : current_time( 'c' );
 
-			// Allow pro version to modify encryption metadata.
-		$encryption_metadata = apply_filters(
-			'seculoco_encryption_metadata',
-			array(
-				'is_pro_encrypted'     => false,
-				'server_credential_id' => null,
-			),
-			$metadata
-		);
+		// AUTO-DETECT ENCRYPTION TYPE SERVER-SIDE.
+		// Ignore any frontend-provided encryption flags (isProEncrypted, credentialId).
+		// Determine encryption type based on current server configuration.
+		$is_pro_active      = get_option( 'seculoco_pro_keys_active', false );
+		$passkey_registered = get_option( 'seculoco_passkey_registered', false );
+		$is_pro_encrypted   = ( $is_pro_active && $passkey_registered );
 
-		$is_pro_encrypted     = $encryption_metadata['is_pro_encrypted'];
-		$server_credential_id = $encryption_metadata['server_credential_id'];
+		// If PRO encrypted, get the credential ID for later decryption.
+		// Use global passkey (site-wide, not per-user).
+		$server_credential_id = null;
+		if ( $is_pro_encrypted ) {
+			$passkey = get_option( 'seculoco_global_passkey' );
+			if ( is_array( $passkey ) && ! empty( $passkey['credential_id'] ) ) {
+				$server_credential_id = $passkey['credential_id'];
+			}
+		}
 
 		// Create encrypted package for storage.
 		$encrypted_package = array(

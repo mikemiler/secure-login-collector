@@ -30,23 +30,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler_V2 {
 
 	/**
-	 * Master Key Manager instance.
-	 *
-	 * @var Master_Key_Manager|null
-	 */
-	private $master_key_manager = null;
-
-	/**
 	 * Constructor - Register pro AJAX handlers.
 	 */
 	public function __construct() {
 		// Initialize parent class (registers free AJAX handlers).
 		parent::__construct();
-
-		// Initialize Master Key Manager for premium features.
-		if ( class_exists( 'Master_Key_Manager' ) ) {
-			$this->master_key_manager = new Master_Key_Manager();
-		}
 
 		// Register pro AJAX handlers (delegates to inherited methods).
 		add_action( 'wp_ajax_seculoco_initialize_pro_keys', array( $this, 'handle_initialize_pro_keys' ) );
@@ -77,6 +65,8 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
 			return;
 		}
 
+		
+
 		// Decode the key (it's base64 encoded from client).
 		$passkey_key = base64_decode( $passkey_key );
 		if ( strlen( $passkey_key ) !== 32 ) {
@@ -91,8 +81,12 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
 			wp_send_json_error( $result->get_error_message() );
 			return;
 		}
-
-		wp_send_json_success( $result );
+		return array(
+			'status'  => 'success',
+			'type'    => 'pro',
+			'message' => 'Pro version keys initialized',
+		);
+		//wp_send_json_success( $result );
 	}
 
 	/**
@@ -115,15 +109,6 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
 		// Delegate to inherited method (no code duplication!).
 		$result = $this->delete_pro_keys();
 		wp_send_json_success( $result );
-	}
-
-	/**
-	 * Get Master Key Manager instance.
-	 *
-	 * @return Master_Key_Manager|null Master Key Manager instance or null.
-	 */
-	public function get_master_key_manager() {
-		return $this->master_key_manager;
 	}
 
 	/**

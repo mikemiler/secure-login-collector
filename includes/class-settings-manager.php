@@ -232,7 +232,7 @@ class Seculoco_Settings_Manager {
 	 * Notification settings section callback.
 	 */
 	public function notification_section_callback() {
-		echo '<div class="seculoco-card" style="margin-top: 20px;">';
+		echo '<div class="seculoco-card seculoco-card-margin-top">';
 		echo '<div class="seculoco-card-header">';
 		echo '<h3 class="seculoco-card-title">';
 		echo esc_html__( 'Email Notifications', 'secure-login-collector' );
@@ -247,7 +247,7 @@ class Seculoco_Settings_Manager {
 	 * Frontend settings section callback.
 	 */
 	public function frontend_section_callback() {
-		echo '<div class="seculoco-card" style="margin-top: 20px;">';
+		echo '<div class="seculoco-card seculoco-card-margin-top">';
 		echo '<div class="seculoco-card-header">';
 		echo '<h3 class="seculoco-card-title">';
 		echo esc_html__( 'Frontend Form Settings', 'secure-login-collector' );
@@ -262,7 +262,7 @@ class Seculoco_Settings_Manager {
 	 * Expiration settings section callback.
 	 */
 	public function expiration_section_callback() {
-		echo '<div class="seculoco-card" style="margin-top: 20px;">';
+		echo '<div class="seculoco-card seculoco-card-margin-top">';
 		echo '<div class="seculoco-card-header">';
 		echo '<h3 class="seculoco-card-title">';
 		echo esc_html__( 'Data Retention Settings', 'secure-login-collector' );
@@ -277,7 +277,7 @@ class Seculoco_Settings_Manager {
 	 * Encryption settings section callback.
 	 */
 	public function encryption_section_callback() {
-		echo '<div class="seculoco-card" style="margin-top: 20px;">';
+		echo '<div class="seculoco-card seculoco-card-margin-top">';
 		echo '<div class="seculoco-card-header">';
 		echo '<h3 class="seculoco-card-title">' . esc_html__( 'Encryption Settings', 'secure-login-collector' ) . '</h3>';
 		echo '</div>';
@@ -402,35 +402,35 @@ class Seculoco_Settings_Manager {
 		}
 
 		// 2-column layout: Free on left, Pro on right.
-		echo '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 20px;">';
+		echo '<div class="seculoco-encryption-grid">';
 
 		// ===== LEFT COLUMN: FREE VERSION =====
 		echo '<div class="seculoco-encryption-column">';
 
-		
+
 
 		// Free RSA Keys detailed status.
-		echo '<div style="background: white; border: 1px solid #c3c4c7; border-radius: 4px; padding: 15px; margin-bottom: 15px;">';
-		echo '<div style="display: flex; justify-content: space-between; align-items: center;">';
+		echo '<div class="seculoco-encryption-status-card">';
+		echo '<div class="seculoco-encryption-status-header">';
 		echo '<div>';
-		echo '<strong style="font-size: 14px;">' . esc_html__( 'Standard RSA Keys', 'secure-login-collector' ) . '</strong>';
-		echo '<p style="margin: 5px 0 0; color: #666; font-size: 12px;">' . esc_html__( 'RSA-2048 + AES-256-GCM encryption', 'secure-login-collector' ) . '</p>';
+		echo '<strong class="seculoco-encryption-status-title">' . esc_html__( 'Standard RSA Keys', 'secure-login-collector' ) . '</strong>';
+		echo '<p class="seculoco-encryption-status-subtitle">' . esc_html__( 'RSA-2048 + AES-256-GCM encryption', 'secure-login-collector' ) . '</p>';
 		echo '</div>';
 
 		// Display status based on $free_status variable.
 		if ( 'active' === $free_status ) {
-			echo '<div style="text-align: right;">';
-			echo '<span style="background: #d4edda; color: #155724; padding: 4px 12px; border-radius: 3px; font-size: 12px; font-weight: 600;">' . esc_html__( 'ACTIVE', 'secure-login-collector' ) . '</span>';
+			echo '<div class="seculoco-encryption-status-label">';
+			echo '<span class="seculoco-encryption-badge-active">' . esc_html__( 'ACTIVE', 'secure-login-collector' ) . '</span>';
 			echo '</div>';
 		} elseif ( 'inactive' === $free_status ) {
-			echo '<div style="text-align: right;">';
-			echo '<span style="background: #f8d7da; color: #721c24; padding: 4px 12px; border-radius: 3px; font-size: 12px; font-weight: 600;">' . esc_html__( 'INACTIVE', 'secure-login-collector' ) . '</span>';
-			echo '<p style="margin: 5px 0 0; font-size: 11px; color: #666;">' . esc_html__( 'Passkey encryption is active', 'secure-login-collector' ) . '</p>';
+			echo '<div class="seculoco-encryption-status-label">';
+			echo '<span class="seculoco-encryption-badge-inactive">' . esc_html__( 'INACTIVE', 'secure-login-collector' ) . '</span>';
+			echo '<p class="seculoco-encryption-hint">' . esc_html__( 'Passkey encryption is active', 'secure-login-collector' ) . '</p>';
 			echo '</div>';
 		} else {
-			echo '<div style="text-align: right;">';
-			echo '<span style="background: #fff3cd; color: #856404; padding: 4px 12px; border-radius: 3px; font-size: 12px; font-weight: 600;">' . esc_html__( 'NOT INITIALIZED', 'secure-login-collector' ) . '</span>';
-			echo '<p style="margin: 5px 0 0; font-size: 11px; color: #666;">' . esc_html__( 'Will be created on first use', 'secure-login-collector' ) . '</p>';
+			echo '<div class="seculoco-encryption-status-label">';
+			echo '<span class="seculoco-encryption-badge-not-init">' . esc_html__( 'NOT INITIALIZED', 'secure-login-collector' ) . '</span>';
+			echo '<p class="seculoco-encryption-hint">' . esc_html__( 'Will be created on first use', 'secure-login-collector' ) . '</p>';
 			echo '</div>';
 		}
 		echo '</div>';
@@ -470,10 +470,10 @@ class Seculoco_Settings_Manager {
 		?>
 		<div class="seculoco-encryption-column">
 			<!-- Pro status card with upgrade notice -->
-			<div class="seculoco-passkey-benefit" style="border-color: #ccc; opacity: 0.7; margin-bottom: 15px;">
-				<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
-					<span class="seculoco-badge" style="background: #ccc; color: #666;"><?php echo esc_html__( 'PRO ONLY', 'secure-login-collector' ); ?></span>
-					<span style="background: #f8f9fa; color: #6c757d; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600;"><?php echo esc_html__( 'NOT AVAILABLE', 'secure-login-collector' ); ?></span>
+			<div class="seculoco-passkey-benefit seculoco-pro-upgrade-card">
+				<div class="seculoco-pro-upgrade-header">
+					<span class="seculoco-badge seculoco-pro-badge"><?php echo esc_html__( 'PRO ONLY', 'secure-login-collector' ); ?></span>
+					<span class="seculoco-pro-status-unavailable"><?php echo esc_html__( 'NOT AVAILABLE', 'secure-login-collector' ); ?></span>
 				</div>
 				<span class="seculoco-passkey-benefit-icon"></span>
 				<div class="seculoco-passkey-benefit-text">
@@ -488,7 +488,7 @@ class Seculoco_Settings_Manager {
 			<a href="<?php echo esc_url( $upgrade_url ); ?>" class="button button-primary">
 				<?php echo esc_html__( 'Upgrade to Pro', 'secure-login-collector' ); ?>
 			</a>
-			
+
 		</div>
 		<?php
 		return ob_get_clean();
@@ -498,7 +498,7 @@ class Seculoco_Settings_Manager {
 	 * Advanced security settings section callback.
 	 */
 	public function pro_section_callback() {
-		echo '<div class="seculoco-card" style="margin-top: 20px;">';
+		echo '<div class="seculoco-card seculoco-card-margin-top">';
 		echo '<div class="seculoco-card-header">';
 		echo '<h3 class="seculoco-card-title">';
 		echo esc_html__( 'Advanced Security Features', 'secure-login-collector' );

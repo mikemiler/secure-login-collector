@@ -138,6 +138,12 @@
             const $btn = $(e.currentTarget);
             const entryId = parseInt($btn.data('id'), 10);
 
+            // Check if entry is marked as undecryptable
+            if ($btn.data('undecryptable') === true || $btn.attr('data-undecryptable') === 'true') {
+                alert('This data cannot be decrypted because the passkey used to encrypt it was deleted. The data is permanently inaccessible.');
+                return;
+            }
+
             // Check if already decrypted
             if (this.decryptedData.has(entryId)) {
                 this.displayDecryptedData(entryId, $btn);
@@ -149,9 +155,9 @@
 
                 // Step 1: Get encrypted data from server
                 let encryptedPackage = await this.getEncryptedData(entryId);
-                
+
                 // HOOK: beforeDecrypt - PRO can modify/validate data
-                encryptedPackage = await this.triggerHook('beforeDecrypt', encryptedPackage, entryId);
+                encryptedPackage =  this.triggerHook('beforeDecrypt', encryptedPackage, entryId);
 
                 // Step 2: Get private key (uses extension or default)
                 if (!this.privateKey) {
@@ -160,7 +166,7 @@
                 
                 // Step 3: Decrypt the data (CORE CRYPTO - shared by FREE/PRO)
                 let decrypted = await this.decryptData(encryptedPackage, this.privateKey);
-
+                
                 // HOOK: afterDecrypt - PRO can process/enhance decrypted data
                 decrypted = this.triggerHook('afterDecrypt', decrypted, entryId);
                 
@@ -209,12 +215,13 @@
          * Get private key - uses extension or default FREE method
          * EXTENSION POINT - PRO can override via keyProvider
          */
-        async getPrivateKey(entryId) {
+         async getPrivateKey(entryId) {
+        
             // If PRO extension registered, use it
             if (this.extensions.keyProvider && typeof this.extensions.keyProvider.getKey === 'function') {
                 return await this.extensions.keyProvider.getKey(entryId);
             }
-
+         
             // DEFAULT: Use FREE version key
             return await this.getFreePrivateKey();
         }
@@ -281,34 +288,157 @@
          * This is the heart of the decryption system
          */
         async decryptData(encryptedPackage, privateKey) {
-            // First: RSA decrypt the AES key
-            const encryptedAesKey = this.base64ToArrayBuffer(encryptedPackage.encrypted_aes_key);
-            const aesKeyBuffer = await crypto.subtle.decrypt(
-                { name: 'RSA-OAEP' },
-                privateKey,
-                encryptedAesKey
-            );
+            try {
 
-            // Import AES key
-            const aesKey = await crypto.subtle.importKey(
-                'raw',
-                aesKeyBuffer,
-                { name: 'AES-GCM', length: 256 },
-                false,
-                ['decrypt']
-            );
+                // ===== COMPREHENSIVE INPUT VALIDATION =====
 
-            // Decrypt data with AES
-            const iv = this.base64ToArrayBuffer(encryptedPackage.iv);
-            const encryptedData = this.base64ToArrayBuffer(encryptedPackage.encrypted_data);
+                // Checkpoint 0.1: Validate Web Crypto API availability
+                if (!window.crypto || !window.crypto.subtle) {
+                    throw new Error('Web Crypto API not available. This feature requires a secure context (HTTPS).');
+                }
 
-            const decrypted = await crypto.subtle.decrypt(
-                { name: 'AES-GCM', iv: iv },
-                aesKey,
-                encryptedData
-            );
+                // Checkpoint 0.2: Validate encryptedPackage object
+                if (!encryptedPackage || typeof encryptedPackage !== 'object') {
+                    throw new Error('Invalid encrypted package: Must be an object. Received: ' + typeof encryptedPackage);
+                }
 
-            return JSON.parse(new TextDecoder().decode(decrypted));
+                // Checkpoint 0.3: Validate encrypted_aes_key field
+                if (!encryptedPackage.encrypted_aes_key) {
+                    throw new Error('Invalid encrypted package: Missing encrypted_aes_key field. Available fields: ' + Object.keys(encryptedPackage).join(', '));
+                }
+                if (typeof encryptedPackage.encrypted_aes_key !== 'string') {
+                    throw new Error('Invalid encrypted package: encrypted_aes_key must be a string. Received: ' + typeof encryptedPackage.encrypted_aes_key);
+                }
+                if (encryptedPackage.encrypted_aes_key.trim() === '') {
+                    throw new Error('Invalid encrypted package: encrypted_aes_key is empty');
+                }
+
+                // Checkpoint 0.4: Validate iv field
+                if (!encryptedPackage.iv) {
+                    throw new Error('Invalid encrypted package: Missing iv (initialization vector) field. Available fields: ' + Object.keys(encryptedPackage).join(', '));
+                }
+                if (typeof encryptedPackage.iv !== 'string') {
+                    throw new Error('Invalid encrypted package: iv must be a string. Received: ' + typeof encryptedPackage.iv);
+                }
+                if (encryptedPackage.iv.trim() === '') {
+                    throw new Error('Invalid encrypted package: iv is empty');
+                }
+
+                // Checkpoint 0.5: Validate encrypted_data field
+                if (!encryptedPackage.encrypted_data) {
+                    throw new Error('Invalid encrypted package: Missing encrypted_data field. Available fields: ' + Object.keys(encryptedPackage).join(', '));
+                }
+                if (typeof encryptedPackage.encrypted_data !== 'string') {
+                    throw new Error('Invalid encrypted package: encrypted_data must be a string. Received: ' + typeof encryptedPackage.encrypted_data);
+                }
+                if (encryptedPackage.encrypted_data.trim() === '') {
+                    throw new Error('Invalid encrypted package: encrypted_data is empty');
+                }
+
+                // Checkpoint 0.6: Validate privateKey
+                if (!privateKey) {
+                    throw new Error('Invalid private key: Private key is null or undefined');
+                }
+                if (!(privateKey instanceof CryptoKey)) {
+                    throw new Error('Invalid private key: Must be a CryptoKey instance. Received: ' + (privateKey.constructor ? privateKey.constructor.name : typeof privateKey));
+                }
+                if (privateKey.type !== 'private') {
+                    throw new Error('Invalid private key: Key type must be "private". Received: ' + privateKey.type);
+                }
+                if (!privateKey.usages.includes('decrypt')) {
+                    throw new Error('Invalid private key: Key must have "decrypt" usage. Available usages: ' + privateKey.usages.join(', '));
+                }
+
+                // Checkpoint 0.7: Validate base64 format for encrypted_aes_key
+                try {
+                    atob(encryptedPackage.encrypted_aes_key);
+                } catch (e) {
+                    throw new Error('Invalid encrypted package: encrypted_aes_key is not valid base64. Error: ' + e.message);
+                }
+
+                // Checkpoint 0.8: Validate base64 format for iv
+                try {
+                    atob(encryptedPackage.iv);
+                } catch (e) {
+                    throw new Error('Invalid encrypted package: iv is not valid base64. Error: ' + e.message);
+                }
+
+                // Checkpoint 0.9: Validate base64 format for encrypted_data
+                try {
+                    atob(encryptedPackage.encrypted_data);
+                } catch (e) {
+                    throw new Error('Invalid encrypted package: encrypted_data is not valid base64. Error: ' + e.message);
+                }
+
+                // ===== DECRYPTION PROCESS =====
+
+                // Step 1: RSA decrypt the AES key
+                const encryptedAesKey = this.base64ToArrayBuffer(encryptedPackage.encrypted_aes_key);
+
+                let aesKeyBuffer;
+                try {
+                    aesKeyBuffer = await crypto.subtle.decrypt(
+                        { name: 'RSA-OAEP', hash: 'SHA-256' },  // CRITICAL: Must match encryption hash
+                        privateKey,
+                        encryptedAesKey
+                    );
+                } catch (rsaError) {
+                    console.error("❌ RSA-OAEP decryption failed:", rsaError);
+                    console.error("RSA error name:", rsaError.name);
+                    console.error("RSA error message:", rsaError.message);
+                    throw new Error("RSA decryption failed: " + rsaError.message + ". This usually means the private key doesn't match the public key that encrypted this data, or the data is corrupted.");
+                }
+
+                // Step 2: Import AES key
+                const aesKey = await crypto.subtle.importKey(
+                    'raw',
+                    aesKeyBuffer,
+                    { name: 'AES-GCM', length: 256 },
+                    false,
+                    ['decrypt']
+                );
+
+                // Step 3: Prepare AES decryption parameters
+                const iv = this.base64ToArrayBuffer(encryptedPackage.iv);
+
+                const encryptedData = this.base64ToArrayBuffer(encryptedPackage.encrypted_data);
+
+                // Step 4: Decrypt data with AES-GCM
+                const decrypted = await crypto.subtle.decrypt(
+                    { name: 'AES-GCM', iv: iv },
+                    aesKey,
+                    encryptedData
+                );
+
+                // Step 5: Decode and parse JSON
+                const decodedText = new TextDecoder().decode(decrypted);
+
+                const parsedData = JSON.parse(decodedText);
+
+                return parsedData;
+
+            } catch (error) {
+                // Enhanced error logging with context
+                console.error("❌ decryptData failed with error:", error);
+                console.error("Error type:", error.name);
+                console.error("Error message:", error.message);
+                console.error("Error stack:", error.stack);
+                console.error("Encrypted package keys:", encryptedPackage ? Object.keys(encryptedPackage) : 'null');
+                console.error("Private key available:", !!privateKey);
+                console.error("Private key type:", privateKey ? privateKey.type : 'N/A');
+                console.error("Private key algorithm:", privateKey ? JSON.stringify(privateKey.algorithm) : 'N/A');
+
+                // Capture error details
+                const errorMsg = error.message || error.toString() || 'Unknown error';
+                const errorName = error.name || 'Error';
+
+                // Re-throw with enhanced message
+                throw new Error(
+                    'Decryption failed (' + errorName + '): ' + errorMsg +
+                    ' | Package fields: ' + (encryptedPackage ? Object.keys(encryptedPackage).join(', ') : 'none') +
+                    ' | Key type: ' + (privateKey ? privateKey.type : 'missing')
+                );
+            }
         }
 
         /**
@@ -482,9 +612,9 @@
 
                 // Change color when less than 10 seconds
                 if (timerState.seconds <= 10) {
-                    $(warningSelector).css('color', '#d63638');
+                    $(warningSelector).removeClass('seculoco-countdown-normal').addClass('seculoco-countdown-warning');
                 } else {
-                    $(warningSelector).css('color', '#996800');
+                    $(warningSelector).removeClass('seculoco-countdown-warning').addClass('seculoco-countdown-normal');
                 }
 
                 if (timerState.seconds <= 0) {

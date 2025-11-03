@@ -12,6 +12,11 @@
 (function($) {
     'use strict';
 
+    // Defensive fallback for transition period: seculocoAdmin -> seculocoAjax
+    if (typeof seculocoAjax === 'undefined' && typeof seculocoAdmin !== 'undefined') {
+        window.seculocoAjax = seculocoAdmin;
+    }
+
     class ProDecryptionPlugin {
         constructor(baseFramework) {
             if (!baseFramework) {
@@ -40,11 +45,14 @@
             // Handle multi-key clearing
             this.base.registerHook('beforeClear', () => this.clearProKeys());
 
-            // Ensure we fetch the correct key per entry by clearing cached key
-            // before each decrypt. This avoids reusing a previous entry's key
-            // when mixed FREE/PRO entries are present.
+            // Key cache clearing for PRO version
+            // Clears the base key cache to ensure correct key is fetched for each entry
             this.base.registerHook('beforeDecrypt', (encryptedPackage, entryId) => {
+                // Clear the key cache to force fresh key retrieval
+                // The keyProvider will handle determining if it's PRO or FREE
                 this.base.privateKey = null;
+
+                // Return encryptedPackage unchanged (MUST NOT be async!)
                 return encryptedPackage;
             });
         }
@@ -72,12 +80,12 @@
 
             // Get wrapped key from server
             const wrappedResponse = await $.ajax({
-                url: seculocoAdmin.ajaxurl,
+                url: seculocoAjax.ajaxurl,
                 method: 'POST',
                 data: {
                     action: 'seculoco_get_wrapped_private_key',
                     entry_id: entryId,
-                    nonce: seculocoAdmin.nonce
+                    nonce: seculocoAjax.nonce
                 }
             });
 
@@ -106,12 +114,12 @@
          */
         async getKeyType(entryId) {
             const response = await $.ajax({
-                url: seculocoAdmin.ajaxurl,
+                url: seculocoAjax.ajaxurl,
                 method: 'POST',
                 data: {
                     action: 'seculoco_get_wrapped_private_key',
                     entry_id: entryId,
-                    nonce: seculocoAdmin.nonce
+                    nonce: seculocoAjax.nonce
                 }
             });
 
@@ -132,12 +140,12 @@
 
             // Get challenge from server
             const challengeResponse = await $.ajax({
-                url: seculocoAdmin.ajaxurl,
+                url: seculocoAjax.ajaxurl,
                 method: 'POST',
                 data: {
                     action: 'seculoco_passkey_challenge',
                     // This endpoint accepts seculoco_admin_nonce or seculoco_nonce; we pass the latter
-                    nonce: seculocoAdmin.nonce
+                    nonce: seculocoAjax.nonce
                 }
             });
 
@@ -166,36 +174,22 @@
 
         /**
          * Derive unwrapping key from passkey assertion
+         *
+         * Global passkey storage: No user_id needed for key derivation.
          */
         async deriveUnwrappingKey(assertion) {
             const credentialId = new Uint8Array(assertion.rawId);
             const credentialIdB64 = btoa(String.fromCharCode(...credentialId));
 
-            // Get user ID from server
-            const userResponse = await $.ajax({
-                url: (typeof secureLoginPasskeyData !== 'undefined' ? secureLoginPasskeyData.ajaxUrl : seculocoAdmin.ajaxurl),
-                method: 'POST',
-                data: {
-                    action: 'get_current_user_id',
-                    // This endpoint requires seculoco_admin_nonce or passkey_admin_nonce; use the passkey nonce
-                    nonce: (typeof secureLoginPasskeyData !== 'undefined' ? secureLoginPasskeyData.nonce : seculocoAdmin.nonce)
-                }
-            });
-
-            if (!userResponse.success) {
-                throw new Error('Failed to get user ID for key derivation');
-            }
-
             // Server derives key (has access to wp_salt())
+            // No user_id needed - passkey is global, not per-user
             const keyResponse = await $.ajax({
-                url: (typeof secureLoginPasskeyData !== 'undefined' ? secureLoginPasskeyData.ajaxUrl : seculocoAdmin.ajaxurl),
+                url: seculocoAjax.ajaxurl,
                 method: 'POST',
                 data: {
                     action: 'derive_passkey_unwrapping_key',
                     credential_id: credentialIdB64,
-                    user_id: userResponse.data.user_id,
-                    // This endpoint requires seculoco_admin_nonce or passkey_admin_nonce; use the passkey nonce
-                    nonce: (typeof secureLoginPasskeyData !== 'undefined' ? secureLoginPasskeyData.nonce : seculocoAdmin.nonce)
+                    nonce: seculocoAjax.nonce
                 }
             });
 
@@ -220,7 +214,7 @@
         async unwrapKey(wrappedKey, unwrappingKey) {
             const iv = this.base64ToArrayBuffer(wrappedKey.iv);
             const tag = this.base64ToArrayBuffer(wrappedKey.tag);
-            const encrypted = this.base64ToArrayBuffer(wrappedKey.encrypted);
+            const encrypted = this.base64ToArrayBuffer(wrappedKey.ciphertext);
 
             // AES-GCM: concatenate encrypted data and tag
             const ciphertext = new Uint8Array(encrypted.byteLength + tag.byteLength);
@@ -271,7 +265,6 @@
          */
         clearProKeys() {
             this.unwrappedKeys = { pro: null, free: null };
-            console.log('PRO keys cleared from memory');
         }
 
         /**
@@ -343,12 +336,7 @@
             form.method = 'POST';
             form.action = '#';
             form.autocomplete = 'on';
-            form.style.cssText = `
-                position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-                z-index: 999999; background: white; padding: 30px; border-radius: 8px;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.3); min-width: 500px; max-width: 600px;
-                max-height: 90vh; overflow-y: auto;
-            `;
+            form.className = 'seculoco-export-form-modal';
 
             // Build form content
             form.innerHTML = this.buildFormHTML(decryptedData, actionUrl);
@@ -364,50 +352,50 @@
          */
         buildFormHTML(data, url) {
             return `
-                <h3 style="margin: 0 0 20px 0; color: #333;">Export Login to Password Manager</h3>
+                <h3 class="seculoco-export-form-title">Export Login to Password Manager</h3>
 
-                <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
-                    <strong style="color: #856404;">⚠️ Important: URL Editing Required</strong>
-                    <p style="margin: 8px 0 0 0; color: #856404; font-size: 13px;">
+                <div class="seculoco-export-form-warning">
+                    <strong class="seculoco-export-form-warning-title">⚠️ Important: URL Editing Required</strong>
+                    <p class="seculoco-export-form-warning-text">
                         Copy the Login URL below and edit the pre-filled URL in your password manager before saving.
                     </p>
                 </div>
 
-                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Login URL (Copy this for later):</label>
-                <div style="display: flex; gap: 8px; margin-bottom: 5px;">
+                <label class="seculoco-export-form-label">Login URL (Copy this for later):</label>
+                <div class="seculoco-export-form-url-container">
                     <input type="text" id="seculoco-export-url" value="${this.escapeHtml(url)}"
-                           style="flex: 1; padding: 8px; border: 1px solid #2271b1; border-radius: 4px; background: #f0f7ff;" />
-                    <button type="button" id="copy-url-btn" class="button" style="padding: 8px 16px;">📋 Copy</button>
+                           class="seculoco-export-form-url-input" />
+                    <button type="button" id="copy-url-btn" class="button seculoco-export-form-url-copy-btn">📋 Copy</button>
                 </div>
-                <small style="display: block; margin: 0 0 15px 0; color: #d63638; font-weight: 500;">
+                <small class="seculoco-export-form-url-reminder">
                     ⚠️ Remember to copy this URL! You'll need it to edit the password manager entry.
                 </small>
 
-                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Username:</label>
+                <label class="seculoco-export-form-label">Username:</label>
                 <input type="text" name="username" id="seculoco-export-username" autocomplete="username"
                        value="${this.escapeHtml(data.username_email || '')}"
-                       style="width: 100%; padding: 8px; margin-bottom: 15px; border: 1px solid #8c8f94; border-radius: 4px;" />
+                       class="seculoco-export-form-input" />
 
-                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Password:</label>
-                <div style="position: relative; margin-bottom: 15px;">
+                <label class="seculoco-export-form-label">Password:</label>
+                <div class="seculoco-export-form-password-container">
                     <input type="password" name="password" id="seculoco-export-password" autocomplete="current-password"
                            value="${this.escapeHtml(data.password || '')}"
-                           style="width: 100%; padding: 8px 40px 8px 8px; border: 1px solid #8c8f94; border-radius: 4px;" />
+                           class="seculoco-export-form-password-input" />
                     <button type="button" id="toggle-password-btn" title="Show/Hide Password"
-                            style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 18px;">👁️</button>
+                            class="seculoco-export-form-password-toggle">👁️</button>
                 </div>
 
                 ${data.additional_notes ? `
-                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #666;">Notes (for reference only):</label>
-                    <textarea readonly style="width: 100%; padding: 8px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; background: #fffbf0; min-height: 80px; color: #666;">${this.escapeHtml(data.additional_notes)}</textarea>
+                    <label class="seculoco-export-form-label" style="color: #666;">Notes (for reference only):</label>
+                    <textarea readonly class="seculoco-export-form-notes">${this.escapeHtml(data.additional_notes)}</textarea>
                 ` : ''}
 
-                <div style="background: #f0f6fc; border-left: 3px solid #0969da; padding: 12px; margin-bottom: 20px; border-radius: 4px;">
+                <div class="seculoco-export-form-info">
                     ℹ️ <strong>Important:</strong> No data is sent anywhere. This only triggers your browser's password manager.
                 </div>
 
-                <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                    <button type="button" id="cancel-export-btn" class="button" style="padding: 8px 16px;">Cancel</button>
+                <div class="seculoco-export-form-buttons">
+                    <button type="button" id="cancel-export-btn" class="button">Cancel</button>
                     <button type="submit" class="button button-primary" style="padding: 10px 20px; font-weight: 600;">Save to Password Manager</button>
                 </div>
             `;
@@ -427,11 +415,11 @@
                 urlField.select();
                 navigator.clipboard.writeText(urlField.value).then(() => {
                     copyBtn.textContent = '✓ Copied!';
-                    copyBtn.style.background = '#46b450';
+                    copyBtn.classList.add('seculoco-copy-btn-success');
                     copyBtn.style.color = 'white';
                     setTimeout(() => {
                         copyBtn.textContent = '📋 Copy';
-                        copyBtn.style.background = '';
+                        copyBtn.classList.remove('seculoco-copy-btn-success');
                         copyBtn.style.color = '';
                     }, 2000);
                 });
@@ -455,10 +443,7 @@
         createBackdrop() {
             const backdrop = document.createElement('div');
             backdrop.id = 'seculoco-export-backdrop';
-            backdrop.style.cssText = `
-                position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-                background: rgba(0,0,0,0.5); z-index: 999998;
-            `;
+            backdrop.className = 'seculoco-export-form-backdrop';
             return backdrop;
         }
 
@@ -554,7 +539,6 @@
         if ($('.secure-login-admin-table').length > 0) {
             if (window.seculocoDecrypt) {
                 window.seculocoDecryptPro = new ProDecryptionPlugin(window.seculocoDecrypt);
-                console.log('PRO decryption plugin loaded successfully');
             } else {
                 console.error('Base decryption framework not loaded! PRO features unavailable.');
             }

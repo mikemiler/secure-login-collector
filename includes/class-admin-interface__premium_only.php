@@ -173,6 +173,13 @@ class Seculoco_Admin_Interface_Premium extends Seculoco_Admin_Interface {
 				return;
 			}
 
+			// PRE-EXPORT VALIDATION: Check for undecryptable entries.
+			$validation_result = $this->validate_entries_for_export( $entry_ids );
+			if ( ! $validation_result['success'] ) {
+				wp_send_json_error( $validation_result['message'] );
+				return;
+			}
+
 			set_transient(
 				'seculoco_bulk_decrypt_request_' . get_current_user_id(),
 				array(
@@ -304,14 +311,14 @@ class Seculoco_Admin_Interface_Premium extends Seculoco_Admin_Interface {
 			return;
 		}
 
-		$user_id = get_current_user_id();
-
-		// Get stored passkey data.
-		$passkey = get_user_meta( $user_id, 'seculoco_passkey', true );
+		// Get global passkey data.
+		$passkey = get_option( 'seculoco_global_passkey' );
 		if ( empty( $passkey ) || $passkey['credential_id'] !== $credential_id ) {
 			wp_send_json_error( __( 'Passkey not found or mismatch.', 'secure-login-collector' ) );
 			return;
 		}
+
+		$user_id = get_current_user_id();
 
 		// Decode and validate clientDataJSON.
 		$client_data_decoded = json_decode( base64_decode( $client_data_json ), true );
@@ -426,9 +433,8 @@ class Seculoco_Admin_Interface_Premium extends Seculoco_Admin_Interface {
 		// Store challenge in transient (expires in 5 minutes).
 		set_transient( 'passkey_challenge_' . get_current_user_id(), $challenge, 300 );
 
-		// Get user's registered credential (single passkey).
-		$user_id = get_current_user_id();
-		$passkey = get_user_meta( $user_id, 'seculoco_passkey', true );
+		// Get global passkey (site-wide, not per-user).
+		$passkey = get_option( 'seculoco_global_passkey' );
 
 		// Format credential for client.
 		$formatted_credentials = array();
@@ -526,5 +532,84 @@ class Seculoco_Admin_Interface_Premium extends Seculoco_Admin_Interface {
 		// Full implementation would require CBOR parsing.
 		// For now, return false to skip signature verification for existing keys.
 		return false;
+	}
+
+	/**
+	 * Validate entries for export - check for undecryptable items.
+	 *
+	 * Prevents export of entries that were encrypted with a deleted passkey
+	 * and can no longer be decrypted.
+	 *
+	 * @param array $entry_ids Array of entry IDs to validate.
+	 * @return array Validation result with success flag and message.
+	 */
+	private function validate_entries_for_export( $entry_ids ) {
+		if ( empty( $entry_ids ) ) {
+			return array(
+				'success' => true,
+				'message' => '',
+			);
+		}
+
+		$undecryptable_count = 0;
+		$undecryptable_ids   = array();
+
+		// Check each entry for undecryptable status.
+		foreach ( $entry_ids as $entry_id ) {
+			$row = $this->database_manager->get_entry( $entry_id );
+			if ( ! $row ) {
+				continue;
+			}
+
+			$metadata = json_decode( $row->metadata, true );
+			if ( ! is_array( $metadata ) ) {
+				continue;
+			}
+
+			// Check if entry is marked as undecryptable.
+			// This happens when an entry was encrypted with a passkey that was later deleted.
+			$encryption_type = $metadata['encryption_type'] ?? '';
+			$key_hostname    = $metadata['key_hostname'] ?? '';
+			$key_timestamp   = $metadata['key_timestamp_suffix'] ?? '';
+
+			// Entry is undecryptable if:
+			// 1. It uses passkey encryption (aes-rsa-passkey-v2 or rsa_passkey_protected).
+			// 2. The passkey that encrypted it no longer exists.
+			if ( in_array( $encryption_type, array( 'aes-rsa-passkey-v2', 'rsa_passkey_protected' ), true ) ) {
+				// Check if the encryption key still exists.
+				$wrapped_key = get_option( 'seculoco_wrapped_private_key_pro' );
+				if ( ! $wrapped_key ) {
+					// Pro key doesn't exist - this entry is undecryptable.
+					++$undecryptable_count;
+					$undecryptable_ids[] = $entry_id;
+				}
+			}
+		}
+
+		// If any undecryptable items found, return error.
+		if ( $undecryptable_count > 0 ) {
+			/* translators: %d: number of undecryptable items */
+			$message = sprintf(
+				_n(
+					'Cannot export: %d selected item is undecryptable. This item was encrypted with a deleted passkey and cannot be recovered. Please deselect the item marked as "Undecryptable" and try again.',
+					'Cannot export: %d selected items are undecryptable. These items were encrypted with a deleted passkey and cannot be recovered. Please deselect the items marked as "Undecryptable" and try again.',
+					$undecryptable_count,
+					'secure-login-collector'
+				),
+				$undecryptable_count
+			);
+
+			return array(
+				'success'             => false,
+				'message'             => $message,
+				'undecryptable_count' => $undecryptable_count,
+				'undecryptable_ids'   => $undecryptable_ids,
+			);
+		}
+
+		return array(
+			'success' => true,
+			'message' => '',
+		);
 	}
 }

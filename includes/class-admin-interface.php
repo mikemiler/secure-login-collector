@@ -236,6 +236,26 @@ class Seculoco_List_Table extends WP_List_Table {
 		$timestamp_suffix = isset( $metadata['key_timestamp_suffix'] ) ? $metadata['key_timestamp_suffix'] : '';
 		$is_expired       = isset( $item->is_expired ) && 1 === $item->is_expired;
 
+		// Check if entry is undecryptable (passkey-encrypted but passkey was deleted).
+		// Use database flag as primary indicator (more reliable than checking options).
+		$is_undecryptable = false;
+		
+		if ( isset( $item->undecryptable ) && 1 === (int)$item->undecryptable ) {
+			$is_undecryptable = true;
+		} else {
+			// Fallback: Check encrypted_data for legacy entries not yet marked.
+			$encrypted_data = json_decode( $item->encrypted_data, true );
+			if ( is_array( $encrypted_data ) && ! empty( $encrypted_data['credentialId'] ) && $encrypted_data['isProEncrypted'] ) {
+				// Entry was encrypted with a passkey. Check if that passkey still exists.
+				$credential_id = $encrypted_data['credentialId'];
+				$passkey_data  = get_option( 'passkey_credential_' . $credential_id, false );
+				if ( ! $passkey_data ) {
+					$is_undecryptable = true;
+				}
+			}
+		}
+		
+
 		$actions = array();
 
 		// Edit button with icon (disabled for expired entries).
@@ -260,9 +280,23 @@ class Seculoco_List_Table extends WP_List_Table {
 			);
 		}
 
-		// Decrypt button (disabled for expired entries since data is purged).
-		if ( ! $is_expired ) {
-			// Always use v2 decrypt button since we only support current encryption format.
+		// Decrypt button (disabled for expired or undecryptable entries).
+		if ( $is_expired ) {
+			// Show disabled decrypt button for expired entries.
+			$actions[] = sprintf(
+				'<button type="button" class="button button-expired" disabled title="%s"><span class="dashicons dashicons-unlock"></span></button>',
+				esc_attr__( 'Data has been purged (expired)', 'secure-login-collector' )
+			);
+		} elseif ( $is_undecryptable ) {
+			// Show disabled decrypt button with undecryptable indicator.
+			
+			$actions[] = sprintf(
+				'<button type="button" class="button decrypt-btn-v2" data-id="%s" data-undecryptable="true" disabled title="%s"><span class="dashicons dashicons-lock"></span></button>',
+				$item->id,
+				esc_attr__( 'Cannot decrypt: passkey was deleted', 'secure-login-collector' )
+			);
+		} else {
+			// Normal decrypt button.
 			$actions[] = sprintf(
 				'<button type="button" class="button decrypt-btn-v2" data-id="%s" data-hostname="%s" data-timestamp="%s" data-encryption-type="%s" title="%s"><span class="dashicons dashicons-unlock"></span></button>',
 				$item->id,
@@ -271,21 +305,21 @@ class Seculoco_List_Table extends WP_List_Table {
 				esc_attr( $encryption_type ),
 				esc_attr__( 'Decrypt data', 'secure-login-collector' )
 			);
-		} else {
-			// Show disabled decrypt button for expired entries.
-			$actions[] = sprintf(
-				'<button type="button" class="button" disabled title="%s" style="opacity: 0.5; cursor: not-allowed;"><span class="dashicons dashicons-unlock"></span></button>',
-				esc_attr__( 'Data has been purged (expired)', 'secure-login-collector' )
-			);
 		}
 
 		// Extend button (only for non-expired entries if expiration is enabled) with icon.
 		$expiration_days = get_option( 'seculoco_expiration_days', 30 );
-		if ( $expiration_days > 0 && ! $is_expired ) {
+		if ( $expiration_days > 0 && ! $is_expired && !$is_undecryptable ) {
 			$actions[] = sprintf(
 				'<button type="button" class="button button-secondary extend-btn" data-id="%s" title="%s"><span class="dashicons dashicons-calendar-alt"></span></button>',
 				$item->id,
 				esc_attr__( 'Extend retention period', 'secure-login-collector' )
+			);
+		} else {
+			$actions[] = sprintf(
+				'<button type="button" class="button button-secondary extend-btn" title="%s" style="opacity: 0.7" disabled><span class="dashicons dashicons-calendar-alt"></span></button>',
+				$item->id,
+				esc_attr__( 'Cannot extend retention period', 'secure-login-collector' )
 			);
 		}
 
@@ -306,19 +340,8 @@ class Seculoco_List_Table extends WP_List_Table {
 	 * @return array Encryption method information.
 	 */
 	private function get_encryption_method_info( $encryption_type ) {
-		// Check if pro keys are active (passkey encryption enabled).
-		$pro_keys_active = get_option( 'seculoco_pro_keys_active', false );
-
 		switch ( $encryption_type ) {
 			case 'aes-rsa-v2':
-				// Free version encryption - show as inactive if passkey is active.
-				if ( $pro_keys_active ) {
-					return array(
-						'name'        => __( 'Secure', 'secure-login-collector' ),
-						'class'       => 'encryption-rsa',
-						'description' => __( 'Free version encryption. Passkey encryption available for new entries.', 'secure-login-collector' ),
-					);
-				}
 				return array(
 					'name'        => __( 'Secure', 'secure-login-collector' ),
 					'class'       => 'encryption-rsa',
@@ -337,28 +360,12 @@ class Seculoco_List_Table extends WP_List_Table {
 					'description' => __( 'Passkey-derived encryption for maximum security.', 'secure-login-collector' ),
 				);
 			case 'rsa':
-				// Free version encryption - show as inactive if passkey is active.
-				if ( $pro_keys_active ) {
-					return array(
-						'name'        => __( 'Secure', 'secure-login-collector' ),
-						'class'       => 'encryption-rsa',
-						'description' => __( 'Free version encryption. Passkey encryption available for new entries.', 'secure-login-collector' ),
-					);
-				}
 				return array(
 					'name'        => __( 'RSA-2048', 'secure-login-collector' ),
 					'class'       => 'encryption-rsa',
 					'description' => __( 'Industry-standard RSA encryption.', 'secure-login-collector' ),
 				);
 			default:
-				// Free version encryption - show as inactive if passkey is active.
-				if ( $pro_keys_active ) {
-					return array(
-						'name'        => __( 'Secure', 'secure-login-collector' ),
-						'class'       => 'encryption-rsa',
-						'description' => __( 'Free version encryption. Passkey encryption available for new entries.', 'secure-login-collector' ),
-					);
-				}
 				return array(
 					'name'        => __( 'RSA-2048', 'secure-login-collector' ),
 					'class'       => 'encryption-rsa',
@@ -749,14 +756,20 @@ class Seculoco_Admin_Interface {
 			),
 		);
 
+		// Primary localization: seculocoAjax (standard variable name)
 		wp_localize_script( 'secure-login-admin-js', 'seculocoAjax', $ajax_data );
 
-		// Also provide as seculocoAdmin for backward compatibility with premium scripts.
+		// Backward compatibility: Also provide as seculocoAdmin during transition period
+		// Both variables contain identical data to support legacy premium scripts
 		wp_localize_script( 'secure-login-admin-js', 'seculocoAdmin', $ajax_data );
+
+		// CRITICAL: Also localize for the decrypt script (needed for AJAX calls in admin-decrypt.js)
+		// Provide both variable names for maximum compatibility
+		wp_localize_script( 'seculoco-admin-decrypt', 'seculocoAjax', $ajax_data );
+		wp_localize_script( 'seculoco-admin-decrypt', 'seculocoAdmin', $ajax_data );
 
 		// Localize script with configuration data.
 		$admin_config = array(
-			'isProVersion'      => false,
 			'passkeyRegistered' => get_option( 'seculoco_passkey_registered', false ),
 			'currentUserId'     => get_current_user_id(),
 		);
@@ -903,17 +916,8 @@ class Seculoco_Admin_Interface {
 									<?php echo esc_html__( 'Encryption Method', 'secure-login-collector' ); ?>
 								</th>
 								<td>
-									<?php
-									$encryption_info = apply_filters(
-										'seculoco_manual_entry_encryption_display',
-										array(
-											'title'       => __( 'Secure (AES-256 + RSA-2048)', 'secure-login-collector' ),
-											'description' => __( 'Standard encryption with AES-256 and RSA-2048 protection.', 'secure-login-collector' ),
-										)
-									);
-									?>
-									<strong><?php echo esc_html( $encryption_info['title'] ); ?></strong>
-									<p class="description"><?php echo esc_html( $encryption_info['description'] ); ?></p>
+									<strong><?php echo esc_html__( 'Secure (AES-256 + RSA-2048)', 'secure-login-collector' ); ?></strong>
+									<p class="description"><?php echo esc_html__( 'Standard encryption with AES-256 and RSA-2048 protection.', 'secure-login-collector' ); ?></p>
 								</td>
 							</tr>
 						</table>
@@ -1147,19 +1151,6 @@ class Seculoco_Admin_Interface {
 			return;
 		}
 
-		// Check if ultra-secure mode is enabled (Pro with passkey).
-		// Allow pro version to set encryption metadata.
-		$encryption_meta = apply_filters(
-			'seculoco_manual_entry_metadata',
-			array(
-				'is_pro_encrypted'     => false,
-				'server_credential_id' => null,
-			)
-		);
-
-		$is_pro_encrypted     = $encryption_meta['is_pro_encrypted'];
-		$server_credential_id = $encryption_meta['server_credential_id'];
-
 		// RSA encrypt the AES key (raw bytes, not base64).
 		$encrypted_aes_key = '';
 		if ( ! openssl_public_encrypt( $aes_key, $encrypted_aes_key, $public_key, OPENSSL_PKCS1_OAEP_PADDING ) ) {
@@ -1167,21 +1158,33 @@ class Seculoco_Admin_Interface {
 			return;
 		}
 
+		// Allow pro version to modify encryption package via filter.
+		$encryption_package_data = apply_filters(
+			'seculoco_manual_entry_encryption_package',
+			array(
+				'aes_key'           => $aes_key,
+				'encrypted_aes_key' => $encrypted_aes_key,
+				'encrypted_content' => $encrypted_with_tag,
+				'iv'                => $iv,
+				'salt'              => $salt,
+			)
+		);
+
 		// Create the v2 encrypted package matching frontend format exactly.
 		$encrypted_package = array(
-			'encryptedData'   => base64_encode( $encrypted_with_tag ),
-			'rsaEncryptedKey' => base64_encode( $encrypted_aes_key ),
-			'iv'              => base64_encode( $iv ),
-			'salt'            => base64_encode( $salt ), // Base64 encode like frontend.
-			'isProEncrypted'  => $is_pro_encrypted,
-			'credentialId'    => $server_credential_id,
+			'encryptedData'   => base64_encode( $encryption_package_data['encrypted_content'] ),
+			'rsaEncryptedKey' => base64_encode( $encryption_package_data['encrypted_aes_key'] ),
+			'iv'              => base64_encode( $encryption_package_data['iv'] ),
+			'salt'            => base64_encode( $encryption_package_data['salt'] ),
+			'isProEncrypted'  => false,
+			'credentialId'    => null,
 			'version'         => 2,
 		);
 
 		// Update metadata for v2 format.
-		$metadata_array['encryption_type']    = $is_pro_encrypted ? 'aes-rsa-passkey-v2' : 'aes-rsa-v2';
+		$metadata_array['encryption_type']    = 'aes-rsa-v2';
 		$metadata_array['encryption_version'] = 2;
-		$metadata_array['is_pro_encrypted']   = $is_pro_encrypted;
+		$metadata_array['is_pro_encrypted']   = false;
 
 		// Store as JSON-encoded package.
 		$encrypted_data = wp_json_encode( $encrypted_package );

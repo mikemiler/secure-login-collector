@@ -70,7 +70,6 @@ jQuery(document).ready(function($) {
 	 * Handle passkey registration
 	 */
 	$('#register-passkey-btn').on('click', async function(e) {
-		console.log('register-passkey-btn clicked');
 		e.preventDefault();
 
 		var $button = $(this);
@@ -86,8 +85,11 @@ jQuery(document).ready(function($) {
 			return;
 		}
 
-		// Get selected authenticator type
-		var authenticatorType = $('input[name="authenticator_type"]:checked').val() || 'auto';
+		// Get selected authenticator type (cross-platform or platform)
+		var authenticatorType = $('input[name="authenticator_type"]:checked').val() || 'cross-platform';
+
+		// Detect device and browser information
+		var deviceInfo = detectDeviceInfo();
 
 		$button.prop('disabled', true);
 		$spinner.addClass('is-active');
@@ -159,7 +161,8 @@ jQuery(document).ready(function($) {
 					credential_id: arrayBufferToBase64(credential.rawId),
 					public_key: publicKeyData,
 					client_data: arrayBufferToBase64(credential.response.clientDataJSON),
-					attestation: arrayBufferToBase64(credential.response.attestationObject)
+					attestation: arrayBufferToBase64(credential.response.attestationObject),
+					device_info: JSON.stringify(deviceInfo)
 				}
 			});
 
@@ -210,5 +213,60 @@ jQuery(document).ready(function($) {
 			binary += String.fromCharCode(bytes[i]);
 		}
 		return btoa(binary);
+	}
+
+	/**
+	 * Detect device and browser information
+	 *
+	 * @return {Object} Device and browser information
+	 */
+	function detectDeviceInfo() {
+		var ua = navigator.userAgent;
+		var info = {
+			browser: 'Unknown Browser',
+			platform: 'Unknown Platform',
+			type: 'device'
+		};
+
+		// Detect browser
+		if (ua.indexOf('Edg') > -1) {
+			info.browser = 'Edge';
+		} else if (ua.indexOf('Chrome') > -1) {
+			info.browser = 'Chrome';
+		} else if (ua.indexOf('Safari') > -1) {
+			info.browser = 'Safari';
+		} else if (ua.indexOf('Firefox') > -1) {
+			info.browser = 'Firefox';
+		} else if (ua.indexOf('MSIE') > -1 || ua.indexOf('Trident') > -1) {
+			info.browser = 'Internet Explorer';
+		}
+
+		// Detect platform and password manager hints
+		if (ua.indexOf('1Password') > -1) {
+			info.type = 'password_manager';
+			info.platform = '1Password';
+		} else if (ua.indexOf('Bitwarden') > -1) {
+			info.type = 'password_manager';
+			info.platform = 'Bitwarden';
+		} else if (ua.indexOf('Dashlane') > -1) {
+			info.type = 'password_manager';
+			info.platform = 'Dashlane';
+		} else if (ua.indexOf('Mac') > -1 || ua.indexOf('iPhone') > -1 || ua.indexOf('iPad') > -1) {
+			if (ua.indexOf('iPhone') > -1) {
+				info.platform = 'iPhone';
+			} else if (ua.indexOf('iPad') > -1) {
+				info.platform = 'iPad';
+			} else {
+				info.platform = 'macOS';
+			}
+		} else if (ua.indexOf('Windows') > -1) {
+			info.platform = 'Windows';
+		} else if (ua.indexOf('Android') > -1) {
+			info.platform = 'Android';
+		} else if (ua.indexOf('Linux') > -1) {
+			info.platform = 'Linux';
+		}
+
+		return info;
 	}
 });

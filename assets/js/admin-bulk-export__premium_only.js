@@ -4,6 +4,11 @@
  * @package SecureLoginCollector
  */
 
+// Defensive fallback for transition period: seculocoAdmin -> seculocoAjax
+if (typeof seculocoAjax === 'undefined' && typeof seculocoAdmin !== 'undefined') {
+    window.seculocoAjax = seculocoAdmin;
+}
+
 jQuery(document).ready(function ($) {
     'use strict';
 
@@ -35,12 +40,14 @@ jQuery(document).ready(function ($) {
         }
     });
 
-    // Check encryption types for selected entries
+    // Check encryption types for selected entries and validate for undecryptable items
     async function checkEncryptionTypes(entryIds) {
         var proCount = 0;
         var freeCount = 0;
+        var undecryptableCount = 0;
+        var undecryptableIds = [];
 
-        // Query each entry to determine encryption type
+        // Query each entry to determine encryption type and decryptability
         for (var i = 0; i < entryIds.length; i++) {
             try {
                 var response = await $.ajax({
@@ -56,6 +63,11 @@ jQuery(document).ready(function ($) {
                 if (response.success && response.data.type) {
                     if (response.data.type === 'pro') {
                         proCount++;
+                        // Check if pro key is available (not deleted)
+                        if (!response.data.wrapped_key || response.data.wrapped_key === '') {
+                            undecryptableCount++;
+                            undecryptableIds.push(entryIds[i]);
+                        }
                     } else {
                         freeCount++;
                     }
@@ -71,7 +83,9 @@ jQuery(document).ready(function ($) {
             hasPro: proCount > 0,
             hasFree: freeCount > 0,
             counts: { pro: proCount, free: freeCount },
-            total: entryIds.length
+            total: entryIds.length,
+            undecryptableCount: undecryptableCount,
+            undecryptableIds: undecryptableIds
         };
     }
 
@@ -79,6 +93,34 @@ jQuery(document).ready(function ($) {
     async function handleBulkExportWithPasskey(entryIds, manager) {
         // Check encryption types first
         var encryptionCheck = await checkEncryptionTypes(entryIds);
+
+        // CLIENT-SIDE VALIDATION: Check for undecryptable entries
+        if (encryptionCheck.undecryptableCount > 0) {
+            var errorMessage = 'Cannot export: ' + encryptionCheck.undecryptableCount + ' selected item';
+            if (encryptionCheck.undecryptableCount > 1) {
+                errorMessage += 's are';
+            } else {
+                errorMessage += ' is';
+            }
+            errorMessage += ' undecryptable. ';
+
+            if (encryptionCheck.undecryptableCount === 1) {
+                errorMessage += 'This item was encrypted with a deleted passkey and cannot be recovered. ';
+            } else {
+                errorMessage += 'These items were encrypted with a deleted passkey and cannot be recovered. ';
+            }
+
+            errorMessage += 'Please deselect the item';
+            if (encryptionCheck.undecryptableCount > 1) {
+                errorMessage += 's';
+            }
+            errorMessage += ' marked as "Undecryptable" and try again.\n\n';
+            errorMessage += 'Undecryptable entry IDs: ' + encryptionCheck.undecryptableIds.join(', ');
+
+            // Show error modal with highlighting
+            showUndecryptableErrorModal(errorMessage, encryptionCheck.undecryptableIds);
+            return;
+        }
 
         var message;
         if (!encryptionCheck.hasPro && encryptionCheck.hasFree) {
@@ -126,7 +168,6 @@ jQuery(document).ready(function ($) {
         // If all FREE entries, skip modal and proceed directly to decryption
         if (!encryptionCheck.hasPro && encryptionCheck.hasFree) {
             // All FREE - no passkey needed
-            console.log('All entries are FREE encrypted - skipping passkey authentication');
             proceedWithBulkDecryption(data, null);
             return;
         }
@@ -226,9 +267,8 @@ jQuery(document).ready(function ($) {
             }
 
             $('#bulk-progress-text').text('Starting decryption...');
-            $('#bulk-progress-bar').css('width', '5%');
+            $('#bulk-progress-bar').addClass('seculoco-progress-bar-width-5').css('width', '');
 
-            console.log('Starting bulk decryption for ' + entryIds.length + ' entries');
 
             let processed = 0;
 
@@ -254,7 +294,7 @@ jQuery(document).ready(function ($) {
                         });
                         successCount++;
                         $('#bulk-progress-text').text('Entry ' + processed + ' of ' + entryIds.length + ' (cached)');
-                        $('#bulk-progress-bar').css('width', progressPercent + '%');
+                        $('#bulk-progress-bar').removeClass('seculoco-progress-bar-width-5 seculoco-progress-bar-width-100').css('width', progressPercent + '%');
                         continue;
                     }
 
@@ -278,7 +318,7 @@ jQuery(document).ready(function ($) {
 
                     // Update progress with key type
                     $('#bulk-progress-text').text('Decrypting entry ' + processed + ' of ' + entryIds.length + ' (' + keyType.toUpperCase() + ' encryption)');
-                    $('#bulk-progress-bar').css('width', progressPercent + '%');
+                    $('#bulk-progress-bar').removeClass('seculoco-progress-bar-width-5 seculoco-progress-bar-width-100').css('width', progressPercent + '%');
 
                     // Get/import private key for this entry
                     let privateKey;
@@ -322,7 +362,6 @@ jQuery(document).ready(function ($) {
                     });
 
                     successCount++;
-                    console.log('Successfully decrypted entry ' + entryId + ' (' + successCount + ' of ' + entryIds.length + ')');
 
                 } catch (error) {
                     failedCount++;
@@ -338,7 +377,7 @@ jQuery(document).ready(function ($) {
             if (decryptedEntries.length > 0) {
                 // Generate CSV with actual decrypted data
                 $('#bulk-progress-text').text('Generating CSV file...');
-                $('#bulk-progress-bar').css('width', '100%');
+                $('#bulk-progress-bar').removeClass('seculoco-progress-bar-width-5').addClass('seculoco-progress-bar-width-100').css('width', '');
 
                 const csvContent = generateCSVForManager(manager, decryptedEntries);
                 const filename = 'bulk_export_' + manager + '_decrypted_' + new Date().getTime() + '.csv';
@@ -356,12 +395,7 @@ jQuery(document).ready(function ($) {
                 }
 
                 alert(summaryMessage);
-                console.log('Bulk export summary:', {
-                    total: entryIds.length,
-                    success: successCount,
-                    failed: failedCount,
-                    failedIds: failedEntryIds
-                });
+                
 
             } else {
                 // All entries failed
@@ -391,12 +425,12 @@ jQuery(document).ready(function ($) {
 
         // First, get the passkey challenge and credentials from server
         $.ajax({
-            url: (typeof secureLoginPasskeyData !== 'undefined' ? secureLoginPasskeyData.ajaxUrl : (typeof seculocoAdmin !== 'undefined' ? seculocoAdmin.ajaxurl : seculocoAjax.ajaxurl)),
+            url: (typeof secureLoginPasskeyData !== 'undefined' ? secureLoginPasskeyData.ajaxUrl : seculocoAjax.ajaxurl),
             type: 'POST',
             data: {
                 action: 'seculoco_passkey_challenge',
                 // This endpoint accepts seculoco_admin_nonce or seculoco_nonce
-                nonce: (typeof seculocoAdmin !== 'undefined' ? seculocoAdmin.nonce : seculocoAjax.nonce)
+                nonce: seculocoAjax.nonce
             },
             success: function(challengeResponse) {
                 if (!challengeResponse.success) {
@@ -436,7 +470,7 @@ jQuery(document).ready(function ($) {
                             button.html('<span class="dashicons dashicons-admin-network spin"></span> Deriving key...');
                             $('#bulk-progress-info').show();
                             $('#bulk-progress-text').text('Deriving encryption key from passkey...');
-                            $('#bulk-progress-bar').css('width', '5%');
+                            $('#bulk-progress-bar').addClass('seculoco-progress-bar-width-5').css('width', '');
 
                             if (!window.seculocoDecryptPro) {
                                 throw new Error('Decryption module not available. Please refresh the page.');
@@ -447,8 +481,6 @@ jQuery(document).ready(function ($) {
 
                             // Create preAuthData object to pass to bulk decryption
                             const preAuthData = { derivedKey: derivedKey };
-
-                            console.log('Derived unwrapping key successfully for bulk decryption');
 
                             // Proceed with bulk decryption
                             await proceedWithBulkDecryption(data, preAuthData);
@@ -603,6 +635,114 @@ jQuery(document).ready(function ($) {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
         };
+    }
+
+    /**
+     * Show error modal for undecryptable entries with visual highlighting.
+     *
+     * @param {string} errorMessage - The error message to display.
+     * @param {array} undecryptableIds - Array of undecryptable entry IDs.
+     */
+    function showUndecryptableErrorModal(errorMessage, undecryptableIds) {
+        // Remove any existing modal
+        $('#undecryptable-error-modal').remove();
+
+        // Highlight undecryptable rows in the table
+        highlightUndecryptableRows(undecryptableIds);
+
+        // Create error modal
+        var modal = $('<div id="undecryptable-error-modal" class="seculoco-error-modal-overlay">');
+        var modalContent = $('<div class="seculoco-error-modal-content">');
+
+        modalContent.html(
+            '<h3 class="seculoco-error-modal-title">⚠️ Export Validation Error</h3>' +
+            '<div class="seculoco-error-modal-warning-box">' +
+            '<p class="seculoco-error-modal-warning-text">' + escapeHtml(errorMessage) + '</p>' +
+            '</div>' +
+            '<div class="seculoco-error-modal-instructions">' +
+            '<strong>What to do:</strong>' +
+            '<ol class="seculoco-error-modal-instructions-list">' +
+            '<li>Scroll up to see highlighted rows (marked in red)</li>' +
+            '<li>Uncheck the checkbox for each undecryptable entry</li>' +
+            '<li>Try the export again with only decryptable entries selected</li>' +
+            '</ol>' +
+            '</div>' +
+            '<div class="seculoco-error-modal-button-container">' +
+            '<button id="undecryptable-error-close" class="button button-primary seculoco-error-modal-close-btn">Close</button>' +
+            '</div>'
+        );
+
+        modal.append(modalContent);
+        $('body').append(modal);
+
+        // Handle close button
+        $('#undecryptable-error-close').on('click', function () {
+            modal.remove();
+        });
+
+        // Close on background click
+        modal.on('click', function (e) {
+            if (e.target === modal[0]) {
+                modal.remove();
+            }
+        });
+    }
+
+    /**
+     * Highlight undecryptable rows in the admin table.
+     *
+     * @param {array} undecryptableIds - Array of entry IDs to highlight.
+     */
+    function highlightUndecryptableRows(undecryptableIds) {
+        // Remove any existing highlights
+        $('tr.undecryptable-highlight').removeClass('undecryptable-highlight');
+
+        // Add highlight class to undecryptable rows
+        undecryptableIds.forEach(function (entryId) {
+            var checkbox = $('input[name="login_entries[]"][value="' + entryId + '"]');
+            if (checkbox.length > 0) {
+                var row = checkbox.closest('tr');
+                row.addClass('undecryptable-highlight');
+                row.addClass('undecryptable-highlight');
+            }
+        });
+
+        // Add CSS animation for pulsing effect (if not already added)
+        if (!$('#undecryptable-highlight-styles').length) {
+            $('<style id="undecryptable-highlight-styles">' +
+                '@keyframes pulse-red {' +
+                '0%, 100% { background-color: #ffebee; }' +
+                '50% { background-color: #ffcdd2; }' +
+                '}' +
+                '</style>').appendTo('head');
+        }
+
+        // Scroll to first undecryptable row
+        if (undecryptableIds.length > 0) {
+            var firstCheckbox = $('input[name="login_entries[]"][value="' + undecryptableIds[0] + '"]');
+            if (firstCheckbox.length > 0) {
+                $('html, body').animate({
+                    scrollTop: firstCheckbox.closest('tr').offset().top - 100
+                }, 500);
+            }
+        }
+    }
+
+    /**
+     * Escape HTML to prevent XSS.
+     *
+     * @param {string} text - Text to escape.
+     * @return {string} Escaped text.
+     */
+    function escapeHtml(text) {
+        var map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return text.replace(/[&<>"']/g, function(m) { return map[m]; });
     }
 
 });

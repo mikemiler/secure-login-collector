@@ -196,8 +196,8 @@ class Seculoco_Settings_Manager_Pro {
 	 * Render passkey management section.
 	 */
 	private function render_passkey_management() {
-		if ( class_exists( 'Passkey_Manager' ) ) {
-			$passkey_manager = new Passkey_Manager();
+		if ( class_exists( 'Seculoco_Passkey_Manager' ) ) {
+			$passkey_manager = new Seculoco_Passkey_Manager();
 			$passkey_manager->render_passkey_section();
 		}
 	}

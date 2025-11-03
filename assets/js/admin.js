@@ -314,7 +314,7 @@ $(document).on('click', '#fix-passkey-flag-btn', function() {
         type: 'POST',
         data: {
             action: 'seculoco_fix_passkey_flag',
-            nonce: seculocoAdmin.nonce
+            nonce: seculocoAjax.nonce
         },
         success: function(response) {
             if (response.success) {
@@ -357,8 +357,7 @@ function copyLoginData(button) {
 function copyToClipboardFallback(text) {
     var textArea = document.createElement('textarea');
     textArea.value = text;
-    textArea.style.position = 'fixed';
-    textArea.style.opacity = '0';
+    textArea.className = 'seculoco-copy-to-clipboard';
     document.body.appendChild(textArea);
     textArea.focus();
     textArea.select();
@@ -373,11 +372,10 @@ function copyToClipboardFallback(text) {
 // Function to show copy button feedback
 function showCopyButtonFeedback(button) {
     var originalText = button.textContent;
-    var originalBg = button.style.background;
     button.textContent = '✓ Copied!';
-    button.style.background = '#28a745';
+    button.classList.add('seculoco-copy-btn-success');
     setTimeout(function () {
         button.textContent = originalText;
-        button.style.background = originalBg;
+        button.classList.remove('seculoco-copy-btn-success');
     }, 2000);
 }
