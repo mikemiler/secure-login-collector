@@ -29,13 +29,24 @@
          */
         registerWithBase() {
             // Register PRO key provider (overrides base free-only key provider)
-            this.base.registerExtension('keyProvider', (entryId) => this.handleProKeyUnwrapping(entryId));
+            // Base expects an object with a getKey method
+            this.base.registerExtension('keyProvider', {
+                getKey: (entryId) => this.handleProKeyUnwrapping(entryId)
+            });
 
             // Add PRO UI enhancements after display
             this.base.registerHook('afterDisplay', (entryId, data) => this.addExportButton(entryId));
 
             // Handle multi-key clearing
             this.base.registerHook('beforeClear', () => this.clearProKeys());
+
+            // Ensure we fetch the correct key per entry by clearing cached key
+            // before each decrypt. This avoids reusing a previous entry's key
+            // when mixed FREE/PRO entries are present.
+            this.base.registerHook('beforeDecrypt', (encryptedPackage, entryId) => {
+                this.base.privateKey = null;
+                return encryptedPackage;
+            });
         }
 
         /**
@@ -124,7 +135,8 @@
                 url: seculocoAdmin.ajaxurl,
                 method: 'POST',
                 data: {
-                    action: 'passkey_get_challenge',
+                    action: 'seculoco_passkey_challenge',
+                    // This endpoint accepts seculoco_admin_nonce or seculoco_nonce; we pass the latter
                     nonce: seculocoAdmin.nonce
                 }
             });
@@ -161,11 +173,12 @@
 
             // Get user ID from server
             const userResponse = await $.ajax({
-                url: seculocoAdmin.ajaxurl,
+                url: (typeof secureLoginPasskeyData !== 'undefined' ? secureLoginPasskeyData.ajaxUrl : seculocoAdmin.ajaxurl),
                 method: 'POST',
                 data: {
                     action: 'get_current_user_id',
-                    nonce: seculocoAdmin.nonce
+                    // This endpoint requires seculoco_admin_nonce or passkey_admin_nonce; use the passkey nonce
+                    nonce: (typeof secureLoginPasskeyData !== 'undefined' ? secureLoginPasskeyData.nonce : seculocoAdmin.nonce)
                 }
             });
 
@@ -175,13 +188,14 @@
 
             // Server derives key (has access to wp_salt())
             const keyResponse = await $.ajax({
-                url: seculocoAdmin.ajaxurl,
+                url: (typeof secureLoginPasskeyData !== 'undefined' ? secureLoginPasskeyData.ajaxUrl : seculocoAdmin.ajaxurl),
                 method: 'POST',
                 data: {
                     action: 'derive_passkey_unwrapping_key',
                     credential_id: credentialIdB64,
                     user_id: userResponse.data.user_id,
-                    nonce: seculocoAdmin.nonce
+                    // This endpoint requires seculoco_admin_nonce or passkey_admin_nonce; use the passkey nonce
+                    nonce: (typeof secureLoginPasskeyData !== 'undefined' ? secureLoginPasskeyData.nonce : seculocoAdmin.nonce)
                 }
             });
 

@@ -159,7 +159,7 @@
 
                 // HOOK: afterDecrypt - PRO can process/enhance decrypted data
                 decrypted = this.triggerHook('afterDecrypt', decrypted, entryId);
-                console.log('decrypted', decrypted);
+                
                 // Store and display
                 this.decryptedData.set(entryId, decrypted);
                 this.displayDecryptedData(entryId, $btn);
