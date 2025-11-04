@@ -129,8 +129,6 @@ class Seculoco_Encryption_Handler_V2 {
 		);
 	}
 
-
-
 	/**
 	 * Encrypt data with WordPress salts (for free version).
 	 *
@@ -413,14 +411,6 @@ class Seculoco_Encryption_Handler_V2 {
 	}
 
 	/**
-	 * REMOVED: decrypt_entry_server_side()
-	 *
-	 * Server-side decryption violates zero-knowledge architecture.
-	 * ALL entries (FREE and PRO) must be decrypted client-side only.
-	 * Server returns encrypted packages; client handles decryption with appropriate keys.
-	 */
-
-	/**
 	 * Get the public key.
 	 *
 	 * Initializes free keys if they don't exist (admin only).
@@ -443,33 +433,6 @@ class Seculoco_Encryption_Handler_V2 {
 
 		return $public_key_free;
 	}
-
-	/**
-	 * REMOVED: initialize_pro_keys() - Moved to premium file.
-	 *
-	 * Pro-specific method for initializing passkey-wrapped encryption keys.
-	 * Now implemented in class-encryption-handler-v2__premium_only.php
-	 *
-	 * @see Seculoco_Encryption_Handler_V2_Premium::initialize_pro_keys()
-	 */
-
-	/**
-	 * REMOVED: delete_pro_keys() - Moved to premium file.
-	 *
-	 * Pro-specific method for deleting pro encryption keys.
-	 * Now implemented in class-encryption-handler-v2__premium_only.php
-	 *
-	 * @see Seculoco_Encryption_Handler_V2_Premium::delete_pro_keys()
-	 */
-
-	/**
-	 * REMOVED: wrap_private_key() - Moved to premium file.
-	 *
-	 * Pro-specific method for wrapping private keys with AES-256-GCM.
-	 * Now implemented in class-encryption-handler-v2__premium_only.php
-	 *
-	 * @see Seculoco_Encryption_Handler_V2_Premium::wrap_private_key()
-	 */
 
 	/**
 	 * Check if PRO encryption is active.

@@ -270,7 +270,6 @@ class Seculoco_Frontend_Handler {
 					</div>
 				<?php endif; ?>
 
-				<div id="seculoco-form-message" class="seculoco-form-message seculoco-hidden"></div>
 			</form>
 		</div>
 		<?php

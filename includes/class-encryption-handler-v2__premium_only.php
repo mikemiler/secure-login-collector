@@ -1,5 +1,4 @@
 <?php
-// phpcs:ignoreFile WordPress.Files.FileName.InvalidClassFileName -- Premium feature file.
 /**
  * Pro Encryption Handler - Premium Features
  *
