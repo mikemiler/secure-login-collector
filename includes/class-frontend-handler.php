@@ -332,22 +332,39 @@ class Seculoco_Frontend_Handler {
 		$metadata['login_url']  = sanitize_text_field( $metadata['login_url'] );
 		$metadata['created_at'] = isset( $metadata['created_at'] ) ? sanitize_text_field( $metadata['created_at'] ) : current_time( 'c' );
 
-		// AUTO-DETECT ENCRYPTION TYPE SERVER-SIDE.
-		// Ignore any frontend-provided encryption flags (isProEncrypted, credentialId).
-		// Determine encryption type based on current server configuration.
-		$is_pro_active      = get_option( 'seculoco_pro_keys_active', false );
-		$passkey_registered = get_option( 'seculoco_passkey_registered', false );
-		$is_pro_encrypted   = ( $is_pro_active && $passkey_registered );
+		/**
+		 * AUTO-DETECT ENCRYPTION TYPE SERVER-SIDE.
+		 * Ignore any frontend-provided encryption flags (isProEncrypted, credentialId).
+		 * Determine encryption type based on current server configuration.
+		 *
+		 * Filter: seculoco_determine_encryption_type
+		 * Allows the pro version to determine the encryption type and provide encryption metadata.
+		 *
+		 * @param array $encryption_metadata {
+		 *     Encryption metadata for the submission.
+		 *
+		 *     @type bool        $is_pro_encrypted Whether pro encryption is active.
+		 *     @type string|null $credential_id    Passkey credential ID for pro encryption.
+		 *     @type string      $encryption_type  Encryption type identifier.
+		 * }
+		 * @param array $metadata Submission metadata including email, name, login_url.
+		 *
+		 * @return array Modified encryption metadata.
+		 */
+		$encryption_metadata = apply_filters(
+			'seculoco_determine_encryption_type',
+			array(
+				'is_pro_encrypted' => false,
+				'credential_id'    => null,
+				'encryption_type'  => 'aes-rsa-v2',
+			),
+			$metadata
+		);
 
-		// If PRO encrypted, get the credential ID for later decryption.
-		// Use global passkey (site-wide, not per-user).
-		$server_credential_id = null;
-		if ( $is_pro_encrypted ) {
-			$passkey = get_option( 'seculoco_global_passkey' );
-			if ( is_array( $passkey ) && ! empty( $passkey['credential_id'] ) ) {
-				$server_credential_id = $passkey['credential_id'];
-			}
-		}
+		// Extract encryption metadata.
+		$is_pro_encrypted     = isset( $encryption_metadata['is_pro_encrypted'] ) ? (bool) $encryption_metadata['is_pro_encrypted'] : false;
+		$server_credential_id = isset( $encryption_metadata['credential_id'] ) ? $encryption_metadata['credential_id'] : null;
+		$encryption_type      = isset( $encryption_metadata['encryption_type'] ) ? $encryption_metadata['encryption_type'] : 'aes-rsa-v2';
 
 		// Create encrypted package for storage.
 		$encrypted_package = array(
@@ -360,8 +377,8 @@ class Seculoco_Frontend_Handler {
 			'version'         => 2, // Mark as v2 format.
 		);
 
-		// Add encryption metadata.
-		$metadata['encryption_type']    = $is_pro_encrypted ? 'aes-rsa-passkey-v2' : 'aes-rsa-v2';
+		// Add encryption metadata (uses values from filter or defaults).
+		$metadata['encryption_type']    = $encryption_type;
 		$metadata['encryption_version'] = 2;
 		$metadata['is_pro_encrypted']   = $is_pro_encrypted;
 

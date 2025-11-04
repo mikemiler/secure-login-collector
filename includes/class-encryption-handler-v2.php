@@ -18,7 +18,27 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Encryption Handler V2 - Base Class (Free Version)
  *
  * Handles free version encryption: RSA-2048 + AES-256-CBC with WordPress salts.
- * Pro version adds passkey-based key wrapping for premium encryption keys.
+ * Pro version extends functionality via hooks without modifying base class.
+ *
+ * EXTENSION POINTS FOR PRO VERSION:
+ *
+ * 1. Filter: 'seculoco_get_public_key'
+ *    - Allows pro version to return pro public key instead of free key
+ *    - Parameters: $public_key_free (string)
+ *    - Return: Modified public key (string)
+ *    - Used in: handle_get_public_key()
+ *
+ * 2. Action: 'seculoco_get_wrapped_private_key_request'
+ *    - Allows pro version to intercept private key requests
+ *    - Parameters: $entry_id (int), $nonce (string)
+ *    - Pro handler checks entry encryption type and sends JSON response if pro
+ *    - Used in: handle_get_wrapped_private_key()
+ *
+ * ARCHITECTURAL PATTERN:
+ * - Base class provides free functionality and extension points (hooks)
+ * - Premium file hooks into these extension points to add pro features
+ * - No conditional logic or license checks in base class
+ * - Clean separation: Freemius SDK strips premium files for free version
  */
 class Seculoco_Encryption_Handler_V2 {
 
@@ -161,28 +181,33 @@ class Seculoco_Encryption_Handler_V2 {
 	 *
 	 * Returns PRO key if available (passkey registered), otherwise FREE key.
 	 * Frontend does NOT know which type it received - keeps PRO/FREE status private.
+	 *
+	 * EXTENSION POINT: Pro version can filter 'seculoco_get_public_key' to return
+	 * pro key instead of free key when pro keys are active.
 	 */
 	public function handle_get_public_key() {
-		// Check if PRO keys are active and passkey is registered.
-		$is_pro_active      = get_option( 'seculoco_pro_keys_active', false );
-		$passkey_registered = get_option( 'seculoco_passkey_registered', false );
-
-		// Return PRO key if available, otherwise FREE key.
-		if ( $is_pro_active && $passkey_registered ) {
-			$public_key = get_option( 'seculoco_public_key_pro' );
-		} else {
-			$public_key = get_option( 'seculoco_public_key_free' );
-		}
+		// Get free version public key.
+		$public_key_free = get_option( 'seculoco_public_key_free' );
 
 		// Initialize free keys if not exists.
-		if ( ! $public_key ) {
+		if ( ! $public_key_free ) {
 			$result = $this->initialize_free_keys();
 			if ( is_wp_error( $result ) ) {
 				wp_send_json_error( 'Failed to initialize encryption keys: ' . $result->get_error_message() );
 				return;
 			}
-			$public_key = get_option( 'seculoco_public_key_free' );
+			$public_key_free = get_option( 'seculoco_public_key_free' );
 		}
+
+		/**
+		 * Filter the public key to use for encryption.
+		 *
+		 * Pro version can hook into this filter to return pro key when available.
+		 *
+		 * @since 1.0.0
+		 * @param string $public_key_free The free version public key (default).
+		 */
+		$public_key = apply_filters( 'seculoco_get_public_key', $public_key_free );
 
 		if ( empty( $public_key ) ) {
 			wp_send_json_error( 'No encryption key available' );
@@ -211,6 +236,10 @@ class Seculoco_Encryption_Handler_V2 {
 	 * 2. Nonce verification is required
 	 * 3. Connection must be over HTTPS
 	 * 4. Decryption happens client-side (server never sees passwords)
+	 *
+	 * EXTENSION POINT: Pro version can hook into 'seculoco_get_wrapped_private_key_request'
+	 * action to intercept pro key requests and handle them with passkey authentication.
+	 * If pro handler sends JSON response (wp_send_json_*), this method exits early.
 	 */
 	public function handle_get_wrapped_private_key() {
 		// Check admin permissions.
@@ -230,84 +259,48 @@ class Seculoco_Encryption_Handler_V2 {
 		// Get entry_id to determine encryption type.
 		$entry_id = isset( $_POST['entry_id'] ) ? absint( $_POST['entry_id'] ) : 0;
 
-		// Default to free encryption.
-		$key_type        = 'free';
-		$encryption_type = 'aes-rsa-v2';
+		/**
+		 * Action hook for pro key retrieval.
+		 *
+		 * Pro version hooks here to check if this entry uses pro encryption.
+		 * If yes, pro handler sends JSON response and exits.
+		 * If no, execution continues to free key handling below.
+		 *
+		 * @since 1.0.0
+		 * @param int    $entry_id The entry ID being decrypted.
+		 * @param string $nonce    The verified nonce.
+		 */
+		do_action( 'seculoco_get_wrapped_private_key_request', $entry_id, $nonce );
 
-		// If entry_id provided, check its encryption type.
-		if ( $entry_id > 0 ) {
-			global $wpdb;
-			$table_name = $wpdb->prefix . 'seculoco_data';
+		// If pro handler sent response, it would have exited by now.
+		// Continue with free key handling.
 
-			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-			$entry = $wpdb->get_row(
-				$wpdb->prepare(
-					"SELECT metadata FROM {$table_name} WHERE id = %d",
-					$entry_id
-				)
-			);
-			// phpcs:enable
+		// FREE: Return private key decrypted with WP salts.
+		$encrypted_key = get_option( 'seculoco_private_key_free_encrypted' );
 
-			if ( $entry && ! empty( $entry->metadata ) ) {
-				$metadata        = json_decode( $entry->metadata, true );
-				$encryption_type = $metadata['encryption_type'] ?? 'aes-rsa-v2';
-
-				// Check if this entry uses PRO encryption.
-				if ( 'aes-rsa-passkey-v2' === $encryption_type || 'rsa_passkey_protected' === $encryption_type ) {
-					$key_type = 'pro';
-				}
-			}
+		if ( ! $encrypted_key ) {
+			wp_send_json_error( 'No private key available' );
+			return;
 		}
 
-		// Return appropriate key based on encryption type.
-		if ( 'pro' === $key_type ) {
-			// PRO: Return wrapped private key that requires passkey to unwrap.
-			$wrapped_key = get_option( 'seculoco_wrapped_private_key_pro' );
-
-			if ( ! $wrapped_key ) {
-				wp_send_json_error( 'No PRO private key available' );
-				return;
-			}
-
-			// Log this security-sensitive operation.
-			$this->log_key_access( get_current_user_id(), 'pro' );
-
-			// Return wrapped key - client must authenticate with passkey to unwrap.
-			wp_send_json_success(
-				array(
-					'wrapped_key' => $wrapped_key,
-					'type'        => 'pro',
-					'message'     => 'PRO key - passkey authentication required',
-				)
-			);
-		} else {
-			// FREE: Return private key decrypted with WP salts.
-			$encrypted_key = get_option( 'seculoco_private_key_free_encrypted' );
-
-			if ( ! $encrypted_key ) {
-				wp_send_json_error( 'No private key available' );
-				return;
-			}
-
-			// For free version, decrypt with WP salts and return.
-			$private_key = $this->decrypt_with_wp_salts( $encrypted_key );
-			if ( ! $private_key ) {
-				wp_send_json_error( 'Failed to decrypt private key' );
-				return;
-			}
-
-			// Log this security-sensitive operation.
-			$this->log_key_access( get_current_user_id(), 'free' );
-
-			// Return as a "wrapped" format for consistency.
-			wp_send_json_success(
-				array(
-					'private_key' => base64_encode( $private_key ),
-					'type'        => 'free',
-					'message'     => 'Free version key - no passkey required',
-				)
-			);
+		// For free version, decrypt with WP salts and return.
+		$private_key = $this->decrypt_with_wp_salts( $encrypted_key );
+		if ( ! $private_key ) {
+			wp_send_json_error( 'Failed to decrypt private key' );
+			return;
 		}
+
+		// Log this security-sensitive operation.
+		$this->log_key_access( get_current_user_id(), 'free' );
+
+		// Return as a "wrapped" format for consistency.
+		wp_send_json_success(
+			array(
+				'private_key' => base64_encode( $private_key ),
+				'type'        => 'free',
+				'message'     => 'Free version key - no passkey required',
+			)
+		);
 	}
 
 	/**
@@ -371,10 +364,12 @@ class Seculoco_Encryption_Handler_V2 {
 	/**
 	 * Log key access for audit trail.
 	 *
+	 * Marked protected to allow premium class to use it.
+	 *
 	 * @param int    $user_id User accessing the key.
 	 * @param string $type    Type of key accessed (default: 'free').
 	 */
-	private function log_key_access( $user_id, $type = 'free' ) {
+	protected function log_key_access( $user_id, $type = 'free' ) {
 		$log = get_option( 'seculoco_key_access_log', array() );
 
 		// Keep only last 100 entries.
@@ -450,119 +445,31 @@ class Seculoco_Encryption_Handler_V2 {
 	}
 
 	/**
-	 * Initialize PRO keys with passkey wrapping.
+	 * REMOVED: initialize_pro_keys() - Moved to premium file.
 	 *
-	 * @param string $passkey_derived_key 32-byte key derived from passkey.
-	 * @return array|WP_Error Result of initialization.
+	 * Pro-specific method for initializing passkey-wrapped encryption keys.
+	 * Now implemented in class-encryption-handler-v2__premium_only.php
+	 *
+	 * @see Seculoco_Encryption_Handler_V2_Premium::initialize_pro_keys()
 	 */
-	public function initialize_pro_keys( $passkey_derived_key ) {
-		// Verify pro license.
-		if ( ! Seculoco_License_Manager::has_pro_license() ) {
-			return new WP_Error( 'no_pro_license', 'Pro license required for passkey encryption' );
-		}
-
-		// Check if pro keys already exist.
-		$public_key_pro     = get_option( 'seculoco_public_key_pro' );
-		$wrapped_key_pro    = get_option( 'seculoco_wrapped_private_key_pro' );
-
-		if ( $public_key_pro && $wrapped_key_pro ) {
-			return array(
-				'status' => 'already_initialized',
-				'type'   => 'pro',
-			);
-		}
-
-		// Ensure free keys exist first.
-		$free_result = $this->initialize_free_keys();
-		if ( is_wp_error( $free_result ) && 'already_initialized' !== $free_result['status'] ) {
-			return $free_result;
-		}
-
-		// Generate new RSA keypair for pro version.
-		$keypair = $this->generate_rsa_keypair();
-		if ( is_wp_error( $keypair ) ) {
-			return $keypair;
-		}
-
-		// Store public key.
-		update_option( 'seculoco_public_key_pro', $keypair['public'] );
-
-		// Wrap private key with passkey-derived key.
-		$wrapped_private = $this->wrap_private_key( $keypair['private'], $passkey_derived_key );
-		if ( is_wp_error( $wrapped_private ) ) {
-			// Cleanup on failure.
-			delete_option( 'seculoco_public_key_pro' );
-			return $wrapped_private;
-		}
-
-		// Store wrapped private key.
-		update_option( 'seculoco_wrapped_private_key_pro', $wrapped_private );
-
-		// Set pro keys active flag.
-		update_option( 'seculoco_pro_keys_active', true );
-
-		// Log initialization.
-		$this->log_key_operation( 'pro_keys_initialized' );
-
-		return array(
-			'status'  => 'success',
-			'type'    => 'pro',
-			'message' => 'Pro keys initialized with passkey wrapping',
-		);
-	}
 
 	/**
-	 * Delete PRO encryption keys.
+	 * REMOVED: delete_pro_keys() - Moved to premium file.
 	 *
-	 * @return array Result of deletion.
+	 * Pro-specific method for deleting pro encryption keys.
+	 * Now implemented in class-encryption-handler-v2__premium_only.php
+	 *
+	 * @see Seculoco_Encryption_Handler_V2_Premium::delete_pro_keys()
 	 */
-	public function delete_pro_keys() {
-		delete_option( 'seculoco_public_key_pro' );
-		delete_option( 'seculoco_wrapped_private_key_pro' );
-		delete_option( 'seculoco_pro_keys_active' );
-
-		$this->log_key_operation( 'pro_keys_deleted' );
-
-		return array(
-			'status'  => 'success',
-			'message' => 'Pro keys deleted',
-		);
-	}
 
 	/**
-	 * Wrap private key with passkey-derived key using AES-256-GCM.
+	 * REMOVED: wrap_private_key() - Moved to premium file.
 	 *
-	 * @param string $private_key RSA private key to wrap.
-	 * @param string $wrapping_key 32-byte wrapping key.
-	 * @return array|WP_Error Wrapped key data or error.
+	 * Pro-specific method for wrapping private keys with AES-256-GCM.
+	 * Now implemented in class-encryption-handler-v2__premium_only.php
+	 *
+	 * @see Seculoco_Encryption_Handler_V2_Premium::wrap_private_key()
 	 */
-	protected function wrap_private_key( $private_key, $wrapping_key ) {
-		// Generate 12-byte IV for AES-GCM (NIST recommended size).
-		$iv = random_bytes( 12 );
-
-		$tag = '';
-		$encrypted = openssl_encrypt(
-			$private_key,
-			'AES-256-GCM',
-			$wrapping_key,
-			OPENSSL_RAW_DATA,
-			$iv,
-			$tag,
-			'',
-			16
-		);
-
-		if ( false === $encrypted ) {
-			return new WP_Error( 'encryption_failed', 'Failed to wrap private key' );
-		}
-
-		return array(
-			'ciphertext' => base64_encode( $encrypted ),
-			'iv'         => base64_encode( $iv ),
-			'tag'        => base64_encode( $tag ),
-			'algorithm'  => 'AES-256-GCM',
-		);
-	}
 
 	/**
 	 * Check if PRO encryption is active.

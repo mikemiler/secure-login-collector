@@ -143,6 +143,7 @@ class SecureLoginCollector {
 			// Load pro extension files (hook into free version via filters/actions).
 			// These files extend the free version with pro features.
 			$premium_extension_files = array(
+				'includes/class-encryption-handler-v2__premium_only.php',
 				'includes/class-frontend-handler__premium_only.php',
 				'includes/class-admin-interface__premium_only.php',
 				'includes/class-settings-manager__premium_only.php',
@@ -185,7 +186,12 @@ class SecureLoginCollector {
 	 * Initialize plugin components.
 	 */
 	private function init_components() {
-		$this->encryption_handler = new Seculoco_Encryption_Handler_V2();
+		// Initialize encryption handler - use premium class if available.
+		if ( class_exists( 'Seculoco_Encryption_Handler_V2_Premium' ) ) {
+			$this->encryption_handler = new Seculoco_Encryption_Handler_V2_Premium();
+		} else {
+			$this->encryption_handler = new Seculoco_Encryption_Handler_V2();
+		}
 		$this->database_manager   = new Seculoco_Database_Manager( $this->table_name );
 
 		// Initialize admin interface - use premium class if available.
