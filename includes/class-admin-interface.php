@@ -639,7 +639,6 @@ class Seculoco_Admin_Interface {
 		add_action( 'wp_ajax_seculoco_get_encryption_info', array( $this, 'handle_get_encryption_info' ) );
 		add_action( 'wp_ajax_seculoco_delete_entry', array( $this, 'handle_delete_ajax' ) );
 		add_action( 'wp_ajax_seculoco_extend_entry', array( $this, 'handle_extend_ajax' ) );
-		add_action( 'wp_ajax_seculoco_save_manual_entry', array( $this, 'handle_save_manual_login_data' ) );
 		add_action( 'wp_ajax_seculoco_update_metadata', array( $this, 'handle_update_metadata_ajax' ) );
 		add_action( 'wp_ajax_seculoco_bulk_export', array( $this, 'handle_bulk_export_ajax' ) );
 
@@ -789,13 +788,9 @@ class Seculoco_Admin_Interface {
 			'seculocoMessages',
 			array(
 				'noDecryptedData'                     => __( 'No decrypted data available. Please decrypt the data first.', 'secure-login-collector' ),
-				'fillAllFields'                       => __( 'Please fill in all required fields.', 'secure-login-collector' ),
 				'saving'                              => __( 'Saving...', 'secure-login-collector' ),
-				'dataSavedSuccess'                    => __( 'Login data saved successfully!', 'secure-login-collector' ),
-				'errorSavingData'                     => __( 'Error saving data: ', 'secure-login-collector' ),
 				'unknownError'                        => __( 'Unknown error', 'secure-login-collector' ),
 				'networkError'                        => __( 'Network error occurred while saving data.', 'secure-login-collector' ),
-				'saveEntry'                           => __( 'Save Entry', 'secure-login-collector' ),
 				'bulkDecryptWithPasskey'              => __( 'Bulk Decrypt with Passkey', 'secure-login-collector' ),
 				'authenticateWithPasskeyToDecryptAll' => __( 'Authenticate with Passkey to Decrypt All', 'secure-login-collector' ),
 				'bulkDecryptionCompleted'             => __( 'Bulk decryption completed. CSV file downloaded.', 'secure-login-collector' ),
@@ -828,7 +823,6 @@ class Seculoco_Admin_Interface {
 		?>
 		<div class="wrap seculoco-admin-wrap">
 			<h1 class="wp-heading-inline"><?php echo esc_html__( 'Secure Login Data', 'secure-login-collector' ); ?></h1>
-			<a href="#" class="page-title-action" id="add-new-entry-btn"><?php echo esc_html__( 'Add New Entry', 'secure-login-collector' ); ?></a>
 			<hr class="wp-header-end">
 
 			
@@ -851,89 +845,6 @@ class Seculoco_Admin_Interface {
 				</div>
 			</div>
 
-			<!-- Add New Entry Modal -->
-			<div id="add-new-entry-modal" style="display: none; position: fixed; z-index: 100000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
-				<div style="background-color: #fff; margin: 5% auto; padding: 20px; border-radius: 5px; width: 80%; max-width: 600px; position: relative;">
-					<span class="close-modal" style="color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer;">&times;</span>
-					<h2><?php echo esc_html__( 'Add New Login Data Entry', 'secure-login-collector' ); ?></h2>
-
-					<form id="manual-add-form">
-						<table class="form-table">
-							<tr>
-								<th scope="row">
-									<label for="manual_email"><?php echo esc_html__( 'Email Address', 'secure-login-collector' ); ?> <span style="color: red;">*</span></label>
-								</th>
-								<td>
-									<input type="email" id="manual_email" name="manual_email" class="regular-text" required>
-								</td>
-							</tr>
-							<tr>
-								<th scope="row">
-									<label for="manual_name"><?php echo esc_html__( 'Name', 'secure-login-collector' ); ?> <span style="color: red;">*</span></label>
-								</th>
-								<td>
-									<input type="text" id="manual_name" name="manual_name" class="regular-text" required>
-								</td>
-							</tr>
-							<tr>
-								<th scope="row">
-									<label for="manual_login_url"><?php echo esc_html__( 'Login URL', 'secure-login-collector' ); ?> <span style="color: red;">*</span></label>
-								</th>
-								<td>
-									<input type="text" id="manual_login_url" name="manual_login_url" class="regular-text" required>
-									<p class="description"><?php echo esc_html__( 'Login URL or service name where these credentials are used.', 'secure-login-collector' ); ?></p>
-								</td>
-							</tr>
-							<tr>
-								<th scope="row">
-									<label for="manual_username_email"><?php echo esc_html__( 'Username/Email', 'secure-login-collector' ); ?> <span style="color: red;">*</span></label>
-								</th>
-								<td>
-									<input type="text" id="manual_username_email" name="manual_username_email" class="regular-text" required>
-									<p class="description"><?php echo esc_html__( 'The username or email address used to log into this service.', 'secure-login-collector' ); ?></p>
-								</td>
-							</tr>
-							<tr>
-								<th scope="row">
-									<label for="manual_password"><?php echo esc_html__( 'Password', 'secure-login-collector' ); ?> <span style="color: red;">*</span></label>
-								</th>
-								<td>
-									<input type="password" id="manual_password" name="manual_password" class="regular-text" required>
-									<p class="description"><?php echo esc_html__( 'The password for this account.', 'secure-login-collector' ); ?></p>
-								</td>
-							</tr>
-							<tr>
-								<th scope="row">
-									<label for="manual_additional_notes"><?php echo esc_html__( 'Additional Notes', 'secure-login-collector' ); ?></label>
-								</th>
-								<td>
-									<textarea id="manual_additional_notes" name="manual_additional_notes" rows="4" class="large-text" placeholder="<?php echo esc_attr__( 'Any additional information, security questions, backup codes, etc. (optional)', 'secure-login-collector' ); ?>"></textarea>
-									<p class="description"><?php echo esc_html__( 'Optional: Any additional information like security questions, backup codes, or special instructions.', 'secure-login-collector' ); ?></p>
-								</td>
-							</tr>
-							<tr>
-								<th scope="row">
-									<?php echo esc_html__( 'Encryption Method', 'secure-login-collector' ); ?>
-								</th>
-								<td>
-									<strong><?php echo esc_html__( 'Secure (AES-256 + RSA-2048)', 'secure-login-collector' ); ?></strong>
-									<p class="description"><?php echo esc_html__( 'Standard encryption with AES-256 and RSA-2048 protection.', 'secure-login-collector' ); ?></p>
-								</td>
-							</tr>
-						</table>
-
-						<p class="submit">
-							<button type="submit" class="button button-primary" id="save-manual-entry">
-								<?php echo esc_html__( 'Save Entry', 'secure-login-collector' ); ?>
-							</button>
-							<button type="button" class="button" id="cancel-manual-entry">
-								<?php echo esc_html__( 'Cancel', 'secure-login-collector' ); ?>
-							</button>
-						</p>
-					</form>
-				</div>
-			</div>
-		</div>
 		<?php
 	}
 
@@ -1073,152 +984,6 @@ class Seculoco_Admin_Interface {
 	}
 
 	/**
-	 * Handle save manual login data AJAX request.
-	 */
-	public function handle_save_manual_login_data() {
-		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) ), 'seculoco_nonce' ) || ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( __( 'Invalid security token or insufficient permissions.', 'secure-login-collector' ) );
-			return;
-		}
-
-		// Sanitize and validate input.
-		$login_data = sanitize_textarea_field( wp_unslash( $_POST['login_data'] ?? '' ) );
-		$metadata   = sanitize_textarea_field( wp_unslash( $_POST['metadata'] ?? '' ) ); // Sanitize JSON string before decode.
-
-		if ( empty( $login_data ) || empty( $metadata ) ) {
-			wp_send_json_error( __( 'Missing required data.', 'secure-login-collector' ) );
-			return;
-		}
-
-		// Validate metadata is valid JSON.
-		$metadata_array = json_decode( $metadata, true );
-		if ( JSON_ERROR_NONE !== json_last_error() ) {
-			wp_send_json_error( __( 'Invalid metadata format.', 'secure-login-collector' ) );
-			return;
-		}
-
-		// Validate required metadata fields.
-		if (
-			! isset( $metadata_array['email'] ) || empty( $metadata_array['email'] )
-			|| ! isset( $metadata_array['name'] ) || empty( $metadata_array['name'] )
-			|| ! isset( $metadata_array['login_url'] ) || empty( $metadata_array['login_url'] )
-		) {
-			wp_send_json_error( __( 'Missing required metadata fields.', 'secure-login-collector' ) );
-			return;
-		}
-
-		// Sanitize metadata fields.
-		$metadata_array['email']          = sanitize_email( $metadata_array['email'] );
-		$metadata_array['name']           = sanitize_text_field( $metadata_array['name'] );
-		$metadata_array['login_url']      = sanitize_text_field( $metadata_array['login_url'] );
-		$metadata_array['manually_added'] = true;
-		$metadata_array['added_by_user']  = get_current_user_id();
-		$metadata_array['created_at']     = current_time( 'c' );
-
-		// The login_data already contains the structured data to encrypt.
-		$data_to_encrypt = $login_data;
-
-		// Create v2 format encryption package - matching frontend-secure.js encryption flow.
-		// Generate AES key and IV.
-		$aes_key = openssl_random_pseudo_bytes( 32 ); // 256-bit key
-		$iv      = openssl_random_pseudo_bytes( 12 ); // 96-bit IV for GCM
-		$salt    = openssl_random_pseudo_bytes( 32 ); // 32 bytes salt like frontend
-
-		// Encrypt the data with AES-GCM.
-		$cipher            = 'aes-256-gcm';
-		$tag               = '';
-		$encrypted_content = openssl_encrypt(
-			$data_to_encrypt,
-			$cipher,
-			$aes_key,
-			OPENSSL_RAW_DATA,
-			$iv,
-			$tag
-		);
-
-		if ( false === $encrypted_content ) {
-			wp_send_json_error( __( 'AES encryption failed.', 'secure-login-collector' ) );
-			return;
-		}
-
-		// Combine encrypted content with auth tag for GCM.
-		$encrypted_with_tag = $encrypted_content . $tag;
-
-		// Get RSA public key.
-		$public_key = $this->encryption_handler->get_public_key();
-		if ( is_wp_error( $public_key ) ) {
-			wp_send_json_error( __( 'RSA keys not available.', 'secure-login-collector' ) );
-			return;
-		}
-
-		// RSA encrypt the AES key (raw bytes, not base64).
-		$encrypted_aes_key = '';
-		if ( ! openssl_public_encrypt( $aes_key, $encrypted_aes_key, $public_key, OPENSSL_PKCS1_OAEP_PADDING ) ) {
-			wp_send_json_error( __( 'RSA key encryption failed.', 'secure-login-collector' ) );
-			return;
-		}
-
-		// Allow pro version to modify encryption package via filter.
-		$encryption_package_data = apply_filters(
-			'seculoco_manual_entry_encryption_package',
-			array(
-				'aes_key'           => $aes_key,
-				'encrypted_aes_key' => $encrypted_aes_key,
-				'encrypted_content' => $encrypted_with_tag,
-				'iv'                => $iv,
-				'salt'              => $salt,
-			)
-		);
-
-		// Create the v2 encrypted package matching frontend format exactly.
-		$encrypted_package = array(
-			'encryptedData'   => base64_encode( $encryption_package_data['encrypted_content'] ),
-			'rsaEncryptedKey' => base64_encode( $encryption_package_data['encrypted_aes_key'] ),
-			'iv'              => base64_encode( $encryption_package_data['iv'] ),
-			'salt'            => base64_encode( $encryption_package_data['salt'] ),
-			'isProEncrypted'  => false,
-			'credentialId'    => null,
-			'version'         => 2,
-		);
-
-		// Update metadata for v2 format.
-		$metadata_array['encryption_type']    = 'aes-rsa-v2';
-		$metadata_array['encryption_version'] = 2;
-		$metadata_array['is_pro_encrypted']   = false;
-
-		// Store as JSON-encoded package.
-		$encrypted_data = wp_json_encode( $encrypted_package );
-
-		// Re-encode the metadata.
-		$metadata = wp_json_encode( $metadata_array );
-
-		// Calculate retention_until based on expiration settings.
-		$expiration_days = get_option( 'seculoco_expiration_days', 30 );
-		$retention_until = null;
-		if ( $expiration_days > 0 ) {
-			$retention_until = gmdate( 'Y-m-d H:i:s', strtotime( "+{$expiration_days} days" ) );
-		}
-
-		// Prepare data for database insertion.
-		$data = array(
-			'encrypted_data'  => $encrypted_data, // Already JSON-encoded v2 package.
-			'metadata'        => $metadata,
-			'user_id'         => get_current_user_id(), // Manual entries are associated with the admin user.
-			'ip_address'      => SecureLoginCollector::get_client_ip(),
-			'user_agent'      => sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ?? '' ) ),
-			'created_at'      => current_time( 'mysql' ),
-			'retention_until' => $retention_until,
-		);
-
-		// Insert into database using database manager.
-		$result = $this->database_manager->insert_entry( $data );
-
-		if ( false === $result ) {
-			wp_send_json_error( __( 'Failed to save data to database.', 'secure-login-collector' ) );
-			return;
-		}
-
-		wp_send_json_success( __( 'Login data saved successfully.', 'secure-login-collector' ) );
 	}
 
 	/**
