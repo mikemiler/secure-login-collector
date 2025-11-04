@@ -25,6 +25,38 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 function seculoco_fs_uninstall_cleanup() {
 	try {
+		// ============================================
+		// CRITICAL: Check if Pro version is active
+		// ============================================
+		// If user upgraded to Pro and is now deleting Free plugin,
+		// we must NOT delete data as Pro version still needs it!
+		if ( ! function_exists( 'is_plugin_active' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/plugin.php';
+		}
+
+		// Check for active Pro version.
+		$pro_plugin_paths = array(
+			'secure-login-collector-pro/secure-login-collector.php',
+			'secure-login-collector-pro/secure-login-collector-pro.php',
+		);
+
+		foreach ( $pro_plugin_paths as $pro_path ) {
+			if ( is_plugin_active( $pro_path ) ) {
+				if ( defined( 'WP_DEBUG' ) && WP_DEBUG === true ) {
+					error_log( 'Secure Login Collector: Pro version active, preserving data during Free plugin uninstall.' );
+				}
+				return; // Exit without deleting - Pro version needs this data!
+			}
+		}
+
+		// Also check if we're flagged as using pro version.
+		if ( get_option( 'seculoco_using_pro_version', false ) ) {
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG === true ) {
+				error_log( 'Secure Login Collector: Pro version flag detected, preserving data.' );
+			}
+			return;
+		}
+
 		// Check if user has opted to delete all data on uninstall.
 		$delete_on_uninstall = get_option( 'seculoco_delete_on_uninstall', false );
 
