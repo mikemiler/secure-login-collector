@@ -19,33 +19,33 @@ class StatusModal {
 
     createModal() {
         const stepsHTML = this.steps.map((step, index) => `
-            <div class="status-step pending" id="step-${index}">
-                <div class="status-step-icon">${index + 1}</div>
-                <div class="status-step-text">${step.text}</div>
+            <div class="seculoco-status-step seculoco-pending" id="step-${index}">
+                <div class="seculoco-status-step-icon">${index + 1}</div>
+                <div class="seculoco-status-step-text">${step.text}</div>
             </div>
         `).join('');
 
         const modalHTML = `
-            <div class="status-modal-overlay" id="statusModal">
-                <div class="status-modal">
-                    <div class="status-icon processing" id="statusIcon">
-                        <div class="spinner"></div>
+            <div class="seculoco-status-modal-overlay" id="statusModal">
+                <div class="seculoco-status-modal">
+                    <div class="seculoco-status-icon seculoco-processing" id="statusIcon">
+                        <div class="seculoco-spinner"></div>
                     </div>
-                    <div class="status-text" id="statusText">Processing your secure submission...</div>
-                    <div class="status-checklist">
+                    <div class="seculoco-status-text" id="statusText">Processing your secure submission...</div>
+                    <div class="seculoco-status-checklist">
                         ${stepsHTML}
                     </div>
-                    <div class="status-progress">
-                        <div class="status-progress-bar" id="statusProgressBar"></div>
+                    <div class="seculoco-status-progress">
+                        <div class="seculoco-status-progress-bar" id="statusProgressBar"></div>
                     </div>
-                    <button class="status-close-btn" id="statusCloseBtn" style="display: none;">Close</button>
+                    <button class="seculoco-status-close-btn" id="statusCloseBtn" style="display: none;">Close</button>
                 </div>
             </div>
         `;
-        
+
         jQuery('body').append(modalHTML);
         this.modal = jQuery('#statusModal');
-        
+
         // Close button handler
         jQuery('#statusCloseBtn').on('click', () => {
             this.hide();
@@ -55,60 +55,60 @@ class StatusModal {
     show() {
         this.currentStep = 0;
         this.resetModal();
-        this.modal.addClass('show');
+        this.modal.addClass('seculoco-show');
         // Start with first step as current
         this.setCurrentStep(0);
     }
 
     hide() {
-        this.modal.removeClass('show');
+        this.modal.removeClass('seculoco-show');
         setTimeout(() => {
             // Completely remove the modal from DOM
             if (this.modal && this.modal.length) {
                 this.modal.remove();
             }
             // Clear any remaining overlays to ensure no blocking elements
-            jQuery('.status-modal-overlay').remove();
+            jQuery('.seculoco-status-modal-overlay').remove();
             this.modal = null;
         }, 300);
     }
 
     resetModal() {
-        jQuery('#statusIcon').removeClass('success error').addClass('processing');
-        jQuery('#statusIcon').html('<div class="spinner"></div>');
-        jQuery('#statusProgressBar').css('width', '0%').removeClass('seculoco-progress-bar-width-5 seculoco-progress-bar-width-100');
+        jQuery('#statusIcon').removeClass('seculoco-success seculoco-error').addClass('seculoco-processing');
+        jQuery('#statusIcon').html('<div class="seculoco-spinner"></div>');
+        jQuery('#statusProgressBar').css('width', '0%');
         jQuery('#statusCloseBtn').hide();
-        
+
         // Reset all steps to pending
-        jQuery('.status-step').removeClass('current completed').addClass('pending');
-        jQuery('.status-step-icon').text(function(index) {
+        jQuery('.seculoco-status-step').removeClass('seculoco-current seculoco-completed').addClass('seculoco-pending');
+        jQuery('.seculoco-status-step-icon').text(function(index) {
             return index + 1;
         });
     }
 
     setCurrentStep(stepIndex) {
         // Mark this step as current
-        jQuery(`#step-${stepIndex}`).removeClass('pending completed').addClass('current');
-        
+        jQuery(`#step-${stepIndex}`).removeClass('seculoco-pending seculoco-completed').addClass('seculoco-current');
+
         // Update progress
         const progress = ((stepIndex + 1) / this.steps.length) * 100;
-        jQuery('#statusProgressBar').removeClass('seculoco-progress-bar-width-5 seculoco-progress-bar-width-100').css('width', progress + '%');
+        jQuery('#statusProgressBar').css('width', progress + '%');
     }
 
     async nextStep() {
         // Complete the current step if it exists
         if (this.currentStep < this.steps.length) {
             // Mark current step as completed with checkmark
-            jQuery(`#step-${this.currentStep}`).removeClass('current').addClass('completed');
-            jQuery(`#step-${this.currentStep} .status-step-icon`).text('✓');
-            
+            jQuery(`#step-${this.currentStep}`).removeClass('seculoco-current').addClass('seculoco-completed');
+            jQuery(`#step-${this.currentStep} .seculoco-status-step-icon`).text('✓');
+
             this.currentStep++;
-            
+
             // Set next step as current if it exists
             if (this.currentStep < this.steps.length) {
                 this.setCurrentStep(this.currentStep);
             }
-            
+
             // Wait at least 1 second per step
             return new Promise(resolve => {
                 setTimeout(resolve, 1000);
@@ -119,23 +119,23 @@ class StatusModal {
     showSuccess(message = 'Data sent successfully!') {
         // Complete the final step
         if (this.currentStep < this.steps.length) {
-            jQuery(`#step-${this.currentStep}`).removeClass('current').addClass('completed');
-            jQuery(`#step-${this.currentStep} .status-step-icon`).text('✓');
+            jQuery(`#step-${this.currentStep}`).removeClass('seculoco-current').addClass('seculoco-completed');
+            jQuery(`#step-${this.currentStep} .seculoco-status-step-icon`).text('✓');
         }
-        
+
         // Ensure all steps are marked as completed
-        jQuery('.status-step').removeClass('current pending').addClass('completed');
-        jQuery('.status-step-icon').text('✓');
-        
-        jQuery('#statusIcon').removeClass('processing error').addClass('success');
+        jQuery('.seculoco-status-step').removeClass('seculoco-current seculoco-pending').addClass('seculoco-completed');
+        jQuery('.seculoco-status-step-icon').text('✓');
+
+        jQuery('#statusIcon').removeClass('seculoco-processing seculoco-error').addClass('seculoco-success');
         jQuery('#statusIcon').html('✓');
         jQuery('#statusText').text('Success!');
-        jQuery('#statusProgressBar').removeClass('seculoco-progress-bar-width-5').addClass('seculoco-progress-bar-width-100').css('width', '');
+        jQuery('#statusProgressBar').css('width', '100%');
         jQuery('#statusCloseBtn').show();
     }
 
     showError(message = 'Something went wrong') {
-        jQuery('#statusIcon').removeClass('processing success').addClass('error');
+        jQuery('#statusIcon').removeClass('seculoco-processing seculoco-success').addClass('seculoco-error');
         jQuery('#statusIcon').html('✗');
         jQuery('#statusText').text('Error: ' + message);
         jQuery('#statusCloseBtn').show();
@@ -145,7 +145,7 @@ class StatusModal {
 jQuery(document).ready(function ($) {
 
     // Password visibility toggle functionality
-    $('.password-toggle-btn').on('click', function () {
+    $('.seculoco-password-toggle-btn').on('click', function () {
         const $button = $(this);
         const $passwordField = $button.siblings('input[type="password"], input[type="text"]');
         const $icon = $button.find('.dashicons');
@@ -193,10 +193,10 @@ jQuery(document).ready(function ($) {
     async function encryptWithAES(data, key) {
         const encoder = new TextEncoder();
         const dataBuffer = encoder.encode(data);
-        
+
         // Generate random IV
         const iv = window.crypto.getRandomValues(new Uint8Array(12));
-        
+
         // Encrypt
         const encrypted = await window.crypto.subtle.encrypt(
             {
@@ -206,7 +206,7 @@ jQuery(document).ready(function ($) {
             key,
             dataBuffer
         );
-        
+
         return {
             encrypted: new Uint8Array(encrypted),
             iv: iv
@@ -217,7 +217,7 @@ jQuery(document).ready(function ($) {
     async function encryptWithRSA(data, publicKeyPem) {
         try {
             const publicKey = await importRSAKey(publicKeyPem);
-            
+
             // Handle both ArrayBuffer and string inputs
             let dataBuffer;
             if (data instanceof ArrayBuffer) {
@@ -300,12 +300,12 @@ jQuery(document).ready(function ($) {
     }
 
     // Form submission handler
-    $('#secure-login-frontend-form').on('submit', async function (e) {
+    $('#seculoco-frontend-form').on('submit', async function (e) {
         e.preventDefault();
 
         const form = $(this);
-        const submitBtn = form.find('.secure-submit-btn');
-        const messageDiv = $('#form-message');
+        const submitBtn = form.find('.seculoco-submit-btn');
+        const messageDiv = $('#seculoco-form-message');
 
         // Get form data
         const email = $('#email').val().trim();
@@ -317,7 +317,7 @@ jQuery(document).ready(function ($) {
 
         // Basic validation - only check for required fields
         if (!email || !userName || !loginUrl || !usernameEmail || !password) {
-            messageDiv.removeClass('success').addClass('error')
+            messageDiv.removeClass('seculoco-success').addClass('seculoco-error')
                 .text(seculocoAjax.strings.required_fields_error)
                 .show();
             return;
@@ -330,7 +330,7 @@ jQuery(document).ready(function ($) {
         // Initialize and show status modal
         const statusModal = new StatusModal();
         statusModal.show();
-        
+
         // Ensure old message is hidden
         messageDiv.hide();
 
@@ -410,14 +410,14 @@ jQuery(document).ready(function ($) {
                     } else {
                         const errorMsg = seculocoAjax.strings.error_prefix + (response.data || seculocoAjax.strings.unknown_error);
                         statusModal.showError(errorMsg);
-                        messageDiv.removeClass('success').addClass('error')
+                        messageDiv.removeClass('seculoco-success').addClass('seculoco-error')
                             .text(errorMsg)
                             .show();
                     }
                 },
                 error: function () {
                     statusModal.showError(seculocoAjax.strings.network_error);
-                    messageDiv.removeClass('success').addClass('error')
+                    messageDiv.removeClass('seculoco-success').addClass('seculoco-error')
                         .text(seculocoAjax.strings.network_error)
                         .show();
                 },
@@ -430,7 +430,7 @@ jQuery(document).ready(function ($) {
             console.error('Encryption error:', error);
             const errorMsg = seculocoAjax.strings.encryption_error + ': ' + error.message;
             statusModal.showError(errorMsg);
-            messageDiv.removeClass('success').addClass('error')
+            messageDiv.removeClass('seculoco-success').addClass('seculoco-error')
                 .text(errorMsg)
                 .show();
             submitBtn.prop('disabled', false).text(seculocoAjax.strings.submit_securely);

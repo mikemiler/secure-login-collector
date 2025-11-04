@@ -1,14 +1,16 @@
-/* Frontend form styling */
-.secure-login-form-container {
+/* Frontend form styling - WordPress.org compliant with seculoco- prefix */
+
+/* Main container */
+.seculoco-form-container {
     max-width: 600px;
     margin: 20px 0;
     padding: 20px;
     border: 1px solid #ddd;
     border-radius: 5px;
-   
 }
 
-.security-info {
+/* Security info section - scoped under main container */
+.seculoco-form-container .seculoco-security-info {
     background: #e8f4fd;
     border: 1px solid #bee5eb;
     border-radius: 4px;
@@ -21,56 +23,57 @@
     gap: 15px;
 }
 
-.security-badge-icon {
+.seculoco-form-container .seculoco-security-badge-icon {
     width: 80px;
     height: auto;
     flex-shrink: 0;
     margin-top: 5px;
 }
 
-.security-info-text {
+.seculoco-form-container .seculoco-security-info-text {
     flex: 1;
 }
 
-.security-info p {
+.seculoco-form-container .seculoco-security-info p {
     margin: 0 0 10px 0;
 }
 
-.security-info p:last-child {
+.seculoco-form-container .seculoco-security-info p:last-child {
     margin-bottom: 0;
 }
 
 /* Responsive design for smaller screens */
 @media (max-width: 600px) {
-    .security-info {
+    .seculoco-form-container .seculoco-security-info {
         flex-direction: column;
         align-items: center;
         text-align: center;
     }
 
-    .security-badge-icon {
+    .seculoco-form-container .seculoco-security-badge-icon {
         margin: 0 0 10px 0;
         width: 100px;
     }
 }
 
-.secure-login-form .form-group {
+/* Form styling - scoped under main container */
+.seculoco-form .seculoco-form-group {
     margin-bottom: 15px;
 }
 
-.secure-login-form label {
+.seculoco-form label {
     display: block;
     margin-bottom: 5px;
     font-weight: normal;
     font-size: 1.0rem;
 }
 
-.secure-login-form .required {
+.seculoco-form .seculoco-required {
     color: red;
 }
 
-.secure-login-form input,
-.secure-login-form textarea {
+.seculoco-form input,
+.seculoco-form textarea {
     width: 100%;
     padding: 8px;
     border: 1px solid #ccc;
@@ -79,23 +82,23 @@
     font-family: inherit;
 }
 
-.secure-login-form textarea {
+.seculoco-form textarea {
     resize: vertical;
     min-height: 120px;
 }
 
-/* Password field with toggle button */
-.password-field-wrapper {
+/* Password field with toggle button - scoped under main container */
+.seculoco-form .seculoco-password-field-wrapper {
     position: relative;
     display: inline-block;
     width: 100%;
 }
 
-.password-field-wrapper input {
+.seculoco-form .seculoco-password-field-wrapper input {
     padding-right: 40px;
 }
 
-.password-toggle-btn {
+.seculoco-form .seculoco-password-toggle-btn {
     position: absolute;
     top: 50%;
     right: 10px;
@@ -109,23 +112,23 @@
     z-index: 1;
 }
 
-.password-toggle-btn:hover {
+.seculoco-form .seculoco-password-toggle-btn:hover {
     color: #333;
 }
 
-.password-toggle-btn:focus {
+.seculoco-form .seculoco-password-toggle-btn:focus {
     outline: 2px solid #0073aa;
     outline-offset: 2px;
 }
 
-.secure-login-form .form-help {
+.seculoco-form .seculoco-form-help {
     display: block;
     margin-top: 5px;
     color: #666;
     font-size: 0.7rem;
 }
 
-.secure-submit-btn {
+.seculoco-form .seculoco-submit-btn {
     background: #0073aa;
     color: white;
     padding: 12px 24px;
@@ -136,35 +139,35 @@
     font-weight: bold;
 }
 
-.secure-submit-btn:hover {
+.seculoco-form .seculoco-submit-btn:hover {
     background: #005a87;
 }
 
-.secure-submit-btn:disabled {
+.seculoco-form .seculoco-submit-btn:disabled {
     background: #ccc;
     cursor: not-allowed;
 }
 
-.form-message {
+.seculoco-form .seculoco-form-message {
     padding: 10px;
     margin-top: 10px;
     border-radius: 3px;
 }
 
-.form-message.success {
+.seculoco-form .seculoco-form-message.seculoco-success {
     background: #d4edda;
     color: #155724;
     border: 1px solid #c3e6cb;
 }
 
-.form-message.error {
+.seculoco-form .seculoco-form-message.seculoco-error {
     background: #f8d7da;
     color: #721c24;
     border: 1px solid #f5c6cb;
 }
 
-/* Status Modal Styles */
-.status-modal-overlay {
+/* Status Modal Styles - scoped to prevent conflicts */
+.seculoco-status-modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
@@ -180,11 +183,11 @@
     transition: opacity 0.3s ease;
 }
 
-.status-modal-overlay.show {
+.seculoco-status-modal-overlay.seculoco-show {
     opacity: 1;
 }
 
-.status-modal {
+.seculoco-status-modal-overlay .seculoco-status-modal {
     background: #fff;
     border-radius: 12px;
     padding: 40px 30px;
@@ -196,11 +199,11 @@
     transition: transform 0.3s ease;
 }
 
-.status-modal-overlay.show .status-modal {
+.seculoco-status-modal-overlay.seculoco-show .seculoco-status-modal {
     transform: scale(1);
 }
 
-.status-icon {
+.seculoco-status-modal-overlay .seculoco-status-icon {
     width: 60px;
     height: 60px;
     margin: 0 auto 20px;
@@ -213,51 +216,51 @@
     position: relative;
 }
 
-.status-icon.processing {
+.seculoco-status-modal-overlay .seculoco-status-icon.seculoco-processing {
     background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
-    animation: pulse 2s infinite;
+    animation: seculoco-pulse 2s infinite;
 }
 
-.status-icon.success {
+.seculoco-status-modal-overlay .seculoco-status-icon.seculoco-success {
     background: linear-gradient(45deg, #56ab2f 0%, #a8e6cf 100%);
 }
 
-.status-icon.error {
+.seculoco-status-modal-overlay .seculoco-status-icon.seculoco-error {
     background: linear-gradient(45deg, #ff416c 0%, #ff4b2b 100%);
 }
 
-@keyframes pulse {
+@keyframes seculoco-pulse {
     0% { transform: scale(1); }
     50% { transform: scale(1.1); }
     100% { transform: scale(1); }
 }
 
-.spinner {
+.seculoco-status-modal-overlay .seculoco-spinner {
     width: 30px;
     height: 30px;
     border: 3px solid rgba(255, 255, 255, 0.3);
     border-radius: 50%;
     border-top-color: #fff;
-    animation: spin 1s linear infinite;
+    animation: seculoco-spin 1s linear infinite;
 }
 
-@keyframes spin {
+@keyframes seculoco-spin {
     to { transform: rotate(360deg); }
 }
 
-.status-text {
+.seculoco-status-modal-overlay .seculoco-status-text {
     font-size: 18px;
     font-weight: 600;
     color: #333;
     margin-bottom: 20px;
 }
 
-.status-checklist {
+.seculoco-status-modal-overlay .seculoco-status-checklist {
     text-align: left;
     margin-bottom: 20px;
 }
 
-.status-step {
+.seculoco-status-modal-overlay .seculoco-status-step {
     display: flex;
     align-items: center;
     padding: 12px 0;
@@ -265,7 +268,7 @@
     transition: all 0.3s ease;
 }
 
-.status-step-icon {
+.seculoco-status-modal-overlay .seculoco-status-step-icon {
     width: 20px;
     height: 20px;
     border: 2px solid #ddd;
@@ -280,46 +283,46 @@
     flex-shrink: 0;
 }
 
-.status-step.pending .status-step-icon {
+.seculoco-status-modal-overlay .seculoco-status-step.seculoco-pending .seculoco-status-step-icon {
     border-color: #ddd;
     color: #ddd;
 }
 
-.status-step.current .status-step-icon {
+.seculoco-status-modal-overlay .seculoco-status-step.seculoco-current .seculoco-status-step-icon {
     border-color: #667eea;
     background: #667eea;
     color: white;
-    animation: pulse-icon 2s infinite;
+    animation: seculoco-pulse-icon 2s infinite;
 }
 
-.status-step.completed .status-step-icon {
+.seculoco-status-modal-overlay .seculoco-status-step.seculoco-completed .seculoco-status-step-icon {
     border-color: #56ab2f;
     background: #56ab2f;
     color: white;
 }
 
-.status-step-text {
+.seculoco-status-modal-overlay .seculoco-status-step-text {
     color: #666;
     transition: color 0.3s ease;
 }
 
-.status-step.current .status-step-text {
+.seculoco-status-modal-overlay .seculoco-status-step.seculoco-current .seculoco-status-step-text {
     color: #333;
     font-weight: 600;
 }
 
-.status-step.completed .status-step-text {
+.seculoco-status-modal-overlay .seculoco-status-step.seculoco-completed .seculoco-status-step-text {
     color: #56ab2f;
     font-weight: 500;
 }
 
-@keyframes pulse-icon {
+@keyframes seculoco-pulse-icon {
     0% { transform: scale(1); }
     50% { transform: scale(1.1); }
     100% { transform: scale(1); }
 }
 
-.status-progress {
+.seculoco-status-modal-overlay .seculoco-status-progress {
     width: 100%;
     height: 4px;
     background: #e0e0e0;
@@ -328,7 +331,7 @@
     margin-bottom: 20px;
 }
 
-.status-progress-bar {
+.seculoco-status-modal-overlay .seculoco-status-progress-bar {
     height: 100%;
     background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
     border-radius: 2px;
@@ -336,7 +339,7 @@
     transition: width 1s ease;
 }
 
-.status-close-btn {
+.seculoco-status-modal-overlay .seculoco-status-close-btn {
     background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
     color: #fff;
     border: none;
@@ -349,7 +352,7 @@
     margin-top: 10px;
 }
 
-.status-close-btn:hover {
+.seculoco-status-modal-overlay .seculoco-status-close-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
 }
