@@ -1,7 +1,7 @@
 <?php
 // phpcs:ignoreFile WordPress.Files.FileName.InvalidClassFileName -- Legacy file naming convention.
 /**
- * Honeypot Protection Class
+ * Spam Protection Class
  *
  * Implements advanced bot protection using:
  * - Dynamic honeypot fields (rotated daily)
@@ -19,13 +19,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class Seculoco_Honeypot_Protection
+ * Class Seculoco_Spam_Protection
  *
  * Provides bot protection through honeypot fields and timing analysis.
  *
  * @since 1.0.0
  */
-class Seculoco_Honeypot_Protection {
+class Seculoco_Spam_Protection {
 
 	/**
 	 * Transient key prefix for honeypot field name.
@@ -84,7 +84,7 @@ class Seculoco_Honeypot_Protection {
 	const START_TIME_EXPIRATION = HOUR_IN_SECONDS;
 
 	/**
-	 * Constructor - Initialize honeypot protection.
+	 * Constructor - Initialize spam protection.
 	 *
 	 * @since 1.0.0
 	 */
@@ -212,7 +212,7 @@ class Seculoco_Honeypot_Protection {
 
 		// Use randomized class name that looks legitimate but hide with inline styles.
 		$html = '<div class="' . esc_attr( $class_name ) . '" style="' . esc_attr( $inline_styles ) . '">';
-		$html .= '<label for="' . esc_attr( $field_name ) . '">' . esc_html__( 'Leave this field empty', 'secure-login-collector' ) . '</label>';
+		$html .= '<label for="' . esc_attr( $field_name ) . '">' . esc_html__( 'Website', 'secure-login-collector' ) . '</label>';
 		$html .= '<input type="text" id="' . esc_attr( $field_name ) . '" name="' . esc_attr( $field_name ) . '" value="" autocomplete="off" tabindex="-1" />';
 		$html .= '</div>';
 
@@ -246,11 +246,13 @@ class Seculoco_Honeypot_Protection {
 	}
 
 	/**
-	 * Validate form submission against honeypot and timing rules.
+	 * Validate form submission against honeypot rules.
 	 *
-	 * Performs two validations:
+	 * Performs validations:
 	 * 1. Honeypot field must be empty (bot check)
-	 * 2. Minimum time threshold must be met (bot check)
+	 * 2. Time tracking must exist (session validation)
+	 *
+	 * Note: Minimum time threshold validation is a premium feature.
 	 *
 	 * @since 1.0.0
 	 * @param array $post_data $_POST data from form submission.
@@ -266,8 +268,20 @@ class Seculoco_Honeypot_Protection {
 
 		$field_name = $this->get_honeypot_field_name();
 
-		// Validation 1: Check if honeypot field exists and is empty.
-		if ( isset( $post_data[ $field_name ] ) && '' !== $post_data[ $field_name ] ) {
+		// Validation 1: Check if honeypot field exists in submission (should always be present).
+		if ( ! isset( $post_data[ $field_name ] ) ) {
+			// Field is missing entirely - likely bot or tampered form.
+			$this->log_blocked_submission( 'honeypot_missing', $post_data );
+
+			// Return generic error - don't reveal it's a honeypot.
+			return new WP_Error(
+				'validation_failed',
+				__( 'Form submission failed validation. Please try again.', 'secure-login-collector' )
+			);
+		}
+
+		// Validation 2: Check if honeypot field was filled (should be empty for legitimate users).
+		if ( '' !== $post_data[ $field_name ] ) {
 			// Honeypot field was filled - likely a bot.
 			$this->log_blocked_submission( 'honeypot_filled', $post_data );
 
@@ -278,35 +292,26 @@ class Seculoco_Honeypot_Protection {
 			);
 		}
 
-		// Validation 2: Check minimum time threshold.
+		// Validation 3: Check that time tracking exists (session validation).
 		$ip_address = $this->get_client_ip();
-		$transient_key = self::START_TIME_TRANSIENT . md5( $ip_address );
-		$start_time = get_transient( $transient_key );
+		$start_time = $this->get_start_time( $ip_address );
 
 		if ( false === $start_time ) {
-			// No start time found - possible bot or expired session.
-			// Allow submission but log for monitoring.
+			// No start time found - block for security.
+			// This indicates either:
+			// 1. Form is stale (over 1 hour old)
+			// 2. Cookies/transients disabled
+			// 3. Bot circumventing tracking
 			$this->log_blocked_submission( 'no_start_time', $post_data );
 
-			// Don't block - could be legitimate user with expired session.
-			return true;
-		}
-
-		$elapsed_time = time() - $start_time;
-		$min_threshold = $this->get_minimum_time_threshold();
-
-		if ( $elapsed_time < $min_threshold ) {
-			// Submission too fast - likely a bot.
-			$this->log_blocked_submission( 'submission_too_fast', $post_data, $elapsed_time );
-
-			// Return generic error - don't reveal timing check.
 			return new WP_Error(
 				'validation_failed',
-				__( 'Form submission failed validation. Please try again.', 'secure-login-collector' )
+				__( 'Form session expired. Please refresh the page and try again.', 'secure-login-collector' )
 			);
 		}
 
 		// Clean up transient after successful validation.
+		$transient_key = $this->get_time_tracking_transient_key( $ip_address );
 		delete_transient( $transient_key );
 
 		return true;
@@ -412,7 +417,7 @@ class Seculoco_Honeypot_Protection {
 		update_option( 'seculoco_honeypot_log', $log );
 
 		/**
-		 * Fires when a submission is blocked by honeypot protection.
+		 * Fires when a submission is blocked by spam protection.
 		 *
 		 * @since 1.0.0
 		 * @param array $log_entry Log entry details.
@@ -546,7 +551,34 @@ class Seculoco_Honeypot_Protection {
 	}
 
 	/**
-	 * Check if honeypot protection is enabled.
+	 * Get start time for form submission time tracking.
+	 *
+	 * Public accessor method for premium features to access time tracking data.
+	 *
+	 * @since 1.0.0
+	 * @param string $client_ip Client IP address.
+	 * @return int|false Start time timestamp, or false if not found.
+	 */
+	public function get_start_time( $client_ip ) {
+		$transient_key = $this->get_time_tracking_transient_key( $client_ip );
+		return get_transient( $transient_key );
+	}
+
+	/**
+	 * Get time tracking transient key for IP address.
+	 *
+	 * Public accessor method for premium features.
+	 *
+	 * @since 1.0.0
+	 * @param string $client_ip Client IP address.
+	 * @return string Transient key.
+	 */
+	public function get_time_tracking_transient_key( $client_ip ) {
+		return self::START_TIME_TRANSIENT . md5( $client_ip );
+	}
+
+	/**
+	 * Check if spam protection is enabled.
 	 *
 	 * @since 1.0.0
 	 * @return bool True if enabled, false otherwise.

@@ -1,17 +1,13 @@
 <?php
-// phpcs:ignoreFile WordPress.Files.FileName.InvalidClassFileName -- Legacy file naming convention.
 /**
- * Rate Limiter Class
+ * Premium Spam Protection
  *
- * Handles rate limiting for form submissions to prevent abuse:
- * - Track submissions by IP address using WordPress transients
- * - Configurable time windows and maximum attempts
- * - Progressive blocking for repeat offenders
- * - IP whitelisting support
- * - Admin controls for rate limit management
+ * Includes rate limiting and advanced spam protection features.
+ * This file combines both the rate limiter and premium spam protection classes.
  *
  * @package SecureLoginCollector
- * @since 1.2.9
+ * @fs_premium_only
+ * @since 1.3.0
  */
 
 // Prevent direct access.
@@ -23,6 +19,13 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Class Seculoco_Rate_Limiter
  *
  * Manages rate limiting for form submissions to prevent spam and abuse.
+ *
+ * Features:
+ * - Track submissions by IP address using WordPress transients
+ * - Configurable time windows and maximum attempts
+ * - Progressive blocking for repeat offenders
+ * - IP whitelisting support
+ * - Admin controls for rate limit management
  *
  * @since 1.2.9
  */
@@ -721,5 +724,118 @@ class Seculoco_Rate_Limiter {
 			'total_blocks'       => isset( $data['total_blocks'] ) ? $data['total_blocks'] : 0,
 			'time_window'        => $this->get_time_window(),
 		);
+	}
+}
+
+/**
+ * Class Seculoco_Spam_Protection_Premium
+ *
+ * Premium Spam Protection Class
+ *
+ * Extends free version spam protection with rate limiting capabilities.
+ * Hooks into the free version's spam protection system to add rate limiting
+ * validation and submission tracking.
+ *
+ * @since 1.3.0
+ */
+class Seculoco_Spam_Protection_Premium {
+
+	/**
+	 * Rate limiter instance.
+	 *
+	 * @since  1.3.0
+	 * @access private
+	 * @var    Seculoco_Rate_Limiter Rate limiting functionality.
+	 */
+	private $rate_limiter;
+
+	/**
+	 * Initialize the premium spam protection class.
+	 *
+	 * @since 1.3.0
+	 */
+	public function __construct() {
+		$this->rate_limiter = new Seculoco_Rate_Limiter();
+		$this->register_hooks();
+	}
+
+	/**
+	 * Register WordPress hooks and filters.
+	 *
+	 * Integrates premium rate limiting with the free version's
+	 * spam protection system.
+	 *
+	 * @since 1.3.0
+	 */
+	private function register_hooks() {
+		// Hook into spam protection check filter.
+		add_filter( 'seculoco_spam_protection_check', array( $this, 'check_rate_limit' ), 10, 3 );
+
+		// Hook into submission recorded action.
+		add_action( 'seculoco_submission_recorded', array( $this, 'record_submission' ), 10, 2 );
+	}
+
+	/**
+	 * Check rate limit and minimum time threshold for incoming submission.
+	 *
+	 * Integrates with the free version's spam protection check filter
+	 * to add premium features:
+	 * 1. Minimum time threshold validation (pro feature)
+	 * 2. Rate limiting validation (pro feature)
+	 *
+	 * If the free version has already identified spam, this check is skipped.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param bool|WP_Error $spam_check  Current spam check result.
+	 * @param array         $post_data   Submitted form data.
+	 * @param string        $client_ip   Client IP address.
+	 * @return bool|WP_Error True if all checks pass, WP_Error if validation fails.
+	 */
+	public function check_rate_limit( $spam_check, $post_data, $client_ip ) {
+		// If spam was already detected by free version, don't override.
+		if ( is_wp_error( $spam_check ) ) {
+			return $spam_check;
+		}
+
+		// Premium Feature 1: Minimum time threshold validation.
+		$spam_protection = new Seculoco_Spam_Protection();
+		$start_time = $spam_protection->get_start_time( $client_ip );
+
+		if ( false !== $start_time ) {
+			$elapsed_time = time() - $start_time;
+			$min_time_threshold = get_option( 'seculoco_honeypot_min_time', 2 );
+
+			if ( $elapsed_time < $min_time_threshold ) {
+				// Submission too fast - likely a bot (premium feature).
+				return new WP_Error(
+					'validation_failed',
+					__( 'Form submission failed validation. Please try again.', 'secure-login-collector' )
+				);
+			}
+		}
+
+		// Premium Feature 2: Rate limiting check.
+		$rate_limit_result = $this->rate_limiter->check_rate_limit( $client_ip );
+
+		return $rate_limit_result;
+	}
+
+	/**
+	 * Record submission for rate limit tracking.
+	 *
+	 * Called after a submission has been successfully recorded in the database.
+	 * Updates rate limit counters for the client IP address.
+	 *
+	 * @since 1.3.0
+	 *
+	 * @param string $client_ip     Client IP address.
+	 * @param int    $insert_result Database insert result (submission ID or 0 on failure).
+	 */
+	public function record_submission( $client_ip, $insert_result ) {
+		// Only record if submission was successfully saved.
+		if ( $insert_result > 0 ) {
+			$this->rate_limiter->record_submission( $client_ip );
+		}
 	}
 }

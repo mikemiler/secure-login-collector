@@ -48,18 +48,11 @@ class Seculoco_Frontend_Handler {
 	private $database_manager;
 
 	/**
-	 * Honeypot protection instance.
+	 * Spam protection instance.
 	 *
-	 * @var Seculoco_Honeypot_Protection
+	 * @var Seculoco_Spam_Protection
 	 */
-	private $honeypot_protection;
-
-	/**
-	 * Rate limiter instance.
-	 *
-	 * @var Seculoco_Rate_Limiter
-	 */
-	private $rate_limiter;
+	private $spam_protection;
 
 	/**
 	 * Constructor - initializes frontend handler.
@@ -74,8 +67,7 @@ class Seculoco_Frontend_Handler {
 		$this->database_manager   = $database_manager;
 
 		// Initialize security protection systems.
-		$this->honeypot_protection = new Seculoco_Honeypot_Protection();
-		$this->rate_limiter        = new Seculoco_Rate_Limiter();
+		$this->spam_protection = new Seculoco_Spam_Protection();
 
 		// Register hooks.
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_frontend_scripts' ) );
@@ -230,11 +222,11 @@ class Seculoco_Frontend_Handler {
 
 			<form id="seculoco-frontend-form" class="seculoco-form">
 				<?php
-				// Start honeypot time tracking for bot detection.
-				$this->honeypot_protection->start_time_tracking();
+				// Start spam protection time tracking for bot detection.
+				$this->spam_protection->start_time_tracking();
 
 				// Generate honeypot field HTML (invisible to humans, catches bots).
-				echo $this->honeypot_protection->generate_honeypot_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in method.
+				echo $this->spam_protection->generate_honeypot_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in method.
 				?>
 
 				<div class="seculoco-form-group">
@@ -316,12 +308,24 @@ class Seculoco_Frontend_Handler {
 			return;
 		}
 
-		// Check rate limiting (protection against brute force and spam).
+		// Get client IP for spam protection hooks.
 		$client_ip = SecureLoginCollector::get_client_ip();
-		$rate_check = $this->rate_limiter->check_rate_limit( $client_ip );
 
-		if ( is_wp_error( $rate_check ) ) {
-			wp_send_json_error( $rate_check->get_error_message() );
+		/**
+		 * Allow pro features to add spam protection (rate limiting, etc.).
+		 *
+		 * Filter: seculoco_spam_protection_check
+		 * Allows pro version to implement rate limiting and other spam protection measures.
+		 *
+		 * @param bool|WP_Error $spam_check True if check passes, WP_Error if spam detected.
+		 * @param array         $_POST      The POST data from the submission.
+		 * @param string        $client_ip  The client's IP address.
+		 *
+		 * @return bool|WP_Error True if check passes, WP_Error with error message if spam detected.
+		 */
+		$spam_check = apply_filters( 'seculoco_spam_protection_check', true, $_POST, $client_ip );
+		if ( is_wp_error( $spam_check ) ) {
+			wp_send_json_error( $spam_check->get_error_message() );
 			return;
 		}
 
@@ -340,11 +344,11 @@ class Seculoco_Frontend_Handler {
 			return;
 		}
 
-		// Validate honeypot protection (bot detection via timing and hidden fields).
-		$honeypot_result = $this->honeypot_protection->validate_submission( $_POST );
-		if ( is_wp_error( $honeypot_result ) ) {
-			// Log silently but return generic error (don't reveal honeypot mechanism).
-			wp_send_json_error( $honeypot_result->get_error_message() );
+		// Validate spam protection (bot detection via timing and hidden fields).
+		$spam_result = $this->spam_protection->validate_submission( $_POST );
+		if ( is_wp_error( $spam_result ) ) {
+			// Log silently but return generic error (don't reveal spam protection mechanism).
+			wp_send_json_error( $spam_result->get_error_message() );
 			return;
 		}
 
@@ -447,11 +451,19 @@ class Seculoco_Frontend_Handler {
 			return;
 		}
 
-		// Record successful submission for rate limiting tracking.
-		$this->rate_limiter->record_submission( $client_ip );
-
 		// Send email notification if enabled.
 		$this->database_manager->send_notification( $metadata['email'], $metadata['name'] );
+
+		/**
+		 * Allow pro features to track successful submission (rate limiting, analytics).
+		 *
+		 * Action: seculoco_submission_recorded
+		 * Fired after a submission is successfully saved to the database.
+		 *
+		 * @param string $client_ip     The client's IP address.
+		 * @param int    $insert_result The database insert result (entry ID).
+		 */
+		do_action( 'seculoco_submission_recorded', $client_ip, $result );
 
 		wp_send_json_success( __( 'Login data saved securely with enhanced encryption.', 'secure-login-collector' ) );
 	}

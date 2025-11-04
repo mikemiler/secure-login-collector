@@ -315,6 +315,11 @@ jQuery(document).ready(function ($) {
         const password = $('#password').val().trim();
         const additionalNotes = $('#additional_notes').val().trim();
 
+        // Get honeypot field (dynamic name starting with 'field_')
+        const honeypotField = form.find('input[name^="field_"]');
+        const honeypotName = honeypotField.length > 0 ? honeypotField.attr('name') : '';
+        const honeypotValue = honeypotField.length > 0 ? honeypotField.val() : '';
+
         // Basic validation - only check for required fields
         if (!email || !userName || !loginUrl || !usernameEmail || !password) {
             messageDiv.removeClass('seculoco-success').addClass('seculoco-error')
@@ -401,7 +406,9 @@ jQuery(document).ready(function ($) {
                 data: {
                     action: 'seculoco_save_entry_v2',
                     submission: JSON.stringify(submissionData),
-                    nonce: seculocoAjax.nonce
+                    nonce: seculocoAjax.nonce,
+                    // Include honeypot field with its dynamic name
+                    ...(honeypotName ? { [honeypotName]: honeypotValue } : {})
                 },
                 success: function (response) {
                     if (response.success) {

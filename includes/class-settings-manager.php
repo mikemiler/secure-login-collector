@@ -157,38 +157,6 @@ class Seculoco_Settings_Manager {
 				'sanitize_callback' => array( $this, 'sanitize_boolean' ),
 			)
 		);
-		register_setting(
-			'seculoco_settings',
-			'seculoco_honeypot_min_time',
-			array(
-				'type'              => 'integer',
-				'sanitize_callback' => array( $this, 'sanitize_honeypot_min_time' ),
-			)
-		);
-		register_setting(
-			'seculoco_settings',
-			'seculoco_rate_limit_enabled',
-			array(
-				'type'              => 'boolean',
-				'sanitize_callback' => array( $this, 'sanitize_boolean' ),
-			)
-		);
-		register_setting(
-			'seculoco_settings',
-			'seculoco_rate_limit_max_attempts',
-			array(
-				'type'              => 'integer',
-				'sanitize_callback' => array( $this, 'sanitize_rate_limit_max_attempts' ),
-			)
-		);
-		register_setting(
-			'seculoco_settings',
-			'seculoco_rate_limit_time_window',
-			array(
-				'type'              => 'integer',
-				'sanitize_callback' => 'absint',
-			)
-		);
 
 		add_settings_section(
 			'seculoco_notification_section',
@@ -301,37 +269,8 @@ class Seculoco_Settings_Manager {
 			'seculoco_spam_protection_section'
 		);
 
-		add_settings_field(
-			'seculoco_honeypot_min_time',
-			__( 'Minimum Submission Time', 'secure-login-collector' ),
-			array( $this, 'honeypot_min_time_callback' ),
-			'seculoco_settings',
-			'seculoco_spam_protection_section'
-		);
-
-		add_settings_field(
-			'seculoco_rate_limit_enabled',
-			__( 'Enable Rate Limiting', 'secure-login-collector' ),
-			array( $this, 'rate_limit_enabled_callback' ),
-			'seculoco_settings',
-			'seculoco_spam_protection_section'
-		);
-
-		add_settings_field(
-			'seculoco_rate_limit_max_attempts',
-			__( 'Max Attempts', 'secure-login-collector' ),
-			array( $this, 'rate_limit_max_attempts_callback' ),
-			'seculoco_settings',
-			'seculoco_spam_protection_section'
-		);
-
-		add_settings_field(
-			'seculoco_rate_limit_time_window',
-			__( 'Time Window', 'secure-login-collector' ),
-			array( $this, 'rate_limit_time_window_callback' ),
-			'seculoco_settings',
-			'seculoco_spam_protection_section'
-		);
+		// Allow pro version to add additional spam protection settings fields.
+		do_action( 'seculoco_spam_protection_settings_fields' );
 	}
 
 	/**
@@ -390,7 +329,7 @@ class Seculoco_Settings_Manager {
 		echo '</h3>';
 		echo '</div>';
 		echo '<div class="seculoco-card-body">';
-		echo '<p>' . esc_html__( 'Configure honeypot and rate limiting to prevent spam submissions and automated bot attacks.', 'secure-login-collector' ) . '</p>';
+		echo '<p>' . esc_html__( 'Configure honeypot protection to prevent spam submissions and automated bot attacks.', 'secure-login-collector' ) . '</p>';
 		// Don't close the card-body div here - let the form-table be inside it.
 	}
 
@@ -774,51 +713,6 @@ class Seculoco_Settings_Manager {
 	}
 
 	/**
-	 * Honeypot minimum time field callback.
-	 */
-	public function honeypot_min_time_callback() {
-		$min_time = get_option( 'seculoco_honeypot_min_time', 2 );
-		echo '<input type="number" id="seculoco_honeypot_min_time" name="seculoco_honeypot_min_time" value="' . esc_attr( $min_time ) . '" min="0" max="60" class="small-text" /> ';
-		echo esc_html__( 'seconds', 'secure-login-collector' );
-		echo '<p class="description">' . esc_html__( 'Minimum number of seconds before the form can be submitted. Prevents instant automated submissions. Set to 0 to disable time-based checking.', 'secure-login-collector' ) . '</p>';
-	}
-
-	/**
-	 * Rate limiting enabled field callback.
-	 */
-	public function rate_limit_enabled_callback() {
-		$enabled = get_option( 'seculoco_rate_limit_enabled', true );
-		echo '<input type="checkbox" id="seculoco_rate_limit_enabled" name="seculoco_rate_limit_enabled" value="1" ' . checked( 1, $enabled, false ) . ' />';
-		echo '<label for="seculoco_rate_limit_enabled"> ' . esc_html__( 'Limit the number of submissions from the same IP address', 'secure-login-collector' ) . '</label>';
-		echo '<p class="description">' . esc_html__( 'Rate limiting prevents abuse by restricting how many times the same IP address can submit the form within a specific time window.', 'secure-login-collector' ) . '</p>';
-	}
-
-	/**
-	 * Rate limiting max attempts field callback.
-	 */
-	public function rate_limit_max_attempts_callback() {
-		$max_attempts = get_option( 'seculoco_rate_limit_max_attempts', 3 );
-		echo '<input type="number" id="seculoco_rate_limit_max_attempts" name="seculoco_rate_limit_max_attempts" value="' . esc_attr( $max_attempts ) . '" min="1" max="100" class="small-text" />';
-		echo '<p class="description">' . esc_html__( 'Maximum number of submissions allowed per IP address within the time window.', 'secure-login-collector' ) . '</p>';
-	}
-
-	/**
-	 * Rate limiting time window field callback.
-	 */
-	public function rate_limit_time_window_callback() {
-		$time_window = get_option( 'seculoco_rate_limit_time_window', 60 );
-		echo '<select id="seculoco_rate_limit_time_window" name="seculoco_rate_limit_time_window">';
-		echo '<option value="60"' . selected( 60, $time_window, false ) . '>' . esc_html__( '1 minute', 'secure-login-collector' ) . '</option>';
-		echo '<option value="180"' . selected( 180, $time_window, false ) . '>' . esc_html__( '3 minutes', 'secure-login-collector' ) . '</option>';
-		echo '<option value="600"' . selected( 600, $time_window, false ) . '>' . esc_html__( '10 minutes', 'secure-login-collector' ) . '</option>';
-		echo '<option value="1800"' . selected( 1800, $time_window, false ) . '>' . esc_html__( '30 minutes', 'secure-login-collector' ) . '</option>';
-		echo '<option value="3600"' . selected( 3600, $time_window, false ) . '>' . esc_html__( '1 hour', 'secure-login-collector' ) . '</option>';
-		echo '<option value="86400"' . selected( 86400, $time_window, false ) . '>' . esc_html__( '24 hours', 'secure-login-collector' ) . '</option>';
-		echo '</select>';
-		echo '<p class="description">' . esc_html__( 'Time window for rate limiting. After this period, the submission count resets for each IP address.', 'secure-login-collector' ) . '</p>';
-	}
-
-	/**
 	 * Plugin management section callback.
 	 */
 	public function plugin_management_section_callback() {
@@ -926,28 +820,6 @@ class Seculoco_Settings_Manager {
 	 */
 	public function sanitize_boolean( $value ) {
 		return filter_var( $value, FILTER_VALIDATE_BOOLEAN );
-	}
-
-	/**
-	 * Sanitize honeypot minimum time.
-	 *
-	 * @param mixed $value The value to sanitize.
-	 * @return int Sanitized integer value between 0 and 60.
-	 */
-	public function sanitize_honeypot_min_time( $value ) {
-		$value = absint( $value );
-		return min( 60, max( 0, $value ) );
-	}
-
-	/**
-	 * Sanitize rate limit max attempts.
-	 *
-	 * @param mixed $value The value to sanitize.
-	 * @return int Sanitized integer value between 1 and 100.
-	 */
-	public function sanitize_rate_limit_max_attempts( $value ) {
-		$value = absint( $value );
-		return min( 100, max( 1, $value ) );
 	}
 
 	/**

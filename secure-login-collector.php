@@ -88,18 +88,19 @@ class SecureLoginCollector {
 	private $database_manager;
 
 	/**
-	 * Honeypot protection instance.
+	 * Spam protection instance (includes honeypot and bot detection).
 	 *
-	 * @var Seculoco_Honeypot_Protection
+	 * @var Seculoco_Spam_Protection
 	 */
-	private $honeypot_protection;
+	private $spam_protection;
 
 	/**
-	 * Rate limiter instance.
+	 * Premium spam protection instance (includes rate limiting and advanced detection).
+	 * Only available for pro users. Extends base spam protection functionality.
 	 *
-	 * @var Seculoco_Rate_Limiter
+	 * @var Seculoco_Spam_Protection_Premium|null
 	 */
-	private $rate_limiter;
+	private $spam_protection_premium;
 
 	/**
 	 * Constructor - initializes the plugin.
@@ -131,8 +132,7 @@ class SecureLoginCollector {
 		include_once SECULOCO_PLUGIN_DIR . 'includes/class-database-manager.php';
 		include_once SECULOCO_PLUGIN_DIR . 'includes/class-admin-interface.php';
 		include_once SECULOCO_PLUGIN_DIR . 'includes/class-frontend-handler.php';
-		include_once SECULOCO_PLUGIN_DIR . 'includes/class-honeypot-protection.php';
-		include_once SECULOCO_PLUGIN_DIR . 'includes/class-rate-limiter.php';
+		include_once SECULOCO_PLUGIN_DIR . 'includes/class-spam-protection.php';
 		include_once SECULOCO_PLUGIN_DIR . 'includes/class-settings-manager.php';
 
 		// Load premium base classes only if available and licensed.
@@ -148,6 +148,7 @@ class SecureLoginCollector {
 				'includes/class-passkey-manager__premium_only.php',
 				'includes/class-master-key-manager__premium_only.php',
 				'includes/class-license-manager__premium_only.php',
+				'includes/class-spam-protection__premium_only.php',
 			);
 
 			foreach ( $premium_base_files as $file ) {
@@ -205,9 +206,13 @@ class SecureLoginCollector {
 		}
 		$this->database_manager   = new Seculoco_Database_Manager( $this->table_name );
 
-		// Initialize security components.
-		$this->honeypot_protection = new Seculoco_Honeypot_Protection();
-		$this->rate_limiter        = new Seculoco_Rate_Limiter();
+		// Initialize spam protection (honeypot and bot detection).
+		$this->spam_protection = new Seculoco_Spam_Protection();
+
+		// Initialize premium spam protection (rate limiting and advanced detection) for pro users only.
+		if ( class_exists( 'Seculoco_Spam_Protection_Premium' ) ) {
+			$this->spam_protection_premium = new Seculoco_Spam_Protection_Premium();
+		}
 
 		// Initialize admin interface - use premium class if available.
 		if ( class_exists( 'Seculoco_Admin_Interface_Premium' ) ) {
@@ -216,7 +221,7 @@ class SecureLoginCollector {
 			$this->admin_interface = new Seculoco_Admin_Interface( $this->table_name, $this->encryption_handler, $this->database_manager );
 		}
 
-		$this->frontend_handler   = new Seculoco_Frontend_Handler( $this->table_name, $this->encryption_handler, $this->database_manager, $this->honeypot_protection, $this->rate_limiter );
+		$this->frontend_handler   = new Seculoco_Frontend_Handler( $this->table_name, $this->encryption_handler, $this->database_manager, $this->spam_protection );
 		$this->settings_manager   = new Seculoco_Settings_Manager( $this->encryption_handler );
 
 		// Allow pro extensions to hook in after components are initialized.
