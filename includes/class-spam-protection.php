@@ -5,9 +5,7 @@
  *
  * Implements advanced bot protection using:
  * - Dynamic honeypot fields (rotated daily)
- * - Time-based validation (minimum submission time only)
  * - Silent failure mechanism
- * - IP-based session tracking using WordPress transients
  *
  * @package SecureLoginCollector
  * @since   1.0.0
@@ -21,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Class Seculoco_Spam_Protection
  *
- * Provides bot protection through honeypot fields and timing analysis.
+ * Provides bot protection through honeypot fields.
  *
  * @since 1.0.0
  */
@@ -42,14 +40,6 @@ class Seculoco_Spam_Protection {
 	 * @var string
 	 */
 	const CLASS_NAME_TRANSIENT = 'seculoco_honeypot_class_name';
-
-	/**
-	 * Transient key prefix for form start time.
-	 *
-	 * @since 1.0.0
-	 * @var string
-	 */
-	const START_TIME_TRANSIENT = 'seculoco_honeypot_start_';
 
 	/**
 	 * Option key for honeypot settings.
@@ -74,14 +64,6 @@ class Seculoco_Spam_Protection {
 	 * @var int
 	 */
 	const FIELD_NAME_EXPIRATION = DAY_IN_SECONDS;
-
-	/**
-	 * Transient expiration for start time (1 hour).
-	 *
-	 * @since 1.0.0
-	 * @var int
-	 */
-	const START_TIME_EXPIRATION = HOUR_IN_SECONDS;
 
 	/**
 	 * Constructor - Initialize spam protection.
@@ -220,39 +202,11 @@ class Seculoco_Spam_Protection {
 	}
 
 	/**
-	 * Start time tracking for form submission.
-	 *
-	 * Stores the current timestamp in a transient keyed by IP address
-	 * to enable stateless validation.
-	 *
-	 * @since 1.0.0
-	 * @return bool True on success, false on failure.
-	 */
-	public function start_time_tracking() {
-		$settings = get_option( self::SETTINGS_KEY );
-
-		// Check if honeypot is enabled.
-		if ( ! isset( $settings['enabled'] ) || ! $settings['enabled'] ) {
-			return true;
-		}
-
-		$ip_address = $this->get_client_ip();
-		$transient_key = self::START_TIME_TRANSIENT . md5( $ip_address );
-
-		// Store current timestamp.
-		$start_time = time();
-
-		return set_transient( $transient_key, $start_time, self::START_TIME_EXPIRATION );
-	}
-
-	/**
 	 * Validate form submission against honeypot rules.
 	 *
 	 * Performs validations:
-	 * 1. Honeypot field must be empty (bot check)
-	 * 2. Time tracking must exist (session validation)
-	 *
-	 * Note: Minimum time threshold validation is a premium feature.
+	 * 1. Honeypot field must exist
+	 * 2. Honeypot field must be empty (bot check)
 	 *
 	 * @since 1.0.0
 	 * @param array $post_data $_POST data from form submission.
@@ -291,28 +245,6 @@ class Seculoco_Spam_Protection {
 				__( 'Form submission failed validation. Please try again.', 'secure-login-collector' )
 			);
 		}
-
-		// Validation 3: Check that time tracking exists (session validation).
-		$ip_address = $this->get_client_ip();
-		$start_time = $this->get_start_time( $ip_address );
-
-		if ( false === $start_time ) {
-			// No start time found - block for security.
-			// This indicates either:
-			// 1. Form is stale (over 1 hour old)
-			// 2. Cookies/transients disabled
-			// 3. Bot circumventing tracking
-			$this->log_blocked_submission( 'no_start_time', $post_data );
-
-			return new WP_Error(
-				'validation_failed',
-				__( 'Form session expired. Please refresh the page and try again.', 'secure-login-collector' )
-			);
-		}
-
-		// Clean up transient after successful validation.
-		$transient_key = $this->get_time_tracking_transient_key( $ip_address );
-		delete_transient( $transient_key );
 
 		return true;
 	}
@@ -548,33 +480,6 @@ class Seculoco_Spam_Protection {
 		}
 
 		return '';
-	}
-
-	/**
-	 * Get start time for form submission time tracking.
-	 *
-	 * Public accessor method for premium features to access time tracking data.
-	 *
-	 * @since 1.0.0
-	 * @param string $client_ip Client IP address.
-	 * @return int|false Start time timestamp, or false if not found.
-	 */
-	public function get_start_time( $client_ip ) {
-		$transient_key = $this->get_time_tracking_transient_key( $client_ip );
-		return get_transient( $transient_key );
-	}
-
-	/**
-	 * Get time tracking transient key for IP address.
-	 *
-	 * Public accessor method for premium features.
-	 *
-	 * @since 1.0.0
-	 * @param string $client_ip Client IP address.
-	 * @return string Transient key.
-	 */
-	public function get_time_tracking_transient_key( $client_ip ) {
-		return self::START_TIME_TRANSIENT . md5( $client_ip );
 	}
 
 	/**

@@ -741,6 +741,20 @@ class Seculoco_Rate_Limiter {
 class Seculoco_Spam_Protection_Premium {
 
 	/**
+	 * Transient key prefix for time tracking.
+	 *
+	 * @since 1.3.0
+	 */
+	const START_TIME_TRANSIENT = 'seculoco_honeypot_start_';
+
+	/**
+	 * Time tracking transient expiration (1 hour).
+	 *
+	 * @since 1.3.0
+	 */
+	const START_TIME_EXPIRATION = 3600;
+
+	/**
 	 * Rate limiter instance.
 	 *
 	 * @since  1.3.0
@@ -773,6 +787,9 @@ class Seculoco_Spam_Protection_Premium {
 
 		// Hook into submission recorded action.
 		add_action( 'seculoco_submission_recorded', array( $this, 'record_submission' ), 10, 2 );
+
+		// Start time tracking when form is rendered (pro feature).
+		add_action( 'seculoco_before_form_render', array( $this, 'start_time_tracking' ) );
 	}
 
 	/**
@@ -799,21 +816,30 @@ class Seculoco_Spam_Protection_Premium {
 		}
 
 		// Premium Feature 1: Minimum time threshold validation.
-		$spam_protection = new Seculoco_Spam_Protection();
-		$start_time = $spam_protection->get_start_time( $client_ip );
+		$start_time = $this->get_start_time( $client_ip );
 
-		if ( false !== $start_time ) {
-			$elapsed_time = time() - $start_time;
-			$min_time_threshold = get_option( 'seculoco_honeypot_min_time', 2 );
-
-			if ( $elapsed_time < $min_time_threshold ) {
-				// Submission too fast - likely a bot (premium feature).
-				return new WP_Error(
-					'validation_failed',
-					__( 'Form submission failed validation. Please try again.', 'secure-login-collector' )
-				);
-			}
+		if ( false === $start_time ) {
+			// No start time found - validation failed.
+			return new WP_Error(
+				'validation_failed',
+				__( 'Form submission failed validation. Please try again.', 'secure-login-collector' )
+			);
 		}
+
+		$elapsed_time = time() - $start_time;
+		$min_time_threshold = get_option( 'seculoco_honeypot_min_time', 2 );
+
+		if ( $elapsed_time < $min_time_threshold ) {
+			// Submission too fast - likely a bot (premium feature).
+			return new WP_Error(
+				'validation_failed',
+				__( 'Form submission failed validation. Please try again.', 'secure-login-collector' )
+			);
+		}
+
+		// Clean up transient after successful validation.
+		$transient_key = self::START_TIME_TRANSIENT . md5( $client_ip );
+		delete_transient( $transient_key );
 
 		// Premium Feature 2: Rate limiting check.
 		$rate_limit_result = $this->rate_limiter->check_rate_limit( $client_ip );
@@ -837,5 +863,43 @@ class Seculoco_Spam_Protection_Premium {
 		if ( $insert_result > 0 ) {
 			$this->rate_limiter->record_submission( $client_ip );
 		}
+	}
+
+	/**
+	 * Start time tracking for form submission (Premium feature).
+	 *
+	 * Stores the current timestamp in a transient keyed by IP address
+	 * to enable stateless validation.
+	 *
+	 * @since 1.3.0
+	 * @return bool True on success, false on failure.
+	 */
+	public function start_time_tracking() {
+		$ip_address = $this->get_client_ip();
+		$transient_key = self::START_TIME_TRANSIENT . md5( $ip_address );
+		$start_time = time();
+		return set_transient( $transient_key, $start_time, self::START_TIME_EXPIRATION );
+	}
+
+	/**
+	 * Get start time for form submission time tracking.
+	 *
+	 * @since 1.3.0
+	 * @param string $client_ip Client IP address.
+	 * @return int|false Start time timestamp, or false if not found.
+	 */
+	private function get_start_time( $client_ip ) {
+		$transient_key = self::START_TIME_TRANSIENT . md5( $client_ip );
+		return get_transient( $transient_key );
+	}
+
+	/**
+	 * Get client IP address.
+	 *
+	 * @since 1.3.0
+	 * @return string Client IP address.
+	 */
+	private function get_client_ip() {
+		return SecureLoginCollector::get_client_ip();
 	}
 }

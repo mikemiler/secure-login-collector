@@ -176,7 +176,7 @@ class Seculoco_Settings_Manager_Pro {
 	public function add_rate_limiting_fields() {
 		add_settings_field(
 			'seculoco_honeypot_min_time',
-			__( 'Minimum Submission Time', 'secure-login-collector' ),
+			__( 'Minimum Submission Time', 'secure-login-collector' ) ,
 			array( $this, 'honeypot_min_time_callback' ),
 			'seculoco_settings',
 			'seculoco_spam_protection_section'
@@ -213,9 +213,9 @@ class Seculoco_Settings_Manager_Pro {
 	public function honeypot_min_time_callback() {
 		$min_time = get_option( 'seculoco_honeypot_min_time', 2 );
 		echo '<div class="seculoco-premium-field">';
-		echo '<span class="seculoco-badge seculoco-badge-success" style="margin-right: 8px;">PRO</span>';
 		echo '<input type="number" id="seculoco_honeypot_min_time" name="seculoco_honeypot_min_time" value="' . esc_attr( $min_time ) . '" min="0" max="60" class="small-text" /> ';
-		echo esc_html__( 'seconds', 'secure-login-collector' );
+		echo esc_html__( 'seconds', 'secure-login-collector' ) . ' ';
+		echo '<span class="seculoco-badge seculoco-badge-success" style="margin-right: 8px;">PRO</span>';
 		echo '<p class="description">' . esc_html__( 'Minimum time required before form can be submitted. Helps detect instant bot submissions.', 'secure-login-collector' ) . '</p>';
 		echo '</div>';
 	}

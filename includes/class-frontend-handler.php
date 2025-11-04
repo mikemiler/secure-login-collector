@@ -222,8 +222,8 @@ class Seculoco_Frontend_Handler {
 
 			<form id="seculoco-frontend-form" class="seculoco-form">
 				<?php
-				// Start spam protection time tracking for bot detection.
-				$this->spam_protection->start_time_tracking();
+				// Allow pro features to start time tracking before form render.
+				do_action( 'seculoco_before_form_render' );
 
 				// Generate honeypot field HTML (invisible to humans, catches bots).
 				echo $this->spam_protection->generate_honeypot_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in method.
