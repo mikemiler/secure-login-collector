@@ -121,7 +121,7 @@ class Seculoco_Admin_Interface_Premium extends Seculoco_Admin_Interface {
 	 * @param array $bulk_actions Existing bulk actions.
 	 * @return array Modified bulk actions with export options.
 	 */
-	public function add_password_manager_exports( $bulk_actions ) {
+	public function add_password_manager_exports( $bulk_actions_free ) {
 
 		// Add export options for 8 major password managers.
 		$bulk_actions['export-bitwarden'] = __( 'Export to Bitwarden', 'secure-login-collector' );
@@ -133,7 +133,7 @@ class Seculoco_Admin_Interface_Premium extends Seculoco_Admin_Interface {
 		$bulk_actions['export-dashlane']  = __( 'Export to Dashlane', 'secure-login-collector' );
 		$bulk_actions['export-keepass']   = __( 'Export to KeePass', 'secure-login-collector' );
 
-		return $bulk_actions;
+		return array_merge($bulk_actions, $bulk_actions_free);
 	}
 
 	/**
