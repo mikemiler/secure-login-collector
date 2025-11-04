@@ -1,5 +1,4 @@
 <?php
-// phpcs:ignoreFile WordPress.Files.FileName.InvalidClassFileName -- Plugin file naming convention.
 /**
  * Plugin Name: Secure Login Collector
  * Plugin URI: https://wp-mike.com
@@ -11,7 +10,6 @@
  *
  * @package SecureLoginCollector
  *
- * @phpcs:disable WordPress.Files.FileName.InvalidClassFileName
  */
 
 // Prevent direct access.
@@ -481,4 +479,31 @@ class SecureLoginCollector {
 
 		return ! empty( $remote_addr ) ? $remote_addr : '0.0.0.0';
 	}
+}
+
+/**
+ * Initialize the plugin
+ *
+ * This function instantiates the main plugin class after Freemius has loaded.
+ * It ensures proper initialization order and prevents race conditions.
+ *
+ * @return SecureLoginCollector The plugin instance
+ */
+function seculoco_init() {
+	static $instance = null;
+
+	if ( null === $instance ) {
+		$instance = new SecureLoginCollector();
+	}
+
+	return $instance;
+}
+
+// Instantiate plugin after Freemius is loaded.
+if ( did_action( 'seculoco_fs_loaded' ) ) {
+	// Freemius already loaded, initialize immediately.
+	seculoco_init();
+} else {
+	// Wait for Freemius to load.
+	add_action( 'seculoco_fs_loaded', 'seculoco_init' );
 }
