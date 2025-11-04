@@ -139,6 +139,15 @@ class Seculoco_Settings_Manager {
 			)
 		);
 
+		register_setting(
+			'seculoco_settings',
+			'seculoco_hide_service_footer',
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => array( $this, 'sanitize_boolean' ),
+			)
+		);
+
 		add_settings_section(
 			'seculoco_notification_section',
 			__( 'Email Notifications', 'secure-login-collector' ),
@@ -215,6 +224,14 @@ class Seculoco_Settings_Manager {
 			'seculoco_frontend_form_text',
 			__( 'Custom Description Text', 'secure-login-collector' ),
 			array( $this, 'frontend_form_text_callback' ),
+			'seculoco_settings',
+			'seculoco_frontend_section'
+		);
+
+		add_settings_field(
+			'seculoco_hide_service_footer',
+			__( 'Hide Branding Footer', 'secure-login-collector' ),
+			array( $this, 'hide_service_footer_callback' ),
 			'seculoco_settings',
 			'seculoco_frontend_section'
 		);
@@ -608,6 +625,29 @@ class Seculoco_Settings_Manager {
 		echo '</fieldset>';
 
 		echo '<p class="description">' . esc_html__( 'Choose whether to use the default security information text or your custom text below.', 'secure-login-collector' ) . '</p>';
+	}
+
+	/**
+	 * Hide service footer field callback.
+	 * Free version: Shows informational text about PRO feature
+	 * Pro version: Filters the content to replace with actual setting control
+	 */
+	public function hide_service_footer_callback() {
+		// Free version default content (informational text)
+		$content  = '<p class="description" style="color: #666;">';
+		$content .= '<span class="seculoco-badge seculoco-pro-badge" style="margin-right: 8px;">' . esc_html__( 'PRO ONLY', 'secure-login-collector' ) . '</span>';
+		$content .= esc_html__( 'The Pro version allows you to hide the branding footer on the frontend form. Free version users help support the plugin by displaying this footer.', 'secure-login-collector' );
+		$content .= '</p>';
+
+		/**
+		 * Filter the service footer setting content.
+		 * Pro version can replace the informational text with actual controls.
+		 *
+		 * @param string $content The default content (informational text for free version).
+		 */
+		$content = apply_filters( 'seculoco_hide_service_footer_setting_content', $content );
+
+		echo $content;
 	}
 
 	/**

@@ -42,6 +42,12 @@ class Seculoco_Settings_Manager_Pro {
 
 		// Replace free version's pro column with actual pro content.
 		add_filter( 'seculoco_encryption_pro_column', array( $this, 'get_pro_encryption_column' ) );
+
+		// Filter service footer setting content to replace with actual control.
+		add_filter( 'seculoco_hide_service_footer_setting_content', array( $this, 'replace_service_footer_setting_content' ) );
+
+		// Filter frontend service footer visibility based on Pro setting.
+		add_filter( 'seculoco_show_service_footer', array( $this, 'filter_service_footer_visibility' ) );
 	}
 
 	/**
@@ -228,7 +234,44 @@ class Seculoco_Settings_Manager_Pro {
 		}
 	}
 
-	
+
+
+	/**
+	 * Replace the free version's informational text with actual setting control (Pro only).
+	 * Hooks into 'seculoco_hide_service_footer_setting_content' filter.
+	 *
+	 * @param string $content The default free version content (ignored in Pro).
+	 * @return string The Pro version HTML with actual checkbox control.
+	 */
+	public function replace_service_footer_setting_content( $content ) {
+		$hidden = get_option( 'seculoco_hide_service_footer', false );
+
+		$pro_content  = '<input type="checkbox" id="seculoco_hide_service_footer" name="seculoco_hide_service_footer" value="1" ' . checked( 1, $hidden, false ) . ' />';
+		$pro_content .= '<label for="seculoco_hide_service_footer"> ' . esc_html__( 'Hide branding footer on frontend form', 'secure-login-collector' ) . '</label>';
+		$pro_content .= '<p class="description">' . esc_html__( 'When enabled, the branding footer will be hidden from the frontend form.', 'secure-login-collector' ) . '</p>';
+
+		return $pro_content;
+	}
+
+	/**
+	 * Filter service footer visibility based on Pro setting.
+	 * Hooks into 'seculoco_show_service_footer' filter.
+	 *
+	 * @param bool $show_footer Default visibility (true from free version).
+	 * @return bool Whether to show the service footer.
+	 */
+	public function filter_service_footer_visibility( $show_footer ) {
+		// Check if Pro user has enabled the hide setting.
+		$hide_footer = get_option( 'seculoco_hide_service_footer', false );
+
+		// If setting is enabled, return false to hide footer.
+		if ( $hide_footer ) {
+			return false;
+		}
+
+		// Otherwise, respect the default (show footer).
+		return $show_footer;
+	}
 
 	/**
 	 * Sanitize boolean values.
