@@ -60,6 +60,9 @@ if ( ! function_exists( 'seculoco_fs' ) ) {
 	}
 }
 
+// Load global functions.
+require_once SECULOCO_PLUGIN_DIR . 'includes/functions.php';
+
 /**
  * Main plugin class - handles initialization and coordination.
  */
@@ -480,25 +483,6 @@ class SecureLoginCollector {
 	}
 }
 
-if ( ! function_exists( 'seculoco_init' ) ) {
-	/**
-	 * Initialize the plugin.
-	 *
-	 * This function instantiates the main plugin class after Freemius has loaded.
-	 * It ensures proper initialization order and prevents race conditions.
-	 *
-	 * @return SecureLoginCollector The plugin instance.
-	 */
-	function seculoco_init() {
-		static $instance = null;
-
-		if ( null === $instance ) {
-			$instance = new SecureLoginCollector();
-		}
-
-		return $instance;
-	}
-}
 
 // Instantiate plugin after Freemius is loaded.
 if ( did_action( 'seculoco_fs_loaded' ) ) {
