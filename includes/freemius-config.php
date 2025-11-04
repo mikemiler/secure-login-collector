@@ -29,6 +29,13 @@ function seculoco_fs() {
 
 		require_once $freemius_sdk;
 
+		/**
+		 * Check if we should simulate free version for testing.
+		 * Add this to wp-config.php for local testing:
+		 * define( 'SECULOCO_SIMULATE_FREE_VERSION', true );
+		 */
+		$is_premium_version = ! defined( 'SECULOCO_SIMULATE_FREE_VERSION' ) || ! SECULOCO_SIMULATE_FREE_VERSION;
+
 		$seculoco_fs = fs_dynamic_init(
 			array(
 				'id'                  => '19897',
@@ -36,7 +43,7 @@ function seculoco_fs() {
                 'premium_slug'        => 'secure-login-collector-pro',
                 'type'                => 'plugin',
                 'public_key'          => 'pk_f21b15938db645fdeb2d1dadb9ac4',
-                'is_premium'          => true,
+                'is_premium'          => $is_premium_version,
                 'premium_suffix'      => 'Pro',
                 // If your plugin is a serviceware, set this option to false.
                 'has_premium_version' => true,

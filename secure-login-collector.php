@@ -122,7 +122,12 @@ class SecureLoginCollector {
 		// Load premium base classes only if available and licensed.
 		// These provide pro functionality (passkey management, licensing, etc).
 		// Files with __premium_only suffix are automatically removed by Freemius in free version.
-		if ( function_exists( 'seculoco_fs' ) && seculoco_fs()->can_use_premium_code() ) {
+		// For local testing: Add define( 'SECULOCO_SIMULATE_FREE_VERSION', true ); to wp-config.php
+		$can_load_premium = function_exists( 'seculoco_fs' )
+			&& seculoco_fs()->can_use_premium_code()
+			&& ( ! defined( 'SECULOCO_SIMULATE_FREE_VERSION' ) || ! SECULOCO_SIMULATE_FREE_VERSION );
+
+		if ( $can_load_premium ) {
 			$premium_base_files = array(
 				'includes/class-passkey-manager__premium_only.php',
 				'includes/class-master-key-manager__premium_only.php',
