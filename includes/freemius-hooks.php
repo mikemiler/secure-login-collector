@@ -253,21 +253,3 @@ function seculoco_fs_plugin_action_links( $links ) {
 	return $links;
 }
 add_filter( 'plugin_action_links_' . plugin_basename( SECULOCO_PLUGIN_DIR . 'secure-login-collector.php' ), 'seculoco_fs_plugin_action_links' );
-
-/**
- * Custom menu items
- */
-function seculoco_fs_custom_menu_items() {
-	if ( function_exists( 'seculoco_fs' ) && seculoco_fs()->is_not_paying() ) {
-		// Add pricing page under our plugin menu.
-		add_submenu_page(
-			'secure-login-collector',
-			__( 'Pricing', 'secure-login-collector' ),
-			__( 'Pricing', 'secure-login-collector' ),
-			'manage_options',
-			'secure-login-collector-pricing',
-			'seculoco_fs_custom_pricing_page'
-		);
-	}
-}
-add_action( 'admin_menu', 'seculoco_fs_custom_menu_items', 99 );
