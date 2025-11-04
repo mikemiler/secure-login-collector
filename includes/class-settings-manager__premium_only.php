@@ -176,7 +176,7 @@ class Seculoco_Settings_Manager_Pro {
 	public function add_rate_limiting_fields() {
 		add_settings_field(
 			'seculoco_honeypot_min_time',
-			__( 'Minimum Submission Time', 'secure-login-collector' ) ,
+			__( 'Minimum Submission Time', 'secure-login-collector' ),
 			array( $this, 'honeypot_min_time_callback' ),
 			'seculoco_settings',
 			'seculoco_spam_protection_section'

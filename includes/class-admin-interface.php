@@ -52,8 +52,8 @@ class Seculoco_List_Table extends WP_List_Table {
 	/**
 	 * Constructor - initializes list table.
 	 *
-	 * @param string                          $table_name         Database table name.
-	 * @param Seculoco_Database_Manager   $database_manager   Database manager instance.
+	 * @param string                         $table_name         Database table name.
+	 * @param Seculoco_Database_Manager      $database_manager   Database manager instance.
 	 * @param Seculoco_Encryption_Handler_V2 $encryption_handler Encryption handler instance.
 	 */
 	public function __construct( $table_name, $database_manager, $encryption_handler ) {
@@ -110,11 +110,11 @@ class Seculoco_List_Table extends WP_List_Table {
 	 * @return array Bulk action definitions.
 	 */
 	public function get_bulk_actions() {
-		
+
 		$bulk_actions = array(
-			'delete'           => __( 'Delete', 'secure-login-collector' ),
+			'delete' => __( 'Delete', 'secure-login-collector' ),
 		);
-		return apply_filters('seculoco_bulk_actions', $bulk_actions);
+		return apply_filters( 'seculoco_bulk_actions', $bulk_actions );
 	}
 
 	/**
@@ -238,8 +238,8 @@ class Seculoco_List_Table extends WP_List_Table {
 		// Check if entry is undecryptable (passkey-encrypted but passkey was deleted).
 		// Use database flag as primary indicator (more reliable than checking options).
 		$is_undecryptable = false;
-		
-		if ( isset( $item->undecryptable ) && 1 === (int)$item->undecryptable ) {
+
+		if ( isset( $item->undecryptable ) && 1 === (int) $item->undecryptable ) {
 			$is_undecryptable = true;
 		} else {
 			// Fallback: Check encrypted_data for legacy entries not yet marked.
@@ -253,7 +253,6 @@ class Seculoco_List_Table extends WP_List_Table {
 				}
 			}
 		}
-		
 
 		$actions = array();
 
@@ -266,7 +265,7 @@ class Seculoco_List_Table extends WP_List_Table {
 			);
 		} elseif ( $is_undecryptable ) {
 			// Show disabled decrypt button with undecryptable indicator.
-			
+
 			$actions[] = sprintf(
 				'<button type="button" class="button decrypt-btn-v2" data-id="%s" data-undecryptable="true" disabled title="%s"><span class="dashicons dashicons-lock"></span></button>',
 				$item->id,
@@ -286,7 +285,7 @@ class Seculoco_List_Table extends WP_List_Table {
 
 		// Extend button (only for non-expired entries if expiration is enabled) with icon.
 		$expiration_days = get_option( 'seculoco_expiration_days', 30 );
-		if ( $expiration_days > 0 && ! $is_expired && !$is_undecryptable ) {
+		if ( $expiration_days > 0 && ! $is_expired && ! $is_undecryptable ) {
 			$actions[] = sprintf(
 				'<button type="button" class="button button-secondary extend-btn" data-id="%s" title="%s"><span class="dashicons dashicons-calendar-alt"></span></button>',
 				$item->id,
@@ -619,9 +618,9 @@ class Seculoco_Admin_Interface {
 	/**
 	 * Constructor - initializes admin interface.
 	 *
-	 * @param string                          $table_name         Database table name.
+	 * @param string                         $table_name         Database table name.
 	 * @param Seculoco_Encryption_Handler_V2 $encryption_handler Encryption handler instance.
-	 * @param Seculoco_Database_Manager   $database_manager   Database manager instance.
+	 * @param Seculoco_Database_Manager      $database_manager   Database manager instance.
 	 */
 	public function __construct( $table_name, $encryption_handler, $database_manager ) {
 		$this->table_name         = $table_name;
@@ -1126,5 +1125,4 @@ class Seculoco_Admin_Interface {
 			)
 		);
 	}
-
 }

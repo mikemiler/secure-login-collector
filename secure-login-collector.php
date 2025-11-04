@@ -9,7 +9,6 @@
  * Text Domain: secure-login-collector
  *
  * @package SecureLoginCollector
- *
  */
 
 // Prevent direct access.
@@ -238,7 +237,7 @@ class SecureLoginCollector {
 		} else {
 			$this->encryption_handler = new Seculoco_Encryption_Handler_V2();
 		}
-		$this->database_manager   = new Seculoco_Database_Manager( $this->table_name );
+		$this->database_manager = new Seculoco_Database_Manager( $this->table_name );
 
 		// Initialize spam protection (honeypot and bot detection).
 		$this->spam_protection = new Seculoco_Spam_Protection();
@@ -255,8 +254,8 @@ class SecureLoginCollector {
 			$this->admin_interface = new Seculoco_Admin_Interface( $this->table_name, $this->encryption_handler, $this->database_manager );
 		}
 
-		$this->frontend_handler   = new Seculoco_Frontend_Handler( $this->table_name, $this->encryption_handler, $this->database_manager, $this->spam_protection );
-		$this->settings_manager   = new Seculoco_Settings_Manager( $this->encryption_handler );
+		$this->frontend_handler = new Seculoco_Frontend_Handler( $this->table_name, $this->encryption_handler, $this->database_manager, $this->spam_protection );
+		$this->settings_manager = new Seculoco_Settings_Manager( $this->encryption_handler );
 
 		// Allow pro extensions to hook in after components are initialized.
 		do_action( 'seculoco_components_initialized', $this );
@@ -489,7 +488,7 @@ class SecureLoginCollector {
  *
  * @return SecureLoginCollector The plugin instance
  */
-if(!function_exists('seculoco_init')) {
+if ( ! function_exists( 'seculoco_init' ) ) {
 	function seculoco_init() {
 		static $instance = null;
 

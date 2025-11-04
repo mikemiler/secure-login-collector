@@ -186,8 +186,8 @@ class Seculoco_Rate_Limiter {
 			return true;
 		}
 
-		$data       = $this->get_ip_data( $ip_address );
-		$time_window = $this->get_time_window();
+		$data         = $this->get_ip_data( $ip_address );
+		$time_window  = $this->get_time_window();
 		$current_time = time();
 
 		// Add new submission timestamp.
@@ -283,7 +283,7 @@ class Seculoco_Rate_Limiter {
 		$data['total_blocks'] = isset( $data['total_blocks'] ) ? $data['total_blocks'] + 1 : 1;
 
 		// Calculate progressive block duration.
-		$block_duration       = $this->calculate_block_duration( $data['total_blocks'] );
+		$block_duration        = $this->calculate_block_duration( $data['total_blocks'] );
 		$data['blocked_until'] = time() + $block_duration;
 
 		return $this->set_ip_data( $ip_address, $data );
@@ -301,7 +301,7 @@ class Seculoco_Rate_Limiter {
 			return false;
 		}
 
-		$data                 = $this->get_ip_data( $ip_address );
+		$data                  = $this->get_ip_data( $ip_address );
 		$data['blocked_until'] = null;
 
 		return $this->set_ip_data( $ip_address, $data );
@@ -584,7 +584,7 @@ class Seculoco_Rate_Limiter {
 			return false;
 		}
 
-		$mask       = -1 << ( 32 - $bits );
+		$mask         = -1 << ( 32 - $bits );
 		$subnet_long &= $mask; // Apply mask to subnet.
 
 		return ( $ip_long & $mask ) === $subnet_long;
@@ -705,8 +705,8 @@ class Seculoco_Rate_Limiter {
 	public function get_ip_status( $ip_address ) {
 		if ( empty( $ip_address ) || ! $this->is_valid_ip( $ip_address ) ) {
 			return array(
-				'valid'       => false,
-				'error'       => __( 'Invalid IP address.', 'secure-login-collector' ),
+				'valid' => false,
+				'error' => __( 'Invalid IP address.', 'secure-login-collector' ),
 			);
 		}
 
@@ -826,7 +826,7 @@ class Seculoco_Spam_Protection_Premium {
 			);
 		}
 
-		$elapsed_time = time() - $start_time;
+		$elapsed_time       = time() - $start_time;
 		$min_time_threshold = get_option( 'seculoco_honeypot_min_time', 2 );
 
 		if ( $elapsed_time < $min_time_threshold ) {
@@ -875,9 +875,9 @@ class Seculoco_Spam_Protection_Premium {
 	 * @return bool True on success, false on failure.
 	 */
 	public function start_time_tracking() {
-		$ip_address = $this->get_client_ip();
+		$ip_address    = $this->get_client_ip();
 		$transient_key = self::START_TIME_TRANSIENT . md5( $ip_address );
-		$start_time = time();
+		$start_time    = time();
 		return set_transient( $transient_key, $start_time, self::START_TIME_EXPIRATION );
 	}
 

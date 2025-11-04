@@ -360,7 +360,7 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
 		}
 
 		// Check if pro keys already exist.
-		$public_key_pro         = get_option( 'seculoco_public_key_pro' );
+		$public_key_pro          = get_option( 'seculoco_public_key_pro' );
 		$wrapped_private_key_pro = get_option( 'seculoco_wrapped_private_key_pro' );
 
 		if ( $public_key_pro && $wrapped_private_key_pro ) {
