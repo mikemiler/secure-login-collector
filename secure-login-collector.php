@@ -88,6 +88,20 @@ class SecureLoginCollector {
 	private $database_manager;
 
 	/**
+	 * Honeypot protection instance.
+	 *
+	 * @var Seculoco_Honeypot_Protection
+	 */
+	private $honeypot_protection;
+
+	/**
+	 * Rate limiter instance.
+	 *
+	 * @var Seculoco_Rate_Limiter
+	 */
+	private $rate_limiter;
+
+	/**
 	 * Constructor - initializes the plugin.
 	 */
 	public function __construct() {
@@ -117,6 +131,8 @@ class SecureLoginCollector {
 		include_once SECULOCO_PLUGIN_DIR . 'includes/class-database-manager.php';
 		include_once SECULOCO_PLUGIN_DIR . 'includes/class-admin-interface.php';
 		include_once SECULOCO_PLUGIN_DIR . 'includes/class-frontend-handler.php';
+		include_once SECULOCO_PLUGIN_DIR . 'includes/class-honeypot-protection.php';
+		include_once SECULOCO_PLUGIN_DIR . 'includes/class-rate-limiter.php';
 		include_once SECULOCO_PLUGIN_DIR . 'includes/class-settings-manager.php';
 
 		// Load premium base classes only if available and licensed.
@@ -189,6 +205,10 @@ class SecureLoginCollector {
 		}
 		$this->database_manager   = new Seculoco_Database_Manager( $this->table_name );
 
+		// Initialize security components.
+		$this->honeypot_protection = new Seculoco_Honeypot_Protection();
+		$this->rate_limiter        = new Seculoco_Rate_Limiter();
+
 		// Initialize admin interface - use premium class if available.
 		if ( class_exists( 'Seculoco_Admin_Interface_Premium' ) ) {
 			$this->admin_interface = new Seculoco_Admin_Interface_Premium( $this->table_name, $this->encryption_handler, $this->database_manager );
@@ -196,7 +216,7 @@ class SecureLoginCollector {
 			$this->admin_interface = new Seculoco_Admin_Interface( $this->table_name, $this->encryption_handler, $this->database_manager );
 		}
 
-		$this->frontend_handler   = new Seculoco_Frontend_Handler( $this->table_name, $this->encryption_handler, $this->database_manager );
+		$this->frontend_handler   = new Seculoco_Frontend_Handler( $this->table_name, $this->encryption_handler, $this->database_manager, $this->honeypot_protection, $this->rate_limiter );
 		$this->settings_manager   = new Seculoco_Settings_Manager( $this->encryption_handler );
 
 		// Allow pro extensions to hook in after components are initialized.

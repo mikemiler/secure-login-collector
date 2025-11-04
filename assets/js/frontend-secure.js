@@ -137,7 +137,7 @@ class StatusModal {
     showError(message = 'Something went wrong') {
         jQuery('#statusIcon').removeClass('seculoco-processing seculoco-success').addClass('seculoco-error');
         jQuery('#statusIcon').html('✗');
-        jQuery('#statusText').text('Error: ' + message);
+        jQuery('#statusText').text(message);
         jQuery('#statusCloseBtn').show();
     }
 }

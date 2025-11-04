@@ -48,6 +48,20 @@ class Seculoco_Frontend_Handler {
 	private $database_manager;
 
 	/**
+	 * Honeypot protection instance.
+	 *
+	 * @var Seculoco_Honeypot_Protection
+	 */
+	private $honeypot_protection;
+
+	/**
+	 * Rate limiter instance.
+	 *
+	 * @var Seculoco_Rate_Limiter
+	 */
+	private $rate_limiter;
+
+	/**
 	 * Constructor - initializes frontend handler.
 	 *
 	 * @param string                          $table_name         Database table name.
@@ -58,6 +72,10 @@ class Seculoco_Frontend_Handler {
 		$this->table_name         = $table_name;
 		$this->encryption_handler = $encryption_handler;
 		$this->database_manager   = $database_manager;
+
+		// Initialize security protection systems.
+		$this->honeypot_protection = new Seculoco_Honeypot_Protection();
+		$this->rate_limiter        = new Seculoco_Rate_Limiter();
 
 		// Register hooks.
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_frontend_scripts' ) );
@@ -146,7 +164,6 @@ class Seculoco_Frontend_Handler {
 	public function frontend_form_shortcode( $atts ) {
 		$atts = shortcode_atts(
 			array(
-				'title'       => __( 'Submit Secure Login Data', 'secure-login-collector' ),
 				'button_text' => __( 'Submit Securely', 'secure-login-collector' ),
 			),
 			$atts
@@ -155,7 +172,6 @@ class Seculoco_Frontend_Handler {
 		ob_start();
 		?>
 		<div class="seculoco-form-container">
-			<h3><?php echo esc_html( $atts['title'] ); ?></h3>
 			<div class="seculoco-security-info">
 				<img src="<?php echo esc_url( SECULOCO_PLUGIN_URL . 'assets/img/slc-secure-data-transfer-300.png' ); ?>" alt="<?php echo esc_attr__( 'Secure Encrypted Data Transmission', 'secure-login-collector' ); ?>" class="seculoco-security-badge-icon" />
 				<div class="seculoco-security-info-text">
@@ -209,15 +225,26 @@ class Seculoco_Frontend_Handler {
 				<?php endif; ?>
 				</div>
 			</div>
+
+			
+
 			<form id="seculoco-frontend-form" class="seculoco-form">
+				<?php
+				// Start honeypot time tracking for bot detection.
+				$this->honeypot_protection->start_time_tracking();
+
+				// Generate honeypot field HTML (invisible to humans, catches bots).
+				echo $this->honeypot_protection->generate_honeypot_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in method.
+				?>
+
 				<div class="seculoco-form-group">
-					<label for="email"><?php echo esc_html__( 'Email Address:', 'secure-login-collector' ); ?> <span class="seculoco-required">*</span></label>
-					<input type="email" id="email" name="email" placeholder="<?php echo esc_attr__( 'your@email.com', 'secure-login-collector' ); ?>" required>
+					<label for="user_name"><?php echo esc_html__( 'Your Name:', 'secure-login-collector' ); ?> <span class="seculoco-required">*</span></label>
+					<input type="text" id="user_name" name="user_name" placeholder="<?php echo esc_attr__( 'Your full name', 'secure-login-collector' ); ?>" required>
 				</div>
 
 				<div class="seculoco-form-group">
-					<label for="user_name"><?php echo esc_html__( 'Name:', 'secure-login-collector' ); ?> <span class="seculoco-required">*</span></label>
-					<input type="text" id="user_name" name="user_name" placeholder="<?php echo esc_attr__( 'Your full name', 'secure-login-collector' ); ?>" required>
+					<label for="email"><?php echo esc_html__( 'Your Email Address:', 'secure-login-collector' ); ?> <span class="seculoco-required">*</span></label>
+					<input type="email" id="email" name="email" placeholder="<?php echo esc_attr__( 'your@email.com', 'secure-login-collector' ); ?>" required>
 				</div>
 
 				<div class="seculoco-form-group">
@@ -289,6 +316,15 @@ class Seculoco_Frontend_Handler {
 			return;
 		}
 
+		// Check rate limiting (protection against brute force and spam).
+		$client_ip = SecureLoginCollector::get_client_ip();
+		$rate_check = $this->rate_limiter->check_rate_limit( $client_ip );
+
+		if ( is_wp_error( $rate_check ) ) {
+			wp_send_json_error( $rate_check->get_error_message() );
+			return;
+		}
+
 		// Get submission data and sanitize before JSON decode.
 		$submission_json = isset( $_POST['submission'] ) ? sanitize_textarea_field( wp_unslash( $_POST['submission'] ) ) : '';
 
@@ -301,6 +337,14 @@ class Seculoco_Frontend_Handler {
 		$submission = json_decode( $submission_json, true );
 		if ( JSON_ERROR_NONE !== json_last_error() ) {
 			wp_send_json_error( __( 'Invalid submission format.', 'secure-login-collector' ) );
+			return;
+		}
+
+		// Validate honeypot protection (bot detection via timing and hidden fields).
+		$honeypot_result = $this->honeypot_protection->validate_submission( $_POST );
+		if ( is_wp_error( $honeypot_result ) ) {
+			// Log silently but return generic error (don't reveal honeypot mechanism).
+			wp_send_json_error( $honeypot_result->get_error_message() );
 			return;
 		}
 
@@ -402,6 +446,9 @@ class Seculoco_Frontend_Handler {
 			wp_send_json_error( __( 'Failed to save data to database.', 'secure-login-collector' ) );
 			return;
 		}
+
+		// Record successful submission for rate limiting tracking.
+		$this->rate_limiter->record_submission( $client_ip );
 
 		// Send email notification if enabled.
 		$this->database_manager->send_notification( $metadata['email'], $metadata['name'] );
