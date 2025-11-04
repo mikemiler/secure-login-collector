@@ -4,7 +4,7 @@ Tags: login, password, credential management, password collection, data security
 Requires at least: 5.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.2.8
+Stable tag: 1.2.9
 License: GPL v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -43,35 +43,24 @@ The free version uses **server-trusted encryption** suitable for most agencies:
 5. Copy credentials to password manager
 6. Data auto-deletes after set period
 
-**Security Model:**
-- Credentials encrypted client-side with RSA-2048 + AES-256
-- Private key encrypted using WordPress salts (AUTH_KEY + SECURE_AUTH_KEY)
-- Any WordPress administrator can decrypt with admin login
-- Protects against email interception, casual database access, and transmission attacks
-- Perfect for 95% of agencies
+**Key Features:**
+- **Email Notifications**: Get notified of new submissions
+- **Client-Side Encryption**: RSA-2048 + AES-256 + WordPress salts encryption 
+- **Decryption**: Any WordPress administrator can decrypt with admin login for team access
+- **Anti-Spam**: Built-in spam protection with dynamic honeypot field
+- **No Client Account**: Simple form submission without registration
+- **Automatic Deletion**: Configurable retention periods (7-30 days recommended)
 
 
 = Pro Version - Zero-Knowledge Encryption (Separate Plugin) =
 
-**Pro Version** (available as a separate plugin from Freemius) adds passkey authentication for maximum security:
+- **Passkey authentication**: E.g. fingerprint, face ID, password manager with passkey support, etc.
+- **True zero-knowledge**: Server cannot decrypt even with full database and webspace access
+- **Advanced spam protection** with rate limiting and time-based validation
+- **White-label option**: Remove plugin branding from submission forms
+- **Bulk Password Manager Export**: Bitwarden, 1Password, LastPass, and more
+- **White-Label Option**: Remove plugin branding (pro only)
 
-- Requires physical device (e.g. fingerprint, face ID, password manager with passkey support) to decrypt
-- True zero-knowledge: Server cannot decrypt even with full database access
-- Protects against server compromise, admin account takeover, and database theft
-- Uses WebAuthn/FIDO2 standards
-- Each team member registers their own passkey
-- Ideal for high-security requirements (HIPAA, financial services)
-
-= Key Features =
-
-- **Client-Side Encryption**: RSA-2048 + AES-256 encryption
-- **Automatic Deletion**: Configurable retention periods (7-30 days recommended)
-- **Password Manager Export**: Bitwarden, 1Password, LastPass, and more
-- **No Client Account**: Simple form submission without registration
-- **Team Access**: All WordPress admins can decrypt (free) or register passkeys (pro)
-- **Bulk Operations**: Export multiple entries at once
-- **Email Notifications**: Get notified of new submissions
-- **Audit Trail**: Track who accessed what and when
 
 == Installation ==
 
@@ -86,11 +75,15 @@ For the Pro version (separate plugin available from Freemius), register your pas
 
 = Why is this better than email? =
 
-Email sends passwords in plain text. This plugin encrypts data in the browser using RSA-2048 + AES-256 and auto-deletes after your specified period.
+Email sends passwords in plain text. This plugin encrypts data in the browser using RSA-2048 + AES-256, includes spam protection, and auto-deletes after your specified period.
+
+= How does spam protection work? =
+
+The free version uses dynamic honeypot fields that rotate daily to catch bots. The Pro version adds advanced rate limiting and time-based validation to prevent abuse.
 
 = What's the difference between Free and Pro? =
 
-Free: WordPress admin access for decryption. The Pro version (available as a separate plugin) requires physical passkey device (YubiKey, Touch ID) for zero-knowledge encryption.
+Free: WordPress admin access for decryption, basic honeypot spam protection. The Pro version (available as a separate plugin) requires physical passkey device (YubiKey, Touch ID) for zero-knowledge encryption, adds advanced spam protection with rate limiting, and includes white-label option to remove plugin branding.
 
 = Can my team access credentials? =
 
@@ -110,18 +103,17 @@ Bitwarden, 1Password, LastPass, Dashlane, KeePass, Chrome, Firefox, Safari, and 
 2. Admin dashboard with encrypted entries
 3. Decryption view with copy buttons
 4. Settings page
-5. Passkey setup (Pro version)
 
 == Changelog ==
 
-= 1.0.1 =
-* Cache handling
+= 2.0.0 =
+* Refactoring for launch at wordpres.org
+* Anti-spam features
 
 = 1.0.0 =
 * Initial release with RSA-2048 + AES-256 encryption
-* Pro version with passkey authentication
-* Password manager export support
-* Auto-deletion and email notifications
+* Auto-deletion
+* Email notifications for new submissions
 
 == External Services ==
 

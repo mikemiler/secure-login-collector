@@ -34,7 +34,7 @@ function seculoco_fs() {
 		 * Add this to wp-config.php for local testing:
 		 * define( 'SECULOCO_SIMULATE_FREE_VERSION', true );
 		 */
-		$is_premium_version = ! defined( 'SECULOCO_SIMULATE_FREE_VERSION' ) || ! SECULOCO_SIMULATE_FREE_VERSION;
+		$is_premium_version = ! defined( 'SECULOCO_SIMULATE_FREE_VERSION' );
 
 		$seculoco_fs = fs_dynamic_init(
 			array(
