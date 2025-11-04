@@ -73,6 +73,12 @@ function seculoco_fs() {
 // Init Freemius.
 seculoco_fs();
 
+// Disable activation redirect to prevent "not allowed to access this page" error.
+// The redirect happens during admin_init before admin_menu registers the page.
+if ( function_exists( 'seculoco_fs' ) && seculoco_fs() ) {
+	seculoco_fs()->add_filter( 'redirect_on_activation', '__return_false' );
+}
+
 // Signal that SDK was initiated.
 do_action( 'seculoco_fs_loaded' );
 
