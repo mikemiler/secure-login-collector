@@ -489,14 +489,16 @@ class SecureLoginCollector {
  *
  * @return SecureLoginCollector The plugin instance
  */
-function seculoco_init() {
-	static $instance = null;
+if(!function_exists('seculoco_init')) {
+	function seculoco_init() {
+		static $instance = null;
 
-	if ( null === $instance ) {
-		$instance = new SecureLoginCollector();
+		if ( null === $instance ) {
+			$instance = new SecureLoginCollector();
+		}
+
+		return $instance;
 	}
-
-	return $instance;
 }
 
 // Instantiate plugin after Freemius is loaded.
