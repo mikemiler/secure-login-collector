@@ -246,7 +246,7 @@ jQuery(document).ready(function ($) {
 
         // Validate required fields
         if (!email || !name || !loginUrl || !usernameEmail || !password) {
-            alert(window.secureLoginMessages.fillAllFields);
+            alert(window.seculocoMessages.fillAllFields);
             return;
         }
 
@@ -268,7 +268,7 @@ jQuery(document).ready(function ($) {
             login_url: loginUrl,
             created_at: new Date().toISOString(),
             manually_added: true,
-            added_by_user: window.secureLoginConfig.currentUserId
+            added_by_user: window.seculocoConfig.currentUserId
         };
 
         // Submit to server for encryption and storage
@@ -283,19 +283,19 @@ jQuery(document).ready(function ($) {
             },
             success: function (response) {
                 if (response.success) {
-                    alert(window.secureLoginMessages.dataSavedSuccess);
+                    alert(window.seculocoMessages.dataSavedSuccess);
                     $('#add-new-entry-modal').hide();
                     $('#manual-add-form')[0].reset();
                     location.reload(); // Refresh to show new entry
                 } else {
-                    alert(window.secureLoginMessages.errorSavingData + (response.data || window.secureLoginMessages.unknownError));
+                    alert(window.seculocoMessages.errorSavingData + (response.data || window.seculocoMessages.unknownError));
                 }
             },
             error: function () {
-                alert(window.secureLoginMessages.networkError);
+                alert(window.seculocoMessages.networkError);
             },
             complete: function () {
-                submitBtn.prop('disabled', false).text(window.secureLoginMessages.saveEntry);
+                submitBtn.prop('disabled', false).text(window.seculocoMessages.saveEntry);
             }
         });
     });

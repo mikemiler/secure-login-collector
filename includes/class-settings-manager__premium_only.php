@@ -97,7 +97,7 @@ class Seculoco_Settings_Manager_Pro {
 		echo '<h3 class="seculoco-card-title">';
 		echo esc_html__( 'Advanced Security Features', 'secure-login-collector' );
 		echo '</h3>';
-		echo '<span class="seculoco-badge slc-badge-success">PRO</span>';
+		echo '<span class="seculoco-badge seculoco-badge-success">PRO</span>';
 		echo '</div>';
 		echo '<div class="seculoco-card-body">';
 		echo '<p>' . esc_html__( 'Advanced security settings including passkey authentication for enhanced protection.', 'secure-login-collector' ) . '</p>';
@@ -114,7 +114,7 @@ class Seculoco_Settings_Manager_Pro {
 
 		$passkey_registered = get_option( 'seculoco_passkey_registered', false );
 		if ( ! $passkey_registered ) {
-			echo '<div class="seculoco-alert slc-alert-warning" style="margin-top: 12px;">';
+			echo '<div class="seculoco-alert seculoco-alert-warning" style="margin-top: 12px;">';
 			echo '<span class="seculoco-alert-icon"></span>';
 			echo '<div class="seculoco-alert-content">';
 			echo '<div class="seculoco-alert-message">';

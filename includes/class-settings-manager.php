@@ -503,7 +503,7 @@ class Seculoco_Settings_Manager {
 		echo '<h3 class="seculoco-card-title">';
 		echo esc_html__( 'Advanced Security Features', 'secure-login-collector' );
 		echo '</h3>';
-		echo '<span class="seculoco-badge slc-badge-success">ADVANCED</span>';
+		echo '<span class="seculoco-badge seculoco-badge-success">ADVANCED</span>';
 		echo '</div>';
 		echo '<div class="seculoco-card-body">';
 		echo '<p>' . esc_html__( 'Advanced security settings including passkey authentication for enhanced protection.', 'secure-login-collector' ) . '</p>';
@@ -652,7 +652,7 @@ class Seculoco_Settings_Manager {
 	 */
 	public function settings_page() {
 		?>
-		<div class="wrap slc-admin-wrap">
+		<div class="wrap seculoco-admin-wrap">
 			<h1><?php echo esc_html__( 'Secure Login Collector Settings', 'secure-login-collector' ); ?></h1>
 			
 			<!-- Shortcode Display Section -->
@@ -662,7 +662,7 @@ class Seculoco_Settings_Manager {
 						
 						<?php echo esc_html__( 'Frontend Form Shortcode', 'secure-login-collector' ); ?>
 					</h3>
-					<span class="seculoco-badge slc-badge-info"><?php echo esc_html__( 'Required', 'secure-login-collector' ); ?></span>
+					<span class="seculoco-badge seculoco-badge-info"><?php echo esc_html__( 'Required', 'secure-login-collector' ); ?></span>
 				</div>
 				<div class="seculoco-card-body">
 					<p><?php echo esc_html__( 'Use this shortcode to display the secure login form on any page or post:', 'secure-login-collector' ); ?></p>

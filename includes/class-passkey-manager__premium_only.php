@@ -164,7 +164,7 @@ class Seculoco_Passkey_Manager {
 					<?php esc_html_e( 'Passkey Authentication', 'secure-login-collector' ); ?>
 					</h3>
 				<?php if ( $passkey ) : ?>
-						<span class="seculoco-badge slc-badge-success"><?php esc_html_e( 'Active', 'secure-login-collector' ); ?></span>
+						<span class="seculoco-badge seculoco-badge-success"><?php esc_html_e( 'Active', 'secure-login-collector' ); ?></span>
 					<?php endif; ?>
 				</div>
 				
@@ -287,7 +287,7 @@ class Seculoco_Passkey_Manager {
 
 							<button type="button"
 									id="register-passkey-btn"
-									class="seculoco-btn slc-btn-primary slc-btn-lg">
+									class="seculoco-btn seculoco-btn-primary seculoco-btn-lg">
 								<span>🔑</span>
 								<?php esc_html_e( 'Register Passkey', 'secure-login-collector' ); ?>
 							</button>

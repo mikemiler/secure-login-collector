@@ -779,14 +779,14 @@ class Seculoco_Admin_Interface {
 
 		wp_localize_script(
 			'secure-login-admin-js',
-			'secureLoginConfig',
+			'seculocoConfig',
 			$admin_config
 		);
 
 		// Localize script with translatable messages.
 		wp_localize_script(
 			'secure-login-admin-js',
-			'secureLoginMessages',
+			'seculocoMessages',
 			array(
 				'noDecryptedData'                     => __( 'No decrypted data available. Please decrypt the data first.', 'secure-login-collector' ),
 				'fillAllFields'                       => __( 'Please fill in all required fields.', 'secure-login-collector' ),

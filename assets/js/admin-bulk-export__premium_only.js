@@ -183,11 +183,11 @@ jQuery(document).ready(function ($) {
 
         var modalTitle = encryptionCheck.hasPro && encryptionCheck.hasFree
             ? '🔐 Bulk Decrypt with Mixed Encryption'
-            : '🔐 ' + (window.secureLoginMessages.bulkDecryptWithPasskey || 'Bulk Decrypt with Passkey');
+            : '🔐 ' + (window.seculocoMessages.bulkDecryptWithPasskey || 'Bulk Decrypt with Passkey');
 
         var buttonText = encryptionCheck.hasPro && encryptionCheck.hasFree
             ? 'Authenticate with Passkey (for ' + encryptionCheck.counts.pro + ' PRO entries)'
-            : (window.secureLoginMessages.authenticateWithPasskeyToDecryptAll || 'Authenticate with Passkey to Decrypt All');
+            : (window.seculocoMessages.authenticateWithPasskeyToDecryptAll || 'Authenticate with Passkey to Decrypt All');
 
         modalContent.html(
             '<h3 style="margin: 0 0 20px 0;">' + modalTitle + '</h3>' +
