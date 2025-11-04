@@ -18,8 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Encryption Handler V2 - Base Class (Free Version)
  *
  * Handles free version encryption: RSA-2048 + AES-256-CBC with WordPress salts.
- * Pro version (class-encryption-handler-v2__premium_only.php) extends this
- * to add passkey-based key wrapping for premium encryption keys.
+ * Pro version adds passkey-based key wrapping for premium encryption keys.
  */
 class Seculoco_Encryption_Handler_V2 {
 

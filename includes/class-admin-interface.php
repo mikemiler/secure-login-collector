@@ -257,28 +257,6 @@ class Seculoco_List_Table extends WP_List_Table {
 
 		$actions = array();
 
-		// Edit button with icon (disabled for expired entries).
-		if ( ! $is_expired ) {
-			$actions[] = sprintf(
-				'<button type="button" class="button edit-btn" data-id="%s" title="%s"><span class="dashicons dashicons-edit"></span></button>',
-				$item->id,
-				esc_attr__( 'Edit entry', 'secure-login-collector' )
-			);
-
-			// Save/Cancel buttons (hidden by default) with icons.
-			$actions[] = sprintf(
-				'<button type="button" class="button button-primary save-btn" data-id="%s" title="%s" style="display: none;"><span class="dashicons dashicons-yes"></span></button>',
-				$item->id,
-				esc_attr__( 'Save changes', 'secure-login-collector' )
-			);
-
-			$actions[] = sprintf(
-				'<button type="button" class="button cancel-btn" data-id="%s" title="%s" style="display: none;"><span class="dashicons dashicons-no"></span></button>',
-				$item->id,
-				esc_attr__( 'Cancel editing', 'secure-login-collector' )
-			);
-		}
-
 		// Decrypt button (disabled for expired or undecryptable entries).
 		if ( $is_expired ) {
 			// Show disabled decrypt button for expired entries.
@@ -319,6 +297,28 @@ class Seculoco_List_Table extends WP_List_Table {
 				'<button type="button" class="button button-secondary extend-btn" title="%s" style="opacity: 0.7" disabled><span class="dashicons dashicons-calendar-alt"></span></button>',
 				$item->id,
 				esc_attr__( 'Cannot extend retention period', 'secure-login-collector' )
+			);
+		}
+
+		// Edit button with icon (disabled for expired entries).
+		if ( ! $is_expired ) {
+			$actions[] = sprintf(
+				'<button type="button" class="button edit-btn" data-id="%s" title="%s"><span class="dashicons dashicons-edit"></span></button>',
+				$item->id,
+				esc_attr__( 'Edit entry', 'secure-login-collector' )
+			);
+
+			// Save/Cancel buttons (hidden by default) with icons.
+			$actions[] = sprintf(
+				'<button type="button" class="button button-primary save-btn" data-id="%s" title="%s" style="display: none;"><span class="dashicons dashicons-yes"></span></button>',
+				$item->id,
+				esc_attr__( 'Save changes', 'secure-login-collector' )
+			);
+
+			$actions[] = sprintf(
+				'<button type="button" class="button cancel-btn" data-id="%s" title="%s" style="display: none;"><span class="dashicons dashicons-no"></span></button>',
+				$item->id,
+				esc_attr__( 'Cancel editing', 'secure-login-collector' )
 			);
 		}
 
