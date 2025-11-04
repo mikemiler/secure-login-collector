@@ -171,11 +171,6 @@ class SecureLoginCollector {
 			include_once SECULOCO_PLUGIN_DIR . 'includes/freemius-init-check.php';
 		}
 
-		// Load Freemius account redirect handler.
-		if ( file_exists( SECULOCO_PLUGIN_DIR . 'includes/freemius-account-redirect.php' ) ) {
-			include_once SECULOCO_PLUGIN_DIR . 'includes/freemius-account-redirect.php';
-		}
-
 		// Load Freemius uninstall handler.
 		if ( file_exists( SECULOCO_PLUGIN_DIR . 'includes/freemius-uninstall.php' ) ) {
 			include_once SECULOCO_PLUGIN_DIR . 'includes/freemius-uninstall.php';
