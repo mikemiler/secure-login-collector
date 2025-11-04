@@ -78,64 +78,6 @@ class Seculoco_Database_Manager {
 		dbDelta( $sql );
 	}
 
-	/**
-	 * Upgrade database schema if needed.
-	 *
-	 * @return void
-	 */
-	public function upgrade_database() {
-		global $wpdb;
-
-		// Check if retention_until column exists.
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is escaped in constructor via esc_sql().
-		$column_exists = $wpdb->get_results(
-			$wpdb->prepare(
-				"SHOW COLUMNS FROM {$this->table_name} LIKE %s",
-				'retention_until'
-			)
-		);
-
-		if ( empty( $column_exists ) ) {
-			// Add retention_until column.
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
-			$wpdb->query( $wpdb->prepare( 'ALTER TABLE %i ADD COLUMN retention_until datetime DEFAULT NULL AFTER created_at', $this->table_name ) );
-
-			// Set retention_until for existing records based on created_at + expiration days.
-			$expiration_days = get_option( 'seculoco_expiration_days', 30 );
-			if ( $expiration_days > 0 ) {
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-				$wpdb->query(
-					$wpdb->prepare(
-						'UPDATE %i SET retention_until = DATE_ADD(created_at, INTERVAL %d DAY) WHERE retention_until IS NULL',
-						$this->table_name,
-						$expiration_days
-					)
-				);
-			}
-		}
-
-		// Check if is_expired column exists.
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is escaped in constructor via esc_sql().
-		$is_expired_exists = $wpdb->get_results(
-			$wpdb->prepare(
-				"SHOW COLUMNS FROM {$this->table_name} LIKE %s",
-				'is_expired'
-			)
-		);
-
-		if ( empty( $is_expired_exists ) ) {
-			// Add is_expired column.
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
-			$wpdb->query( $wpdb->prepare( 'ALTER TABLE %i ADD COLUMN is_expired tinyint(1) DEFAULT 0 AFTER retention_until', $this->table_name ) );
-
-			// Add index for is_expired column.
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
-			$wpdb->query( $wpdb->prepare( 'ALTER TABLE %i ADD KEY is_expired (is_expired)', $this->table_name ) );
-		}
-
-		// Note: undecryptable columns now included in initial table creation.
-		// This section kept for backwards compatibility but no longer needed for new installations.
-	}
 
 	/**
 	 * Schedule cleanup cron job.

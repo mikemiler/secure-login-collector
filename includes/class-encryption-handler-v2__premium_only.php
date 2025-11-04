@@ -1,5 +1,4 @@
 <?php
-// phpcs:ignoreFile WordPress.Files.FileName.InvalidClassFileName -- Legacy file naming convention.
 /**
  * @fs_premium_only
  *
@@ -64,8 +63,6 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
 			wp_send_json_error( 'Passkey-derived key required' );
 			return;
 		}
-
-		
 
 		// Decode the key (it's base64 encoded from client).
 		$passkey_key = base64_decode( $passkey_key );

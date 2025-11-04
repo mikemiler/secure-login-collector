@@ -246,7 +246,6 @@ class Seculoco_Passkey_Manager {
 									</div>
 									<button type="button" class="seculoco-btn seculoco-btn-danger" id="delete-passkey-btn"
 											data-credential-id="<?php echo esc_attr( $passkey['credential_id'] ); ?>">
-										<span>🗑️</span>
 										<?php esc_html_e( 'Delete Passkey', 'secure-login-collector' ); ?>
 									</button>
 								</div>

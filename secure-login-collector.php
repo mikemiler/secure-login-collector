@@ -218,7 +218,6 @@ class SecureLoginCollector {
 	public function activate() {
 		// Create main data table and perform activation tasks.
 		$this->database_manager->create_table();
-		$this->database_manager->upgrade_database();
 		$this->database_manager->schedule_cleanup();
 
 		// Allow pro extensions to run activation tasks.
