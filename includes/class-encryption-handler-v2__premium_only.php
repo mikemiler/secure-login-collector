@@ -129,6 +129,7 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$entry = $wpdb->get_row(
 			$wpdb->prepare(
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				"SELECT metadata FROM {$table_name} WHERE id = %d",
 				$entry_id
 			)
@@ -256,6 +257,7 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
 
 		// Log result for debugging.
 		if ( is_wp_error( $result ) ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 			error_log( 'Pro key initialization failed: ' . $result->get_error_message() );
 		}
 	}
@@ -282,6 +284,7 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
 
 		// Log result for debugging.
 		if ( is_wp_error( $result ) ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 			error_log( 'Pro key deletion failed: ' . $result->get_error_message() );
 		}
 	}

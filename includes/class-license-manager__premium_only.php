@@ -1,5 +1,7 @@
 <?php
 /**
+ * Premium License Manager for Secure Login Collector.
+ *
  * @fs_premium_only
  *
  * Premium feature: License Management

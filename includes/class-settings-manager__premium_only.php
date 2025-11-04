@@ -1,5 +1,7 @@
 <?php
 /**
+ * Premium Settings Manager for Secure Login Collector.
+ *
  * @fs_premium_only
  *
  * Premium Settings Manager

@@ -165,7 +165,7 @@ class SecureLoginCollector {
 		// Load premium base classes only if available and licensed.
 		// These provide pro functionality (passkey management, licensing, etc).
 		// Files with __premium_only suffix are automatically removed by Freemius in free version.
-		// For local testing: Add define( 'SECULOCO_SIMULATE_FREE_VERSION', true ); to wp-config.php
+		// For local testing: Add define( 'SECULOCO_SIMULATE_FREE_VERSION', true ); to wp-config.php.
 		$can_load_premium = function_exists( 'seculoco_fs' )
 			&& seculoco_fs()->can_use_premium_code()
 			&& ! defined( 'SECULOCO_SIMULATE_FREE_VERSION' );
@@ -385,7 +385,7 @@ class SecureLoginCollector {
 		);
 
 		foreach ( $free_paths as $path ) {
-			if ( is_dir( $path ) && $path !== SECULOCO_PLUGIN_DIR ) {
+			if ( is_dir( $path ) && SECULOCO_PLUGIN_DIR !== $path ) {
 				return true;
 			}
 		}
@@ -417,7 +417,7 @@ class SecureLoginCollector {
 		$deleted = false;
 		foreach ( $free_paths as $free_path ) {
 			// Make sure we're not deleting the Pro version!
-			if ( $free_path === SECULOCO_PLUGIN_DIR ) {
+			if ( SECULOCO_PLUGIN_DIR === $free_path ) {
 				continue;
 			}
 
@@ -480,15 +480,15 @@ class SecureLoginCollector {
 	}
 }
 
-/**
- * Initialize the plugin
- *
- * This function instantiates the main plugin class after Freemius has loaded.
- * It ensures proper initialization order and prevents race conditions.
- *
- * @return SecureLoginCollector The plugin instance
- */
 if ( ! function_exists( 'seculoco_init' ) ) {
+	/**
+	 * Initialize the plugin.
+	 *
+	 * This function instantiates the main plugin class after Freemius has loaded.
+	 * It ensures proper initialization order and prevents race conditions.
+	 *
+	 * @return SecureLoginCollector The plugin instance.
+	 */
 	function seculoco_init() {
 		static $instance = null;
 

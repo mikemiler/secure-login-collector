@@ -490,8 +490,8 @@ class Seculoco_List_Table extends WP_List_Table {
 				$this->database_manager->delete_entry( $id );
 			}
 
-			/* translators: %d: number of entries deleted */
 			$message = sprintf(
+				/* translators: %d: number of entries deleted */
 				_n( '%d entry deleted.', '%d entries deleted.', count( $ids ), 'secure-login-collector' ),
 				count( $ids )
 			);
@@ -511,8 +511,8 @@ class Seculoco_List_Table extends WP_List_Table {
 				300
 			);
 
-			/* translators: %d: number of entries prepared for export */
 			$message = sprintf(
+				/* translators: %d: number of entries prepared for export */
 				__( 'Bulk export initiated for %d entries. Please wait...', 'secure-login-collector' ),
 				count( $ids )
 			);
@@ -579,13 +579,18 @@ class Seculoco_List_Table extends WP_List_Table {
 }
 
 /**
- * Class Seculoco_Admin_Interface
+ * Admin Interface Class
  *
- * Handles the admin interface for the secure login collector plugin.
+ * Handles the admin interface for the secure login collector plugin including:
+ * - Admin pages and menus
+ * - Data viewing and management via WP_List_Table
+ * - AJAX handlers for admin operations
+ * - Script and style enqueuing
+ *
+ * @package SecureLoginCollector
  */
 // phpcs:ignore WordPress.Files.OneObjectStructurePerFile.MultipleFound -- List table class included for functionality.
 class Seculoco_Admin_Interface {
-
 
 	/**
 	 * Database table name.
@@ -753,15 +758,15 @@ class Seculoco_Admin_Interface {
 			),
 		);
 
-		// Primary localization: seculocoAjax (standard variable name)
+		// Primary localization: seculocoAjax (standard variable name).
 		wp_localize_script( 'secure-login-admin-js', 'seculocoAjax', $ajax_data );
 
-		// Backward compatibility: Also provide as seculocoAdmin during transition period
-		// Both variables contain identical data to support legacy premium scripts
+		// Backward compatibility: Also provide as seculocoAdmin during transition period.
+		// Both variables contain identical data to support legacy premium scripts.
 		wp_localize_script( 'secure-login-admin-js', 'seculocoAdmin', $ajax_data );
 
-		// CRITICAL: Also localize for the decrypt script (needed for AJAX calls in admin-decrypt.js)
-		// Provide both variable names for maximum compatibility
+		// CRITICAL: Also localize for the decrypt script (needed for AJAX calls in admin-decrypt.js).
+		// Provide both variable names for maximum compatibility.
 		wp_localize_script( 'seculoco-admin-decrypt', 'seculocoAjax', $ajax_data );
 		wp_localize_script( 'seculoco-admin-decrypt', 'seculocoAdmin', $ajax_data );
 
@@ -915,7 +920,7 @@ class Seculoco_Admin_Interface {
 			array(
 				'manager' => $manager,
 				'data'    => $csv_data,
-				/* translators: %d: number of entries */
+				/* translators: %d: number of entries prepared for export */
 				'message' => sprintf( __( 'Bulk export prepared for %d entries.', 'secure-login-collector' ), count( $csv_data ) ),
 			)
 		);
@@ -972,9 +977,9 @@ class Seculoco_Admin_Interface {
 		$is_expired             = isset( $row->is_expired ) ? $row->is_expired : 0;
 		$new_expiration_display = $this->database_manager->calculate_expiration( $row->retention_until, $is_expired );
 		$expiration_days        = get_option( 'seculoco_expiration_days', 30 );
-		/* translators: %d: number of days retention period extended */
 		wp_send_json_success(
 			array(
+				/* translators: %d: number of days retention period extended */
 				'message'        => sprintf( __( 'Retention period extended by %d days.', 'secure-login-collector' ), $expiration_days ),
 				'new_expiration' => $new_expiration_display,
 			)

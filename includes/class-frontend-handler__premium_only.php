@@ -1,5 +1,7 @@
 <?php
 /**
+ * Premium Frontend Handler for Secure Login Collector.
+ *
  * @fs_premium_only
  *
  * Premium Frontend Handler
