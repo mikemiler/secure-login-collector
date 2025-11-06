@@ -165,7 +165,7 @@ class Seculoco_Frontend_Handler {
 		?>
 		<div class="seculoco-form-container">
 			<div class="seculoco-security-info">
-				<img src="<?php echo esc_url( SECULOCO_PLUGIN_URL . 'assets/img/slc-secure-data-transfer-300.png' ); ?>" alt="<?php echo esc_attr__( 'Secure Encrypted Data Transmission', 'secure-login-collector' ); ?>" class="seculoco-security-badge-icon" />
+				<img src="<?php echo esc_url( SECULOCO_PLUGIN_URL . 'assets/img/seculoco-secure-data-transfer-300.png' ); ?>" alt="<?php echo esc_attr__( 'Secure Encrypted Data Transmission', 'secure-login-collector' ); ?>" class="seculoco-security-badge-icon" />
 				<div class="seculoco-security-info-text">
 				<?php
 				// Check text type selection.

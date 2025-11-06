@@ -43,7 +43,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Seculoco_Encryption_Handler_V2 {
 
 	/**
-	 * Constructor - Register AJAX handlers.
+	 * Constructor - Register AJAX handlers and cleanup old keys.
 	 */
 	public function __construct() {
 		// AJAX handlers - using seculoco_ prefix (WordPress.org compliant, 4+ chars).
@@ -52,160 +52,199 @@ class Seculoco_Encryption_Handler_V2 {
 		add_action( 'wp_ajax_seculoco_get_wrapped_private_key', array( $this, 'handle_get_wrapped_private_key' ) );
 		add_action( 'wp_ajax_seculoco_initialize_free_keys', array( $this, 'handle_initialize_free_keys' ) );
 		add_action( 'wp_ajax_seculoco_export_public_key', array( $this, 'handle_export_public_key' ) );
+
+		// Cleanup old WP-salts keys on init (run once).
+		add_action( 'admin_init', array( $this, 'cleanup_old_keys' ) );
 	}
 
 	/**
-	 * Generate RSA key pair (2048-bit).
+	 * Get unified crypto instance.
 	 *
-	 * Marked protected to allow premium class to use it without reflection.
-	 *
-	 * @return array|WP_Error Array with 'public' and 'private' keys, or error.
+	 * @return Secure_Login_Collector_Unified_Crypto Unified crypto instance.
 	 */
-	protected function generate_rsa_keypair() {
-		if ( ! function_exists( 'openssl_pkey_new' ) ) {
-			return new WP_Error( 'openssl_missing', 'OpenSSL extension required' );
+	protected function get_unified_crypto() {
+		if ( ! class_exists( 'Secure_Login_Collector_Unified_Crypto' ) ) {
+			require_once SECULOCO_PLUGIN_DIR . 'includes/class-unified-crypto.php';
 		}
-
-		$config = array(
-			'digest_alg'       => 'sha256',
-			'private_key_bits' => 2048,
-			'private_key_type' => OPENSSL_KEYTYPE_RSA,
-		);
-
-		$keypair = openssl_pkey_new( $config );
-		if ( ! $keypair ) {
-			return new WP_Error( 'generation_failed', 'Failed to generate RSA keypair' );
-		}
-
-		// Extract private key.
-		openssl_pkey_export( $keypair, $private_key );
-
-		// Extract public key.
-		$details = openssl_pkey_get_details( $keypair );
-
-		return array(
-			'public'  => $details['key'],
-			'private' => $private_key,
-		);
+		return new Secure_Login_Collector_Unified_Crypto();
 	}
 
 	/**
-	 * Initialize free version keys (standard RSA without passkey).
+	 * Initialize standard keys (password-based encryption).
 	 *
+	 * @param string $admin_password Optional admin password for key protection.
 	 * @return array|WP_Error Result of key initialization.
 	 */
-	public function initialize_free_keys() {
-		// Check if free keys already exist.
-		$public_key_free            = get_option( 'seculoco_public_key_free' );
-		$private_key_free_encrypted = get_option( 'seculoco_private_key_free_encrypted' );
-
-		if ( $public_key_free && $private_key_free_encrypted ) {
+	public function initialize_free_keys( $admin_password = '' ) {
+		$unified = $this->get_unified_crypto();
+		
+		// Check if standard keys already exist.
+		if ( $unified->has_keys( 'standard' ) ) {
 			return array(
 				'status' => 'already_initialized',
-				'type'   => 'free',
+				'type'   => 'standard',
 			);
 		}
 
-		// Generate new RSA keypair for free version.
-		$keypair = $this->generate_rsa_keypair();
+		// Generate new RSA keypair.
+		$keypair = $unified->generate_keypair();
+		
 		if ( is_wp_error( $keypair ) ) {
 			return $keypair;
 		}
 
-		// Store public key (publicly accessible).
-		update_option( 'seculoco_public_key_free', $keypair['public'] );
+		// Wrap private key with password.
+		if ( empty( $admin_password ) ) {
+			// Use temporary password if not provided.
+			$admin_password = wp_generate_password( 32, true, true );
+		}
 
-		// Encrypt private key with WordPress salts for free version.
-		$encrypted_private = $this->encrypt_with_wp_salts( $keypair['private'] );
-		update_option( 'seculoco_private_key_free_encrypted', $encrypted_private );
+		$wrapped_key = $unified->wrap_private_key(
+			$keypair['private'],
+			'password',
+			$admin_password
+		);
+
+		if ( is_wp_error( $wrapped_key ) ) {
+			return $wrapped_key;
+		}
+
+		// Store wrapped key and public key.
+		$result = $unified->store_wrapped_key(
+			'standard',
+			$wrapped_key,
+			$keypair['public']
+		);
+
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		// Mark standard encryption as active.
+		update_option( 'seculoco_password_active', true );
 
 		// Log initialization.
-		$this->log_key_operation( 'free_keys_initialized' );
+		$this->log_key_operation( 'standard_keys_initialized' );
 
 		return array(
 			'status'  => 'success',
-			'type'    => 'free',
-			'message' => 'Free version keys initialized',
+			'type'    => 'standard',
+			'message' => 'Standard encryption keys initialized',
 		);
 	}
 
 	/**
-	 * Encrypt data with WordPress salts (for free version).
+	 * Initialize password-based keys (alias for initialize_free_keys).
+	 * Used by AJAX handlers for password setup.
 	 *
-	 * Uses AUTH_KEY and SECURE_AUTH_KEY for derivation.
-	 * Returns AES-256-CBC encrypted data with IV.
-	 *
-	 * @param string $data Data to encrypt.
-	 * @return array Encrypted data with IV (base64 encoded).
+	 * @param string $password Admin password for key wrapping.
+	 * @return bool True on success, false on failure.
 	 */
-	private function encrypt_with_wp_salts( $data ) {
-		$key = hash( 'sha256', AUTH_KEY . SECURE_AUTH_KEY, true );
-		$iv  = random_bytes( 16 );
+	public function initialize_password_keys( $password ) {
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Debugging.
+		error_log( 'initialize_password_keys called with password length: ' . strlen( $password ) );
 
-		$encrypted = openssl_encrypt(
-			$data,
-			'AES-256-CBC',
-			$key,
-			OPENSSL_RAW_DATA,
-			$iv
+		$result = $this->initialize_free_keys( $password );
+
+		if ( is_wp_error( $result ) ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Debugging.
+			error_log( 'initialize_free_keys returned WP_Error: ' . $result->get_error_message() );
+			return false;
+		}
+
+		$success = isset( $result['status'] ) && 'success' === $result['status'];
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Debugging.
+		error_log( 'initialize_password_keys result: ' . ( $success ? 'SUCCESS' : 'FAILURE' ) . ' - ' . wp_json_encode( $result ) );
+
+		return $success;
+	}
+
+	/**
+	 * Reset password-based encryption keys.
+	 * Marks all password-encrypted data as undecryptable.
+	 *
+	 * @return array Result with affected_entries count.
+	 */
+	public function reset_password_keys() {
+		global $wpdb;
+		$table = $wpdb->prefix . 'seculoco_data';
+
+		// Mark all password-encrypted entries as undecryptable.
+		$affected = $wpdb->query(
+			$wpdb->prepare(
+				"UPDATE {$table}
+				SET undecryptable = 1,
+				    undecryptable_at = %s
+				WHERE JSON_EXTRACT(metadata, '$.encryption_type') = %s
+				  AND undecryptable = 0",
+				current_time( 'mysql' ),
+				'aes-rsa-password-v3'
+			)
 		);
+
+		// Delete password keys.
+		$unified = $this->get_unified_crypto();
+		$unified->delete_keys( 'standard' );
+
+		// Clear password active flag.
+		delete_option( 'seculoco_password_active' );
+		delete_option( 'seculoco_password_encryption_active' );
+
+		// Log operation.
+		$this->log_key_operation( 'password_keys_reset', array( 'affected_entries' => $affected ) );
 
 		return array(
-			'data' => base64_encode( $encrypted ),
-			'iv'   => base64_encode( $iv ),
-		);
-	}
-
-	/**
-	 * Decrypt data with WordPress salts (for free version).
-	 *
-	 * @param array $encrypted_data Encrypted data with IV (base64 encoded).
-	 * @return string|false Decrypted data or false on error.
-	 */
-	private function decrypt_with_wp_salts( $encrypted_data ) {
-		$key = hash( 'sha256', AUTH_KEY . SECURE_AUTH_KEY, true );
-
-		return openssl_decrypt(
-			base64_decode( $encrypted_data['data'] ),
-			'AES-256-CBC',
-			$key,
-			OPENSSL_RAW_DATA,
-			base64_decode( $encrypted_data['iv'] )
+			'success'          => true,
+			'affected_entries' => $affected,
 		);
 	}
 
 	/**
 	 * Handle AJAX request for public key.
 	 *
-	 * Returns PRO key if available (passkey registered), otherwise FREE key.
-	 * Frontend does NOT know which type it received - keeps PRO/FREE status private.
+	 * Returns passkey public key if available, otherwise standard key.
+	 * Frontend does NOT know which type it received - keeps passkey status private.
 	 *
 	 * EXTENSION POINT: Pro version can filter 'seculoco_get_public_key' to return
-	 * pro key instead of free key when pro keys are active.
+	 * passkey key instead of standard key when passkey is active.
 	 */
 	public function handle_get_public_key() {
-		// Get free version public key.
-		$public_key_free = get_option( 'seculoco_public_key_free' );
+		$unified = $this->get_unified_crypto();
 
-		// Initialize free keys if not exists.
-		if ( ! $public_key_free ) {
-			$result = $this->initialize_free_keys();
-			if ( is_wp_error( $result ) ) {
-				wp_send_json_error( 'Failed to initialize encryption keys: ' . $result->get_error_message() );
-				return;
+		// Check if passkey is active first.
+		$is_passkey_active = $this->is_passkey_active();
+
+		// Determine which method to use.
+		$method = $is_passkey_active ? 'passkey' : 'standard';
+
+		// Get public key for the active method.
+		$public_key = $unified->get_public_key( $method );
+
+		// If standard key doesn't exist, try to initialize.
+		if ( is_wp_error( $public_key ) && 'standard' === $method ) {
+			if ( current_user_can( 'manage_options' ) ) {
+				$result = $this->initialize_free_keys();
+				if ( ! is_wp_error( $result ) ) {
+					$public_key = $unified->get_public_key( 'standard' );
+				}
 			}
-			$public_key_free = get_option( 'seculoco_public_key_free' );
+		}
+
+		// Check for error.
+		if ( is_wp_error( $public_key ) ) {
+			wp_send_json_error( 'Failed to get encryption key: ' . $public_key->get_error_message() );
+			return;
 		}
 
 		/**
 		 * Filter the public key to use for encryption.
 		 *
-		 * Pro version can hook into this filter to return pro key when available.
+		 * Pro version can hook into this filter to return passkey key when available.
 		 *
 		 * @since 1.0.0
-		 * @param string $public_key_free The free version public key (default).
+		 * @param string $public_key The public key (standard or passkey).
 		 */
-		$public_key = apply_filters( 'seculoco_get_public_key', $public_key_free );
+		$public_key = apply_filters( 'seculoco_get_public_key', $public_key );
 
 		if ( empty( $public_key ) ) {
 			wp_send_json_error( 'No encryption key available' );
@@ -218,7 +257,7 @@ class Seculoco_Encryption_Handler_V2 {
 				'public_key' => $public_key,
 				'algorithm'  => 'RSA-OAEP',
 				'key_size'   => 2048,
-				// NO 'type' field - keep PRO/FREE status private.
+				// NO 'type' field - keep passkey status private.
 			)
 		);
 	}
@@ -226,17 +265,18 @@ class Seculoco_Encryption_Handler_V2 {
 	/**
 	 * Handle request for wrapped private key (admin only).
 	 *
-	 * Returns free private key (base64 encoded only).
+	 * Returns wrapped private key data for client-side unwrapping.
 	 *
-	 * SECURITY NOTE: Free version returns base64-encoded private key to browser.
+	 * SECURITY NOTE: Server returns wrapped (encrypted) private key to browser.
+	 * Client-side decryption using password or passkey is required.
 	 * This is acceptable because:
 	 * 1. Only admins with manage_options capability can access
 	 * 2. Nonce verification is required
 	 * 3. Connection must be over HTTPS
-	 * 4. Decryption happens client-side (server never sees passwords)
+	 * 4. Unwrapping happens client-side (server never sees passwords/passkeys)
 	 *
 	 * EXTENSION POINT: Pro version can hook into 'seculoco_get_wrapped_private_key_request'
-	 * action to intercept pro key requests and handle them with passkey authentication.
+	 * action to intercept passkey key requests and handle them with passkey authentication.
 	 * If pro handler sends JSON response (wp_send_json_*), this method exits early.
 	 */
 	public function handle_get_wrapped_private_key() {
@@ -258,11 +298,11 @@ class Seculoco_Encryption_Handler_V2 {
 		$entry_id = isset( $_POST['entry_id'] ) ? absint( $_POST['entry_id'] ) : 0;
 
 		/**
-		 * Action hook for pro key retrieval.
+		 * Action hook for passkey key retrieval.
 		 *
-		 * Pro version hooks here to check if this entry uses pro encryption.
+		 * Pro version hooks here to check if this entry uses passkey encryption.
 		 * If yes, pro handler sends JSON response and exits.
-		 * If no, execution continues to free key handling below.
+		 * If no, execution continues to standard key handling below.
 		 *
 		 * @since 1.0.0
 		 * @param int    $entry_id The entry ID being decrypted.
@@ -271,32 +311,27 @@ class Seculoco_Encryption_Handler_V2 {
 		do_action( 'seculoco_get_wrapped_private_key_request', $entry_id, $nonce );
 
 		// If pro handler sent response, it would have exited by now.
-		// Continue with free key handling.
+		// Continue with standard key handling.
 
-		// FREE: Return private key decrypted with WP salts.
-		$encrypted_key = get_option( 'seculoco_private_key_free_encrypted' );
+		$unified = $this->get_unified_crypto();
 
-		if ( ! $encrypted_key ) {
-			wp_send_json_error( 'No private key available' );
-			return;
-		}
+		// Get wrapped standard key.
+		$wrapped_key = $unified->get_wrapped_key( 'standard' );
 
-		// For free version, decrypt with WP salts and return.
-		$private_key = $this->decrypt_with_wp_salts( $encrypted_key );
-		if ( ! $private_key ) {
-			wp_send_json_error( 'Failed to decrypt private key' );
+		if ( is_wp_error( $wrapped_key ) ) {
+			wp_send_json_error( 'No private key available: ' . $wrapped_key->get_error_message() );
 			return;
 		}
 
 		// Log this security-sensitive operation.
-		$this->log_key_access( get_current_user_id(), 'free' );
+		$this->log_key_access( get_current_user_id(), 'standard' );
 
-		// Return as a "wrapped" format for consistency.
+		// Return wrapped key for client-side unwrapping.
 		wp_send_json_success(
 			array(
-				'private_key' => base64_encode( $private_key ),
-				'type'        => 'free',
-				'message'     => 'Free version key - no passkey required',
+				'wrapped_key' => $wrapped_key,
+				'type'        => 'standard',
+				'message'     => 'Password required for unwrapping',
 			)
 		);
 	}
@@ -344,17 +379,22 @@ class Seculoco_Encryption_Handler_V2 {
 			return;
 		}
 
-		$public_key = get_option( 'seculoco_public_key_free' );
+		$unified = $this->get_unified_crypto();
 
-		if ( ! $public_key ) {
-			wp_send_json_error( 'No public key found' );
+		// Check if passkey is active, otherwise use standard.
+		$method = $this->is_passkey_active() ? 'passkey' : 'standard';
+
+		$public_key = $unified->get_public_key( $method );
+
+		if ( is_wp_error( $public_key ) ) {
+			wp_send_json_error( 'No public key found: ' . $public_key->get_error_message() );
 			return;
 		}
 
 		wp_send_json_success(
 			array(
 				'public_key' => $public_key,
-				'type'       => 'free',
+				'type'       => $method,
 			)
 		);
 	}
@@ -392,8 +432,9 @@ class Seculoco_Encryption_Handler_V2 {
 	 * Marked protected to allow premium class to use it without reflection.
 	 *
 	 * @param string $operation Operation performed (e.g., 'free_keys_initialized').
+	 * @param array  $metadata Optional metadata to include in log entry.
 	 */
-	protected function log_key_operation( $operation ) {
+	protected function log_key_operation( $operation, $metadata = array() ) {
 		$log = get_option( 'seculoco_key_operations_log', array() );
 
 		// Keep only last 50 operations.
@@ -401,11 +442,18 @@ class Seculoco_Encryption_Handler_V2 {
 			$log = array_slice( $log, -50 );
 		}
 
-		$log[] = array(
+		$log_entry = array(
 			'operation' => $operation,
 			'timestamp' => time(),
 			'user_id'   => get_current_user_id(),
 		);
+
+		// Add metadata if provided.
+		if ( ! empty( $metadata ) ) {
+			$log_entry['metadata'] = $metadata;
+		}
+
+		$log[] = $log_entry;
 
 		update_option( 'seculoco_key_operations_log', $log );
 	}
@@ -413,25 +461,41 @@ class Seculoco_Encryption_Handler_V2 {
 	/**
 	 * Get the public key.
 	 *
-	 * Initializes free keys if they don't exist (admin only).
+	 * Returns passkey public key if active, otherwise standard key.
+	 * Initializes standard keys if they don't exist (admin only).
 	 *
 	 * @return string|WP_Error Public key or error.
 	 */
 	public function get_public_key() {
-		$public_key_free = get_option( 'seculoco_public_key_free' );
+		$unified = $this->get_unified_crypto();
 
-		if ( ! $public_key_free ) {
-			// Try to initialize free keys if admin.
+		// Check which method is active.
+		$method = $this->is_passkey_active() ? 'passkey' : 'standard';
+
+		$public_key = $unified->get_public_key( $method );
+
+		// If standard key doesn't exist, try to initialize.
+		if ( is_wp_error( $public_key ) && 'standard' === $method ) {
 			if ( current_user_can( 'manage_options' ) ) {
 				$result = $this->initialize_free_keys();
 				if ( ! is_wp_error( $result ) ) {
-					return get_option( 'seculoco_public_key_free' );
+					return $unified->get_public_key( 'standard' );
 				}
 			}
 			return new WP_Error( 'no_public_key', 'Public key not initialized' );
 		}
 
-		return $public_key_free;
+		return $public_key;
+	}
+
+	/**
+	 * Check if passkey encryption is active.
+	 *
+	 * @return bool True if passkey is registered and active.
+	 */
+	protected function is_passkey_active() {
+		return (bool) get_option( 'seculoco_passkey_active', false ) &&
+			   (bool) get_option( 'seculoco_passkey_registered', false );
 	}
 
 	/**
@@ -444,16 +508,53 @@ class Seculoco_Encryption_Handler_V2 {
 	}
 
 	/**
-	 * Get system status for free version (pro status added by premium class).
+	 * Get system status for encryption (pro status added by premium class).
 	 *
-	 * @return array Status information for free version.
+	 * @return array Status information.
 	 */
 	public static function get_status() {
+		if ( ! class_exists( 'Secure_Login_Collector_Unified_Crypto' ) ) {
+			require_once SECULOCO_PLUGIN_DIR . 'includes/class-unified-crypto.php';
+		}
+		$unified = new Secure_Login_Collector_Unified_Crypto();
+
 		return array(
-			'free' => array(
-				'has_public_key'  => ! empty( get_option( 'seculoco_public_key_free' ) ),
-				'has_private_key' => ! empty( get_option( 'seculoco_private_key_free_encrypted' ) ),
+			'standard' => array(
+				'has_public_key'  => $unified->has_keys( 'standard' ),
+				'has_wrapped_key' => ! empty( get_option( 'seculoco_wrapped_private_key_standard' ) ),
+				'active'          => (bool) get_option( 'seculoco_password_active', false ),
+			),
+			'passkey'  => array(
+				'has_public_key'  => $unified->has_keys( 'passkey' ),
+				'has_wrapped_key' => ! empty( get_option( 'seculoco_wrapped_private_key_passkey' ) ),
+				'active'          => (bool) get_option( 'seculoco_passkey_active', false ),
+				'registered'      => (bool) get_option( 'seculoco_passkey_registered', false ),
 			),
 		);
+	}
+
+	/**
+	 * Clean up old WP-salts based encryption keys.
+	 *
+	 * Removes deprecated option keys from older versions.
+	 * This method runs once on admin_init to migrate to unified crypto.
+	 *
+	 * @return void
+	 */
+	public function cleanup_old_keys() {
+		// Check if cleanup has already been performed.
+		if ( get_option( 'seculoco_keys_cleanup_v3', false ) ) {
+			return;
+		}
+
+		// Remove old free version keys (WP-salts based).
+		delete_option( 'seculoco_private_key_free_encrypted' );
+		delete_option( 'seculoco_public_key_free' );
+
+		// Mark cleanup as complete.
+		update_option( 'seculoco_keys_cleanup_v3', true );
+
+		// Log the cleanup operation.
+		$this->log_key_operation( 'old_keys_cleaned_up' );
 	}
 }

@@ -349,6 +349,155 @@
 }
 
 /* ==========================================================================
+   Password Prompt Modal Styles
+   ========================================================================== */
+
+.seculoco-password-prompt-modal {
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	z-index: 999999;
+	background: white;
+	padding: 30px;
+	border-radius: var(--seculoco-radius-md);
+	box-shadow: var(--seculoco-shadow-lg);
+	min-width: 400px;
+	max-width: 500px;
+}
+
+.seculoco-password-prompt-backdrop {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.5);
+	z-index: 999998;
+}
+
+.seculoco-password-prompt-title {
+	margin: 0 0 20px 0;
+	color: var(--seculoco-text-primary);
+	font-size: 18px;
+	font-weight: 600;
+}
+
+.seculoco-password-prompt-description {
+	margin-bottom: 20px;
+	color: var(--seculoco-text-secondary);
+	font-size: 14px;
+	line-height: 1.5;
+}
+
+.seculoco-password-input-wrapper {
+	position: relative;
+	margin-bottom: 15px;
+}
+
+.seculoco-password-input {
+	width: 100%;
+	padding: 10px 45px 10px 12px;
+	border: 1px solid var(--seculoco-border);
+	border-radius: var(--seculoco-radius-sm);
+	font-size: 14px;
+	transition: border-color 0.2s ease;
+}
+
+.seculoco-password-input:focus {
+	outline: none;
+	border-color: var(--seculoco-primary);
+	box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.1);
+}
+
+.seculoco-password-toggle-btn {
+	position: absolute;
+	right: 8px;
+	top: 50%;
+	transform: translateY(-50%);
+	background: none;
+	border: none;
+	cursor: pointer;
+	font-size: 18px;
+	color: var(--seculoco-text-muted);
+	padding: 5px;
+	line-height: 1;
+	transition: color 0.2s ease;
+}
+
+.seculoco-password-toggle-btn:hover {
+	color: var(--seculoco-text-primary);
+}
+
+.seculoco-password-prompt-checkbox {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 20px;
+}
+
+.seculoco-password-prompt-checkbox input[type="checkbox"] {
+	margin: 0;
+}
+
+.seculoco-password-prompt-checkbox label {
+	margin: 0;
+	font-size: 14px;
+	color: var(--seculoco-text-secondary);
+	cursor: pointer;
+}
+
+.seculoco-password-prompt-buttons {
+	display: flex;
+	gap: 10px;
+	justify-content: flex-end;
+}
+
+.seculoco-password-prompt-decrypt-btn {
+	background: var(--seculoco-primary);
+	color: white;
+	border: none;
+	padding: 10px 20px;
+	border-radius: var(--seculoco-radius-sm);
+	font-size: 14px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.seculoco-password-prompt-decrypt-btn:hover:not(:disabled) {
+	background: var(--seculoco-primary-hover);
+}
+
+.seculoco-password-prompt-decrypt-btn:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.seculoco-password-prompt-cancel-btn {
+	background: var(--seculoco-bg-white);
+	color: var(--seculoco-text-primary);
+	border: 1px solid var(--seculoco-border);
+	padding: 10px 20px;
+	border-radius: var(--seculoco-radius-sm);
+	font-size: 14px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.seculoco-password-prompt-cancel-btn:hover {
+	background: var(--seculoco-bg-light);
+	border-color: var(--seculoco-text-secondary);
+}
+
+.seculoco-password-prompt-error {
+	color: var(--seculoco-danger);
+	font-size: 13px;
+	margin-top: 8px;
+}
+
+/* ==========================================================================
    Passkey Specific Styles
    ========================================================================== */
 
@@ -1588,4 +1737,248 @@ button.button-expired[disabled]:hover {
 .seculoco-spinner-inline {
 	float: none;
 	margin-left: 10px;
+}
+/* ==========================================================================
+   Password Setup Modal
+   ========================================================================== */
+
+.seculoco-password-modal-backdrop {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.7);
+	z-index: 999998;
+	animation: fadeIn 0.2s ease;
+}
+
+.seculoco-password-modal {
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	z-index: 999999;
+	background: white;
+	border-radius: var(--seculoco-radius-md);
+	box-shadow: var(--seculoco-shadow-lg);
+	min-width: 500px;
+	max-width: 600px;
+	animation: slideInDown 0.3s ease;
+}
+
+@keyframes slideInDown {
+	from {
+		opacity: 0;
+		transform: translate(-50%, -60%);
+	}
+	to {
+		opacity: 1;
+		transform: translate(-50%, -50%);
+	}
+}
+
+.seculoco-password-modal-header {
+	padding: 20px 24px;
+	border-bottom: 1px solid var(--seculoco-border-light);
+}
+
+.seculoco-password-modal-header h2 {
+	margin: 0;
+	font-size: 20px;
+	font-weight: 600;
+	color: var(--seculoco-text-primary);
+}
+
+.seculoco-password-modal-body {
+	padding: 24px;
+	max-height: 70vh;
+	overflow-y: auto;
+}
+
+.seculoco-password-modal-footer {
+	padding: 16px 24px;
+	border-top: 1px solid var(--seculoco-border-light);
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+}
+
+.seculoco-password-form-group {
+	margin-bottom: 20px;
+}
+
+.seculoco-password-label {
+	display: block;
+	margin-bottom: 8px;
+	font-weight: 500;
+	color: var(--seculoco-text-primary);
+}
+
+.seculoco-password-input-wrapper {
+	position: relative;
+	display: flex;
+	align-items: center;
+}
+
+.seculoco-password-input {
+	width: 100%;
+	padding: 10px 40px 10px 12px;
+	border: 1px solid var(--seculoco-border);
+	border-radius: var(--seculoco-radius-sm);
+	font-size: 14px;
+	transition: border-color 0.2s ease;
+}
+
+.seculoco-password-input:focus {
+	outline: none;
+	border-color: var(--seculoco-primary);
+	box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.1);
+}
+
+.seculoco-password-toggle {
+	position: absolute;
+	right: 8px;
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: 4px;
+	color: var(--seculoco-text-muted);
+	transition: color 0.2s ease;
+}
+
+.seculoco-password-toggle:hover {
+	color: var(--seculoco-text-primary);
+}
+
+.seculoco-password-toggle .dashicons {
+	width: 20px;
+	height: 20px;
+	font-size: 20px;
+}
+
+/* Password Strength Meter */
+.seculoco-password-strength-meter {
+	width: 100%;
+	height: 4px;
+	background: var(--seculoco-bg-light);
+	border-radius: 2px;
+	margin-top: 8px;
+	overflow: hidden;
+}
+
+.seculoco-password-strength-bar {
+	height: 100%;
+	width: 0%;
+	transition: width 0.3s ease, background-color 0.3s ease;
+	border-radius: 2px;
+}
+
+.seculoco-password-strength-bar.seculoco-strength-weak {
+	width: 25%;
+	background: var(--seculoco-danger);
+}
+
+.seculoco-password-strength-bar.seculoco-strength-fair {
+	width: 50%;
+	background: var(--seculoco-warning);
+}
+
+.seculoco-password-strength-bar.seculoco-strength-good {
+	width: 75%;
+	background: #2196f3;
+}
+
+.seculoco-password-strength-bar.seculoco-strength-strong {
+	width: 100%;
+	background: var(--seculoco-success);
+}
+
+.seculoco-password-strength-text {
+	margin-top: 6px;
+	font-size: 12px;
+	font-weight: 500;
+}
+
+.seculoco-password-strength-text.seculoco-strength-weak {
+	color: var(--seculoco-danger);
+}
+
+.seculoco-password-strength-text.seculoco-strength-fair {
+	color: var(--seculoco-warning);
+}
+
+.seculoco-password-strength-text.seculoco-strength-good {
+	color: #2196f3;
+}
+
+.seculoco-password-strength-text.seculoco-strength-strong {
+	color: var(--seculoco-success);
+}
+
+/* Password Match Indicator */
+.seculoco-password-match-indicator {
+	margin-top: 8px;
+	font-size: 13px;
+	font-weight: 500;
+	min-height: 20px;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.seculoco-password-match-indicator.seculoco-match-success {
+	color: var(--seculoco-success);
+}
+
+.seculoco-password-match-indicator.seculoco-match-error {
+	color: var(--seculoco-danger);
+}
+
+/* Password Error */
+.seculoco-password-error {
+	margin-top: 16px;
+	padding: 12px;
+	background: #fee2e2;
+	border-left: 4px solid var(--seculoco-danger);
+	border-radius: var(--seculoco-radius-sm);
+	color: #991b1b;
+	font-size: 13px;
+	display: none;
+}
+
+.seculoco-password-error.seculoco-password-error-visible {
+	display: block;
+}
+
+/* Button Styles */
+.button-danger {
+	background: var(--seculoco-danger);
+	color: white;
+	border-color: var(--seculoco-danger);
+}
+
+.button-danger:hover {
+	background: var(--seculoco-danger-hover);
+	border-color: var(--seculoco-danger-hover);
+	color: white;
+}
+
+.button-danger:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* Password Setup/Reset Buttons */
+.seculoco-password-setup-btn,
+.seculoco-password-reset-btn {
+	margin-top: 10px;
+}
+
+/* Responsive */
+@media (max-width: 782px) {
+	.seculoco-password-modal {
+		min-width: 90%;
+		max-width: 90%;
+	}
 }

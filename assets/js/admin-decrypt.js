@@ -161,7 +161,7 @@
 
                 // Step 2: Get private key (uses extension or default)
                 if (!this.privateKey) {
-                    this.privateKey = await this.getPrivateKey(entryId);
+                    this.privateKey = await this.getPrivateKey(entryId, encryptedPackage);
                 }
                 
                 // Step 3: Decrypt the data (CORE CRYPTO - shared by FREE/PRO)
@@ -215,13 +215,13 @@
          * Get private key - uses extension or default FREE method
          * EXTENSION POINT - PRO can override via keyProvider
          */
-         async getPrivateKey(entryId) {
-        
+         async getPrivateKey(entryId, encryptedPackage) {
+
             // If PRO extension registered, use it
             if (this.extensions.keyProvider && typeof this.extensions.keyProvider.getKey === 'function') {
-                return await this.extensions.keyProvider.getKey(entryId);
+                return await this.extensions.keyProvider.getKey(entryId, encryptedPackage);
             }
-         
+
             // DEFAULT: Use FREE version key
             return await this.getFreePrivateKey();
         }

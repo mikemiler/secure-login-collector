@@ -39,6 +39,11 @@ class Seculoco_Settings_Manager {
 		add_action( 'admin_menu', array( $this, 'add_settings_menu' ), 20 );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_scripts' ) );
+
+		// Register AJAX handlers for password-based encryption.
+		add_action( 'wp_ajax_seculoco_setup_password_encryption', array( $this, 'ajax_setup_password_encryption' ) );
+		add_action( 'wp_ajax_seculoco_reset_password_encryption', array( $this, 'ajax_reset_password_encryption' ) );
+		add_action( 'wp_ajax_seculoco_check_password_status', array( $this, 'ajax_check_password_status' ) );
 	}
 
 	/**
@@ -69,6 +74,54 @@ class Seculoco_Settings_Manager {
 
 		wp_register_script( 'seculoco-textarea-toggle', '', array( 'jquery' ), '1.0.0', true );
 		wp_enqueue_script( 'seculoco-textarea-toggle' );
+
+		// Enqueue password setup script on settings page.
+		// Remove the hook check to always enqueue on admin pages - WordPress will handle script dependencies.
+		wp_enqueue_script(
+			'seculoco-password-setup',
+			plugin_dir_url( __FILE__ ) . '../assets/js/admin-password-setup.js',
+			array( 'jquery' ),
+			'1.0.0',
+			true
+		);
+
+		// Localize script with AJAX URL and nonce.
+		wp_localize_script(
+			'seculoco-password-setup',
+			'secuLocoPasswordSetup',
+			array(
+				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+				'nonce'   => wp_create_nonce( 'seculoco_password_setup_nonce' ),
+				'i18n'    => array(
+					'setupPassword'         => __( 'Setup Password', 'secure-login-collector' ),
+					'resetPassword'         => __( 'Reset Password', 'secure-login-collector' ),
+					'password'              => __( 'Password', 'secure-login-collector' ),
+					'confirmPassword'       => __( 'Confirm Password', 'secure-login-collector' ),
+					'setupButton'           => __( 'Setup Encryption', 'secure-login-collector' ),
+					'resetButton'           => __( 'Reset Encryption', 'secure-login-collector' ),
+					'cancel'                => __( 'Cancel', 'secure-login-collector' ),
+					'passwordMismatch'      => __( 'Passwords do not match.', 'secure-login-collector' ),
+					'passwordTooShort'      => __( 'Password must be at least 8 characters.', 'secure-login-collector' ),
+					'setupSuccess'          => __( 'Password-based encryption setup successfully!', 'secure-login-collector' ),
+					'resetSuccess'          => __( 'Password-based encryption reset successfully!', 'secure-login-collector' ),
+					'setupFailed'           => __( 'Failed to setup password encryption.', 'secure-login-collector' ),
+					'resetFailed'           => __( 'Failed to reset password encryption.', 'secure-login-collector' ),
+					'resetWarningTitle'     => __( 'Warning: Data Loss', 'secure-login-collector' ),
+					'resetWarningMessage'   => __( 'Resetting the password will mark all existing encrypted data as UNDECRYPTABLE. You will not be able to decrypt any previously stored data. Are you sure you want to continue?', 'secure-login-collector' ),
+					'typeConfirmToReset'    => __( 'Type "RESET" to confirm:', 'secure-login-collector' ),
+					'resetConfirmRequired'  => __( 'Please type "RESET" to confirm.', 'secure-login-collector' ),
+					'passwordStrengthWeak'  => __( 'Weak password - consider using a stronger one', 'secure-login-collector' ),
+					'passwordStrengthFair'  => __( 'Fair password', 'secure-login-collector' ),
+					'passwordStrengthGood'  => __( 'Good password', 'secure-login-collector' ),
+					'passwordStrengthStrong' => __( 'Strong password', 'secure-login-collector' ),
+					'show'                  => __( 'Show', 'secure-login-collector' ),
+					'hide'                  => __( 'Hide', 'secure-login-collector' ),
+				),
+			)
+		);
+
+		// Enqueue zxcvbn for password strength meter.
+		wp_enqueue_script( 'zxcvbn-async' );
 	}
 
 	/**
@@ -461,7 +514,7 @@ class Seculoco_Settings_Manager {
 			$free_status = ( $free_public_key && $free_private_key ) ? 'active' : 'needs-init';
 		}
 
-		// 2-column layout: Free on left, Pro on right.
+		// 3-column layout: Free on left, Password in middle, Pro on right.
 		echo '<div class="seculoco-encryption-grid">';
 
 		// ===== LEFT COLUMN: FREE VERSION =====
@@ -495,7 +548,7 @@ class Seculoco_Settings_Manager {
 		}
 		echo '</div>';
 		echo '</div>';
-		
+
 
 		// Free export button.
 		if ( $free_public_key ) {
@@ -505,6 +558,58 @@ class Seculoco_Settings_Manager {
 		}
 
 		echo '</div>'; // Close left column
+
+		// ===== MIDDLE COLUMN: PASSWORD-BASED =====
+		echo '<div class="seculoco-encryption-column">';
+
+		// Get password encryption status.
+		$password_active = get_option( 'seculoco_password_encryption_active', false );
+
+		// Password-based encryption status card.
+		echo '<div class="seculoco-encryption-status-card">';
+		echo '<div class="seculoco-encryption-status-header">';
+		echo '<div>';
+		echo '<strong class="seculoco-encryption-status-title">' . esc_html__( 'Password-Based Encryption', 'secure-login-collector' ) . '</strong>';
+		echo '<p class="seculoco-encryption-status-subtitle">' . esc_html__( 'RSA-2048 protected by master password', 'secure-login-collector' ) . '</p>';
+		echo '</div>';
+
+		// Display password status.
+		if ( $password_active ) {
+			echo '<div class="seculoco-encryption-status-label">';
+			echo '<span class="seculoco-encryption-badge-active">' . esc_html__( 'ACTIVE', 'secure-login-collector' ) . '</span>';
+			echo '</div>';
+		} else {
+			echo '<div class="seculoco-encryption-status-label">';
+			echo '<span class="seculoco-encryption-badge-not-init">' . esc_html__( 'NOT SET', 'secure-login-collector' ) . '</span>';
+			echo '</div>';
+		}
+		echo '</div>';
+		echo '</div>';
+
+		// Password setup/reset buttons.
+		echo '<p>';
+		if ( $password_active ) {
+			echo '<button type="button" class="seculoco-btn seculoco-btn-danger seculoco-btn-lg seculoco-password-reset-btn">';
+			echo '<span>🔄</span> ';
+			echo esc_html__( 'Reset Password', 'secure-login-collector' );
+			echo '</button>';
+		} else {
+			echo '<button type="button" class="seculoco-btn seculoco-btn-primary seculoco-btn-lg seculoco-password-setup-btn">';
+			echo '<span>🔐</span> ';
+			echo esc_html__( 'Setup Password', 'secure-login-collector' );
+			echo '</button>';
+		}
+		echo '</p>';
+
+		// Warning text.
+		echo '<div class="seculoco-alert seculoco-alert-warning" style="margin-top: 15px;">';
+		echo '<span class="seculoco-alert-icon dashicons dashicons-warning"></span>';
+		echo '<div class="seculoco-alert-content">';
+		echo '<p class="seculoco-alert-message">' . esc_html__( 'Resetting the password will mark all existing encrypted data as undecryptable.', 'secure-login-collector' ) . '</p>';
+		echo '</div>';
+		echo '</div>';
+
+		echo '</div>'; // Close middle column
 
 		// ===== RIGHT COLUMN: PRO VERSION =====
 		// Allow pro version to add its entire column or show upgrade notice.
@@ -850,6 +955,132 @@ class Seculoco_Settings_Manager {
 					'href'   => array(),
 					'target' => array(),
 				),
+			)
+		);
+	}
+
+	/**
+	 * AJAX handler: Setup password-based encryption.
+	 */
+	public function ajax_setup_password_encryption() {
+		// Verify nonce.
+		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'seculoco_password_setup_nonce' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed.', 'secure-login-collector' ) ) );
+		}
+
+		// Check permissions.
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Insufficient permissions.', 'secure-login-collector' ) ) );
+		}
+
+		// Get password from request.
+		if ( ! isset( $_POST['password'] ) || empty( $_POST['password'] ) ) {
+			wp_send_json_error( array( 'message' => __( 'Password is required.', 'secure-login-collector' ) ) );
+		}
+
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Password should not be sanitized.
+		$password = wp_unslash( $_POST['password'] );
+
+		// Validate password length.
+		if ( strlen( $password ) < 8 ) {
+			wp_send_json_error( array( 'message' => __( 'Password must be at least 8 characters.', 'secure-login-collector' ) ) );
+		}
+
+		try {
+			// Verify method exists before calling.
+			if ( ! method_exists( $this->encryption_handler, 'initialize_password_keys' ) ) {
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Debugging.
+				error_log( 'ERROR: initialize_password_keys method not found on ' . get_class( $this->encryption_handler ) );
+				wp_send_json_error( array( 'message' => __( 'Encryption handler configuration error. Please check logs.', 'secure-login-collector' ) ) );
+				return;
+			}
+
+			// Generate password-based keys using encryption handler.
+			$result = $this->encryption_handler->initialize_password_keys( $password );
+
+			if ( $result ) {
+				// Store password status.
+				update_option( 'seculoco_password_encryption_active', true );
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Debugging.
+				error_log( 'SUCCESS: Password encryption initialized' );
+
+				wp_send_json_success( array( 'message' => __( 'Password-based encryption setup successfully!', 'secure-login-collector' ) ) );
+			} else {
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Debugging.
+				error_log( 'ERROR: initialize_password_keys returned false' );
+				wp_send_json_error( array( 'message' => __( 'Failed to initialize password-based keys.', 'secure-login-collector' ) ) );
+			}
+		} catch ( Exception $e ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Debugging.
+			error_log( 'EXCEPTION in password setup: ' . $e->getMessage() );
+			wp_send_json_error( array( 'message' => $e->getMessage() ) );
+		}
+	}
+
+	/**
+	 * AJAX handler: Reset password-based encryption.
+	 */
+	public function ajax_reset_password_encryption() {
+		// Verify nonce.
+		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'seculoco_password_setup_nonce' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed.', 'secure-login-collector' ) ) );
+		}
+
+		// Check permissions.
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Insufficient permissions.', 'secure-login-collector' ) ) );
+		}
+
+		global $wpdb;
+		$table_name = $wpdb->prefix . 'seculoco_logins';
+
+		try {
+			// Mark all password-encrypted entries as undecryptable.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Required for bulk update.
+			$updated = $wpdb->query(
+				$wpdb->prepare(
+					"UPDATE {$table_name} SET is_undecryptable = %d WHERE encryption_method = %s",
+					1,
+					'password'
+				)
+			);
+
+			// Delete password-based keys.
+			delete_option( 'seculoco_public_key_password' );
+			delete_option( 'seculoco_private_key_password_encrypted' );
+			delete_option( 'seculoco_password_encryption_active' );
+
+			wp_send_json_success(
+				array(
+					'message'         => __( 'Password-based encryption reset successfully!', 'secure-login-collector' ),
+					'entries_updated' => $updated,
+				)
+			);
+		} catch ( Exception $e ) {
+			wp_send_json_error( array( 'message' => $e->getMessage() ) );
+		}
+	}
+
+	/**
+	 * AJAX handler: Check password encryption status.
+	 */
+	public function ajax_check_password_status() {
+		// Verify nonce.
+		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'seculoco_password_setup_nonce' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed.', 'secure-login-collector' ) ) );
+		}
+
+		// Check permissions.
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Insufficient permissions.', 'secure-login-collector' ) ) );
+		}
+
+		$is_active = get_option( 'seculoco_password_encryption_active', false );
+
+		wp_send_json_success(
+			array(
+				'is_active' => (bool) $is_active,
+				'status'    => $is_active ? 'active' : 'not_set',
 			)
 		);
 	}

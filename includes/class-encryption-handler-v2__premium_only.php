@@ -371,8 +371,9 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
 			);
 		}
 
-		// Generate new RSA keypair for pro version.
-		$keypair = $this->generate_rsa_keypair();
+		// Generate new RSA keypair for pro version using unified crypto.
+		$unified = $this->get_unified_crypto();
+		$keypair = $unified->generate_keypair();
 		if ( is_wp_error( $keypair ) ) {
 			return $keypair;
 		}
