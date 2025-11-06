@@ -457,12 +457,14 @@ class Seculoco_Settings_Manager {
 		$is_initialized = seculoco_is_encryption_initialized();
 		$setup_date     = get_option( SECULOCO_OPTION_SETUP_TIMESTAMP, '' );
 
+		// Display active encryption method status bar.
+		$this->render_active_encryption_status_bar( $free_status, $pro_keys_active );
+
 		// 2-column layout: Free on left, Pro on right.
 		echo '<div class="seculoco-encryption-grid">';
 
 		// ===== LEFT COLUMN: FREE VERSION =====
 		echo '<div class="seculoco-encryption-column">';
-		echo '<h3>Password encryption</h3>';
 
 		// Master Password Status Card - displayed prominently at the top.
 		echo '<div class="seculoco-card">';
@@ -470,7 +472,7 @@ class Seculoco_Settings_Manager {
 		if ( ! $is_initialized ) {
 			// Master password NOT configured - show setup required state.
 			echo '<div class="seculoco-passkey-benefit-text">';
-			echo '<div class="seculoco-passkey-benefit-title">';
+			echo '<div class="seculoco-card-title">';
 			echo '<span class="seculoco-badge seculoco-badge-warning">' . esc_html__( 'SETUP REQUIRED', 'secure-login-collector' ) . '</span>';
 			echo ' ' . esc_html__( 'Master Password', 'secure-login-collector' );
 			echo '</div>';
@@ -485,7 +487,7 @@ class Seculoco_Settings_Manager {
 		} else {
 			// Master password IS configured - show active state.
 			echo '<div class="seculoco-passkey-benefit-text">';
-			echo '<div class="seculoco-passkey-benefit-title">';
+			echo '<div class="seculoco-card-title">';
 			echo '<span class="seculoco-badge seculoco-badge-success">' . esc_html__( 'ACTIVE', 'secure-login-collector' ) . '</span>';
 			echo ' ' . esc_html__( 'Master Password Protection', 'secure-login-collector' );
 			echo '</div>';
@@ -545,7 +547,6 @@ class Seculoco_Settings_Manager {
 		// Allow pro version to add its entire column or show upgrade notice.
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in get_pro_encryption_column().
 		echo '<div class="seculoco-encryption-column">';
-		echo '<h3>Passkey encryption</h3>';
 
 		echo apply_filters( 'seculoco_encryption_pro_column', $this->get_pro_encryption_column() );
 		echo '</div>'; // close right column.
@@ -553,6 +554,117 @@ class Seculoco_Settings_Manager {
 
 		// Add JavaScript for key management via wp_add_inline_script.
 		$this->add_key_management_inline_script();
+	}
+
+	/**
+	 * Render active encryption method status bar.
+	 * Displays which encryption method is currently active for new incoming logins.
+	 *
+	 * @param string $free_status Free encryption status: 'active', 'inactive', or 'needs-init'.
+	 * @param bool   $pro_keys_active Whether pro keys are active.
+	 */
+	private function render_active_encryption_status_bar( $free_status, $pro_keys_active ) {
+		echo '<div class="seculoco-encryption-status-bar">';
+		echo '<div class="seculoco-encryption-status-bar-header">';
+		echo '<h4 class="seculoco-encryption-status-bar-title">';
+		echo '<span class="seculoco-status-icon">🔐</span>';
+		echo esc_html__( 'Active Encryption Method for New Logins', 'secure-login-collector' );
+		echo '</h4>';
+		echo '</div>';
+		echo '<div class="seculoco-encryption-status-bar-body">';
+
+		// Determine which encryption is active and display appropriate status.
+		if ( $pro_keys_active ) {
+			// Pro/Passkey encryption is active.
+			echo '<div class="seculoco-encryption-status-item seculoco-encryption-status-item-active">';
+			echo '<span class="seculoco-status-dot seculoco-status-dot-active"></span>';
+			echo '<div class="seculoco-encryption-status-content">';
+			echo '<div class="seculoco-encryption-status-label">';
+			echo '<strong>' . esc_html__( 'Passkey Protection', 'secure-login-collector' ) . '</strong>';
+			echo ' <span class="seculoco-badge seculoco-badge-success">' . esc_html__( 'ACTIVE', 'secure-login-collector' ) . '</span>';
+			echo '</div>';
+			echo '<p class="seculoco-encryption-status-desc">';
+			echo esc_html__( 'New login data will be encrypted using passkey-protected RSA keys (ultra-secure, zero-knowledge encryption).', 'secure-login-collector' );
+			echo '</p>';
+			echo '</div>';
+			echo '</div>';
+
+			// Show password encryption as inactive.
+			echo '<div class="seculoco-encryption-status-item seculoco-encryption-status-item-inactive">';
+			echo '<span class="seculoco-status-dot seculoco-status-dot-inactive"></span>';
+			echo '<div class="seculoco-encryption-status-content">';
+			echo '<div class="seculoco-encryption-status-label">';
+			echo '<strong>' . esc_html__( 'Password Encryption', 'secure-login-collector' ) . '</strong>';
+			echo ' <span class="seculoco-badge seculoco-badge-inactive">' . esc_html__( 'INACTIVE', 'secure-login-collector' ) . '</span>';
+			echo '</div>';
+			echo '<p class="seculoco-encryption-status-desc">';
+			echo esc_html__( 'Password-based encryption is disabled while passkey protection is active.', 'secure-login-collector' );
+			echo '</p>';
+			echo '</div>';
+			echo '</div>';
+		} elseif ( 'active' === $free_status ) {
+			// Free/Password encryption is active.
+			echo '<div class="seculoco-encryption-status-item seculoco-encryption-status-item-active">';
+			echo '<span class="seculoco-status-dot seculoco-status-dot-active"></span>';
+			echo '<div class="seculoco-encryption-status-content">';
+			echo '<div class="seculoco-encryption-status-label">';
+			echo '<strong>' . esc_html__( 'Password Encryption', 'secure-login-collector' ) . '</strong>';
+			echo ' <span class="seculoco-badge seculoco-badge-success">' . esc_html__( 'ACTIVE', 'secure-login-collector' ) . '</span>';
+			echo '</div>';
+			echo '<p class="seculoco-encryption-status-desc">';
+			echo esc_html__( 'New login data will be encrypted using master password-protected RSA keys (secure encryption).', 'secure-login-collector' );
+			echo '</p>';
+			echo '</div>';
+			echo '</div>';
+
+			// Show passkey as not available (free version) or available but not active (pro version).
+			if ( function_exists( 'seculoco_fs' ) && seculoco_fs()->is_premium() ) {
+				// Pro version - passkey available but not active.
+				echo '<div class="seculoco-encryption-status-item seculoco-encryption-status-item-inactive">';
+				echo '<span class="seculoco-status-dot seculoco-status-dot-inactive"></span>';
+				echo '<div class="seculoco-encryption-status-content">';
+				echo '<div class="seculoco-encryption-status-label">';
+				echo '<strong>' . esc_html__( 'Passkey Protection', 'secure-login-collector' ) . '</strong>';
+				echo ' <span class="seculoco-badge seculoco-badge-inactive">' . esc_html__( 'AVAILABLE', 'secure-login-collector' ) . '</span>';
+				echo '</div>';
+				echo '<p class="seculoco-encryption-status-desc">';
+				echo esc_html__( 'Passkey encryption is available but not currently active. Configure passkey protection below to enable ultra-secure encryption.', 'secure-login-collector' );
+				echo '</p>';
+				echo '</div>';
+				echo '</div>';
+			} else {
+				// Free version - passkey not available.
+				echo '<div class="seculoco-encryption-status-item seculoco-encryption-status-item-unavailable">';
+				echo '<span class="seculoco-status-dot seculoco-status-dot-inactive"></span>';
+				echo '<div class="seculoco-encryption-status-content">';
+				echo '<div class="seculoco-encryption-status-label">';
+				echo '<strong>' . esc_html__( 'Passkey Protection', 'secure-login-collector' ) . '</strong>';
+				echo ' <span class="seculoco-badge seculoco-badge-pro">' . esc_html__( 'PRO ONLY', 'secure-login-collector' ) . '</span>';
+				echo '</div>';
+				echo '<p class="seculoco-encryption-status-desc">';
+				echo esc_html__( 'Upgrade to Pro for ultra-secure passkey-protected encryption with true zero-knowledge security.', 'secure-login-collector' );
+				echo '</p>';
+				echo '</div>';
+				echo '</div>';
+			}
+		} else {
+			// Neither encryption is active - setup required.
+			echo '<div class="seculoco-encryption-status-item seculoco-encryption-status-item-warning">';
+			echo '<span class="seculoco-status-dot seculoco-status-dot-warning"></span>';
+			echo '<div class="seculoco-encryption-status-content">';
+			echo '<div class="seculoco-encryption-status-label">';
+			echo '<strong>' . esc_html__( 'Encryption Not Active', 'secure-login-collector' ) . '</strong>';
+			echo ' <span class="seculoco-badge seculoco-badge-warning">' . esc_html__( 'SETUP REQUIRED', 'secure-login-collector' ) . '</span>';
+			echo '</div>';
+			echo '<p class="seculoco-encryption-status-desc">';
+			echo esc_html__( 'No encryption method is currently active. Configure your master password below to start encrypting login data.', 'secure-login-collector' );
+			echo '</p>';
+			echo '</div>';
+			echo '</div>';
+		}
+
+		echo '</div>'; // Close status bar body.
+		echo '</div>'; // Close status bar.
 	}
 
 	/**

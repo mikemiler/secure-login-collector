@@ -288,29 +288,30 @@ class Seculoco_Settings_Manager_Pro {
 		$pro_keys_active    = get_option( SECULOCO_OPTION_PRO_KEYS_ACTIVE, false );
 		$passkey_registered = get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false );
 
-		echo '<div style="display: flex; justify-content: space-between; align-items: center;">';
-		echo '<div>';
-		echo '<strong style="font-size: 14px;">' . esc_html__( 'Passkey Protection', 'secure-login-collector' ) . '</strong>';
-		echo '<p style="margin: 5px 0 0; color: #666; font-size: 12px;">' . esc_html__( 'Passkey-protected RSA-2048 for ultra-secure encryption', 'secure-login-collector' ) . '</p>';
-		echo '</div>';
+		
+		echo '<div class="seculoco-card-title">';
+		
 
 		if ( $pro_public_key && $pro_private_key && $pro_keys_active ) {
-			echo '<div style="text-align: right;">';
+			echo '<span >';
 			echo '<span class="seculoco-badge seculoco-badge-success">' . esc_html__( 'ACTIVE', 'secure-login-collector' ) . '</span>';
-			echo '<p style="margin: 5px 0 0; font-size: 11px; color: #666;">' . esc_html__( 'Using passkey protection', 'secure-login-collector' ) . '</p>';
-			echo '</div>';
+			
+			echo '</span>';
 		} elseif ( $passkey_registered ) {
-			echo '<div style="text-align: right;">';
+			echo '<span >';
 			echo '<span class="seculoco-badge seculoco-badge-warning">' . esc_html__( 'NEEDS INITIALIZATION', 'secure-login-collector' ) . '</span>';
-			echo '<p style="margin: 5px 0 0; font-size: 11px; color: #666;">' . esc_html__( 'Passkey registered but keys not initialized', 'secure-login-collector' ) . '</p>';
-			echo '</div>';
+			
+			echo '</span>';
 		} else {
-			echo '<div style="text-align: right;">';
+			echo '<span>';
 			echo '<span class="seculoco-badge seculoco-badge-inactive">' . esc_html__( 'NOT AVAILABLE', 'secure-login-collector' ) . '</span>';
-			echo '<p style="margin: 5px 0 0; font-size: 11px; color: #666;">' . esc_html__( 'Register passkey to enable', 'secure-login-collector' ) . '</p>';
-			echo '</div>';
+			
+			echo '</span>';
 		}
-		echo '</div>';
+		
+		echo esc_html__( 'Passkey Protection', 'secure-login-collector' ) . '</div>';
+		echo '<div class="seculoco-passkey-benefit-desc">' . esc_html__( 'Passkey-protected RSA-2048 for ultra-secure encryption', 'secure-login-collector' ) . '</div>';
+		
 		
 	}
 

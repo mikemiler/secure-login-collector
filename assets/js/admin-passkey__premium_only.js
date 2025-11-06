@@ -19,6 +19,88 @@ jQuery( document ).ready(
 		var strings          = secureLoginPasskeyData.strings;
 
 		/**
+		 * Show warning modal before passkey deletion
+		 */
+		function showPasskeyDeleteModal(callback) {
+			// Create modal HTML
+			var modalHtml = `
+				<div id="seculoco-passkey-delete-modal" class="seculoco-modal-overlay">
+					<div class="seculoco-modal-container seculoco-modal-warning">
+						<div class="seculoco-modal-header">
+							<h2>⚠️ ${hasEncryptedData ? 'Warning: Data Loss!' : 'Delete Passkey'}</h2>
+						</div>
+						<div class="seculoco-modal-content">
+							${hasEncryptedData ? `
+								<div class="seculoco-alert seculoco-alert-danger">
+									<div class="seculoco-alert-title">⚠️ CRITICAL WARNING</div>
+									<div class="seculoco-alert-message">
+										<p><strong>This action will permanently destroy ALL encrypted login data!</strong></p>
+										<ul>
+											<li>All encrypted passwords will be lost forever</li>
+											<li>You will need to re-collect login credentials</li>
+											<li>This action CANNOT be undone</li>
+											<li>There is NO recovery method</li>
+										</ul>
+									</div>
+								</div>
+								<div class="seculoco-field-group">
+									<label>
+										<input type="checkbox" id="seculoco-confirm-passkey-delete" />
+										<strong>I understand that all encrypted data will be permanently lost</strong>
+									</label>
+								</div>
+							` : `
+								<p>You are about to delete this passkey.</p>
+								<p>Since you have no encrypted data stored, this is safe to do. You can register a new passkey afterward.</p>
+							`}
+						</div>
+						<div class="seculoco-modal-footer">
+							${hasEncryptedData ? `
+								<button type="button" class="button button-secondary" id="seculoco-cancel-passkey-delete">Cancel</button>
+								<button type="button" class="button button-danger" id="seculoco-confirm-passkey-delete-btn" disabled>I Understand, Delete Anyway</button>
+							` : `
+								<button type="button" class="button button-secondary" id="seculoco-cancel-passkey-delete">Cancel</button>
+								<button type="button" class="button button-primary" id="seculoco-confirm-passkey-delete-btn">Delete Passkey</button>
+							`}
+						</div>
+					</div>
+				</div>
+			`;
+
+			$('body').append(modalHtml);
+
+			var $modal = $('#seculoco-passkey-delete-modal');
+			var $confirmBtn = $('#seculoco-confirm-passkey-delete-btn');
+			var $checkbox = $('#seculoco-confirm-passkey-delete');
+
+			// Enable confirm button when checkbox is checked (only if there's encrypted data)
+			if (hasEncryptedData) {
+				$checkbox.on('change', function() {
+					$confirmBtn.prop('disabled', !$(this).is(':checked'));
+				});
+			}
+
+			// Handle cancel
+			$('#seculoco-cancel-passkey-delete').on('click', function() {
+				$modal.remove();
+			});
+
+			// Handle confirm
+			$confirmBtn.on('click', function() {
+				$modal.remove();
+				callback();
+			});
+
+			// Escape key closes modal
+			$(document).on('keydown.seculoco-passkey-delete-modal', function(e) {
+				if (e.which === 27) {
+					$(document).off('keydown.seculoco-passkey-delete-modal');
+					$modal.remove();
+				}
+			});
+		}
+
+		/**
 		 * Handle passkey deletion
 		 */
 		$( '#delete-passkey-btn' ).on(
@@ -30,48 +112,45 @@ jQuery( document ).ready(
 				var credentialId = $button.data( 'credential-id' );
 
 				if ( ! credentialId) {
-					alert( 'No credential ID found. Please refresh the page and try again.' );
+					$( '#passkey-status-message' ).html( '<div class="notice notice-error inline"><p>No credential ID found. Please refresh the page and try again.</p></div>' );
 					return;
 				}
 
-				var warningMessage = hasEncryptedData ? strings.warningDataLoss : strings.warningSimple;
+				// Show modal instead of browser confirm
+				showPasskeyDeleteModal(function() {
+					$button.prop( 'disabled', true ).text( strings.deleting );
 
-				if ( ! confirm( warningMessage )) {
-					return;
-				}
-
-				$button.prop( 'disabled', true ).text( strings.deleting );
-
-				$.ajax(
-					{
-						url: ajaxUrl,
-						type: 'POST',
-						data: {
-							action: 'seculoco_passkey_delete',
-							nonce: nonce,
-							credential_id: credentialId
-						},
-						success: function (response) {
-							if (response.success) {
-								$( '#passkey-status-message' ).html( '<div class="notice notice-success inline"><p>' + strings.deleteSuccess + '</p></div>' );
-								setTimeout(
-									function () {
-										window.location.reload();
-									},
-									1500
-								);
-							} else {
-								alert( strings.deleteFailed + ' ' + (response.data || 'Unknown error') );
+					$.ajax(
+						{
+							url: ajaxUrl,
+							type: 'POST',
+							data: {
+								action: 'seculoco_passkey_delete',
+								nonce: nonce,
+								credential_id: credentialId
+							},
+							success: function (response) {
+								if (response.success) {
+									$( '#passkey-status-message' ).html( '<div class="notice notice-success inline"><p>' + strings.deleteSuccess + '</p></div>' );
+									setTimeout(
+										function () {
+											window.location.reload();
+										},
+										1500
+									);
+								} else {
+									$( '#passkey-status-message' ).html( '<div class="notice notice-error inline"><p>' + strings.deleteFailed + ' ' + (response.data || 'Unknown error') + '</p></div>' );
+									$button.prop( 'disabled', false ).text( strings.deletePasskey );
+								}
+							},
+							error: function (xhr, status, error) {
+								console.error( 'Delete error:', error );
+								$( '#passkey-status-message' ).html( '<div class="notice notice-error inline"><p>' + strings.networkError + '</p></div>' );
 								$button.prop( 'disabled', false ).text( strings.deletePasskey );
 							}
-						},
-						error: function (xhr, status, error) {
-							console.error( 'Delete error:', error );
-							alert( strings.networkError );
-							$button.prop( 'disabled', false ).text( strings.deletePasskey );
 						}
-					}
-				);
+					);
+				});
 			}
 		);
 
@@ -123,13 +202,13 @@ console.log(startResponse);
 					if ( ! startResponse.success) {
 						throw new Error( startResponse.data || 'Failed to start registration' );
 					}
-					
+
 					const options = startResponse.data;
 
 					// Convert base64 strings to ArrayBuffers
 					options.challenge = base64ToArrayBuffer( options.challenge );
 					options.user.id   = base64ToArrayBuffer( options.user.id );
-					
+
 					// Create credential
 					const credential = await navigator.credentials.create(
 						{
@@ -201,7 +280,7 @@ console.log(startResponse);
 					);
 
 				} catch (error) {
-					
+
 					console.error( 'Registration error:', error );
 					$statusMessage.html( '<div class="notice notice-error inline"><p>' + error.message + '</p></div>' );
 					$button.prop( 'disabled', false );

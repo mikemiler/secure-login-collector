@@ -148,7 +148,7 @@ class Seculoco_Passkey_Manager {
 		?>
 		<div class="seculoco-passkey-container">
 		<?php if ( ! $this->is_https() ) : ?>
-				<div class="seculoco-alert seculoco-alert-danger">
+				<div class="seculoco-alert seculoco-alert-danger seculoco-margin-top-20">
 					<span class="seculoco-alert-icon">⚠️</span>
 					<div class="seculoco-alert-content">
 						<div class="seculoco-alert-title"><?php esc_html_e( 'HTTPS Required', 'secure-login-collector' ); ?></div>

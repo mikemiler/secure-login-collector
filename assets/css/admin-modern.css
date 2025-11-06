@@ -97,6 +97,7 @@
 	font-weight: 600;
 	color: var(--seculoco-text-primary);
 	margin: 0;
+	
 	display: flex;
 	align-items: center;
 	gap: 8px;
@@ -2413,4 +2414,126 @@ button.button-expired[disabled]:hover {
 .button.button-danger:disabled {
 	opacity: 0.5;
 	cursor: not-allowed;
+}
+
+/* ==========================================================================
+	Active Encryption Status Bar
+	========================================================================== */
+
+.seculoco-encryption-status-bar {
+	background: var(--seculoco-bg-white);
+	border: 2px solid var(--seculoco-border-light);
+	border-radius: var(--seculoco-radius-md);
+	padding: 20px;
+	margin-bottom: 24px;
+	box-shadow: var(--seculoco-shadow-sm);
+}
+
+.seculoco-encryption-status-bar-header {
+	margin-bottom: 16px;
+	padding-bottom: 12px;
+	border-bottom: 1px solid var(--seculoco-border-light);
+}
+
+.seculoco-encryption-status-bar-title {
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--seculoco-text-primary);
+	margin: 0;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.seculoco-status-icon {
+	font-size: 20px;
+	line-height: 1;
+}
+
+.seculoco-encryption-status-bar-body {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.seculoco-encryption-status-item {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	padding: 12px;
+	border-radius: var(--seculoco-radius-sm);
+	transition: all 0.2s ease;
+}
+
+.seculoco-encryption-status-item-active {
+	background: #f0fdf4;
+	border-left: 3px solid var(--seculoco-success);
+}
+
+.seculoco-encryption-status-item-inactive {
+	background: var(--seculoco-bg-light);
+	border-left: 3px solid var(--seculoco-text-muted);
+	opacity: 0.7;
+}
+
+.seculoco-encryption-status-item-warning {
+	background: #fffdf0;
+	border-left: 3px solid var(--seculoco-warning);
+}
+
+.seculoco-encryption-status-item-unavailable {
+	background: var(--seculoco-bg-light);
+	border-left: 3px solid var(--seculoco-border);
+	opacity: 0.6;
+}
+
+.seculoco-encryption-status-content {
+	flex: 1;
+}
+
+.seculoco-encryption-status-label {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 4px;
+	font-size: 14px;
+}
+
+.seculoco-encryption-status-label strong {
+	color: var(--seculoco-text-primary);
+	font-weight: 600;
+}
+
+.seculoco-encryption-status-desc {
+	font-size: 13px;
+	color: var(--seculoco-text-secondary);
+	line-height: 1.5;
+	margin: 0;
+}
+
+/* Status dot positioning */
+.seculoco-encryption-status-item .seculoco-status-dot {
+	margin-top: 2px;
+	flex-shrink: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+	.seculoco-encryption-status-bar {
+		padding: 16px;
+	}
+
+	.seculoco-encryption-status-item {
+		padding: 10px;
+	}
+
+	.seculoco-encryption-status-bar-title {
+		font-size: 14px;
+	}
+
+	.seculoco-encryption-status-label {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 4px;
+	}
 }
