@@ -242,12 +242,37 @@ jQuery(document).ready(function ($) {
 
     // Import RSA public key from PEM format
     async function importRSAKey(pemKey) {
+        // Validate input
+        if (!pemKey || typeof pemKey !== 'string') {
+            throw new Error('Invalid PEM key: Expected non-empty string');
+        }
+
+        // Extract PEM contents
         const pemContents = pemKey
             .replace(/-----BEGIN PUBLIC KEY-----/, '')
             .replace(/-----END PUBLIC KEY-----/, '')
             .replace(/\s/g, '');
 
-        const binaryString = atob(pemContents);
+        // Validate base64 format
+        if (!pemContents || pemContents.trim() === '') {
+            throw new Error('Invalid PEM key: Empty content after parsing');
+        }
+
+        // Validate base64 characters
+        const base64Pattern = /^[A-Za-z0-9+/]*={0,2}$/;
+        if (!base64Pattern.test(pemContents)) {
+            throw new Error('Invalid PEM key: Contains invalid base64 characters');
+        }
+
+        // Decode base64 with error handling
+        let binaryString;
+        try {
+            binaryString = atob(pemContents);
+        } catch (e) {
+            throw new Error('Failed to decode PEM key: ' + e.message);
+        }
+
+        // Convert to bytes
         const bytes = new Uint8Array(binaryString.length);
         for (let i = 0; i < binaryString.length; i++) {
             bytes[i] = binaryString.charCodeAt(i);

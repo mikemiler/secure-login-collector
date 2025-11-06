@@ -154,6 +154,53 @@ class Seculoco_Frontend_Handler {
 	 * @return string Rendered shortcode content.
 	 */
 	public function frontend_form_shortcode( $atts ) {
+		// Check if encryption is initialized.
+		if ( ! seculoco_is_encryption_initialized() ) {
+			// Show error message to admins, helpful message to regular users.
+			if ( current_user_can( 'manage_options' ) ) {
+				ob_start();
+				?>
+				<div class="seculoco-form-container">
+					<div class="seculoco-error-notice">
+						<span class="dashicons dashicons-warning"></span>
+						<div class="seculoco-error-content">
+							<h3><?php echo esc_html__( 'Encryption Not Configured', 'secure-login-collector' ); ?></h3>
+							<p>
+								<?php
+								echo wp_kses_post(
+									__( '<strong>Administrator Notice:</strong> The master password has not been set up yet. The form cannot accept submissions until encryption is properly configured.', 'secure-login-collector' )
+								);
+								?>
+							</p>
+							<p>
+								<a href="<?php echo esc_url( admin_url( 'admin.php?page=seculoco-encryption-setup' ) ); ?>" class="button button-primary">
+									<span class="dashicons dashicons-lock"></span>
+									<?php echo esc_html__( 'Setup Master Password', 'secure-login-collector' ); ?>
+								</a>
+							</p>
+						</div>
+					</div>
+				</div>
+				<?php
+				return ob_get_clean();
+			} else {
+				// Show generic message to regular users.
+				ob_start();
+				?>
+				<div class="seculoco-form-container">
+					<div class="seculoco-info-notice">
+						<span class="dashicons dashicons-info"></span>
+						<div class="seculoco-info-content">
+							<h3><?php echo esc_html__( 'Form Temporarily Unavailable', 'secure-login-collector' ); ?></h3>
+							<p><?php echo esc_html__( 'This form is currently being configured. Please check back later.', 'secure-login-collector' ); ?></p>
+						</div>
+					</div>
+				</div>
+				<?php
+				return ob_get_clean();
+			}
+		}
+
 		$atts = shortcode_atts(
 			array(
 				'button_text' => __( 'Submit Securely', 'secure-login-collector' ),
@@ -169,9 +216,9 @@ class Seculoco_Frontend_Handler {
 				<div class="seculoco-security-info-text">
 				<?php
 				// Check text type selection.
-				$text_type       = get_option( 'seculoco_frontend_text_type', 'default' );
-				$custom_text     = get_option( 'seculoco_frontend_form_text', '' );
-				$expiration_days = get_option( 'seculoco_expiration_days', 30 );
+				$text_type       = get_option( SECULOCO_OPTION_FRONTEND_TEXT_TYPE, 'default' );
+				$custom_text     = get_option( SECULOCO_OPTION_FRONTEND_FORM_TEXT, '' );
+				$expiration_days = get_option( SECULOCO_OPTION_EXPIRATION_DAYS, 30 );
 
 				if ( 'custom' === $text_type && ! empty( $custom_text ) ) :
 					// Handle placeholder replacement for custom text.

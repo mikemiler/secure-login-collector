@@ -96,8 +96,9 @@ jQuery( document ).ready(
 					return;
 				}
 
-				// Get selected authenticator type (cross-platform or platform)
-				var authenticatorType = $( 'input[name="authenticator_type"]:checked' ).val() || 'cross-platform';
+				// Get selected authenticator type (auto, platform, or security-key)
+				// Default to 'auto' to allow password managers to work
+				var authenticatorType = $( 'input[name="authenticator_type"]:checked' ).val() || 'auto';
 
 				// Detect device and browser information
 				var deviceInfo = detectDeviceInfo();
@@ -118,17 +119,17 @@ jQuery( document ).ready(
 							}
 						}
 					);
-
+console.log(startResponse);
 					if ( ! startResponse.success) {
 						throw new Error( startResponse.data || 'Failed to start registration' );
 					}
-
+					
 					const options = startResponse.data;
 
 					// Convert base64 strings to ArrayBuffers
 					options.challenge = base64ToArrayBuffer( options.challenge );
 					options.user.id   = base64ToArrayBuffer( options.user.id );
-
+					
 					// Create credential
 					const credential = await navigator.credentials.create(
 						{
@@ -200,6 +201,7 @@ jQuery( document ).ready(
 					);
 
 				} catch (error) {
+					
 					console.error( 'Registration error:', error );
 					$statusMessage.html( '<div class="notice notice-error inline"><p>' + error.message + '</p></div>' );
 					$button.prop( 'disabled', false );

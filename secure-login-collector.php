@@ -60,6 +60,9 @@ if ( ! function_exists( 'seculoco_fs' ) ) {
 	}
 }
 
+// Load constants.
+require_once SECULOCO_PLUGIN_DIR . 'includes/constants.php';
+
 // Load global functions.
 require_once SECULOCO_PLUGIN_DIR . 'includes/functions.php';
 
@@ -127,6 +130,13 @@ class SecureLoginCollector {
 	private $spam_protection_premium;
 
 	/**
+	 * Master password wizard instance.
+	 *
+	 * @var Seculoco_Master_Password_Wizard
+	 */
+	private $master_password_wizard;
+
+	/**
 	 * Constructor - initializes the plugin.
 	 */
 	public function __construct() {
@@ -164,6 +174,7 @@ class SecureLoginCollector {
 		include_once SECULOCO_PLUGIN_DIR . 'includes/class-frontend-handler.php';
 		include_once SECULOCO_PLUGIN_DIR . 'includes/class-spam-protection.php';
 		include_once SECULOCO_PLUGIN_DIR . 'includes/class-settings-manager.php';
+		include_once SECULOCO_PLUGIN_DIR . 'includes/class-master-password-wizard.php';
 
 		// Load premium base classes only if available and licensed.
 		// These provide pro functionality (passkey management, licensing, etc).
@@ -260,6 +271,11 @@ class SecureLoginCollector {
 		$this->frontend_handler = new Seculoco_Frontend_Handler( $this->table_name, $this->encryption_handler, $this->database_manager, $this->spam_protection );
 		$this->settings_manager = new Seculoco_Settings_Manager( $this->encryption_handler );
 
+		// Initialize master password wizard (admin only).
+		if ( is_admin() ) {
+			$this->master_password_wizard = new Seculoco_Master_Password_Wizard();
+		}
+
 		// Allow pro extensions to hook in after components are initialized.
 		do_action( 'seculoco_components_initialized', $this );
 
@@ -290,7 +306,7 @@ class SecureLoginCollector {
 		$this->database_manager->schedule_cleanup();
 
 		// Store database version for future schema migrations.
-		update_option( 'seculoco_db_version', SECULOCO_VERSION );
+		update_option( SECULOCO_OPTION_DB_VERSION, SECULOCO_VERSION );
 
 		// Allow pro extensions to run activation tasks.
 		// Premium plugin will handle its own table creation (wrapped keys, etc).

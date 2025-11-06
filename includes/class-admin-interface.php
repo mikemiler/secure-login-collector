@@ -210,7 +210,7 @@ class Seculoco_Admin_Interface {
 
 		// Localize script with configuration data.
 		$admin_config = array(
-			'passkeyRegistered' => get_option( 'seculoco_passkey_registered', false ),
+			'passkeyRegistered' => get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false ),
 			'currentUserId'     => get_current_user_id(),
 		);
 
@@ -265,8 +265,6 @@ class Seculoco_Admin_Interface {
 		<div class="wrap seculoco-admin-wrap">
 			<h1 class="wp-heading-inline"><?php echo esc_html__( 'Secure Login Data', 'secure-login-collector' ); ?></h1>
 			<hr class="wp-header-end">
-
-			
 
 			<?php
 			// Allow pro version to show diagnostic info and fix button.
@@ -414,7 +412,7 @@ class Seculoco_Admin_Interface {
 		$row                    = $this->database_manager->get_entry( $extend_id );
 		$is_expired             = isset( $row->is_expired ) ? $row->is_expired : 0;
 		$new_expiration_display = $this->database_manager->calculate_expiration( $row->retention_until, $is_expired );
-		$expiration_days        = get_option( 'seculoco_expiration_days', 30 );
+		$expiration_days        = get_option( SECULOCO_OPTION_EXPIRATION_DAYS, 30 );
 		wp_send_json_success(
 			array(
 				/* translators: %d: number of days retention period extended */
@@ -567,5 +565,163 @@ class Seculoco_Admin_Interface {
 				'metadata'          => json_decode( $entry->metadata, true ),
 			)
 		);
+	}
+
+	/**
+	 * Encryption setup page.
+	 *
+	 * @since 2.0.0
+	 */
+	public function encryption_setup_page() {
+		// Check if encryption is already initialized.
+		$is_initialized = seculoco_is_encryption_initialized();
+
+		// Get encryption status details.
+		$status = array();
+		if ( class_exists( 'Seculoco_Encryption_Handler_V2' ) && method_exists( 'Seculoco_Encryption_Handler_V2', 'get_status' ) ) {
+			$status = Seculoco_Encryption_Handler_V2::get_status();
+		}
+
+		?>
+		<div class="wrap seculoco-admin-wrap">
+			<h1><?php echo esc_html__( 'Encryption Setup', 'secure-login-collector' ); ?></h1>
+
+			<div class="seculoco-card">
+				<div class="seculoco-card-header">
+					<h2><?php echo esc_html__( 'Master Password Configuration', 'secure-login-collector' ); ?></h2>
+				</div>
+				<div class="seculoco-card-body">
+					<?php if ( $is_initialized ) : ?>
+						<div class="notice notice-success inline">
+							<p>
+								<span class="dashicons dashicons-yes-alt"></span>
+								<strong><?php echo esc_html__( 'Encryption is initialized and ready!', 'secure-login-collector' ); ?></strong>
+							</p>
+						</div>
+
+						<div class="seculoco-encryption-status">
+							<h3><?php echo esc_html__( 'Encryption Status', 'secure-login-collector' ); ?></h3>
+							<table class="widefat">
+								<tbody>
+									<tr>
+										<th><?php echo esc_html__( 'Encryption Version:', 'secure-login-collector' ); ?></th>
+										<td><?php echo esc_html( get_option( SECULOCO_OPTION_ENCRYPTION_VERSION, 'Unknown' ) ); ?></td>
+									</tr>
+									<tr>
+										<th><?php echo esc_html__( 'Public Key:', 'secure-login-collector' ); ?></th>
+										<td>
+											<?php echo $status['free']['has_public_key'] ?? false ? '<span class="dashicons dashicons-yes-alt seculoco-status-ok"></span>' : '<span class="dashicons dashicons-dismiss seculoco-status-error"></span>'; ?>
+											<?php echo ( $status['free']['has_public_key'] ?? false ) ? esc_html__( 'Available', 'secure-login-collector' ) : esc_html__( 'Missing', 'secure-login-collector' ); ?>
+										</td>
+									</tr>
+									<tr>
+										<th><?php echo esc_html__( 'Private Key:', 'secure-login-collector' ); ?></th>
+										<td>
+											<?php echo $status['free']['has_private_key'] ?? false ? '<span class="dashicons dashicons-yes-alt seculoco-status-ok"></span>' : '<span class="dashicons dashicons-dismiss seculoco-status-error"></span>'; ?>
+											<?php echo ( $status['free']['has_private_key'] ?? false ) ? esc_html__( 'Wrapped & Secured', 'secure-login-collector' ) : esc_html__( 'Missing', 'secure-login-collector' ); ?>
+										</td>
+									</tr>
+									<tr>
+										<th><?php echo esc_html__( 'Master Password Salt:', 'secure-login-collector' ); ?></th>
+										<td>
+											<?php echo $status['free']['has_salt'] ?? false ? '<span class="dashicons dashicons-yes-alt seculoco-status-ok"></span>' : '<span class="dashicons dashicons-dismiss seculoco-status-error"></span>'; ?>
+											<?php echo ( $status['free']['has_salt'] ?? false ) ? esc_html__( 'Configured', 'secure-login-collector' ) : esc_html__( 'Missing', 'secure-login-collector' ); ?>
+										</td>
+									</tr>
+									<tr>
+										<th><?php echo esc_html__( 'Setup Date:', 'secure-login-collector' ); ?></th>
+										<td><?php echo esc_html( get_option( SECULOCO_OPTION_SETUP_TIMESTAMP, __( 'Unknown', 'secure-login-collector' ) ) ); ?></td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+
+						<div class="seculoco-encryption-info">
+							<h3><?php echo esc_html__( 'Security Information', 'secure-login-collector' ); ?></h3>
+							<p>
+								<?php
+								echo wp_kses_post(
+									__( 'Your encryption is configured with <strong>Zero-Knowledge Architecture</strong>. Your master password is never stored on the server and all login credentials are encrypted client-side before transmission.', 'secure-login-collector' )
+								);
+								?>
+							</p>
+							<p>
+								<strong><?php echo esc_html__( 'Important:', 'secure-login-collector' ); ?></strong>
+								<?php
+								echo wp_kses_post(
+									__( 'If you lose your master password, encrypted data cannot be recovered. Please store your password securely.', 'secure-login-collector' )
+								);
+								?>
+							</p>
+						</div>
+
+						<div class="seculoco-encryption-actions">
+							<h3><?php echo esc_html__( 'Advanced Options', 'secure-login-collector' ); ?></h3>
+							<p>
+								<button type="button" class="button button-secondary seculoco-launch-wizard" data-mode="change">
+									<?php echo esc_html__( 'Change Master Password', 'secure-login-collector' ); ?>
+								</button>
+								<span class="description">
+									<?php echo esc_html__( '(This will re-encrypt your private key with a new master password)', 'secure-login-collector' ); ?>
+								</span>
+							</p>
+						</div>
+
+					<?php else : ?>
+						<div class="notice notice-warning inline">
+							<p>
+								<span class="dashicons dashicons-warning"></span>
+								<strong><?php echo esc_html__( 'Encryption not configured!', 'secure-login-collector' ); ?></strong>
+							</p>
+							<p>
+								<?php
+								echo wp_kses_post(
+									__( 'You must set up a master password before you can use Secure Login Collector. Your master password will be used to encrypt and protect all collected login credentials.', 'secure-login-collector' )
+								);
+								?>
+							</p>
+						</div>
+
+						<div class="seculoco-setup-info">
+							<h3><?php echo esc_html__( 'What is a Master Password?', 'secure-login-collector' ); ?></h3>
+							<p>
+								<?php
+								echo wp_kses_post(
+									__( 'Your master password is used to encrypt your private encryption keys using <strong>Zero-Knowledge Architecture</strong>. This means:', 'secure-login-collector' )
+								);
+								?>
+							</p>
+							<ul>
+								<li><?php echo esc_html__( 'Your master password is never stored on the server', 'secure-login-collector' ); ?></li>
+								<li><?php echo esc_html__( 'Only you can decrypt the collected login credentials', 'secure-login-collector' ); ?></li>
+								<li><?php echo esc_html__( 'All encryption happens in your browser before data reaches the server', 'secure-login-collector' ); ?></li>
+								<li><?php echo esc_html__( 'Even the server administrator cannot access encrypted data without your password', 'secure-login-collector' ); ?></li>
+							</ul>
+						</div>
+
+						<div class="seculoco-setup-requirements">
+							<h3><?php echo esc_html__( 'Password Requirements', 'secure-login-collector' ); ?></h3>
+							<ul>
+								<li><?php echo esc_html__( 'Minimum 12 characters', 'secure-login-collector' ); ?></li>
+								<li><?php echo esc_html__( 'Use a strong, unique password', 'secure-login-collector' ); ?></li>
+								<li><?php echo esc_html__( 'Store it securely (password manager recommended)', 'secure-login-collector' ); ?></li>
+								<li>
+									<strong><?php echo esc_html__( 'WARNING:', 'secure-login-collector' ); ?></strong>
+									<?php echo esc_html__( 'If you lose this password, encrypted data cannot be recovered!', 'secure-login-collector' ); ?>
+								</li>
+							</ul>
+						</div>
+
+						<div class="seculoco-setup-action">
+							<button type="button" class="button button-primary button-large seculoco-launch-wizard">
+								<span class="dashicons dashicons-lock"></span>
+								<?php echo esc_html__( 'Setup Master Password Now', 'secure-login-collector' ); ?>
+							</button>
+						</div>
+					<?php endif; ?>
+				</div>
+			</div>
+		</div>
+		<?php
 	}
 }

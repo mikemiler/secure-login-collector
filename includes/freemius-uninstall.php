@@ -50,7 +50,7 @@ function seculoco_fs_uninstall_cleanup() {
 		}
 
 		// Also check if we're flagged as using pro version.
-		if ( get_option( 'seculoco_using_pro_version', false ) ) {
+		if ( get_option( SECULOCO_OPTION_USING_PRO_VERSION, false ) ) {
 			if ( defined( 'WP_DEBUG' ) && WP_DEBUG === true ) {
 				error_log( 'Secure Login Collector: Pro version flag detected, preserving data.' );
 			}
@@ -58,7 +58,7 @@ function seculoco_fs_uninstall_cleanup() {
 		}
 
 		// Check if user has opted to delete all data on uninstall.
-		$delete_on_uninstall = get_option( 'seculoco_delete_on_uninstall', false );
+		$delete_on_uninstall = get_option( SECULOCO_OPTION_DELETE_ON_UNINSTALL, false );
 
 		if ( ! $delete_on_uninstall ) {
 			// User has chosen to keep data, so exit without deleting anything.
@@ -83,34 +83,53 @@ function seculoco_fs_uninstall_cleanup() {
 
 		// 2. Delete all plugin options.
 		$plugin_options = array(
-			// Settings.
-			'seculoco_notification_email',
-			'seculoco_enable_notifications',
-			'seculoco_expiration_days',
-			'seculoco_ultra_secure_mode',
-			'seculoco_frontend_form_text',
-			'seculoco_frontend_text_type',
-			'seculoco_delete_on_uninstall',
+			// Settings - using constants.
+			SECULOCO_OPTION_NOTIFICATION_EMAIL,
+			SECULOCO_OPTION_ENABLE_NOTIFICATIONS,
+			SECULOCO_OPTION_EXPIRATION_DAYS,
+			SECULOCO_OPTION_FRONTEND_FORM_TEXT,
+			SECULOCO_OPTION_FRONTEND_TEXT_TYPE,
+			SECULOCO_OPTION_SPAM_SETTINGS,
+			SECULOCO_OPTION_HONEYPOT_LOG,
+			SECULOCO_OPTION_DELETE_ON_UNINSTALL,
 
-			// Encryption keys and related data.
-			'seculoco_public_key',
-			'seculoco_private_key',
-			'seculoco_wrapped_private_key',
-			'seculoco_private_key_encrypted',
-			'seculoco_public_key_free',
-			'seculoco_private_key_free_encrypted',
-			'seculoco_public_key_pro',
-			'seculoco_wrapped_private_key_pro',
-			'seculoco_pro_keys_active',
-			'seculoco_passkey_registered',
-			'seculoco_master_key_wrapped',
-			'seculoco_key_access_log',
-			'seculoco_session_keys',
+			// Encryption keys and related data - using constants.
+			SECULOCO_OPTION_PUBLIC_KEY,
+			SECULOCO_OPTION_PRIVATE_KEY_WRAPPED,
+			SECULOCO_OPTION_PUBLIC_KEY_JWK_FREE,
+			SECULOCO_OPTION_KEY_WRAPPING_IV_FREE,
+			SECULOCO_OPTION_PUBLIC_KEY_PRO,
+			SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PRO,
+			SECULOCO_OPTION_PRO_KEYS_ACTIVE,
+			SECULOCO_OPTION_MASTER_PASSWORD_SALT,
 
-			// Database version.
-			'seculoco_db_version',
+			// Passkey options - using constants.
+			SECULOCO_OPTION_GLOBAL_PASSKEY,
+			SECULOCO_OPTION_PASSKEY_CREDENTIAL_ID,
+			SECULOCO_OPTION_PASSKEY_REGISTERED,
+			SECULOCO_OPTION_PASSKEY_REGISTERED_AT,
+			SECULOCO_OPTION_PASSKEY_AAGUID_HASH,
 
-			// Freemius related options.
+			// Logging - using constants.
+			SECULOCO_OPTION_KEY_ACCESS_LOG,
+			SECULOCO_OPTION_KEY_OPERATIONS_LOG,
+
+			// Version tracking - using constants.
+			SECULOCO_OPTION_DB_VERSION,
+			SECULOCO_OPTION_ENCRYPTION_VERSION,
+			SECULOCO_OPTION_SETUP_TIMESTAMP,
+			SECULOCO_OPTION_UPGRADE_COMPLETED,
+			SECULOCO_OPTION_USING_PRO_VERSION,
+
+			// Legacy option names (no constants needed - deprecated).
+			'seculoco_private_key', // Legacy option name.
+			'seculoco_wrapped_private_key', // Legacy option name.
+			'seculoco_private_key_encrypted', // Legacy option name.
+			'seculoco_ultra_secure_mode', // Legacy option name.
+			'seculoco_master_key_wrapped', // Legacy option name.
+			'seculoco_session_keys', // Legacy option name.
+
+			// Freemius related options (external library - no constants).
 			'fs_accounts',
 			'fs_active_plugins',
 			'fs_api_cache',

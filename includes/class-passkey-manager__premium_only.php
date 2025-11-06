@@ -157,147 +157,138 @@ class Seculoco_Passkey_Manager {
 				</div>
 			<?php endif; ?>
 			
-			<div class="seculoco-card">
-				<div class="seculoco-card-header">
-					<h3 class="seculoco-card-title">
-						<span class="seculoco-card-title-icon">🔐</span>
-					<?php esc_html_e( 'Passkey Authentication', 'secure-login-collector' ); ?>
-					</h3>
-				<?php if ( $passkey ) : ?>
-						<span class="seculoco-badge seculoco-badge-success"><?php esc_html_e( 'Active', 'secure-login-collector' ); ?></span>
-					<?php endif; ?>
-				</div>
+			
 				
-				<div class="seculoco-card-body">
-				<?php if ( $passkey ) : ?>
-						<div class="seculoco-passkey-status">
-							<div class="seculoco-passkey-status-header">
-								<div class="seculoco-passkey-status-title">
-									<span>✅</span>
-									<?php esc_html_e( 'Passkey Registered', 'secure-login-collector' ); ?>
-								</div>
-							</div>
-							<div class="seculoco-passkey-status-details">
-								<strong><?php esc_html_e( 'Name:', 'secure-login-collector' ); ?></strong> <?php echo esc_html( $passkey['name'] ); ?><br>
-								<?php
-								// Display device information if available.
-								if ( ! empty( $passkey['device_info'] ) ) :
-									$device_info = $passkey['device_info'];
-									$icon        = '🔐';
-									$label       = '';
-
-									if ( 'password_manager' === $device_info['type'] ) {
-										$icon  = '🔑';
-										$label = sprintf(
-											/* translators: 1: Password manager name, 2: Browser name */
-											esc_html__( 'Registered with: %1$s on %2$s', 'secure-login-collector' ),
-											esc_html( $device_info['platform'] ),
-											esc_html( $device_info['browser'] )
-										);
-									} else {
-										// Device/platform authentication.
-										$platform_icons = array(
-											'iPhone'  => '📱',
-											'iPad'    => '📱',
-											'macOS'   => '💻',
-											'Windows' => '🖥️',
-											'Android' => '📱',
-											'Linux'   => '🐧',
-										);
-										$icon           = $platform_icons[ $device_info['platform'] ] ?? '🔐';
-										$label          = sprintf(
-											/* translators: 1: Platform name, 2: Registration date */
-											esc_html__( 'Registered with: %1$s on %2$s', 'secure-login-collector' ),
-											esc_html( $device_info['platform'] ),
-											esc_html( gmdate( 'Y-m-d', strtotime( $passkey['registered_at'] ) ) )
-										);
-									}
-									?>
-									<div class="seculoco-device-info-box">
-										<span class="seculoco-device-info-icon"><?php echo $icon; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Hardcoded emoji. ?></span>
-										<strong><?php echo $label; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already escaped above. ?></strong>
-										<?php if ( 'device' === $device_info['type'] ) : ?>
-											<br><span class="seculoco-device-info-browser">
-												<?php
-												printf(
-													/* translators: %s: Browser name */
-													esc_html__( 'Browser: %s', 'secure-login-collector' ),
-													esc_html( $device_info['browser'] )
-												);
-												?>
-											</span>
-										<?php endif; ?>
-									</div>
-								<?php endif; ?>
-								<strong><?php esc_html_e( 'Registered:', 'secure-login-collector' ); ?></strong> <?php echo esc_html( $passkey['registered_at'] ); ?><br>
-								<strong><?php esc_html_e( 'ID:', 'secure-login-collector' ); ?></strong> <?php echo esc_html( substr( $passkey['credential_id'], 0, 20 ) . '...' ); ?>
+			<div class="seculoco-card-body">
+			<?php if ( $passkey ) : ?>
+					<div class="seculoco-passkey-status" style="display: none;">
+						<div class="seculoco-passkey-status-header">
+							<div class="seculoco-passkey-status-title">
+								<span>✅</span>
+								<?php esc_html_e( 'Passkey Registered', 'secure-login-collector' ); ?>
 							</div>
 						</div>
+						<div class="seculoco-passkey-status-details">
+							<strong><?php esc_html_e( 'Name:', 'secure-login-collector' ); ?></strong> <?php echo esc_html( $passkey['name'] ); ?><br>
+							<?php
+							// Display device information if available.
+							if ( ! empty( $passkey['device_info'] ) ) :
+								$device_info = $passkey['device_info'];
+								$icon        = '🔐';
+								$label       = '';
 
-						<?php if ( $has_encrypted_data ) : ?>
-							<div class="seculoco-alert seculoco-alert-danger seculoco-margin-top-20">
-								<span class="seculoco-alert-icon">⚠️</span>
-								<div class="seculoco-alert-content">
-									<div class="seculoco-alert-title"><?php esc_html_e( 'CRITICAL WARNING: Data Loss Risk', 'secure-login-collector' ); ?></div>
-									<div class="seculoco-alert-message">
-										<p><strong><?php esc_html_e( 'Deleting this passkey will permanently prevent decryption of all existing login data encrypted with this passkey.', 'secure-login-collector' ); ?></strong></p>
-										
-										<p><strong><?php esc_html_e( 'This action CANNOT be undone. There is NO recovery method.', 'secure-login-collector' ); ?></strong></p>
-									</div>
-									<button type="button" class="seculoco-btn seculoco-btn-danger" id="delete-passkey-btn"
-											data-credential-id="<?php echo esc_attr( $passkey['credential_id'] ); ?>">
-										<?php esc_html_e( 'Delete Passkey', 'secure-login-collector' ); ?>
-									</button>
-								</div>
-							</div>
-						<?php endif; ?>
-					<?php else : ?>
-						<p><?php esc_html_e( 'Register a passkey using your device biometrics or a password manager for ultra-secure encryption.', 'secure-login-collector' ); ?></p>
-
-						<div class="passkey-registration-form seculoco-passkey-form-container">
-							<div class="seculoco-form-group seculoco-passkey-form-group">
-								<label class="seculoco-form-label">
-									<?php esc_html_e( 'Choose Your Passkey Method:', 'secure-login-collector' ); ?>
-								</label>
-								<div class="seculoco-passkey-radio-group">
-									<label class="seculoco-passkey-radio-label">
-										<input type="radio" name="authenticator_type" value="cross-platform" checked>
-										<strong><?php esc_html_e( 'Password Manager', 'secure-login-collector' ); ?></strong>
-										<span class="seculoco-form-help seculoco-passkey-radio-help">
-											<?php esc_html_e( '1Password, Bitwarden, Dashlane, or other password managers', 'secure-login-collector' ); ?>
+								if ( 'password_manager' === $device_info['type'] ) {
+									$icon  = '🔑';
+									$label = sprintf(
+										/* translators: 1: Password manager name, 2: Browser name */
+										esc_html__( 'Registered with: %1$s on %2$s', 'secure-login-collector' ),
+										esc_html( $device_info['platform'] ),
+										esc_html( $device_info['browser'] )
+									);
+								} else {
+									// Device/platform authentication.
+									$platform_icons = array(
+										'iPhone'  => '📱',
+										'iPad'    => '📱',
+										'macOS'   => '💻',
+										'Windows' => '🖥️',
+										'Android' => '📱',
+										'Linux'   => '🐧',
+									);
+									$icon           = $platform_icons[ $device_info['platform'] ] ?? '🔐';
+									$label          = sprintf(
+										/* translators: 1: Platform name, 2: Registration date */
+										esc_html__( 'Registered with: %1$s on %2$s', 'secure-login-collector' ),
+										esc_html( $device_info['platform'] ),
+										esc_html( gmdate( 'Y-m-d', strtotime( $passkey['registered_at'] ) ) )
+									);
+								}
+								?>
+								<div class="seculoco-device-info-box">
+									<span class="seculoco-device-info-icon"><?php echo $icon; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Hardcoded emoji. ?></span>
+									<strong><?php echo $label; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already escaped above. ?></strong>
+									<?php if ( 'device' === $device_info['type'] ) : ?>
+										<br><span class="seculoco-device-info-browser">
+											<?php
+											printf(
+												/* translators: %s: Browser name */
+												esc_html__( 'Browser: %s', 'secure-login-collector' ),
+												esc_html( $device_info['browser'] )
+											);
+											?>
 										</span>
-									</label>
-									<label class="seculoco-passkey-radio-label">
-										<input type="radio" name="authenticator_type" value="platform">
-										<strong><?php esc_html_e( 'Device/Platform Biometrics', 'secure-login-collector' ); ?></strong>
-										<span class="seculoco-form-help seculoco-passkey-radio-help">
-											<?php esc_html_e( 'iPhone Face ID, Android Fingerprint, Windows Hello, Touch ID', 'secure-login-collector' ); ?>
-										</span>
-									</label>
+									<?php endif; ?>
 								</div>
+							<?php endif; ?>
+							<strong><?php esc_html_e( 'Registered:', 'secure-login-collector' ); ?></strong> <?php echo esc_html( $passkey['registered_at'] ); ?><br>
+							<strong><?php esc_html_e( 'ID:', 'secure-login-collector' ); ?></strong> <?php echo esc_html( substr( $passkey['credential_id'], 0, 20 ) . '...' ); ?>
+						</div>
+					</div>
 
-								<div class="seculoco-passkey-tip-box">
-									<span class="seculoco-passkey-tip-title">💡 <?php esc_html_e( 'Tip:', 'secure-login-collector' ); ?></span>
-									<span class="seculoco-passkey-tip-text">
-										<?php esc_html_e( 'If you select "Device/Platform Biometrics" and your password manager popup appears, simply click away from it or press Escape. Your device\'s biometric prompt will appear next.', 'secure-login-collector' ); ?>
-									</span>
+					<?php if ( $has_encrypted_data ) : ?>
+						<div class="seculoco-alert seculoco-alert-danger seculoco-margin-top-20">
+							<span class="seculoco-alert-icon">⚠️</span>
+							<div class="seculoco-alert-content">
+								<div class="seculoco-alert-title"><?php esc_html_e( 'CRITICAL WARNING: Data Loss Risk', 'secure-login-collector' ); ?></div>
+								<div class="seculoco-alert-message">
+									<p><strong><?php esc_html_e( 'Deleting this passkey will permanently prevent decryption of all existing login data encrypted with this passkey.', 'secure-login-collector' ); ?></strong></p>
+									
+									<p><strong><?php esc_html_e( 'This action CANNOT be undone. There is NO recovery method.', 'secure-login-collector' ); ?></strong></p>
 								</div>
+								<button type="button" class="seculoco-btn seculoco-btn-danger" id="delete-passkey-btn"
+										data-credential-id="<?php echo esc_attr( $passkey['credential_id'] ); ?>">
+									<?php esc_html_e( 'Delete Passkey', 'secure-login-collector' ); ?>
+								</button>
 							</div>
-
-							<button type="button"
-									id="register-passkey-btn"
-									class="seculoco-btn seculoco-btn-primary seculoco-btn-lg">
-								<span>🔑</span>
-								<?php esc_html_e( 'Register Passkey', 'secure-login-collector' ); ?>
-							</button>
-
-							<span class="spinner seculoco-spinner-inline"></span>
 						</div>
 					<?php endif; ?>
-					
-					<div id="passkey-status-message"></div>
-				</div>
-			</div>			
+				<?php else : ?>
+					<p><?php esc_html_e( 'Register a passkey using your device biometrics or a password manager for ultra-secure encryption.', 'secure-login-collector' ); ?></p>
+
+					<div class="passkey-registration-form seculoco-passkey-form-container">
+						<div class="seculoco-form-group seculoco-passkey-form-group">
+							<label class="seculoco-form-label">
+								<?php esc_html_e( 'Choose Your Passkey Method:', 'secure-login-collector' ); ?>
+							</label>
+							<div class="seculoco-passkey-radio-group">
+								<label class="seculoco-passkey-radio-label">
+									<input type="radio" name="authenticator_type" value="auto" checked>
+									<strong><?php esc_html_e( 'Password Manager', 'secure-login-collector' ); ?></strong>
+									<span class="seculoco-form-help seculoco-passkey-radio-help">
+										<?php esc_html_e( '1Password, Bitwarden, Dashlane, or other password managers', 'secure-login-collector' ); ?>
+									</span>
+								</label>
+								<label class="seculoco-passkey-radio-label">
+									<input type="radio" name="authenticator_type" value="platform">
+									<strong><?php esc_html_e( 'Device/Platform Biometrics', 'secure-login-collector' ); ?></strong>
+									<span class="seculoco-form-help seculoco-passkey-radio-help">
+										<?php esc_html_e( 'iPhone Face ID, Android Fingerprint, Windows Hello, Touch ID', 'secure-login-collector' ); ?>
+									</span>
+								</label>
+							</div>
+
+							<div class="seculoco-passkey-tip-box">
+								<span class="seculoco-passkey-tip-title">💡 <?php esc_html_e( 'Tip:', 'secure-login-collector' ); ?></span>
+								<span class="seculoco-passkey-tip-text">
+									<?php esc_html_e( 'If you select "Device/Platform Biometrics" and your password manager popup appears, simply click away from it or press Escape. Your device\'s biometric prompt will appear next.', 'secure-login-collector' ); ?>
+								</span>
+							</div>
+						</div>
+
+						<button type="button"
+								id="register-passkey-btn"
+								class="seculoco-btn seculoco-btn-primary seculoco-btn-lg">
+							<span>🔑</span>
+							<?php esc_html_e( 'Register Passkey', 'secure-login-collector' ); ?>
+						</button>
+
+						<span class="spinner seculoco-spinner-inline"></span>
+					</div>
+				<?php endif; ?>
+				
+				<div id="passkey-status-message"></div>
+			</div>
+			
 		</div>
 
 		<?php
@@ -310,7 +301,7 @@ class Seculoco_Passkey_Manager {
 	 * @return array|null Passkey data or null if not registered.
 	 */
 	private function get_global_passkey() {
-		$passkey = get_option( 'seculoco_global_passkey' );
+		$passkey = get_option( SECULOCO_OPTION_GLOBAL_PASSKEY );
 		return is_array( $passkey ) ? $passkey : null;
 	}
 
@@ -320,7 +311,7 @@ class Seculoco_Passkey_Manager {
 	 * @return bool True if passkey is registered.
 	 */
 	private function has_passkey() {
-		return (bool) get_option( 'seculoco_passkey_registered', false );
+		return (bool) get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false );
 	}
 
 	/**
@@ -358,14 +349,18 @@ class Seculoco_Passkey_Manager {
 		);
 
 		// Set authenticatorAttachment based on user choice.
+		// IMPORTANT: For password managers to work, we must OMIT authenticatorAttachment
+		// because password managers are virtual authenticators that don't fit the spec's
+		// 'platform' or 'cross-platform' categories.
 		if ( 'platform' === $authenticator_type ) {
 			// Platform authenticators: Touch ID, Face ID, Windows Hello
 			$authenticator_selection['authenticatorAttachment'] = 'platform';
-		} elseif ( 'cross-platform' === $authenticator_type ) {
-			// Cross-platform authenticators: YubiKey, security keys
+		} elseif ( 'security-key' === $authenticator_type ) {
+			// Hardware security keys: YubiKey, FIDO2 tokens
 			$authenticator_selection['authenticatorAttachment'] = 'cross-platform';
 		}
-		// If 'auto', omit authenticatorAttachment to allow any type including password managers
+		// For 'auto' or 'password-manager', omit authenticatorAttachment entirely
+		// This allows password managers (1Password, Bitwarden, etc.) to respond
 
 		wp_send_json_success(
 			array(
@@ -532,10 +527,10 @@ class Seculoco_Passkey_Manager {
 				'device_info'   => $device_info,
 				'version'       => 2,
 			);
-			update_option( 'seculoco_global_passkey', $passkey_data );
+			update_option( SECULOCO_OPTION_GLOBAL_PASSKEY, $passkey_data );
 
 			// Store credential ID for quick lookup.
-			update_option( 'seculoco_passkey_credential_id', $credential_id );
+			update_option( SECULOCO_OPTION_PASSKEY_CREDENTIAL_ID, $credential_id );
 
 			// Store globally for verification.
 			update_option(
@@ -547,11 +542,11 @@ class Seculoco_Passkey_Manager {
 			);
 
 			// Set global passkey registered flag.
-			update_option( 'seculoco_passkey_registered', true );
-			update_option( 'seculoco_passkey_registered_at', current_time( 'mysql' ) );
+			update_option( SECULOCO_OPTION_PASSKEY_REGISTERED, true );
+			update_option( SECULOCO_OPTION_PASSKEY_REGISTERED_AT, current_time( 'mysql' ) );
 
 			// Also ensure pro keys active flag is set for consistency with V2 handler.
-			update_option( 'seculoco_pro_keys_active', true );
+			update_option( SECULOCO_OPTION_PRO_KEYS_ACTIVE, true );
 
 			// Clear challenge.
 			delete_transient( 'passkey_reg_challenge_' . $user_id );
@@ -600,8 +595,8 @@ class Seculoco_Passkey_Manager {
 		$affected_count = $db_manager->mark_login_data_as_undecryptable();
 
 		// Delete the global passkey.
-		delete_option( 'seculoco_global_passkey' );
-		delete_option( 'seculoco_passkey_credential_id' );
+		delete_option( SECULOCO_OPTION_GLOBAL_PASSKEY );
+		delete_option( SECULOCO_OPTION_PASSKEY_CREDENTIAL_ID );
 		delete_option( 'passkey_credential_' . $credential_id );
 
 		// Delete the pro keys and clear the global flag.
@@ -612,8 +607,8 @@ class Seculoco_Passkey_Manager {
 		$encryption_handler->delete_pro_keys();
 
 		// Clear global passkey registered flag.
-		delete_option( 'seculoco_passkey_registered' );
-		delete_option( 'seculoco_passkey_registered_at' );
+		delete_option( SECULOCO_OPTION_PASSKEY_REGISTERED );
+		delete_option( SECULOCO_OPTION_PASSKEY_REGISTERED_AT );
 
 		// Prepare success message with undecryptable count.
 		$message = 'Passkey deleted and encryption keys removed';
@@ -687,10 +682,10 @@ class Seculoco_Passkey_Manager {
 		$encryption_handler = new Seculoco_Encryption_Handler_V2_Premium();
 
 		// Step 2: Ensure free keys exist first.
-		$free_result = $encryption_handler->initialize_free_keys();
+		/* $free_result = $encryption_handler->initialize_free_keys();
 		if ( is_wp_error( $free_result ) ) {
 			wp_send_json_error( 'Failed to initialize free keys: ' . $free_result->get_error_message() );
-		}
+		} */
 
 		// Step 3: Derive key from passkey for wrapping (no user_id - global passkey).
 		$passkey_derived_key = $this->derive_wrapping_key( $credential_id );
@@ -702,7 +697,7 @@ class Seculoco_Passkey_Manager {
 		// The passkey-derived key directly wraps the PRO private key.
 
 		// Get the pro public key for response.
-		$public_key_pro = get_option( 'seculoco_public_key_pro' );
+		$public_key_pro = get_option( SECULOCO_OPTION_PUBLIC_KEY_PRO );
 
 		wp_send_json_success(
 			array(

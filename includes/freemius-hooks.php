@@ -61,7 +61,7 @@ function seculoco_fs_admin_notices() {
 
 	// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET parameter for page detection.
 	if ( ! seculoco_fs()->is_paying() && isset( $_GET['page'] ) && 'secure-login-collector-account' === $_GET['page'] ) {
-		$passkey_registered = get_option( 'seculoco_passkey_registered', false );
+		$passkey_registered = get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false );
 
 		if ( $passkey_registered ) {
 			?>

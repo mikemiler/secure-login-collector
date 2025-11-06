@@ -53,11 +53,11 @@ class Seculoco_Frontend_Handler_Pro {
 	 */
 	public function add_pro_encryption_metadata( $metadata, $login_data ) {
 		// Check if pro keys are active.
-		if ( get_option( 'seculoco_pro_keys_active', false ) ) {
+		if ( get_option( SECULOCO_OPTION_PRO_KEYS_ACTIVE, false ) ) {
 			// Mark as Pro encrypted - data will be encrypted with pro public key.
 			// The passkey decryption happens on the admin side during decryption.
 			$metadata['is_pro_encrypted']     = true;
-			$metadata['server_credential_id'] = get_option( 'seculoco_passkey_credential_id' );
+			$metadata['server_credential_id'] = get_option( SECULOCO_OPTION_PASSKEY_CREDENTIAL_ID );
 		}
 
 		return $metadata;

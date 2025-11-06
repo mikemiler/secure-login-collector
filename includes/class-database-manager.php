@@ -113,7 +113,7 @@ class Seculoco_Database_Manager {
 		global $wpdb;
 
 		// Check if auto-deletion is enabled.
-		$expiration_days = get_option( 'seculoco_expiration_days', 30 );
+		$expiration_days = get_option( SECULOCO_OPTION_EXPIRATION_DAYS, 30 );
 		if ( $expiration_days <= 0 ) {
 			// Auto-deletion is disabled, don't delete anything.
 			return 0;
@@ -173,7 +173,7 @@ class Seculoco_Database_Manager {
 		global $wpdb;
 
 		$retention_until = null;
-		$expiration_days = get_option( 'seculoco_expiration_days', 30 );
+		$expiration_days = get_option( SECULOCO_OPTION_EXPIRATION_DAYS, 30 );
 
 		if ( $expiration_days > 0 ) {
 			$retention_until = gmdate( 'Y-m-d H:i:s', strtotime( "+{$expiration_days} days" ) );
@@ -236,7 +236,7 @@ class Seculoco_Database_Manager {
 	public function extend_retention( $id ) {
 		global $wpdb;
 
-		$expiration_days = get_option( 'seculoco_expiration_days', 30 );
+		$expiration_days = get_option( SECULOCO_OPTION_EXPIRATION_DAYS, 30 );
 		if ( $expiration_days <= 0 ) {
 			return false; // Auto-deletion is disabled.
 		}
@@ -349,11 +349,11 @@ class Seculoco_Database_Manager {
 	 */
 	public function send_notification( $sender_email, $sender_name = '' ) {
 		// Check if notifications are enabled.
-		if ( ! get_option( 'seculoco_enable_notifications', false ) ) {
+		if ( ! get_option( SECULOCO_OPTION_ENABLE_NOTIFICATIONS, false ) ) {
 			return;
 		}
 
-		$notification_email = get_option( 'seculoco_notification_email', get_option( 'admin_email' ) );
+		$notification_email = get_option( SECULOCO_OPTION_NOTIFICATION_EMAIL, get_option( 'admin_email' ) );
 
 		if ( empty( $notification_email ) || ! is_email( $notification_email ) ) {
 			return;
@@ -513,16 +513,25 @@ class Seculoco_Database_Manager {
 	}
 
 	/**
-	 * Mark login data entries as undecryptable for a specific user.
-	 * Called when a passkey is deleted to mark all pro-encrypted data as permanently undecryptable.
+	 * Mark login data entries as undecryptable after master password reset.
 	 *
-	 * @param int $user_id User ID whose passkey was deleted.
+	 * Handles both FREE-tier (RSA-encrypted) and PRO-tier (passkey-protected) encrypted data.
+	 * After master password reset, all encrypted data becomes undecryptable since the
+	 * decryption keys are lost.
+	 *
+	 * @param string $tier Encryption tier to mark: 'all' (default), 'free', or 'pro'.
 	 * @return int Number of entries marked as undecryptable.
 	 */
-	public function mark_login_data_as_undecryptable( ) {
+	public function mark_login_data_as_undecryptable( $tier = 'all' ) {
 		global $wpdb;
 
-		// Find all entries that are pro-encrypted (is_pro_encrypted = true in metadata).
+		// Validate tier parameter.
+		$valid_tiers = array( 'all', 'free', 'pro' );
+		if ( ! in_array( $tier, $valid_tiers, true ) ) {
+			$tier = 'all';
+		}
+
+		// Find all entries that are not yet marked as undecryptable.
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is escaped in constructor via esc_sql().
 		$entries = $wpdb->get_results(
 			$wpdb->prepare(
@@ -536,13 +545,24 @@ class Seculoco_Database_Manager {
 		foreach ( $entries as $entry ) {
 			$metadata = json_decode( $entry->metadata, true );
 
-			// Check if this entry was encrypted with the pro key.
-			// Use both is_pro_encrypted flag and encryption_type for reliability.
+			// Determine encryption tier of this entry.
 			$is_pro_encrypted = isset( $metadata['is_pro_encrypted'] ) && $metadata['is_pro_encrypted'];
-			$encryption_type  = isset( $metadata['encryption_type'] ) ? $metadata['encryption_type'] : '';
-			$uses_passkey     = in_array( $encryption_type, array( 'aes-rsa-passkey-v2', 'rsa_passkey_protected' ), true );
 
-			if ( $is_pro_encrypted || $uses_passkey ) {
+			// Determine if this entry should be marked based on tier filter.
+			$should_mark = false;
+
+			if ( 'all' === $tier ) {
+				// Mark both FREE and PRO tier encrypted entries.
+				$should_mark = true;
+			} elseif ( 'free' === $tier ) {
+				// Mark only FREE-tier RSA-encrypted entries.
+				$should_mark = ! $is_pro_encrypted;
+			} elseif ( 'pro' === $tier ) {
+				// Mark only PRO-tier passkey-protected entries.
+				$should_mark = $is_pro_encrypted;
+			}
+
+			if ( $should_mark ) {
 				// Mark as undecryptable.
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is escaped in constructor via esc_sql().
 				$result = $wpdb->update(

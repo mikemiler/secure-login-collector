@@ -47,7 +47,7 @@ class Seculoco_Spam_Protection {
 	 * @since 1.0.0
 	 * @var string
 	 */
-	const SETTINGS_KEY = 'seculoco_honeypot_settings';
+	const SETTINGS_KEY = 'seculoco_spam_protection_settings';
 
 	/**
 	 * Default minimum time threshold (seconds).
@@ -323,7 +323,7 @@ class Seculoco_Spam_Protection {
 			return;
 		}
 
-		$log = get_option( 'seculoco_honeypot_log', array() );
+		$log = get_option( SECULOCO_OPTION_HONEYPOT_LOG, array() );
 
 		// Keep only last 100 entries.
 		if ( count( $log ) > 100 ) {
@@ -346,7 +346,7 @@ class Seculoco_Spam_Protection {
 
 		$log[] = $log_entry;
 
-		update_option( 'seculoco_honeypot_log', $log );
+		update_option( SECULOCO_OPTION_HONEYPOT_LOG, $log );
 
 		/**
 		 * Fires when a submission is blocked by spam protection.
@@ -365,7 +365,7 @@ class Seculoco_Spam_Protection {
 	 * @return array Log entries.
 	 */
 	public function get_blocked_log( $limit = 50 ) {
-		$log = get_option( 'seculoco_honeypot_log', array() );
+		$log = get_option( SECULOCO_OPTION_HONEYPOT_LOG, array() );
 
 		if ( $limit > 0 && count( $log ) > $limit ) {
 			$log = array_slice( $log, -$limit );
@@ -382,7 +382,7 @@ class Seculoco_Spam_Protection {
 	 * @return bool True on success, false on failure.
 	 */
 	public function clear_blocked_log() {
-		return delete_option( 'seculoco_honeypot_log' );
+		return delete_option( SECULOCO_OPTION_HONEYPOT_LOG );
 	}
 
 	/**
@@ -392,7 +392,7 @@ class Seculoco_Spam_Protection {
 	 * @return array Statistics including total blocks, reasons breakdown, etc.
 	 */
 	public function get_statistics() {
-		$log = get_option( 'seculoco_honeypot_log', array() );
+		$log = get_option( SECULOCO_OPTION_HONEYPOT_LOG, array() );
 
 		$stats = array(
 			'total_blocked'  => count( $log ),

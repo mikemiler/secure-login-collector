@@ -152,7 +152,7 @@ class Seculoco_Admin_Interface_Premium extends Seculoco_Admin_Interface {
 			return;
 		}
 
-		if ( ! get_option( 'seculoco_passkey_registered', false ) ) {
+		if ( ! get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false ) ) {
 			wp_send_json_error( __( 'Passkey not registered.', 'secure-login-collector' ) );
 			return;
 		}
@@ -312,7 +312,7 @@ class Seculoco_Admin_Interface_Premium extends Seculoco_Admin_Interface {
 		}
 
 		// Get global passkey data.
-		$passkey = get_option( 'seculoco_global_passkey' );
+		$passkey = get_option( SECULOCO_OPTION_GLOBAL_PASSKEY );
 		if ( empty( $passkey ) || $passkey['credential_id'] !== $credential_id ) {
 			wp_send_json_error( __( 'Passkey not found or mismatch.', 'secure-login-collector' ) );
 			return;
@@ -392,7 +392,7 @@ class Seculoco_Admin_Interface_Premium extends Seculoco_Admin_Interface {
 		delete_transient( 'passkey_challenge_' . $user_id );
 
 		// Get the wrapped private key (PRO version).
-		$wrapped_key_pro = get_option( 'seculoco_wrapped_private_key_pro' );
+		$wrapped_key_pro = get_option( SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PRO );
 		if ( ! $wrapped_key_pro ) {
 			wp_send_json_error( __( 'Pro encryption keys not found.', 'secure-login-collector' ) );
 			return;
@@ -434,7 +434,7 @@ class Seculoco_Admin_Interface_Premium extends Seculoco_Admin_Interface {
 		set_transient( 'passkey_challenge_' . get_current_user_id(), $challenge, 300 );
 
 		// Get global passkey (site-wide, not per-user).
-		$passkey = get_option( 'seculoco_global_passkey' );
+		$passkey = get_option( SECULOCO_OPTION_GLOBAL_PASSKEY );
 
 		// Format credential for client.
 		$formatted_credentials = array();
@@ -493,8 +493,8 @@ class Seculoco_Admin_Interface_Premium extends Seculoco_Admin_Interface {
 		}
 
 		// Check current flag status.
-		$passkey_flag  = get_option( 'seculoco_passkey_registered', false );
-		$pro_keys_flag = get_option( 'seculoco_pro_keys_active', false );
+		$passkey_flag  = get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false );
+		$pro_keys_flag = get_option( SECULOCO_OPTION_PRO_KEYS_ACTIVE, false );
 
 		$message  = "Found $total_passkeys passkey(s) across $users_count user(s). ";
 		$message .= 'Passkey flag: ' . ( $passkey_flag ? 'true' : 'false' ) . ', ';
@@ -502,11 +502,11 @@ class Seculoco_Admin_Interface_Premium extends Seculoco_Admin_Interface {
 
 		if ( $total_passkeys > 0 && ( ! $passkey_flag || ! $pro_keys_flag ) ) {
 			if ( ! $passkey_flag ) {
-				update_option( 'seculoco_passkey_registered', true );
-				update_option( 'seculoco_passkey_registered_at', current_time( 'mysql' ) );
+				update_option( SECULOCO_OPTION_PASSKEY_REGISTERED, true );
+				update_option( SECULOCO_OPTION_PASSKEY_REGISTERED_AT, current_time( 'mysql' ) );
 			}
 			if ( ! $pro_keys_flag ) {
-				update_option( 'seculoco_pro_keys_active', true );
+				update_option( SECULOCO_OPTION_PRO_KEYS_ACTIVE, true );
 			}
 			$message .= 'Missing flags updated successfully!';
 			wp_send_json_success( $message );
@@ -577,7 +577,7 @@ class Seculoco_Admin_Interface_Premium extends Seculoco_Admin_Interface {
 			// 2. The passkey that encrypted it no longer exists.
 			if ( in_array( $encryption_type, array( 'aes-rsa-passkey-v2', 'rsa_passkey_protected' ), true ) ) {
 				// Check if the encryption key still exists.
-				$wrapped_key = get_option( 'seculoco_wrapped_private_key_pro' );
+				$wrapped_key = get_option( SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PRO );
 				if ( ! $wrapped_key ) {
 					// Pro key doesn't exist - this entry is undecryptable.
 					++$undecryptable_count;

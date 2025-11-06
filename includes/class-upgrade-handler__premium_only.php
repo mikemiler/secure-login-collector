@@ -49,7 +49,7 @@ class Seculoco_Upgrade_Handler {
 	 */
 	public static function handle_free_to_pro_migration() {
 		// Check if upgrade already completed.
-		if ( get_option( 'seculoco_upgrade_completed', false ) ) {
+		if ( get_option( SECULOCO_OPTION_UPGRADE_COMPLETED, false ) ) {
 			return false;
 		}
 
@@ -63,10 +63,10 @@ class Seculoco_Upgrade_Handler {
 
 		// Set flag that Pro version is now active.
 		// This protects data if user later deletes Free plugin.
-		update_option( 'seculoco_using_pro_version', true );
+		update_option( SECULOCO_OPTION_USING_PRO_VERSION, true );
 
 		// Mark upgrade as completed.
-		update_option( 'seculoco_upgrade_completed', true );
+		update_option( SECULOCO_OPTION_UPGRADE_COMPLETED, true );
 
 		// Show success notice to admin.
 		set_transient( 'seculoco_migration_success', true, 60 );
@@ -129,8 +129,8 @@ class Seculoco_Upgrade_Handler {
 	 * This should only be used during development/testing.
 	 */
 	public static function reset_upgrade_status() {
-		delete_option( 'seculoco_upgrade_completed' );
-		delete_option( 'seculoco_using_pro_version' );
+		delete_option( SECULOCO_OPTION_UPGRADE_COMPLETED );
+		delete_option( SECULOCO_OPTION_USING_PRO_VERSION );
 		delete_transient( 'seculoco_migration_success' );
 		delete_transient( 'seculoco_migration_warning' );
 	}
@@ -147,7 +147,7 @@ class Seculoco_Upgrade_Handler {
 		}
 
 		// Fallback to option.
-		return (bool) get_option( 'seculoco_using_pro_version', false );
+		return (bool) get_option( SECULOCO_OPTION_USING_PRO_VERSION, false );
 	}
 
 	/**
@@ -157,9 +157,9 @@ class Seculoco_Upgrade_Handler {
 	 */
 	public static function get_upgrade_status() {
 		return array(
-			'upgrade_completed'   => (bool) get_option( 'seculoco_upgrade_completed', false ),
+			'upgrade_completed'   => (bool) get_option( SECULOCO_OPTION_UPGRADE_COMPLETED, false ),
 			'using_pro_version'   => self::is_pro_version(),
-			'db_version'          => get_option( 'seculoco_db_version', 'unknown' ),
+			'db_version'          => get_option( SECULOCO_OPTION_DB_VERSION, 'unknown' ),
 			'free_version_active' => self::is_free_version_active(),
 		);
 	}

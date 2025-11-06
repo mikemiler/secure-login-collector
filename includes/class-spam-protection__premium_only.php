@@ -827,7 +827,7 @@ class Seculoco_Spam_Protection_Premium {
 		}
 
 		$elapsed_time       = time() - $start_time;
-		$min_time_threshold = get_option( 'seculoco_honeypot_min_time', 2 );
+		$min_time_threshold = get_option( SECULOCO_OPTION_HONEYPOT_MIN_TIME, 2 );
 
 		if ( $elapsed_time < $min_time_threshold ) {
 			// Submission too fast - likely a bot (premium feature).

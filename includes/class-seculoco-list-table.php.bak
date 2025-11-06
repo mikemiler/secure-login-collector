@@ -266,7 +266,7 @@ class Seculoco_List_Table extends WP_List_Table {
 			$actions[] = sprintf(
 				'<button type="button" class="button decrypt-btn-v2" data-id="%s" data-undecryptable="true" disabled title="%s"><span class="dashicons dashicons-lock"></span></button>',
 				$item->id,
-				esc_attr__( 'Cannot decrypt: encryption key was deleted', 'secure-login-collector' )
+				esc_attr__( 'Cannot decrypt: passkey was deleted', 'secure-login-collector' )
 			);
 		} else {
 			// Normal decrypt button.

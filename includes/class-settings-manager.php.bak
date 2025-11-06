@@ -396,6 +396,58 @@ class Seculoco_Settings_Manager {
 					}
 				});
 			});
+
+			// Export free public key
+			$('#export-free-public-key').on('click', function() {
+				$.ajax({
+					url: ajaxurl,
+					type: 'POST',
+					data: {
+						action: 'seculoco_export_public_key',
+						key_type: 'free',
+						nonce: '" . esc_js( $nonce ) . "'
+					},
+					success: function(response) {
+						if (response.success) {
+							var blob = new Blob([response.data.public_key], {type: 'text/plain'});
+							var url = window.URL.createObjectURL(blob);
+							var a = document.createElement('a');
+							a.href = url;
+							a.download = 'secure-login-free-public-key.pem';
+							a.click();
+							window.URL.revokeObjectURL(url);
+						} else {
+							alert('" . esc_js( __( 'Failed to export public key:', 'secure-login-collector' ) ) . "' + response.data);
+						}
+					}
+				});
+			});
+
+			// Export pro public key
+			$('#export-pro-public-key').on('click', function() {
+				$.ajax({
+					url: ajaxurl,
+					type: 'POST',
+					data: {
+						action: 'seculoco_export_public_key',
+						key_type: 'pro',
+						nonce: '" . esc_js( $nonce ) . "'
+					},
+					success: function(response) {
+						if (response.success) {
+							var blob = new Blob([response.data.public_key], {type: 'text/plain'});
+							var url = window.URL.createObjectURL(blob);
+							var a = document.createElement('a');
+							a.href = url;
+							a.download = 'secure-login-pro-public-key.pem';
+							a.click();
+							window.URL.revokeObjectURL(url);
+						} else {
+							alert('" . esc_js( __( 'Failed to export public key:', 'secure-login-collector' ) ) . "' + response.data);
+						}
+					}
+				});
+			});
 		});
 		";
 
@@ -477,7 +529,7 @@ class Seculoco_Settings_Manager {
 			echo '<div class="seculoco-passkey-benefit-desc">';
 			echo esc_html__( 'Configure your master password to secure encryption keys and protect sensitive data.', 'secure-login-collector' );
 			echo '<br><button type="button" class="seculoco-btn seculoco-btn-primary seculoco-btn-lg seculoco-launch-wizard seculoco-margin-top-8">';
-			echo '<span>🔒</span> ';
+			echo '<span class="dashicons dashicons-lock"></span> ';
 			echo esc_html__( 'Start Master Password Wizard', 'secure-login-collector' );
 			echo '</button>';
 			echo '</div>';
@@ -494,7 +546,14 @@ class Seculoco_Settings_Manager {
 				echo '<strong>' . esc_html__( 'Setup Date:', 'secure-login-collector' ) . '</strong> ' . esc_html( $setup_date ) . '<br>';
 			}
 			echo esc_html__( 'Your encryption keys are securely protected with your master password. All sensitive data is encrypted at rest.', 'secure-login-collector' );
-			
+			if ( $free_public_key ) {
+				echo '<br>';
+
+				echo ' <button type="button" class="button button-secondary seculoco-margin-top-8" id="export-free-public-key">';
+				echo '<span class="dashicons dashicons-download"></span> ';
+				echo esc_html__( 'Export Public Key', 'secure-login-collector' );
+				echo '</button>';
+			}
 			echo '</div>';
 			echo '</div>';
 
