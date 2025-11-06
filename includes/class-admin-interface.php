@@ -45,7 +45,7 @@ class Seculoco_List_Table extends WP_List_Table {
 	/**
 	 * Encryption handler instance.
 	 *
-	 * @var Seculoco_Encryption_Handler_V2
+	 * @var Seculoco_Encryption_Service
 	 */
 	private $encryption_handler;
 
@@ -54,7 +54,7 @@ class Seculoco_List_Table extends WP_List_Table {
 	 *
 	 * @param string                          $table_name         Database table name.
 	 * @param Seculoco_Database_Manager   $database_manager   Database manager instance.
-	 * @param Seculoco_Encryption_Handler_V2 $encryption_handler Encryption handler instance.
+	 * @param Seculoco_Encryption_Service $encryption_handler Encryption handler instance.
 	 */
 	public function __construct( $table_name, $database_manager, $encryption_handler ) {
 		$this->table_name         = $table_name;
@@ -200,7 +200,7 @@ class Seculoco_List_Table extends WP_List_Table {
 	 */
 	public function column_encryption( $item ) {
 		$metadata        = json_decode( $item->metadata, true );
-		$encryption_type = isset( $metadata['encryption_type'] ) ? $metadata['encryption_type'] : 'rsa';
+		$encryption_type = isset( $metadata['encryption_type'] ) ? $metadata['encryption_type'] : 'aes-rsa-password-v3';
 		$encryption_info = $this->get_encryption_method_info( $encryption_type );
 
 		return sprintf(
@@ -230,7 +230,7 @@ class Seculoco_List_Table extends WP_List_Table {
 	 */
 	public function column_actions( $item ) {
 		$metadata         = json_decode( $item->metadata, true );
-		$encryption_type  = isset( $metadata['encryption_type'] ) ? $metadata['encryption_type'] : 'rsa';
+		$encryption_type  = isset( $metadata['encryption_type'] ) ? $metadata['encryption_type'] : 'aes-rsa-password-v3';
 		$hostname         = isset( $metadata['key_hostname'] ) ? $metadata['key_hostname'] : '';
 		$timestamp_suffix = isset( $metadata['key_timestamp_suffix'] ) ? $metadata['key_timestamp_suffix'] : '';
 		$is_expired       = isset( $item->is_expired ) && 1 === $item->is_expired;
@@ -340,7 +340,7 @@ class Seculoco_List_Table extends WP_List_Table {
 	 */
 	private function get_encryption_method_info( $encryption_type ) {
 		switch ( $encryption_type ) {
-			case 'aes-rsa-v2':
+			case 'aes-rsa-password-v3':
 				return array(
 					'name'        => __( 'Secure', 'secure-login-collector' ),
 					'class'       => 'encryption-rsa',
@@ -598,7 +598,7 @@ class Seculoco_Admin_Interface {
 	/**
 	 * Encryption handler instance.
 	 *
-	 * @var Seculoco_Encryption_Handler_V2
+	 * @var Seculoco_Encryption_Service
 	 */
 	private $encryption_handler;
 
@@ -620,7 +620,7 @@ class Seculoco_Admin_Interface {
 	 * Constructor - initializes admin interface.
 	 *
 	 * @param string                          $table_name         Database table name.
-	 * @param Seculoco_Encryption_Handler_V2 $encryption_handler Encryption handler instance.
+	 * @param Seculoco_Encryption_Service $encryption_handler Encryption handler instance.
 	 * @param Seculoco_Database_Manager   $database_manager   Database manager instance.
 	 */
 	public function __construct( $table_name, $encryption_handler, $database_manager ) {
@@ -897,7 +897,7 @@ class Seculoco_Admin_Interface {
 			}
 
 			$metadata        = json_decode( $row->metadata, true );
-			$encryption_type = $metadata['encryption_type'] ?? 'aes-rsa-v2';
+		$encryption_type = $metadata['encryption_type'] ?? 'aes-rsa-password-v3';
 
 			// CRITICAL: Server NEVER decrypts. Always return encrypted packages for client-side decryption.
 			// This maintains zero-knowledge architecture for both FREE and PRO entries.
@@ -1114,6 +1114,8 @@ class Seculoco_Admin_Interface {
 			return;
 		}
 
+		$metadata = json_decode( $entry->metadata, true );
+
 		// Return encrypted package for client-side decryption.
 		// Note: The frontend sends camelCase, we return snake_case for consistency with JS expectations.
 		wp_send_json_success(
@@ -1121,8 +1123,11 @@ class Seculoco_Admin_Interface {
 				'encrypted_data'    => $encrypted_data['encryptedData'] ?? '',
 				'encrypted_aes_key' => $encrypted_data['rsaEncryptedKey'] ?? '', // Frontend uses rsaEncryptedKey, not encryptedAESKey.
 				'iv'                => $encrypted_data['iv'] ?? '',
+				'salt'              => $encrypted_data['salt'] ?? '',
 				'version'           => $encrypted_data['version'] ?? 'v2',
-				'metadata'          => json_decode( $entry->metadata, true ),
+				'encryption_type'   => $metadata['encryption_type'] ?? 'aes-rsa-password-v3',
+				'is_pro_encrypted'  => $metadata['is_pro_encrypted'] ?? false,
+				'metadata'          => $metadata,
 			)
 		);
 	}

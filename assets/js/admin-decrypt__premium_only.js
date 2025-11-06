@@ -24,7 +24,7 @@
             }
 
             this.base = baseFramework;
-            this.unwrappedKeys = { pro: null, free: null };
+            this.unwrappedKeys = { pro: null, standard: null };
             this.registerWithBase();
             this.initEventHandlers();
         }
@@ -101,11 +101,9 @@
                 this.unwrappedKeys.pro = await this.unwrapKey(wrappedKey, unwrappingKey);
                 return this.unwrappedKeys.pro;
             } else {
-                // FREE key: Direct import (already decrypted)
-                const privateKeyB64 = wrappedResponse.data.private_key;
-                const privateKeyPem = atob(privateKeyB64);
-                this.unwrappedKeys.free = await this.base.importRSAPrivateKey(privateKeyPem);
-                return this.unwrappedKeys.free;
+                // Standard password-based key: delegate to base handler
+                this.unwrappedKeys.standard = await this.base.getStandardPrivateKey(entryId);
+                return this.unwrappedKeys.standard;
             }
         }
 
@@ -127,7 +125,7 @@
                 throw new Error('Failed to get key type information');
             }
 
-            return { type: response.data.type || 'free' };
+            return { type: response.data.type || 'standard' };
         }
 
         /**
@@ -264,7 +262,7 @@
          * Clear PRO keys from memory
          */
         clearProKeys() {
-            this.unwrappedKeys = { pro: null, free: null };
+            this.unwrappedKeys = { pro: null, standard: null };
         }
 
         /**

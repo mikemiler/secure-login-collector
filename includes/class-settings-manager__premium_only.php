@@ -23,7 +23,7 @@ class Seculoco_Settings_Manager_Pro {
 	/**
 	 * Encryption handler instance.
 	 *
-	 * @var Seculoco_Encryption_Handler_V2
+	 * @var Seculoco_Encryption_Service
 	 */
 	private $encryption_handler;
 
@@ -56,7 +56,7 @@ class Seculoco_Settings_Manager_Pro {
 	/**
 	 * Store encryption handler reference when it's ready.
 	 *
-	 * @param Seculoco_Encryption_Handler_V2 $handler Encryption handler instance.
+	 * @param Seculoco_Encryption_Service $handler Encryption handler instance.
 	 */
 	public function set_encryption_handler( $handler ) {
 		$this->encryption_handler = $handler;

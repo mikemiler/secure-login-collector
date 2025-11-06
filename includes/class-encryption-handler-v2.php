@@ -14,6 +14,43 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+if ( ! interface_exists( 'Seculoco_Encryption_Service' ) ) {
+	/**
+	 * Defines the contract for encryption services (free + premium).
+	 */
+	interface Seculoco_Encryption_Service {
+		/**
+		 * Initialize standard (password-based) keys.
+		 *
+		 * @param string $admin_password Optional admin password for key protection.
+		 * @return array|WP_Error Result of key initialization.
+		 */
+		public function initialize_free_keys( $admin_password = '' );
+
+		/**
+		 * Initialize password-based keys via admin-provided password.
+		 *
+		 * @param string $password Admin password for key wrapping.
+		 * @return bool True on success, false on failure.
+		 */
+		public function initialize_password_keys( $password );
+
+		/**
+		 * Reset password-based encryption keys.
+		 *
+		 * @return array Result with affected entry counts.
+		 */
+		public function reset_password_keys();
+
+		/**
+		 * Retrieve the active public key.
+		 *
+		 * @return string|WP_Error Public key or error.
+		 */
+		public function get_public_key();
+	}
+}
+
 /**
  * Encryption Handler V2 - Base Class (Free Version)
  *
@@ -40,7 +77,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * - No conditional logic or license checks in base class
  * - Clean separation: Freemius SDK strips premium files for free version
  */
-class Seculoco_Encryption_Handler_V2 {
+class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 
 	/**
 	 * Constructor - Register AJAX handlers and cleanup old keys.
@@ -152,9 +189,16 @@ class Seculoco_Encryption_Handler_V2 {
 			return false;
 		}
 
-		$success = isset( $result['status'] ) && 'success' === $result['status'];
+		$status  = isset( $result['status'] ) ? $result['status'] : null;
+		$success = in_array( $status, array( 'success', 'already_initialized' ), true );
 		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Debugging.
-		error_log( 'initialize_password_keys result: ' . ( $success ? 'SUCCESS' : 'FAILURE' ) . ' - ' . wp_json_encode( $result ) );
+		error_log(
+			sprintf(
+				'initialize_password_keys result: %s - %s',
+				$success ? strtoupper( $status ) : 'FAILURE',
+				wp_json_encode( $result )
+			)
+		);
 
 		return $success;
 	}

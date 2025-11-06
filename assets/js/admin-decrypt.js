@@ -31,11 +31,16 @@
             this.autoClearTimeout = 60000; // 60 seconds per entry
 
             // Per-entry timers: entryId -> { seconds, clearTimer, countdownInterval }
-            this.entryTimers = new Map();
+			this.entryTimers = new Map();
 
-            // Key cache timer (separate from per-entry UI timers)
-            this.keyCacheTimeout = 60000; // 60 seconds
-            this.keyCacheTimer = null;
+			// Key cache timer (separate from per-entry UI timers)
+			this.keyCacheTimeout = 60000; // 60 seconds
+			this.keyCacheTimer = null;
+
+			// Password caching for standard (password-based) encryption
+			this.passwordCache = null;
+			this.passwordCacheTimer = null;
+			this.passwordCacheTimeout = 60000; // 60 seconds
 
             // Extension Registry - PRO features register here
             this.extensions = {
@@ -215,44 +220,70 @@
          * Get private key - uses extension or default FREE method
          * EXTENSION POINT - PRO can override via keyProvider
          */
-         async getPrivateKey(entryId, encryptedPackage) {
+		async getPrivateKey(entryId, encryptedPackage) {
 
-            // If PRO extension registered, use it
-            if (this.extensions.keyProvider && typeof this.extensions.keyProvider.getKey === 'function') {
-                return await this.extensions.keyProvider.getKey(entryId, encryptedPackage);
+			// If PRO extension registered, use it
+			if (this.extensions.keyProvider && typeof this.extensions.keyProvider.getKey === 'function') {
+				return await this.extensions.keyProvider.getKey(entryId, encryptedPackage);
             }
 
-            // DEFAULT: Use FREE version key
-            return await this.getFreePrivateKey();
-        }
+            // Determine encryption type (defaults to password-based flow)
+            const encryptionType = encryptedPackage.encryption_type || (encryptedPackage.is_pro_encrypted ? 'aes-rsa-passkey-v2' : 'aes-rsa-password-v3');
+
+			if (encryptionType === 'aes-rsa-passkey-v2') {
+				throw new Error('Passkey-protected entries require the PRO extension.');
+			}
+
+			return await this.getStandardPrivateKey(entryId);
+		}
 
         /**
-         * Get free private key from server (already unwrapped)
-         * CORE FUNCTIONALITY - FREE version uses this directly
+         * Retrieve and unwrap the standard (password-protected) private key.
          */
-        async getFreePrivateKey() {
-            // Use a dummy entry ID for free version (server returns free key regardless)
+        async getStandardPrivateKey(entryId) {
             const response = await $.ajax({
                 url: seculocoAjax.ajaxurl,
                 method: 'POST',
                 data: {
                     action: 'seculoco_get_wrapped_private_key',
-                    entry_id: 0, // Server will return free key
+                    entry_id: entryId,
                     nonce: seculocoAjax.nonce
                 }
             });
 
             if (!response.success) {
-                throw new Error('Failed to get private key');
+                throw new Error(response.data || 'Failed to get wrapped private key');
             }
 
-            if (response.data.type !== 'free') {
-                throw new Error('Expected free version key');
+            if (response.data.type !== 'standard' || !response.data.wrapped_key) {
+                throw new Error('Expected password-based key material');
             }
 
-            // Free key is already decrypted, just decode it
-            const privateKeyB64 = response.data.private_key;
-            return await this.importRSAPrivateKey(atob(privateKeyB64));
+            const wrappedKey = response.data.wrapped_key;
+
+            let password = this.passwordCache;
+            let remember = true;
+
+            if (!password) {
+                const promptResult = await this.promptForPassword();
+                password = promptResult.password;
+                remember = promptResult.remember;
+            }
+
+            try {
+                const privateKeyPem = await this.unwrapPrivateKeyWithPassword(wrappedKey, password);
+
+                if (remember) {
+                    this.cachePassword(password);
+                } else {
+                    this.clearPasswordCache();
+                }
+
+                return await this.importRSAPrivateKey(privateKeyPem);
+            } catch (error) {
+                this.clearPasswordCache();
+                throw error;
+            }
         }
 
         /**
@@ -350,30 +381,18 @@
                 }
 
                 // Checkpoint 0.7: Validate base64 format for encrypted_aes_key
-                try {
-                    atob(encryptedPackage.encrypted_aes_key);
-                } catch (e) {
-                    throw new Error('Invalid encrypted package: encrypted_aes_key is not valid base64. Error: ' + e.message);
-                }
+                const normalizedAesKey = this.normalizeBase64(encryptedPackage.encrypted_aes_key, 'encrypted_aes_key');
 
                 // Checkpoint 0.8: Validate base64 format for iv
-                try {
-                    atob(encryptedPackage.iv);
-                } catch (e) {
-                    throw new Error('Invalid encrypted package: iv is not valid base64. Error: ' + e.message);
-                }
+                const normalizedIv = this.normalizeBase64(encryptedPackage.iv, 'iv');
 
                 // Checkpoint 0.9: Validate base64 format for encrypted_data
-                try {
-                    atob(encryptedPackage.encrypted_data);
-                } catch (e) {
-                    throw new Error('Invalid encrypted package: encrypted_data is not valid base64. Error: ' + e.message);
-                }
+                const normalizedEncryptedData = this.normalizeBase64(encryptedPackage.encrypted_data, 'encrypted_data');
 
                 // ===== DECRYPTION PROCESS =====
 
                 // Step 1: RSA decrypt the AES key
-                const encryptedAesKey = this.base64ToArrayBuffer(encryptedPackage.encrypted_aes_key);
+                const encryptedAesKey = this.base64ToArrayBuffer(normalizedAesKey);
 
                 let aesKeyBuffer;
                 try {
@@ -399,9 +418,9 @@
                 );
 
                 // Step 3: Prepare AES decryption parameters
-                const iv = this.base64ToArrayBuffer(encryptedPackage.iv);
+                const iv = this.base64ToArrayBuffer(normalizedIv);
 
-                const encryptedData = this.base64ToArrayBuffer(encryptedPackage.encrypted_data);
+                const encryptedData = this.base64ToArrayBuffer(normalizedEncryptedData);
 
                 // Step 4: Decrypt data with AES-GCM
                 const decrypted = await crypto.subtle.decrypt(
@@ -711,12 +730,273 @@
          * CORE UTILITY - Used by both FREE and PRO
          */
         base64ToArrayBuffer(base64) {
-            const binaryString = atob(base64);
+            let binaryString;
+            try {
+                binaryString = atob(base64);
+            } catch (error) {
+                throw new Error(`Base64 decoding failed: ${error.message}`);
+            }
             const bytes = new Uint8Array(binaryString.length);
             for (let i = 0; i < binaryString.length; i++) {
                 bytes[i] = binaryString.charCodeAt(i);
             }
             return bytes.buffer;
+        }
+
+        /**
+         * Helper: Normalise and validate base64 strings.
+         *
+         * Accepts base64 and base64url variants, strips whitespace, fixes padding,
+         * and ensures only expected characters remain.
+         *
+         * @param {string} value - The value to normalise.
+         * @param {string} field - Field name for error context.
+         * @returns {string} Normalised base64 string.
+         */
+        normalizeBase64(value, field) {
+            if (typeof value !== 'string') {
+                throw new Error(`Invalid encrypted package: ${field} must be a string. Received: ${typeof value}`);
+            }
+
+            let trimmed = value.trim();
+            if (trimmed === '') {
+                throw new Error(`Invalid encrypted package: ${field} is empty`);
+            }
+
+            // Remove whitespace that might have slipped through sanitisation.
+            trimmed = trimmed.replace(/\s+/g, '');
+
+            // Support URL-safe variants by converting to standard base64 alphabet.
+            let normalised = trimmed.replace(/-/g, '+').replace(/_/g, '/');
+
+            // Ensure no unexpected characters remain.
+            const invalidMatch = normalised.match(/[^A-Za-z0-9+/=]/);
+            if (invalidMatch) {
+                throw new Error(`Invalid encrypted package: ${field} contains illegal character "${invalidMatch[0]}"`);
+            }
+
+            // Fix padding if necessary.
+            const padding = normalised.length % 4;
+            if (padding !== 0) {
+                normalised += '='.repeat(4 - padding);
+            }
+
+            // Final verification using atob to ensure we have valid base64.
+            try {
+                atob(normalised);
+            } catch (error) {
+                throw new Error(`Invalid encrypted package: ${field} is not valid base64. Error: ${error.message}`);
+            }
+
+			return normalised;
+		}
+
+        /**
+         * Prompt the administrator for the password used to wrap the standard key.
+         *
+         * @returns {Promise<{password: string, remember: boolean}>}
+         */
+        async promptForPassword() {
+            return new Promise((resolve, reject) => {
+                const $backdrop = $('<div>').addClass('seculoco-password-prompt-backdrop');
+                const $modal = $('<div>').addClass('seculoco-password-prompt-modal');
+
+                $modal.html(`
+                    <h2 class="seculoco-password-prompt-title">Enter Encryption Password</h2>
+                    <p class="seculoco-password-prompt-description">
+                        This data was encrypted with a password. Please enter the password to decrypt.
+                    </p>
+                    <div class="seculoco-password-input-wrapper">
+                        <input
+                            type="password"
+                            class="seculoco-password-input"
+                            id="seculoco-password-input"
+                            placeholder="Enter password"
+                            autocomplete="off"
+                        />
+                        <button type="button" class="seculoco-password-toggle-btn" aria-label="Toggle password visibility">
+                            <span class="dashicons dashicons-visibility"></span>
+                        </button>
+                    </div>
+                    <div class="seculoco-password-prompt-checkbox">
+                        <input
+                            type="checkbox"
+                            id="seculoco-remember-password"
+                            checked
+                        />
+                        <label for="seculoco-remember-password">
+                            Remember for this session (60 seconds)
+                        </label>
+                    </div>
+                    <div class="seculoco-password-prompt-error" style="display: none;"></div>
+                    <div class="seculoco-password-prompt-buttons">
+                        <button type="button" class="seculoco-password-prompt-cancel-btn">Cancel</button>
+                        <button type="button" class="seculoco-password-prompt-decrypt-btn">Decrypt</button>
+                    </div>
+                `);
+
+                $('body').append($backdrop).append($modal);
+
+                setTimeout(() => {
+                    $('#seculoco-password-input').trigger('focus');
+                }, 50);
+
+                const closeModal = (error) => {
+                    $(document).off('keydown.password-prompt');
+                    $modal.remove();
+                    $backdrop.remove();
+                    if (error) {
+                        reject(new Error(error));
+                    }
+                };
+
+                $modal.find('.seculoco-password-toggle-btn').on('click', function() {
+                    const $input = $('#seculoco-password-input');
+                    const $icon = $(this).find('.dashicons');
+
+                    if ($input.attr('type') === 'password') {
+                        $input.attr('type', 'text');
+                        $icon.removeClass('dashicons-visibility').addClass('dashicons-hidden');
+                    } else {
+                        $input.attr('type', 'password');
+                        $icon.removeClass('dashicons-hidden').addClass('dashicons-visibility');
+                    }
+                });
+
+                const resolveWithPassword = () => {
+                    const password = $('#seculoco-password-input').val().trim();
+                    const remember = $('#seculoco-remember-password').is(':checked');
+
+                    if (!password) {
+                        $modal.find('.seculoco-password-prompt-error')
+                            .text('Please enter a password.')
+                            .show();
+                        return;
+                    }
+
+                    $(document).off('keydown.password-prompt');
+                    $modal.remove();
+                    $backdrop.remove();
+                    resolve({ password, remember });
+                };
+
+                $modal.find('.seculoco-password-prompt-decrypt-btn').on('click', resolveWithPassword);
+
+                $modal.find('.seculoco-password-prompt-cancel-btn').on('click', () => closeModal('Password prompt cancelled'));
+
+                $backdrop.on('click', () => closeModal('Password prompt cancelled'));
+
+                $(document).on('keydown.password-prompt', (event) => {
+                    if (event.key === 'Escape') {
+                        closeModal('Password prompt cancelled');
+                    }
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        resolveWithPassword();
+                    }
+                });
+            });
+        }
+
+        /**
+         * Cache the password for a short period to improve UX.
+         *
+         * @param {string} password
+         */
+        cachePassword(password) {
+            this.passwordCache = password;
+
+            if (this.passwordCacheTimer) {
+                clearTimeout(this.passwordCacheTimer);
+            }
+
+            this.passwordCacheTimer = setTimeout(() => {
+                this.clearPasswordCache();
+            }, this.passwordCacheTimeout);
+        }
+
+        /**
+         * Clear any cached password.
+         */
+        clearPasswordCache() {
+            this.passwordCache = null;
+            if (this.passwordCacheTimer) {
+                clearTimeout(this.passwordCacheTimer);
+                this.passwordCacheTimer = null;
+            }
+        }
+
+        /**
+         * Unwrap the standard RSA private key using the provided password.
+         *
+         * @param {Object} wrappedKey
+         * @param {string} password
+         * @returns {Promise<string>} PEM encoded private key.
+         */
+        async unwrapPrivateKeyWithPassword(wrappedKey, password) {
+            if (!password) {
+                throw new Error('Password is required to decrypt this data.');
+            }
+
+            if (!wrappedKey || typeof wrappedKey !== 'object') {
+                throw new Error('Invalid wrapped key data.');
+            }
+
+            try {
+                const normalizedSalt = this.normalizeBase64(wrappedKey.salt, 'wrapped_key.salt');
+                const normalizedIv = this.normalizeBase64(wrappedKey.iv, 'wrapped_key.iv');
+                const normalizedCiphertext = this.normalizeBase64(wrappedKey.encrypted_data, 'wrapped_key.encrypted_data');
+                const normalizedTag = this.normalizeBase64(wrappedKey.tag, 'wrapped_key.tag');
+
+                const salt = this.base64ToArrayBuffer(normalizedSalt);
+                const iv = new Uint8Array(this.base64ToArrayBuffer(normalizedIv));
+                const ciphertext = new Uint8Array(this.base64ToArrayBuffer(normalizedCiphertext));
+                const authTag = new Uint8Array(this.base64ToArrayBuffer(normalizedTag));
+
+                const encoder = new TextEncoder();
+                const passwordKeyMaterial = await crypto.subtle.importKey(
+                    'raw',
+                    encoder.encode(password),
+                    'PBKDF2',
+                    false,
+                    ['deriveKey']
+                );
+
+                const wrappingKey = await crypto.subtle.deriveKey(
+                    {
+                        name: 'PBKDF2',
+                        salt: salt,
+                        iterations: 100000,
+                        hash: 'SHA-256'
+                    },
+                    passwordKeyMaterial,
+                    {
+                        name: 'AES-GCM',
+                        length: 256
+                    },
+                    false,
+                    ['decrypt']
+                );
+
+                const combinedCiphertext = new Uint8Array(ciphertext.length + authTag.length);
+                combinedCiphertext.set(ciphertext);
+                combinedCiphertext.set(authTag, ciphertext.length);
+
+                const decrypted = await crypto.subtle.decrypt(
+                    {
+                        name: 'AES-GCM',
+                        iv: iv,
+                        tagLength: authTag.length * 8
+                    },
+                    wrappingKey,
+                    combinedCiphertext.buffer
+                );
+
+                return new TextDecoder().decode(decrypted);
+            } catch (error) {
+                console.error('Failed to unwrap private key:', error);
+                throw new Error('Failed to unwrap key: ' + error.message);
+            }
         }
 
         /**
@@ -754,11 +1034,11 @@
     // Initialize when DOM is ready
     $(document).ready(function() {
         // Create global instance - accessible to PRO extensions
-        window.seculocoDecrypt = new BaseAdminDecryption();
-        window.seculocoDecrypt.init();
+	        window.seculocoDecrypt = new BaseAdminDecryption();
+	        window.seculocoDecrypt.init();
 
-        // Backwards compatibility alias
-        window.freeAdminDecryption = window.seculocoDecrypt;
-    });
+	        // Backwards compatibility alias
+	        window.freeAdminDecryption = window.seculocoDecrypt;
+	    });
 
-})(jQuery);
+	})(jQuery);

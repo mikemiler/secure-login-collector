@@ -23,14 +23,14 @@ class Seculoco_Settings_Manager {
 	/**
 	 * Encryption handler instance.
 	 *
-	 * @var Seculoco_Encryption_Handler_V2
+	 * @var Seculoco_Encryption_Service
 	 */
 	private $encryption_handler;
 
 	/**
 	 * Constructor - initializes settings manager.
 	 *
-	 * @param Seculoco_Encryption_Handler_V2 $encryption_handler Encryption handler instance.
+	 * @param Seculoco_Encryption_Service $encryption_handler Encryption handler instance.
 	 */
 	public function __construct( $encryption_handler ) {
 		$this->encryption_handler = $encryption_handler;
@@ -1031,29 +1031,13 @@ class Seculoco_Settings_Manager {
 			wp_send_json_error( array( 'message' => __( 'Insufficient permissions.', 'secure-login-collector' ) ) );
 		}
 
-		global $wpdb;
-		$table_name = $wpdb->prefix . 'seculoco_logins';
-
 		try {
-			// Mark all password-encrypted entries as undecryptable.
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Required for bulk update.
-			$updated = $wpdb->query(
-				$wpdb->prepare(
-					"UPDATE {$table_name} SET is_undecryptable = %d WHERE encryption_method = %s",
-					1,
-					'password'
-				)
-			);
-
-			// Delete password-based keys.
-			delete_option( 'seculoco_public_key_password' );
-			delete_option( 'seculoco_private_key_password_encrypted' );
-			delete_option( 'seculoco_password_encryption_active' );
+			$result = $this->encryption_handler->reset_password_keys();
 
 			wp_send_json_success(
 				array(
 					'message'         => __( 'Password-based encryption reset successfully!', 'secure-login-collector' ),
-					'entries_updated' => $updated,
+					'entries_updated' => isset( $result['affected_entries'] ) ? $result['affected_entries'] : false,
 				)
 			);
 		} catch ( Exception $e ) {

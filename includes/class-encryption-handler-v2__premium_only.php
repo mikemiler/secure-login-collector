@@ -140,7 +140,7 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
 		}
 
 		$metadata        = json_decode( $entry->metadata, true );
-		$encryption_type = $metadata['encryption_type'] ?? 'aes-rsa-v2';
+		$encryption_type = $metadata['encryption_type'] ?? 'aes-rsa-password-v3';
 
 		// Check if this entry uses pro encryption.
 		if ( ! in_array( $encryption_type, array( 'aes-rsa-passkey-v2', 'rsa_passkey_protected' ), true ) ) {
@@ -219,7 +219,7 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
 	public function filter_encryption_type( $type ) {
 		// Check if pro license is active.
 		if ( ! $this->is_pro_license_active() ) {
-			return 'aes-rsa-v2';
+			return 'aes-rsa-password-v3';
 		}
 
 		// Check if pro keys are active.
@@ -230,7 +230,7 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
 			return 'aes-rsa-passkey-v2';
 		}
 
-		return 'aes-rsa-v2';
+		return 'aes-rsa-password-v3';
 	}
 
 	/**

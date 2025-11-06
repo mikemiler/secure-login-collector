@@ -77,7 +77,7 @@ class SecureLoginCollector {
 	/**
 	 * Encryption handler instance.
 	 *
-	 * @var Seculoco_Encryption_Handler_V2
+	 * @var Seculoco_Encryption_Service
 	 */
 	private $encryption_handler;
 
@@ -157,6 +157,7 @@ class SecureLoginCollector {
 	private function load_dependencies() {
 		// Always load free version classes.
 		include_once SECULOCO_PLUGIN_DIR . 'includes/class-encryption-handler-v2.php';
+		include_once SECULOCO_PLUGIN_DIR . 'includes/class-encryption-handler-factory.php';
 		include_once SECULOCO_PLUGIN_DIR . 'includes/class-database-manager.php';
 		include_once SECULOCO_PLUGIN_DIR . 'includes/class-admin-interface.php';
 		include_once SECULOCO_PLUGIN_DIR . 'includes/class-frontend-handler.php';
@@ -233,11 +234,7 @@ class SecureLoginCollector {
 	 */
 	private function init_components() {
 		// Initialize encryption handler - use premium class if available.
-		if ( class_exists( 'Seculoco_Encryption_Handler_V2_Premium' ) ) {
-			$this->encryption_handler = new Seculoco_Encryption_Handler_V2_Premium();
-		} else {
-			$this->encryption_handler = new Seculoco_Encryption_Handler_V2();
-		}
+		$this->encryption_handler = Seculoco_Encryption_Handler_Factory::get_shared_handler();
 		$this->database_manager   = new Seculoco_Database_Manager( $this->table_name );
 
 		// Initialize spam protection (honeypot and bot detection).

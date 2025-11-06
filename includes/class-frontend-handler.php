@@ -36,7 +36,7 @@ class Seculoco_Frontend_Handler {
 	/**
 	 * Encryption handler instance.
 	 *
-	 * @var Seculoco_Encryption_Handler_V2
+	 * @var Seculoco_Encryption_Service
 	 */
 	private $encryption_handler;
 
@@ -58,7 +58,7 @@ class Seculoco_Frontend_Handler {
 	 * Constructor - initializes frontend handler.
 	 *
 	 * @param string                          $table_name         Database table name.
-	 * @param Seculoco_Encryption_Handler_V2 $encryption_handler Encryption handler instance.
+	 * @param Seculoco_Encryption_Service $encryption_handler Encryption handler instance.
 	 * @param Seculoco_Database_Manager   $database_manager   Database manager instance.
 	 */
 	public function __construct( $table_name, $encryption_handler, $database_manager ) {
@@ -403,7 +403,7 @@ class Seculoco_Frontend_Handler {
 			array(
 				'is_pro_encrypted' => false,
 				'credential_id'    => null,
-				'encryption_type'  => 'aes-rsa-v2',
+				'encryption_type'  => 'aes-rsa-password-v3',
 			),
 			$metadata
 		);
@@ -411,7 +411,7 @@ class Seculoco_Frontend_Handler {
 		// Extract encryption metadata.
 		$is_pro_encrypted     = isset( $encryption_metadata['is_pro_encrypted'] ) ? (bool) $encryption_metadata['is_pro_encrypted'] : false;
 		$server_credential_id = isset( $encryption_metadata['credential_id'] ) ? $encryption_metadata['credential_id'] : null;
-		$encryption_type      = isset( $encryption_metadata['encryption_type'] ) ? $encryption_metadata['encryption_type'] : 'aes-rsa-v2';
+		$encryption_type      = isset( $encryption_metadata['encryption_type'] ) ? $encryption_metadata['encryption_type'] : 'aes-rsa-password-v3';
 
 		// Create encrypted package for storage.
 		$encrypted_package = array(

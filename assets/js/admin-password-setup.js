@@ -361,7 +361,8 @@
 						$submitBtn.prop('disabled', false).text(i18n.resetButton);
 					}
 				},
-				error: () => {
+				error: (response) => {
+					console.log(response);
 					this.showError(i18n.resetFailed);
 					$submitBtn.prop('disabled', false).text(i18n.resetButton);
 				}

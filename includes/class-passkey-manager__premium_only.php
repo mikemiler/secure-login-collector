@@ -605,10 +605,17 @@ class Seculoco_Passkey_Manager {
 		delete_option( 'passkey_credential_' . $credential_id );
 
 		// Delete the pro keys and clear the global flag.
-		if ( ! class_exists( 'Seculoco_Encryption_Handler_V2_Premium' ) ) {
-			require_once SECULOCO_PLUGIN_DIR . 'includes/class-encryption-handler-v2__premium_only.php';
+		if ( ! class_exists( 'Seculoco_Encryption_Handler_Factory' ) ) {
+			require_once SECULOCO_PLUGIN_DIR . 'includes/class-encryption-handler-factory.php';
 		}
-		$encryption_handler = new Seculoco_Encryption_Handler_V2_Premium();
+
+		$encryption_handler = Seculoco_Encryption_Handler_Factory::get_shared_handler();
+
+		if ( ! $encryption_handler instanceof Seculoco_Encryption_Handler_V2_Premium ) {
+			wp_send_json_error( 'Premium encryption handler unavailable' );
+			return;
+		}
+
 		$encryption_handler->delete_pro_keys();
 
 		// Clear global passkey registered flag.
@@ -681,10 +688,15 @@ class Seculoco_Passkey_Manager {
 		}
 
 		// Step 1: Initialize encryption handler V2 for dual-key system.
-		if ( ! class_exists( 'Seculoco_Encryption_Handler_V2_Premium' ) ) {
-			require_once SECULOCO_PLUGIN_DIR . 'includes/class-encryption-handler-v2__premium_only.php';
+		if ( ! class_exists( 'Seculoco_Encryption_Handler_Factory' ) ) {
+			require_once SECULOCO_PLUGIN_DIR . 'includes/class-encryption-handler-factory.php';
 		}
-		$encryption_handler = new Seculoco_Encryption_Handler_V2_Premium();
+
+		$encryption_handler = Seculoco_Encryption_Handler_Factory::get_shared_handler();
+
+		if ( ! $encryption_handler instanceof Seculoco_Encryption_Handler_V2_Premium ) {
+			wp_send_json_error( 'Premium encryption handler unavailable' );
+		}
 
 		// Step 2: Ensure free keys exist first.
 		$free_result = $encryption_handler->initialize_free_keys();
