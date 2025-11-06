@@ -128,7 +128,7 @@ class Seculoco_Master_Password_Wizard {
 		$has_private_key    = get_option( SECULOCO_OPTION_PRIVATE_KEY_WRAPPED, false );
 
 		// Only load if setup needed.
-		
+
 			// Enqueue wizard CSS.
 			wp_enqueue_style(
 				'seculoco-wizard-css',
@@ -137,47 +137,126 @@ class Seculoco_Master_Password_Wizard {
 				filemtime( plugin_dir_path( __FILE__ ) . '../assets/css/admin-modern.css' )
 			);
 
-			// Enqueue wizard JavaScript.
-			wp_enqueue_script(
-				'seculoco-master-password-setup',
-				plugin_dir_url( __FILE__ ) . '../assets/js/master-password-setup.js',
-				array( 'jquery' ),
-				filemtime( plugin_dir_path( __FILE__ ) . '../assets/js/master-password-setup.js' ),
-				true
-			);
+			// Enqueue merged admin JavaScript (if not already enqueued).
+			if ( ! wp_script_is( 'seculoco-admin-js', 'enqueued' ) ) {
+				wp_enqueue_script(
+					'seculoco-admin-js',
+					plugin_dir_url( __FILE__ ) . '../assets/js/admin.js',
+					array( 'jquery' ),
+					filemtime( plugin_dir_path( __FILE__ ) . '../assets/js/admin.js' ),
+					true
+				);
+			}
 
-			// Localize script.
+			// Localize script with wizard data.
 			wp_localize_script(
-				'seculoco-master-password-setup',
+				'seculoco-admin-js',
 				'seculocoWizard',
 				array(
 					'ajaxurl'           => admin_url( 'admin-ajax.php' ),
 					'nonce'             => wp_create_nonce( 'seculoco_wizard_nonce' ),
 					'minPasswordLength' => self::MIN_PASSWORD_LENGTH,
-					'strings'           => array(
-						'setupRequired'       => __( 'Master Password Setup Required', 'secure-login-collector' ),
-						'passwordTooShort'    => sprintf(
-							/* translators: %d: minimum password length */
-							__( 'Password must be at least %d characters long.', 'secure-login-collector' ),
-							self::MIN_PASSWORD_LENGTH
-						),
-						'passwordsDoNotMatch' => __( 'Passwords do not match.', 'secure-login-collector' ),
-						'passwordTooWeak'     => __( 'Password is too weak. Please use a stronger password.', 'secure-login-collector' ),
-						'mustAcceptWarning'   => __( 'You must acknowledge the warning about password loss.', 'secure-login-collector' ),
-						'setupInProgress'     => __( 'Setting up master password...', 'secure-login-collector' ),
-						'setupComplete'       => __( 'Master password setup complete!', 'secure-login-collector' ),
-						'setupFailed'         => __( 'Setup failed: ', 'secure-login-collector' ),
-						'rateLimitExceeded'   => __( 'Too many attempts. Please try again later.', 'secure-login-collector' ),
-						'networkError'        => __( 'Network error occurred. Please try again.', 'secure-login-collector' ),
-						'deriving_key'        => __( 'Deriving encryption key...', 'secure-login-collector' ),
-						'generating_rsa'      => __( 'Generating RSA keypair...', 'secure-login-collector' ),
-						'wrapping_key'        => __( 'Securing encryption keys...', 'secure-login-collector' ),
-						'saving_to_server'    => __( 'Saving configuration...', 'secure-login-collector' ),
-						'verifying_setup'     => __( 'Verifying setup...', 'secure-login-collector' ),
+				'strings'           => array(
+					// Modal navigation strings.
+					'stepIndicatorText'   => __( 'Step', 'secure-login-collector' ),
+					'stepIndicatorOf'     => __( 'of', 'secure-login-collector' ),
+					'cancelButton'        => __( 'Cancel', 'secure-login-collector' ),
+					'backButton'          => __( 'Back', 'secure-login-collector' ),
+					'nextButton'          => __( 'Next', 'secure-login-collector' ),
+					'completeButton'      => __( 'Complete Setup', 'secure-login-collector' ),
+					'doneButton'          => __( 'Done', 'secure-login-collector' ),
+
+					// Step 1: Welcome screen.
+					'step1Icon'           => __( '🔐', 'secure-login-collector' ),
+					'step1Title'          => __( 'Master Password Setup', 'secure-login-collector' ),
+					'step1Intro'          => __( 'Welcome! Let\'s secure your login credentials with end-to-end encryption.', 'secure-login-collector' ),
+					'step1Info1'          => __( 'Your master password encrypts all stored login data', 'secure-login-collector' ),
+					'step1Info2'          => __( 'Only you will know this password - it\'s never sent to the server', 'secure-login-collector' ),
+					'step1Info3'          => __( 'This ensures complete privacy and security for your sensitive data', 'secure-login-collector' ),
+					'step1Warning'        => __( '<strong>Important:</strong> If you forget your master password, your encrypted data cannot be recovered. There is no password reset option.', 'secure-login-collector' ),
+
+					// Step 2: Create password.
+					'step2Icon'           => __( '🔑', 'secure-login-collector' ),
+					'step2Title'          => __( 'Create Your Master Password', 'secure-login-collector' ),
+					'step2Label'          => __( 'Master Password', 'secure-login-collector' ),
+					'step2Placeholder'    => __( 'Enter a strong password (12+ characters)', 'secure-login-collector' ),
+					'step2StrengthLabel'  => __( 'Password Strength:', 'secure-login-collector' ),
+					'step2StrengthVeryWeak' => __( 'Very Weak', 'secure-login-collector' ),
+					'step2StrengthWeak'   => __( 'Weak', 'secure-login-collector' ),
+					'step2StrengthFair'   => __( 'Fair', 'secure-login-collector' ),
+					'step2StrengthGood'   => __( 'Good', 'secure-login-collector' ),
+					'step2StrengthStrong' => __( 'Strong', 'secure-login-collector' ),
+					'step2Requirements'   => __( 'Password Requirements:', 'secure-login-collector' ),
+					'step2Req1'           => __( 'At least 12 characters (recommended)', 'secure-login-collector' ),
+					'step2Req2'           => __( 'Mix of uppercase and lowercase letters', 'secure-login-collector' ),
+					'step2Req3'           => __( 'Include numbers and special characters', 'secure-login-collector' ),
+					'step2Req4'           => __( 'Avoid common words or patterns', 'secure-login-collector' ),
+
+					// Step 3: Confirm password.
+					'step3Icon'           => __( '✓', 'secure-login-collector' ),
+					'step3Title'          => __( 'Confirm Your Master Password', 'secure-login-collector' ),
+					'step3Label'          => __( 'Re-enter Master Password', 'secure-login-collector' ),
+					'step3Placeholder'    => __( 'Enter your password again', 'secure-login-collector' ),
+					'step3MatchIcon'      => __( '✓', 'secure-login-collector' ),
+					'step3MatchText'      => __( 'Passwords match!', 'secure-login-collector' ),
+					'step3NoMatchIcon'    => __( '✗', 'secure-login-collector' ),
+					'step3NoMatchText'    => __( 'Passwords do not match', 'secure-login-collector' ),
+
+					// Step 4: Warning acknowledgment.
+					'step4Icon'           => __( '⚠️', 'secure-login-collector' ),
+					'step4Title'          => __( 'Important Security Notice', 'secure-login-collector' ),
+					'step4Warning'        => __( '<strong>Critical Warning:</strong> Your master password cannot be recovered if lost. There is no "forgot password" option.', 'secure-login-collector' ),
+					'step4BestPractices'  => __( 'Best Practices:', 'secure-login-collector' ),
+					'step4Practice1'      => __( 'Write down your password and store it in a secure location', 'secure-login-collector' ),
+					'step4Practice2'      => __( 'Consider using a password manager', 'secure-login-collector' ),
+					'step4Practice3'      => __( 'Never share your master password with anyone', 'secure-login-collector' ),
+					'step4Practice4'      => __( 'Make sure you can remember it or have it securely documented', 'secure-login-collector' ),
+					'step4AckCheckbox'    => __( 'I understand that losing my master password means permanent loss of access to my encrypted data', 'secure-login-collector' ),
+
+					// Step 5: Final confirmation.
+					'step5Icon'           => __( '🛡️', 'secure-login-collector' ),
+					'step5Title'          => __( 'Ready to Set Up Encryption', 'secure-login-collector' ),
+					'step5Intro'          => __( 'When you click "Complete Setup", the following will happen:', 'secure-login-collector' ),
+					'step5Process1'       => __( 'A unique encryption key will be derived from your master password', 'secure-login-collector' ),
+					'step5Process2'       => __( 'RSA-4096 keypair will be generated for maximum security', 'secure-login-collector' ),
+					'step5Process3'       => __( 'Your private key will be encrypted with your master password', 'secure-login-collector' ),
+					'step5Process4'       => __( 'Configuration will be securely saved to your database', 'secure-login-collector' ),
+					'step5Reminder'       => __( '<strong>Final Reminder:</strong> Make absolutely certain you have your master password written down or memorized. You will need it every time you access your encrypted login data.', 'secure-login-collector' ),
+
+					// Success screen.
+					'successIcon'         => __( '✓', 'secure-login-collector' ),
+					'successTitle'        => __( 'Setup Complete!', 'secure-login-collector' ),
+					'successMessage'      => __( 'Your master password has been set up successfully. All login credentials will now be encrypted with end-to-end encryption.', 'secure-login-collector' ),
+					'successRedirect'     => __( 'Redirecting to dashboard...', 'secure-login-collector' ),
+
+					// Validation messages.
+					'setupRequired'       => __( 'Master Password Setup Required', 'secure-login-collector' ),
+					'passwordTooShort'    => sprintf(
+						/* translators: %d: minimum password length */
+						__( 'Password must be at least %d characters long.', 'secure-login-collector' ),
+						self::MIN_PASSWORD_LENGTH
 					),
+					'passwordsDoNotMatch' => __( 'Passwords do not match.', 'secure-login-collector' ),
+					'passwordTooWeak'     => __( 'Password is too weak. Please use a stronger password.', 'secure-login-collector' ),
+					'mustAcceptWarning'   => __( 'You must acknowledge the warning about password loss.', 'secure-login-collector' ),
+
+					// Progress messages.
+					'setupInProgress'     => __( 'Setting up master password...', 'secure-login-collector' ),
+					'deriving_key'        => __( 'Deriving encryption key...', 'secure-login-collector' ),
+					'generating_rsa'      => __( 'Generating RSA keypair...', 'secure-login-collector' ),
+					'wrapping_key'        => __( 'Securing encryption keys...', 'secure-login-collector' ),
+					'saving_to_server'    => __( 'Saving configuration...', 'secure-login-collector' ),
+					'verifying_setup'     => __( 'Verifying setup...', 'secure-login-collector' ),
+
+					// Status messages.
+					'setupComplete'       => __( 'Master password setup complete!', 'secure-login-collector' ),
+					'setupFailed'         => __( 'Setup failed: ', 'secure-login-collector' ),
+					'rateLimitExceeded'   => __( 'Too many attempts. Please try again later.', 'secure-login-collector' ),
+					'networkError'        => __( 'Network error occurred. Please try again.', 'secure-login-collector' ),
+				),
 				)
 			);
-		
+
 	}
 
 	/**

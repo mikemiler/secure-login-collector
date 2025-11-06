@@ -63,19 +63,12 @@ class Seculoco_Settings_Manager {
 		// Enqueue jQuery for inline scripts.
 		wp_enqueue_script( 'jquery' );
 
-		// Register placeholder scripts for inline functionality.
-		wp_register_script( 'seculoco-key-management', '', array( 'jquery' ), '1.0.0', true );
-		wp_enqueue_script( 'seculoco-key-management' );
-
-		wp_register_script( 'seculoco-textarea-toggle', '', array( 'jquery' ), '1.0.0', true );
-		wp_enqueue_script( 'seculoco-textarea-toggle' );
-
-		// Enqueue master password reset script.
+		// Enqueue merged admin script.
 		wp_enqueue_script(
-			'seculoco-master-password-reset',
-			plugin_dir_url( __FILE__ ) . '../assets/js/admin-master-password-reset.js',
+			'seculoco-admin-js',
+			plugin_dir_url( __FILE__ ) . '../assets/js/admin.js',
 			array( 'jquery' ),
-			'1.0.0',
+			filemtime( plugin_dir_path( __FILE__ ) . '../assets/js/admin.js' ),
 			true
 		);
 
@@ -399,7 +392,7 @@ class Seculoco_Settings_Manager {
 		});
 		";
 
-		wp_add_inline_script( 'seculoco-key-management', $script );
+		wp_add_inline_script( 'seculoco-admin-js', $script );
 	}
 
 	/**
@@ -418,18 +411,35 @@ class Seculoco_Settings_Manager {
 			'nonce'            => wp_create_nonce( 'seculoco_wizard_nonce' ),
 			'hasEncryptedData' => $has_encrypted_data,
 			'strings'          => array(
-				'warningDataLoss' => __( 'WARNING: Resetting your master password will make ALL existing encrypted data permanently inaccessible!\n\nAll encrypted login credentials will be lost forever. This action CANNOT be undone. There is NO recovery method.\n\nAre you absolutely sure you want to proceed?', 'secure-login-collector' ),
-				'warningSimple'   => __( 'Are you sure you want to reset your master password?\n\nYou will need to set up a new master password afterward.', 'secure-login-collector' ),
-				'resetting'       => __( 'Resetting...', 'secure-login-collector' ),
-				'resetButton'     => __( 'Reset Master Password', 'secure-login-collector' ),
-				'resetSuccess'    => __( 'Master password reset successfully! Please set up a new master password.', 'secure-login-collector' ),
-				'resetFailed'     => __( 'Failed to reset master password:', 'secure-login-collector' ),
-				'networkError'    => __( 'Network error occurred. Please try again.', 'secure-login-collector' ),
+				// Legacy strings (kept for backward compatibility)
+				'warningDataLoss'              => __( 'WARNING: Resetting your master password will make ALL existing encrypted data permanently inaccessible!\n\nAll encrypted login credentials will be lost forever. This action CANNOT be undone. There is NO recovery method.\n\nAre you absolutely sure you want to proceed?', 'secure-login-collector' ),
+				'warningSimple'                => __( 'Are you sure you want to reset your master password?\n\nYou will need to set up a new master password afterward.', 'secure-login-collector' ),
+				'resetting'                    => __( 'Resetting...', 'secure-login-collector' ),
+				'resetButton'                  => __( 'Reset Master Password', 'secure-login-collector' ),
+				'resetSuccess'                 => __( 'Master password reset successfully! Please set up a new master password.', 'secure-login-collector' ),
+				'resetFailed'                  => __( 'Failed to reset master password:', 'secure-login-collector' ),
+				'networkError'                 => __( 'Network error occurred. Please try again.', 'secure-login-collector' ),
+				// Modal strings for enhanced reset dialog
+				'modal_warning_title_with_data' => __( 'CRITICAL WARNING: Master Password Reset', 'secure-login-collector' ),
+				'modal_warning_title_no_data'   => __( 'Master Password Reset', 'secure-login-collector' ),
+				'critical_warning_title'        => __( 'CRITICAL WARNING:', 'secure-login-collector' ),
+				'critical_warning_main'         => __( 'Resetting your master password will permanently prevent decryption of all existing encrypted login data.', 'secure-login-collector' ),
+				'warning_list_item_1'           => __( 'All encrypted login credentials will become permanently inaccessible', 'secure-login-collector' ),
+				'warning_list_item_2'           => __( 'This action CANNOT be undone', 'secure-login-collector' ),
+				'warning_list_item_3'           => __( 'There is NO recovery method', 'secure-login-collector' ),
+				'warning_list_item_4'           => __( 'You will need to collect new login data from clients', 'secure-login-collector' ),
+				'confirmation_checkbox_label'   => __( 'I understand that all encrypted data will be permanently lost', 'secure-login-collector' ),
+				'safe_reset_message_1'          => __( 'You can safely reset your master password and start fresh.', 'secure-login-collector' ),
+				'safe_reset_message_2'          => __( 'Since you have no encrypted data stored, this is completely safe.', 'secure-login-collector' ),
+				'cancel_button'                 => __( 'Cancel', 'secure-login-collector' ),
+				'confirm_reset_with_data'       => __( 'Yes, Reset Master Password', 'secure-login-collector' ),
+				'confirm_reset_no_data'         => __( 'Reset Master Password', 'secure-login-collector' ),
+				'unknown_error'                 => __( 'An unknown error occurred.', 'secure-login-collector' ),
 			),
 		);
 
 		// Use wp_localize_script for proper escaping.
-		wp_localize_script( 'seculoco-master-password-reset', 'secureLoginMasterPasswordData', $script_data );
+		wp_localize_script( 'seculoco-admin-js', 'secureLoginMasterPasswordData', $script_data );
 	}
 
 	/**
@@ -774,7 +784,7 @@ class Seculoco_Settings_Manager {
 		});
 		";
 
-		wp_add_inline_script( 'seculoco-textarea-toggle', $script );
+		wp_add_inline_script( 'seculoco-admin-js', $script );
 	}
 
 	/**
