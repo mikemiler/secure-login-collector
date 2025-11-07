@@ -29,33 +29,80 @@ if ( ! function_exists( 'seculoco_init' ) ) {
 	}
 }
 
-if ( ! function_exists( 'seculoco_is_encryption_initialized' ) ) {
+if ( ! function_exists( 'seculoco_has_password_encryption' ) ) {
 	/**
-	 * Check if encryption is initialized and ready to use.
+	 * Determine if password-based encryption is fully configured.
 	 *
-	 * Checks for both free and pro encryption configurations.
-	 * Returns true if either:
-	 * - Free version: master password salt and wrapped key exist
-	 * - Pro version: passkey-wrapped keys are active
+	 * Supports both the legacy option set (v2 free encryption) and the new
+	 * unified crypto storage introduced in 1.4.x.
 	 *
-	 * @since 2.0.0
-	 * @return bool True if encryption is initialized, false otherwise.
+	 * @return bool
 	 */
-	function seculoco_is_encryption_initialized() {
-		// Check for pro encryption first (if available).
-		if ( class_exists( 'Seculoco_Encryption_Handler_V2' ) && method_exists( 'Seculoco_Encryption_Handler_V2', 'is_pro_active' ) ) {
-			if ( Seculoco_Encryption_Handler_V2::is_pro_active() ) {
+	function seculoco_has_password_encryption() {
+		// Modern flags written by the current setup wizard.
+		if ( (bool) get_option( 'seculoco_password_encryption_active', false ) ) {
+			return true;
+		}
+
+		// Fallback flag written by the encryption handler.
+		if ( (bool) get_option( 'seculoco_password_active', false ) ) {
+			return true;
+		}
+
+		// Unified crypto storage (standard/password keys).
+		$has_unified_keys = ! empty( get_option( 'seculoco_public_key_standard', '' ) )
+			&& ! empty( get_option( 'seculoco_wrapped_private_key_standard', array() ) );
+		if ( $has_unified_keys ) {
+			return true;
+		}
+
+		// Legacy v2 storage (pre-unified crypto).
+		if ( defined( 'SECULOCO_OPTION_ENCRYPTION_VERSION' )
+			&& defined( 'SECULOCO_OPTION_PRIVATE_KEY_WRAPPED' )
+			&& defined( 'SECULOCO_OPTION_MASTER_PASSWORD_SALT' ) ) {
+
+			$legacy_version = get_option( SECULOCO_OPTION_ENCRYPTION_VERSION, '' );
+			$legacy_key     = get_option( SECULOCO_OPTION_PRIVATE_KEY_WRAPPED, false );
+			$legacy_salt    = get_option( SECULOCO_OPTION_MASTER_PASSWORD_SALT, false );
+
+			if ( 'v2' === $legacy_version && $legacy_key && $legacy_salt ) {
 				return true;
 			}
 		}
 
-		// Check for free encryption setup.
-		$encryption_version = get_option( SECULOCO_OPTION_ENCRYPTION_VERSION, '' );
-		$has_private_key    = get_option( SECULOCO_OPTION_PRIVATE_KEY_WRAPPED, false );
-		$has_salt           = get_option( SECULOCO_OPTION_MASTER_PASSWORD_SALT, false );
+		return false;
+	}
+}
 
-		
+if ( ! function_exists( 'seculoco_has_passkey_encryption' ) ) {
+	/**
+	 * Determine if passkey-based encryption is active.
+	 *
+	 * @return bool
+	 */
+	function seculoco_has_passkey_encryption() {
+		$active     = (bool) get_option( 'seculoco_passkey_active', false );
+		$registered = (bool) get_option( 'seculoco_passkey_registered', false );
 
-		return ( 'v2' === $encryption_version && $has_private_key && $has_salt );
+		if ( $active && $registered ) {
+			return true;
+		}
+
+		// Back-compat: older builds stored a more generic "pro keys active" flag.
+		$pro_active = (bool) get_option( 'seculoco_pro_keys_active', false );
+		return $pro_active && $registered;
+	}
+}
+
+if ( ! function_exists( 'seculoco_is_encryption_initialized' ) ) {
+	/**
+	 * Check if encryption is initialized and ready to use.
+	 *
+	 * @since 2.0.0
+	 * @since 2.1.0 Updated to support unified crypto storage (1.4+).
+	 * @return bool True if encryption is initialized, false otherwise.
+	 */
+	function seculoco_is_encryption_initialized() {
+		return seculoco_has_password_encryption() || seculoco_has_passkey_encryption();
 	}
 }

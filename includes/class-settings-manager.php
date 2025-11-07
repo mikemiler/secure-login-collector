@@ -512,7 +512,6 @@ class Seculoco_Settings_Manager {
 			<div class="seculoco-passkey-benefit seculoco-pro-upgrade-card">
 				<div class="seculoco-pro-upgrade-header">
 					<span class="seculoco-badge seculoco-pro-badge"><?php echo esc_html__( 'PRO ONLY', 'secure-login-collector' ); ?></span>
-					<span class="seculoco-pro-status-unavailable"><?php echo esc_html__( 'NOT AVAILABLE', 'secure-login-collector' ); ?></span>
 				</div>
 				<span class="seculoco-passkey-benefit-icon"></span>
 				<div class="seculoco-passkey-benefit-text">

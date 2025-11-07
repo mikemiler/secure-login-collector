@@ -172,12 +172,6 @@ class Seculoco_Frontend_Handler {
 								);
 								?>
 							</p>
-							<p>
-								<a href="<?php echo esc_url( admin_url( 'admin.php?page=seculoco-encryption-setup' ) ); ?>" class="button button-primary">
-									<span class="dashicons dashicons-lock"></span>
-									<?php echo esc_html__( 'Setup Master Password', 'secure-login-collector' ); ?>
-								</a>
-							</p>
 						</div>
 					</div>
 				</div>
@@ -592,6 +586,10 @@ class Seculoco_Frontend_Handler {
 	 * @return bool
 	 */
 	private function has_password_keys() {
+		if ( function_exists( 'seculoco_has_password_encryption' ) ) {
+			return seculoco_has_password_encryption();
+		}
+
 		return (bool) get_option( 'seculoco_password_encryption_active', false );
 	}
 
@@ -601,6 +599,10 @@ class Seculoco_Frontend_Handler {
 	 * @return bool
 	 */
 	private function has_passkey_keys() {
+		if ( function_exists( 'seculoco_has_passkey_encryption' ) ) {
+			return seculoco_has_passkey_encryption();
+		}
+
 		return (bool) ( get_option( 'seculoco_pro_keys_active', false ) && get_option( 'seculoco_passkey_registered', false ) );
 	}
 }
