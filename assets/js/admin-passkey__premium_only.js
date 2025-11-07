@@ -18,26 +18,80 @@ jQuery(document).ready(function($) {
 	var strings = secureLoginPasskeyData.strings;
 
 	/**
-	 * Handle passkey deletion
+	 * Handle passkey reset via confirmation modal
 	 */
 	$('#delete-passkey-btn').on('click', function(e) {
 		e.preventDefault();
 
-		var $button = $(this);
-		var credentialId = $button.data('credential-id');
+		var credentialId = $(this).data('credential-id');
 
 		if (!credentialId) {
 			alert('No credential ID found. Please refresh the page and try again.');
 			return;
 		}
 
-		var warningMessage = hasEncryptedData ? strings.warningDataLoss : strings.warningSimple;
+		openResetModal(credentialId);
+	});
 
-		if (!confirm(warningMessage)) {
+	function openResetModal(credentialId) {
+		var warningMessage = hasEncryptedData ? strings.warningDataLoss : strings.warningSimple;
+		var modalHtml = `
+			<div class="seculoco-password-modal-backdrop"></div>
+			<div class="seculoco-password-modal">
+				<div class="seculoco-password-modal-header">
+					<h2>${strings.resetModalTitle || strings.deletePasskey}</h2>
+				</div>
+				<div class="seculoco-password-modal-body">
+					<div class="seculoco-alert seculoco-alert-danger">
+						<span class="seculoco-alert-icon dashicons dashicons-warning"></span>
+						<div class="seculoco-alert-content">
+							<div class="seculoco-alert-message">${warningMessage.replace(/\n/g, '<br>')}</div>
+						</div>
+					</div>
+					<div class="seculoco-password-form-group">
+						<label class="seculoco-password-label">${strings.typeConfirmToReset}</label>
+						<input type="text" class="seculoco-password-input seculoco-passkey-reset-confirm" placeholder="RESET" />
+					</div>
+					<div class="seculoco-password-error"></div>
+				</div>
+				<div class="seculoco-password-modal-footer">
+					<button type="button" class="button button-secondary seculoco-passkey-modal-cancel">${strings.cancel}</button>
+					<button type="button" class="button button-danger seculoco-passkey-modal-submit">${strings.deletePasskey}</button>
+				</div>
+			</div>
+		`;
+
+		$('body').append(modalHtml);
+
+		$('.seculoco-passkey-modal-cancel').on('click', closeModal);
+		$('.seculoco-password-modal-backdrop').on('click', closeModal);
+		$('.seculoco-passkey-modal-submit').on('click', function() {
+			submitReset(credentialId);
+		});
+		$('.seculoco-passkey-reset-confirm').on('keypress', function(event) {
+			if (event.which === 13) {
+				submitReset(credentialId);
+			}
+		});
+	}
+
+	function closeModal() {
+		$('.seculoco-password-modal').remove();
+		$('.seculoco-password-modal-backdrop').remove();
+	}
+
+	function submitReset(credentialId) {
+		var $confirmInput = $('.seculoco-passkey-reset-confirm');
+		var $error = $('.seculoco-password-error');
+		var $submit = $('.seculoco-passkey-modal-submit');
+
+		if ($confirmInput.val().trim().toUpperCase() !== 'RESET') {
+			$error.text(strings.resetConfirmRequired);
 			return;
 		}
 
-		$button.prop('disabled', true).text(strings.deleting);
+		$error.text('');
+		$submit.prop('disabled', true).text(strings.deleting);
 
 		$.ajax({
 			url: ajaxUrl,
@@ -49,22 +103,23 @@ jQuery(document).ready(function($) {
 			},
 			success: function(response) {
 				if (response.success) {
+					closeModal();
 					$('#passkey-status-message').html('<div class="notice notice-success inline"><p>' + strings.deleteSuccess + '</p></div>');
 					setTimeout(function() {
 						window.location.reload();
 					}, 1500);
 				} else {
+					$submit.prop('disabled', false).text(strings.deletePasskey);
 					alert(strings.deleteFailed + ' ' + (response.data || 'Unknown error'));
-					$button.prop('disabled', false).text(strings.deletePasskey);
 				}
 			},
 			error: function(xhr, status, error) {
-				console.error('Delete error:', error);
+				console.error('Reset error:', error);
+				$submit.prop('disabled', false).text(strings.deletePasskey);
 				alert(strings.networkError);
-				$button.prop('disabled', false).text(strings.deletePasskey);
 			}
 		});
-	});
+	}
 
 	/**
 	 * Handle passkey registration

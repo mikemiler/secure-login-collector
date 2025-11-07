@@ -116,12 +116,16 @@ class Seculoco_Passkey_Manager {
 			'nonce'            => wp_create_nonce( 'passkey_admin_nonce' ),
 			'hasEncryptedData' => $has_encrypted_data,
 			'strings'          => array(
-				'warningDataLoss'  => __( 'WARNING: Deleting this passkey will make ALL existing encrypted data permanently inaccessible! This action CANNOT be undone. There is NO recovery method. Are you absolutely sure you want to proceed?', 'secure-login-collector' ),
-				'warningSimple'    => __( 'Are you sure you want to delete this passkey?\n\nYou can register a new passkey afterward.', 'secure-login-collector' ),
-				'deleting'         => __( 'Deleting...', 'secure-login-collector' ),
-				'deletePasskey'    => __( 'Delete Passkey', 'secure-login-collector' ),
-				'deleteSuccess'    => __( 'Passkey deleted successfully!', 'secure-login-collector' ),
-				'deleteFailed'     => __( 'Failed to delete passkey:', 'secure-login-collector' ),
+				'warningDataLoss'  => __( 'WARNING: Resetting this passkey will make ALL existing encrypted data permanently inaccessible! This action CANNOT be undone. There is NO recovery method. Are you absolutely sure you want to proceed?', 'secure-login-collector' ),
+				'warningSimple'    => __( 'Are you sure you want to reset this passkey?\n\nYou can register a new passkey afterward.', 'secure-login-collector' ),
+				'deleting'         => __( 'Resetting...', 'secure-login-collector' ),
+				'deletePasskey'    => __( 'Reset Passkey', 'secure-login-collector' ),
+				'deleteSuccess'    => __( 'Passkey reset successfully!', 'secure-login-collector' ),
+				'deleteFailed'     => __( 'Failed to reset passkey:', 'secure-login-collector' ),
+				'typeConfirmToReset' => __( 'Type "RESET" to confirm:', 'secure-login-collector' ),
+				'resetConfirmRequired' => __( 'Please type "RESET" to confirm.', 'secure-login-collector' ),
+				'resetModalTitle'  => __( 'Reset Passkey', 'secure-login-collector' ),
+				'cancel'           => __( 'Cancel', 'secure-login-collector' ),
 				'networkError'     => __( 'Network error occurred. Please try again.', 'secure-login-collector' ),
 				'noWebAuthn'       => __( 'Your browser does not support WebAuthn/Passkeys.', 'secure-login-collector' ),
 				'registerSuccess'  => __( 'Passkey registered successfully!', 'secure-login-collector' ),
@@ -246,7 +250,7 @@ class Seculoco_Passkey_Manager {
 									</div>
 									<button type="button" class="seculoco-btn seculoco-btn-danger" id="delete-passkey-btn"
 											data-credential-id="<?php echo esc_attr( $passkey['credential_id'] ); ?>">
-										<?php esc_html_e( 'Delete Passkey', 'secure-login-collector' ); ?>
+										<?php esc_html_e( 'Reset Passkey', 'secure-login-collector' ); ?>
 									</button>
 								</div>
 							</div>

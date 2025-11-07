@@ -100,7 +100,7 @@ class Seculoco_Settings_Manager {
 					'setupFailed'           => __( 'Failed to setup password encryption.', 'secure-login-collector' ),
 					'resetFailed'           => __( 'Failed to reset password encryption.', 'secure-login-collector' ),
 					'resetWarningTitle'     => __( 'Warning: Data Loss', 'secure-login-collector' ),
-					'resetWarningMessage'   => __( 'Resetting the password will mark all existing encrypted data as UNDECRYPTABLE. You will not be able to decrypt any previously stored data. Are you sure you want to continue?', 'secure-login-collector' ),
+					'resetWarningMessage'   => __( 'Deleting this password will permanently prevent decryption of all existing login data encrypted with this password. Are you sure you want to continue?', 'secure-login-collector' ),
 					'typeConfirmToReset'    => __( 'Type "RESET" to confirm:', 'secure-login-collector' ),
 					'resetConfirmRequired'  => __( 'Please type "RESET" to confirm.', 'secure-login-collector' ),
 					'passwordStrengthWeak'  => __( 'Weak password - consider using a stronger one', 'secure-login-collector' ),
@@ -130,18 +130,15 @@ class Seculoco_Settings_Manager {
 			array(
 				'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
 				'nonce'     => wp_create_nonce( 'seculoco_admin_nonce' ),
-					'strings'   => array(
-						'initializing'        => __( 'Initializing...', 'secure-login-collector' ),
-						'initSuccess'         => __( 'Free RSA keys initialized successfully!', 'secure-login-collector' ),
-						'initFailedPrefix'    => __( 'Failed to initialize keys: ', 'secure-login-collector' ),
-						'networkError'        => __( 'Network error occurred.', 'secure-login-collector' ),
-						'initButtonLabel'     => __( 'Initialize Free Keys Now', 'secure-login-collector' ),
-						'exportFailedPrefix'  => __( 'Failed to export public key: ', 'secure-login-collector' ),
-					),
-					'exportFileName' => 'secure-login-free-public-key.pem',
-					'defaultFrontendText' => $this->get_default_frontend_text(),
-				)
-			);
+				'strings'   => array(
+					'networkError'        => __( 'Network error occurred.', 'secure-login-collector' ),
+					'exportFailedPrefix'  => __( 'Failed to export public key: ', 'secure-login-collector' ),
+				),
+				'passwordExportFileName' => 'secure-login-password-public-key.pem',
+				'passkeyExportFileName'  => 'secure-login-passkey-public-key.pem',
+				'defaultFrontendText'    => $this->get_default_frontend_text(),
+			)
+		);
 	}
 
 	/**
@@ -426,81 +423,22 @@ class Seculoco_Settings_Manager {
 	 * Display encryption content inside the card
 	 */
 	private function display_encryption_content() {
-		// Get key status for free version.
-		$free_public_key  = get_option( 'seculoco_public_key_free' );
-		$free_private_key = get_option( 'seculoco_private_key_free_encrypted' );
+		$password_active      = (bool) get_option( 'seculoco_password_encryption_active', false );
+		$password_public_key  = get_option( 'seculoco_public_key_standard' );
 
-		// Check if passkey encryption is active (pro keys).
-		$pro_keys_active = get_option( 'seculoco_pro_keys_active', false );
-
-		// If passkey encryption is active, free encryption should be shown as inactive.
-		// Otherwise, show actual free encryption status.
-		if ( $pro_keys_active ) {
-			$free_status = 'inactive';
-		} else {
-			$free_status = ( $free_public_key && $free_private_key ) ? 'active' : 'needs-init';
-		}
-
-		// 3-column layout: Free on left, Password in middle, Pro on right.
+		// Two-column layout: password encryption + pro extension.
 		echo '<div class="seculoco-encryption-grid">';
 
-		// ===== LEFT COLUMN: FREE VERSION =====
+		// ===== PASSWORD-BASED ENCRYPTION COLUMN =====
 		echo '<div class="seculoco-encryption-column">';
 
-
-
-		// Free RSA Keys detailed status.
-		echo '<div class="seculoco-encryption-status-card">';
-		echo '<div class="seculoco-encryption-status-header">';
-		echo '<div>';
-		echo '<strong class="seculoco-encryption-status-title">' . esc_html__( 'Standard RSA Keys', 'secure-login-collector' ) . '</strong>';
-		echo '<p class="seculoco-encryption-status-subtitle">' . esc_html__( 'RSA-2048 + AES-256-GCM encryption', 'secure-login-collector' ) . '</p>';
-		echo '</div>';
-
-		// Display status based on $free_status variable.
-		if ( 'active' === $free_status ) {
-			echo '<div class="seculoco-encryption-status-label">';
-			echo '<span class="seculoco-encryption-badge-active">' . esc_html__( 'ACTIVE', 'secure-login-collector' ) . '</span>';
-			echo '</div>';
-		} elseif ( 'inactive' === $free_status ) {
-			echo '<div class="seculoco-encryption-status-label">';
-			echo '<span class="seculoco-encryption-badge-inactive">' . esc_html__( 'INACTIVE', 'secure-login-collector' ) . '</span>';
-			echo '<p class="seculoco-encryption-hint">' . esc_html__( 'Passkey encryption is active', 'secure-login-collector' ) . '</p>';
-			echo '</div>';
-		} else {
-			echo '<div class="seculoco-encryption-status-label">';
-			echo '<span class="seculoco-encryption-badge-not-init">' . esc_html__( 'NOT INITIALIZED', 'secure-login-collector' ) . '</span>';
-			echo '<p class="seculoco-encryption-hint">' . esc_html__( 'Will be created on first use', 'secure-login-collector' ) . '</p>';
-			echo '</div>';
-		}
-		echo '</div>';
-		echo '</div>';
-
-
-		// Free export button.
-		if ( $free_public_key ) {
-			echo '<p>';
-			echo '<button type="button" class="button button-secondary" id="export-free-public-key">' . esc_html__( 'Export Public Key', 'secure-login-collector' ) . '</button>';
-			echo '</p>';
-		}
-
-		echo '</div>'; // Close left column
-
-		// ===== MIDDLE COLUMN: PASSWORD-BASED =====
-		echo '<div class="seculoco-encryption-column">';
-
-		// Get password encryption status.
-		$password_active = get_option( 'seculoco_password_encryption_active', false );
-
-		// Password-based encryption status card.
 		echo '<div class="seculoco-encryption-status-card">';
 		echo '<div class="seculoco-encryption-status-header">';
 		echo '<div>';
 		echo '<strong class="seculoco-encryption-status-title">' . esc_html__( 'Password-Based Encryption', 'secure-login-collector' ) . '</strong>';
-		echo '<p class="seculoco-encryption-status-subtitle">' . esc_html__( 'RSA-2048 protected by master password', 'secure-login-collector' ) . '</p>';
+		echo '<p class="seculoco-encryption-status-subtitle">' . esc_html__( 'RSA-2048 protected with your master password', 'secure-login-collector' ) . '</p>';
 		echo '</div>';
 
-		// Display password status.
 		if ( $password_active ) {
 			echo '<div class="seculoco-encryption-status-label">';
 			echo '<span class="seculoco-encryption-badge-active">' . esc_html__( 'ACTIVE', 'secure-login-collector' ) . '</span>';
@@ -508,6 +446,7 @@ class Seculoco_Settings_Manager {
 		} else {
 			echo '<div class="seculoco-encryption-status-label">';
 			echo '<span class="seculoco-encryption-badge-not-init">' . esc_html__( 'NOT SET', 'secure-login-collector' ) . '</span>';
+			echo '<p class="seculoco-encryption-hint">' . esc_html__( 'Create a master password to enable encryption.', 'secure-login-collector' ) . '</p>';
 			echo '</div>';
 		}
 		echo '</div>';
@@ -515,28 +454,38 @@ class Seculoco_Settings_Manager {
 
 		// Password setup/reset buttons.
 		echo '<p>';
-		if ( $password_active ) {
-			echo '<button type="button" class="seculoco-btn seculoco-btn-danger seculoco-btn-lg seculoco-password-reset-btn">';
-			echo '<span>🔄</span> ';
-			echo esc_html__( 'Reset Password', 'secure-login-collector' );
-			echo '</button>';
-		} else {
+		 if(! $password_active) {
 			echo '<button type="button" class="seculoco-btn seculoco-btn-primary seculoco-btn-lg seculoco-password-setup-btn">';
 			echo '<span>🔐</span> ';
 			echo esc_html__( 'Setup Password', 'secure-login-collector' );
 			echo '</button>';
 		}
 		echo '</p>';
-
-		// Warning text.
-		echo '<div class="seculoco-alert seculoco-alert-warning" style="margin-top: 15px;">';
-		echo '<span class="seculoco-alert-icon dashicons dashicons-warning"></span>';
+		if ( $password_active ) {
+		// Warning text (matching passkey style).
+		echo '<div class="seculoco-alert seculoco-alert-danger seculoco-margin-top-20">';
+		echo '<span class="seculoco-alert-icon">⚠️</span>';
 		echo '<div class="seculoco-alert-content">';
-		echo '<p class="seculoco-alert-message">' . esc_html__( 'Resetting the password will mark all existing encrypted data as undecryptable.', 'secure-login-collector' ) . '</p>';
+		echo '<div class="seculoco-alert-title">' . esc_html__( 'CRITICAL WARNING: Data Loss Risk', 'secure-login-collector' ) . '</div>';
+		echo '<div class="seculoco-alert-message">';
+		echo '<p><strong>' . esc_html__( 'Deleting this password will permanently prevent decryption of all existing login data encrypted with this password.', 'secure-login-collector' ) . '</strong></p>';
+		echo '<p><strong>' . esc_html__( 'This action CANNOT be undone. There is NO recovery method.', 'secure-login-collector' ) . '</strong></p>';
+		
+			echo '<button type="button" class="seculoco-btn seculoco-btn-danger seculoco-password-reset-btn">';
+			echo esc_html__( 'Reset Password', 'secure-login-collector' );
+			echo '</button>';
+		
 		echo '</div>';
 		echo '</div>';
+		echo '</div>';
+		}
+		if ( $password_public_key ) {
+			echo '<p>';
+			echo '<button type="button" class="button button-secondary seculoco-export-key" data-key-type="standard">' . esc_html__( 'Export Public Key', 'secure-login-collector' ) . '</button>';
+			echo '</p>';
+		}
 
-		echo '</div>'; // Close middle column
+		echo '</div>'; // Close password column
 
 		// ===== RIGHT COLUMN: PRO VERSION =====
 		// Allow pro version to add its entire column or show upgrade notice.

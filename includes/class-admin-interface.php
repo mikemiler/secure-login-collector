@@ -358,17 +358,11 @@ class Seculoco_List_Table extends WP_List_Table {
 					'class'       => 'encryption-ultra-secure',
 					'description' => __( 'Passkey-derived encryption for maximum security.', 'secure-login-collector' ),
 				);
-			case 'rsa':
-				return array(
-					'name'        => __( 'RSA-2048', 'secure-login-collector' ),
-					'class'       => 'encryption-rsa',
-					'description' => __( 'Industry-standard RSA encryption.', 'secure-login-collector' ),
-				);
 			default:
 				return array(
-					'name'        => __( 'RSA-2048', 'secure-login-collector' ),
+					'name'        => __( 'Secure', 'secure-login-collector' ),
 					'class'       => 'encryption-rsa',
-					'description' => __( 'Industry-standard RSA encryption.', 'secure-login-collector' ),
+					'description' => __( 'AES-256-GCM encryption with RSA key protection.', 'secure-login-collector' ),
 				);
 		}
 	}

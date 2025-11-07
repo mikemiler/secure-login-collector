@@ -425,8 +425,14 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 
 		$unified = $this->get_unified_crypto();
 
-		// Check if passkey is active, otherwise use standard.
-		$method = $this->is_passkey_active() ? 'passkey' : 'standard';
+		$requested_type = isset( $_POST['key_type'] ) ? sanitize_text_field( wp_unslash( $_POST['key_type'] ) ) : '';
+		$method         = 'standard';
+
+		if ( 'passkey' === $requested_type ) {
+			$method = 'passkey';
+		} elseif ( 'standard' !== $requested_type && $this->is_passkey_active() ) {
+			$method = 'passkey';
+		}
 
 		$public_key = $unified->get_public_key( $method );
 
@@ -451,7 +457,7 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 	 * @param int    $user_id User accessing the key.
 	 * @param string $type    Type of key accessed (default: 'free').
 	 */
-	protected function log_key_access( $user_id, $type = 'free' ) {
+	protected function log_key_access( $user_id, $type = 'standard' ) {
 		$log = get_option( 'seculoco_key_access_log', array() );
 
 		// Keep only last 100 entries.

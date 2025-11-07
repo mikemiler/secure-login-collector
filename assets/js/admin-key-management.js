@@ -19,40 +19,16 @@
 		const ajaxUrl  = config.ajaxUrl || window.ajaxurl || '';
 		const nonce    = config.nonce || '';
 		const strings  = config.strings || {};
-		const fileName = config.exportFileName || 'secure-login-free-public-key.pem';
+		const passwordFile = config.passwordExportFileName || 'secure-login-password-public-key.pem';
+		const passkeyFile  = config.passkeyExportFileName || 'secure-login-passkey-public-key.pem';
+		const defaultFrontendText = config.defaultFrontendText || '';
 
 		if (!ajaxUrl || !nonce) {
 			return;
 		}
 
-		$('#initialize-free-keys').on('click', function () {
-			const $button = $(this);
-
-			$button.prop('disabled', true).text(getString(strings, 'initializing', 'Initializing...'));
-
-			$.post(ajaxUrl, {
-				action: 'seculoco_initialize_free_keys',
-				nonce: nonce,
-			})
-				.done(function (response) {
-					if (response && response.success) {
-						window.alert(getString(strings, 'initSuccess', 'Free RSA keys initialized successfully!'));
-						window.location.reload();
-						return;
-					}
-
-					const message = response && response.data ? response.data : '';
-					window.alert(getString(strings, 'initFailedPrefix', 'Failed to initialize keys: ') + message);
-					$button.prop('disabled', false).text(getString(strings, 'initButtonLabel', 'Initialize Free Keys Now'));
-				})
-				.fail(function () {
-					window.alert(getString(strings, 'networkError', 'Network error occurred.'));
-					$button.prop('disabled', false).text(getString(strings, 'initButtonLabel', 'Initialize Free Keys Now'));
-				});
-		});
-
-		$('#export-free-public-key, #export-pro-public-key').on('click', function () {
-			const keyType = $(this).is('#export-pro-public-key') ? 'pro' : 'free';
+		$(document).on('click', '.seculoco-export-key', function () {
+			const keyType = $(this).data('key-type') === 'passkey' ? 'passkey' : 'standard';
 
 			$.post(ajaxUrl, {
 				action: 'seculoco_export_public_key',
@@ -64,9 +40,10 @@
 						const blob = new Blob([ response.data.public_key ], { type: 'text/plain' });
 						const url = window.URL.createObjectURL(blob);
 						const anchor = document.createElement('a');
+						const fileName = (keyType === 'passkey') ? passkeyFile : passwordFile;
 
 						anchor.href = url;
-						anchor.download = keyType === 'pro' ? 'secure-login-pro-public-key.pem' : fileName;
+						anchor.download = fileName;
 						anchor.click();
 
 						window.URL.revokeObjectURL(url);
@@ -85,17 +62,17 @@
 		const $frontendTextarea = $('#seculoco_frontend_form_text');
 
 		if ($textTypeRadios.length && $frontendTextarea.length) {
-			const defaultText = config.defaultFrontendText || '';
-
 			const applyTextareaState = function () {
 				const selected = $textTypeRadios.filter(':checked').val() || 'default';
 
 				if (selected === 'default') {
 					$frontendTextarea.prop('disabled', true).css('background-color', '#f1f1f1');
 
-					const currentVal = ($frontendTextarea.val() || '').trim();
-					if (currentVal === '' || currentVal === defaultText) {
-						$frontendTextarea.val(defaultText);
+					if (defaultFrontendText !== '') {
+						const currentVal = ($frontendTextarea.val() || '').trim();
+						if (currentVal === '' || currentVal === defaultFrontendText) {
+							$frontendTextarea.val(defaultFrontendText);
+						}
 					}
 				} else {
 					$frontendTextarea.prop('disabled', false).css('background-color', '#fff');

@@ -321,7 +321,7 @@ class Seculoco_Settings_Manager_Pro {
 		$pro_public_key = get_option( 'seculoco_public_key_pro' );
 		if ( $pro_public_key ) {
 			echo '<p>';
-			echo '<button type="button" class="button button-secondary" id="export-pro-public-key">' . esc_html__( 'Export Pro Public Key', 'secure-login-collector' ) . '</button>';
+			echo '<button type="button" class="button button-secondary seculoco-export-key" data-key-type="passkey">' . esc_html__( 'Export Pro Public Key', 'secure-login-collector' ) . '</button>';
 			echo '</p>';
 		}
 	}
@@ -358,7 +358,7 @@ class Seculoco_Settings_Manager_Pro {
 	public function add_pro_export_button() {
 		$pro_public_key = get_option( 'seculoco_public_key_pro' );
 		if ( $pro_public_key ) {
-			echo '<button type="button" class="button button-secondary" id="export-pro-public-key">' . esc_html__( 'Export Pro Public Key', 'secure-login-collector' ) . '</button>';
+			echo '<button type="button" class="button button-secondary seculoco-export-key" data-key-type="passkey">' . esc_html__( 'Export Pro Public Key', 'secure-login-collector' ) . '</button>';
 		}
 	}
 
