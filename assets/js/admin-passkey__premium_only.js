@@ -20,7 +20,7 @@ jQuery(document).ready(function($) {
 	/**
 	 * Handle passkey reset via confirmation modal
 	 */
-	$('#delete-passkey-btn').on('click', function(e) {
+	$(document).on('click', '#delete-passkey-btn', function(e) {
 		e.preventDefault();
 
 		var credentialId = $(this).data('credential-id');
@@ -104,7 +104,10 @@ jQuery(document).ready(function($) {
 			success: function(response) {
 				if (response.success) {
 					closeModal();
-					$('#passkey-status-message').html('<div class="notice notice-success inline"><p>' + strings.deleteSuccess + '</p></div>');
+					var $statusArea = $('.seculoco-passkey-status');
+					if ($statusArea.length) {
+						$statusArea.html('<div class="notice notice-success inline"><p>' + strings.deleteSuccess + '</p></div>');
+					}
 					setTimeout(function() {
 						window.location.reload();
 					}, 1500);
@@ -124,12 +127,12 @@ jQuery(document).ready(function($) {
 	/**
 	 * Handle passkey registration
 	 */
-	$('#register-passkey-btn').on('click', async function(e) {
+	$(document).on('click', '.seculoco-passkey-register-btn', async function(e) {
 		e.preventDefault();
 
 		var $button = $(this);
 		var $spinner = $('.passkey-registration-form .spinner');
-		var $statusMessage = $('#passkey-status-message');
+		var $statusMessage = $('.seculoco-passkey-status');
 
 		// Clear any previous messages
 		$statusMessage.empty();
@@ -141,7 +144,8 @@ jQuery(document).ready(function($) {
 		}
 
 		// Get selected authenticator type (cross-platform or platform)
-		var authenticatorType = $('input[name="authenticator_type"]:checked').val() || 'cross-platform';
+		var explicitType = $button.data('authenticator-type');
+		var authenticatorType = explicitType || $('input[name="authenticator_type"]:checked').val() || 'cross-platform';
 
 		// Detect device and browser information
 		var deviceInfo = detectDeviceInfo();

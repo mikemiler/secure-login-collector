@@ -1,4 +1,7 @@
 /* Frontend form styling - WordPress.org compliant with seculoco- prefix */
+:root {
+    --seculoco-danger: #d63638;
+}
 
 /* Main container */
 .seculoco-form-container {
@@ -355,4 +358,19 @@
 .seculoco-status-modal-overlay .seculoco-status-close-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+
+.seculoco-no-keys-icon.dashicons,
+.seculoco-no-keys-icon.dashicons:before{
+	display: block;
+	width: 100%;
+    height: inherit;
+    color: var(--seculoco-danger);
+    font-size: 50px;
+    line-height: 70px;
+}
+.seculoco-alert-danger {
+	background: #fef2f2;
+    border-left: 4px solid var(--seculoco-danger);
 }

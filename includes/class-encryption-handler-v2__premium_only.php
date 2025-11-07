@@ -253,11 +253,6 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
 
 		// Call parent method to initialize pro keys.
 		$result = $this->initialize_pro_keys( $passkey_derived_key );
-
-		// Log result for debugging.
-		if ( is_wp_error( $result ) ) {
-			error_log( 'Pro key initialization failed: ' . $result->get_error_message() );
-		}
 	}
 
 	/**

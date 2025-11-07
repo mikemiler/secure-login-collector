@@ -125,6 +125,13 @@ class SecureLoginCollector {
 	private $spam_protection_premium;
 
 	/**
+	 * Flag indicating whether any encryption keys are ready (password or passkey).
+	 *
+	 * @var bool
+	 */
+	private $encryption_ready = false;
+
+	/**
 	 * Constructor - initializes the plugin.
 	 */
 	public function __construct() {
@@ -146,6 +153,7 @@ class SecureLoginCollector {
 
 		// Add upgrade notices.
 		add_action( 'admin_notices', array( $this, 'show_upgrade_notices' ) );
+		add_action( 'admin_notices', array( $this, 'maybe_show_encryption_notice' ), 5 );
 
 		// Handle free plugin deletion (Pro version only).
 		add_action( 'admin_post_seculoco_delete_free_plugin', array( $this, 'handle_delete_free_plugin' ) );
@@ -260,6 +268,8 @@ class SecureLoginCollector {
 
 		// Signal that encryption handler is ready for pro extensions.
 		do_action( 'seculoco_encryption_handler_ready', $this->encryption_handler );
+
+		$this->encryption_ready = $this->has_password_keys() || $this->has_passkey_keys();
 	}
 
 	/**
@@ -369,6 +379,61 @@ class SecureLoginCollector {
 			<?php
 			delete_transient( 'seculoco_free_delete_error' );
 		}
+	}
+
+	/**
+	 * Show setup notice when no encryption keys exist.
+	 */
+	public function maybe_show_encryption_notice() {
+		if ( $this->encryption_ready || ! is_admin() || ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( ! $screen || strpos( $screen->id, 'secure-login-collector' ) === false ) {
+			return;
+		}
+
+		$show_passkey_button = class_exists( 'Seculoco_Passkey_Manager' );
+		?>
+		<div class="notice notice-warning seculoco-setup-notice">
+			<p>
+				<strong><?php esc_html_e( 'Encryption setup required:', 'secure-login-collector' ); ?></strong>
+				<?php esc_html_e( 'Finish configuring your password or passkey encryption before collecting client credentials.', 'secure-login-collector' ); ?>
+			</p>
+			<p>
+				<button type="button" class="seculoco-btn seculoco-btn-primary seculoco-password-setup-btn">
+					<span>🔐</span> <?php esc_html_e( 'Setup Password Encryption', 'secure-login-collector' ); ?>
+				</button>
+				<?php if ( $show_passkey_button ) : ?>
+					<button type="button" class="seculoco-btn seculoco-btn-secondary seculoco-passkey-register-btn" data-authenticator-type="cross-platform">
+						<span>🔑</span> <?php esc_html_e( 'Register Passkey', 'secure-login-collector' ); ?>
+					</button>
+				<?php endif; ?>
+			</p>
+			<?php if ( $show_passkey_button ) : ?>
+				<div class="seculoco-passkey-status"></div>
+			<?php endif; ?>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Determine if password-based keys are configured.
+	 *
+	 * @return bool
+	 */
+	private function has_password_keys() {
+		return (bool) get_option( 'seculoco_password_encryption_active', false );
+	}
+
+	/**
+	 * Determine if passkey-based keys are configured.
+	 *
+	 * @return bool
+	 */
+	private function has_passkey_keys() {
+		return (bool) ( get_option( 'seculoco_pro_keys_active', false ) && get_option( 'seculoco_passkey_registered', false ) );
 	}
 
 	/**

@@ -178,28 +178,14 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 	 * @return bool True on success, false on failure.
 	 */
 	public function initialize_password_keys( $password ) {
-		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Debugging.
-		error_log( 'initialize_password_keys called with password length: ' . strlen( $password ) );
-
 		$result = $this->initialize_free_keys( $password );
 
 		if ( is_wp_error( $result ) ) {
-			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Debugging.
-			error_log( 'initialize_free_keys returned WP_Error: ' . $result->get_error_message() );
 			return false;
 		}
 
 		$status  = isset( $result['status'] ) ? $result['status'] : null;
 		$success = in_array( $status, array( 'success', 'already_initialized' ), true );
-		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Debugging.
-		error_log(
-			sprintf(
-				'initialize_password_keys result: %s - %s',
-				$success ? strtoupper( $status ) : 'FAILURE',
-				wp_json_encode( $result )
-			)
-		);
-
 		return $success;
 	}
 

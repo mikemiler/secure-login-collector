@@ -14,27 +14,21 @@
 		 * Initialize password setup functionality
 		 */
 		init: function () {
-			console.log('[Password Setup] Initializing...');
-			console.log('[Password Setup] secuLocoPasswordSetup object:', secuLocoPasswordSetup);
 			this.bindEvents();
-			console.log('[Password Setup] Event bindings complete');
 		},
 
 		/**
 		 * Bind event handlers
 		 */
 		bindEvents: function () {
-			console.log('[Password Setup] Binding event handlers...');
 
 			// Setup password button
 			$(document).on('click', '.seculoco-password-setup-btn', function(e) {
-				console.log('[Password Setup] Setup button clicked!', e.target);
 				PasswordSetup.openSetupModal.call(PasswordSetup);
 			});
 
 			// Reset password button
 			$(document).on('click', '.seculoco-password-reset-btn', function(e) {
-				console.log('[Password Setup] Reset button clicked!', e.target);
 				PasswordSetup.openResetModal.call(PasswordSetup);
 			});
 
@@ -58,15 +52,12 @@
 
 			// Password match indicator for both fields
 			$(document).on('keyup', '.seculoco-password-field, .seculoco-password-confirm-field', this.updatePasswordMatch.bind(this));
-
-			console.log('[Password Setup] All event handlers bound successfully');
 		},
 
 		/**
 		 * Open setup password modal
 		 */
 		openSetupModal: function () {
-			console.log('[Password Setup] Opening setup modal...');
 			const i18n = secuLocoPasswordSetup.i18n;
 
 			const modalHTML = `
@@ -116,14 +107,12 @@
 			`;
 
 			$('body').append(modalHTML);
-			console.log('[Password Setup] Setup modal opened successfully');
 		},
 
 		/**
 		 * Open reset password modal
 		 */
 		openResetModal: function () {
-			console.log('[Password Setup] Opening reset modal...');
 			const i18n = secuLocoPasswordSetup.i18n;
 
 			const modalHTML = `
@@ -154,7 +143,6 @@
 			`;
 
 			$('body').append(modalHTML);
-			console.log('[Password Setup] Reset modal opened successfully');
 		},
 
 		/**
@@ -300,7 +288,6 @@
 				},
 
 				success: (response) => {
-					console.log(response);
 					if (response.success) {
 						this.closeModal();
 						this.showNotification(i18n.setupSuccess, 'success');
@@ -361,8 +348,7 @@
 						$submitBtn.prop('disabled', false).text(i18n.resetButton);
 					}
 				},
-				error: (response) => {
-					console.log(response);
+				error: () => {
 					this.showError(i18n.resetFailed);
 					$submitBtn.prop('disabled', false).text(i18n.resetButton);
 				}
@@ -400,10 +386,6 @@
 
 	// Initialize on document ready
 	$(document).ready(function () {
-		console.log('[Password Setup] DOM ready, initializing...');
-		console.log('[Password Setup] jQuery version:', $.fn.jquery);
-		console.log('[Password Setup] Setup buttons found:', $('.seculoco-password-setup-btn').length);
-		console.log('[Password Setup] Reset buttons found:', $('.seculoco-password-reset-btn').length);
 		PasswordSetup.init();
 	});
 

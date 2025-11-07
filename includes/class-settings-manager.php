@@ -839,8 +839,6 @@ class Seculoco_Settings_Manager {
 		try {
 			// Verify method exists before calling.
 			if ( ! method_exists( $this->encryption_handler, 'initialize_password_keys' ) ) {
-				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Debugging.
-				error_log( 'ERROR: initialize_password_keys method not found on ' . get_class( $this->encryption_handler ) );
 				wp_send_json_error( array( 'message' => __( 'Encryption handler configuration error. Please check logs.', 'secure-login-collector' ) ) );
 				return;
 			}
@@ -851,18 +849,11 @@ class Seculoco_Settings_Manager {
 			if ( $result ) {
 				// Store password status.
 				update_option( 'seculoco_password_encryption_active', true );
-				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Debugging.
-				error_log( 'SUCCESS: Password encryption initialized' );
-
 				wp_send_json_success( array( 'message' => __( 'Password-based encryption setup successfully!', 'secure-login-collector' ) ) );
 			} else {
-				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Debugging.
-				error_log( 'ERROR: initialize_password_keys returned false' );
 				wp_send_json_error( array( 'message' => __( 'Failed to initialize password-based keys.', 'secure-login-collector' ) ) );
 			}
 		} catch ( Exception $e ) {
-			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Debugging.
-			error_log( 'EXCEPTION in password setup: ' . $e->getMessage() );
 			wp_send_json_error( array( 'message' => $e->getMessage() ) );
 		}
 	}

@@ -161,6 +161,29 @@ class Seculoco_Frontend_Handler {
 			$atts
 		);
 
+		if ( ! $this->has_encryption_keys() ) {
+			if ( current_user_can( 'manage_options' ) ) {
+				ob_start();
+				?>
+				<div class="seculoco-form-container seculoco-alert-danger">
+					<div class="seculoco-alert seculoco-alert-warning">
+						<div class="seculoco-alert-icon dashicons dashicons-warning seculoco-no-keys-icon"></div>
+						<div class="seculoco-alert-content">
+							<div class="seculoco-alert-title"><strong><?php esc_html_e( 'Finish encryption setup first', 'secure-login-collector' ); ?></strong></div>
+							<p><?php esc_html_e( 'Set up encryption in the settings before embedding the secure login form. Only admins see this alert.', 'secure-login-collector' ); ?></p>
+						</div>
+					</div>
+				</div>
+				<?php
+				return ob_get_clean();
+			}
+
+			return sprintf(
+				'<div class="seculoco-form-container"><div class="seculoco-alert seculoco-alert-info">%s</div></div>',
+				esc_html__( 'Secure login form coming soon.', 'secure-login-collector' )
+			);
+		}
+
 		ob_start();
 		?>
 		<div class="seculoco-form-container">
@@ -505,5 +528,32 @@ class Seculoco_Frontend_Handler {
 		}
 
 		return $normalized;
+	}
+
+	/**
+	 * Determine if any encryption keys exist.
+	 *
+	 * @return bool
+	 */
+	private function has_encryption_keys() {
+		return $this->has_password_keys() || $this->has_passkey_keys();
+	}
+
+	/**
+	 * Determine if password-based encryption is configured.
+	 *
+	 * @return bool
+	 */
+	private function has_password_keys() {
+		return (bool) get_option( 'seculoco_password_encryption_active', false );
+	}
+
+	/**
+	 * Determine if passkey-based encryption is configured.
+	 *
+	 * @return bool
+	 */
+	private function has_passkey_keys() {
+		return (bool) ( get_option( 'seculoco_pro_keys_active', false ) && get_option( 'seculoco_passkey_registered', false ) );
 	}
 }
