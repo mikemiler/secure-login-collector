@@ -35,7 +35,7 @@ class Seculoco_Admin_Interface_Premium extends Seculoco_Admin_Interface {
 	 * Constructor - registers pro AJAX handlers.
 	 *
 	 * @param string                          $table_name         Database table name.
-	 * @param Seculoco_Encryption_Handler_V2 $encryption_handler Encryption handler instance.
+	 * @param Seculoco_Encryption_Service $encryption_handler Encryption handler instance.
 	 * @param Seculoco_Database_Manager   $database_manager   Database manager instance.
 	 */
 	public function __construct( $table_name, $encryption_handler, $database_manager ) {
@@ -235,7 +235,7 @@ class Seculoco_Admin_Interface_Premium extends Seculoco_Admin_Interface {
 			}
 
 			$metadata        = json_decode( $row->metadata, true );
-			$encryption_type = $metadata['encryption_type'] ?? 'aes-rsa-v2';
+		$encryption_type = $metadata['encryption_type'] ?? 'aes-rsa-password-v3';
 
 			// CRITICAL: Server NEVER decrypts. Always return encrypted packages for client-side decryption.
 			// This maintains zero-knowledge architecture for both FREE and PRO entries.

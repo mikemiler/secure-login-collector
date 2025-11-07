@@ -3,12 +3,13 @@
  * Plugin Name: Secure Login Collector
  * Plugin URI: https://wp-mike.com
  * Description: Securely collects and stores encrypted login credentials from clients via frontend form with email notifications.
- * Version: 1.4.0
+ * Version: 1.3.3
  * Author: Mike Miler
  * License: GPL v2 or later
  * Text Domain: secure-login-collector
  *
  * @package SecureLoginCollector
+ *
  */
 
 // Prevent direct access.
@@ -34,7 +35,7 @@ if ( defined( 'SECULOCO_VERSION' ) ) {
 	return; // Stop execution.
 }
 
-define( 'SECULOCO_VERSION', '1.4.0' );
+define( 'SECULOCO_VERSION', '1.3.3' );
 
 // Define plugin constants with guards.
 if ( ! defined( 'SECULOCO_PLUGIN_DIR' ) ) {
@@ -60,12 +61,6 @@ if ( ! function_exists( 'seculoco_fs' ) ) {
 	}
 }
 
-// Load constants.
-require_once SECULOCO_PLUGIN_DIR . 'includes/constants.php';
-
-// Load global functions.
-require_once SECULOCO_PLUGIN_DIR . 'includes/functions.php';
-
 /**
  * Main plugin class - handles initialization and coordination.
  */
@@ -82,7 +77,7 @@ class SecureLoginCollector {
 	/**
 	 * Encryption handler instance.
 	 *
-	 * @var Seculoco_Encryption_Handler_V2
+	 * @var Seculoco_Encryption_Service
 	 */
 	private $encryption_handler;
 
@@ -130,11 +125,11 @@ class SecureLoginCollector {
 	private $spam_protection_premium;
 
 	/**
-	 * Master password wizard instance.
+	 * Flag indicating whether any encryption keys are ready (password or passkey).
 	 *
-	 * @var Seculoco_Master_Password_Wizard
+	 * @var bool
 	 */
-	private $master_password_wizard;
+	private $encryption_ready = false;
 
 	/**
 	 * Constructor - initializes the plugin.
@@ -158,6 +153,7 @@ class SecureLoginCollector {
 
 		// Add upgrade notices.
 		add_action( 'admin_notices', array( $this, 'show_upgrade_notices' ) );
+		add_action( 'admin_notices', array( $this, 'maybe_show_encryption_notice' ), 5 );
 
 		// Handle free plugin deletion (Pro version only).
 		add_action( 'admin_post_seculoco_delete_free_plugin', array( $this, 'handle_delete_free_plugin' ) );
@@ -169,17 +165,17 @@ class SecureLoginCollector {
 	private function load_dependencies() {
 		// Always load free version classes.
 		include_once SECULOCO_PLUGIN_DIR . 'includes/class-encryption-handler-v2.php';
+		include_once SECULOCO_PLUGIN_DIR . 'includes/class-encryption-handler-factory.php';
 		include_once SECULOCO_PLUGIN_DIR . 'includes/class-database-manager.php';
 		include_once SECULOCO_PLUGIN_DIR . 'includes/class-admin-interface.php';
 		include_once SECULOCO_PLUGIN_DIR . 'includes/class-frontend-handler.php';
 		include_once SECULOCO_PLUGIN_DIR . 'includes/class-spam-protection.php';
 		include_once SECULOCO_PLUGIN_DIR . 'includes/class-settings-manager.php';
-		include_once SECULOCO_PLUGIN_DIR . 'includes/class-master-password-wizard.php';
 
 		// Load premium base classes only if available and licensed.
 		// These provide pro functionality (passkey management, licensing, etc).
 		// Files with __premium_only suffix are automatically removed by Freemius in free version.
-		// For local testing: Add define( 'SECULOCO_SIMULATE_FREE_VERSION', true ); to wp-config.php.
+		// For local testing: Add define( 'SECULOCO_SIMULATE_FREE_VERSION', true ); to wp-config.php
 		$can_load_premium = function_exists( 'seculoco_fs' )
 			&& seculoco_fs()->can_use_premium_code()
 			&& ! defined( 'SECULOCO_SIMULATE_FREE_VERSION' );
@@ -246,12 +242,8 @@ class SecureLoginCollector {
 	 */
 	private function init_components() {
 		// Initialize encryption handler - use premium class if available.
-		if ( class_exists( 'Seculoco_Encryption_Handler_V2_Premium' ) ) {
-			$this->encryption_handler = new Seculoco_Encryption_Handler_V2_Premium();
-		} else {
-			$this->encryption_handler = new Seculoco_Encryption_Handler_V2();
-		}
-		$this->database_manager = new Seculoco_Database_Manager( $this->table_name );
+		$this->encryption_handler = Seculoco_Encryption_Handler_Factory::get_shared_handler();
+		$this->database_manager   = new Seculoco_Database_Manager( $this->table_name );
 
 		// Initialize spam protection (honeypot and bot detection).
 		$this->spam_protection = new Seculoco_Spam_Protection();
@@ -268,19 +260,16 @@ class SecureLoginCollector {
 			$this->admin_interface = new Seculoco_Admin_Interface( $this->table_name, $this->encryption_handler, $this->database_manager );
 		}
 
-		$this->frontend_handler = new Seculoco_Frontend_Handler( $this->table_name, $this->encryption_handler, $this->database_manager, $this->spam_protection );
-		$this->settings_manager = new Seculoco_Settings_Manager( $this->encryption_handler );
-
-		// Initialize master password wizard (admin only).
-		if ( is_admin() ) {
-			$this->master_password_wizard = new Seculoco_Master_Password_Wizard();
-		}
+		$this->frontend_handler   = new Seculoco_Frontend_Handler( $this->table_name, $this->encryption_handler, $this->database_manager, $this->spam_protection );
+		$this->settings_manager   = new Seculoco_Settings_Manager( $this->encryption_handler );
 
 		// Allow pro extensions to hook in after components are initialized.
 		do_action( 'seculoco_components_initialized', $this );
 
 		// Signal that encryption handler is ready for pro extensions.
 		do_action( 'seculoco_encryption_handler_ready', $this->encryption_handler );
+
+		$this->encryption_ready = $this->has_password_keys() || $this->has_passkey_keys();
 	}
 
 	/**
@@ -306,7 +295,7 @@ class SecureLoginCollector {
 		$this->database_manager->schedule_cleanup();
 
 		// Store database version for future schema migrations.
-		update_option( SECULOCO_OPTION_DB_VERSION, SECULOCO_VERSION );
+		update_option( 'seculoco_db_version', SECULOCO_VERSION );
 
 		// Allow pro extensions to run activation tasks.
 		// Premium plugin will handle its own table creation (wrapped keys, etc).
@@ -393,6 +382,61 @@ class SecureLoginCollector {
 	}
 
 	/**
+	 * Show setup notice when no encryption keys exist.
+	 */
+	public function maybe_show_encryption_notice() {
+		if ( $this->encryption_ready || ! is_admin() || ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( ! $screen || strpos( $screen->id, 'secure-login-collector' ) === false ) {
+			return;
+		}
+
+		$show_passkey_button = class_exists( 'Seculoco_Passkey_Manager' );
+		?>
+		<div class="notice notice-warning seculoco-setup-notice">
+			<p>
+				<strong><?php esc_html_e( 'Encryption setup required:', 'secure-login-collector' ); ?></strong>
+				<?php esc_html_e( 'Finish configuring your password or passkey encryption before collecting client credentials.', 'secure-login-collector' ); ?>
+			</p>
+			<p>
+				<button type="button" class="seculoco-btn seculoco-btn-primary seculoco-password-setup-btn">
+					<span>🔐</span> <?php esc_html_e( 'Setup Password Encryption', 'secure-login-collector' ); ?>
+				</button>
+				<?php if ( $show_passkey_button ) : ?>
+					<button type="button" class="seculoco-btn seculoco-btn-secondary seculoco-passkey-register-btn" data-authenticator-type="cross-platform">
+						<span>🔑</span> <?php esc_html_e( 'Register Passkey', 'secure-login-collector' ); ?>
+					</button>
+				<?php endif; ?>
+			</p>
+			<?php if ( $show_passkey_button ) : ?>
+				<div class="seculoco-passkey-status"></div>
+			<?php endif; ?>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Determine if password-based keys are configured.
+	 *
+	 * @return bool
+	 */
+	private function has_password_keys() {
+		return (bool) get_option( 'seculoco_password_encryption_active', false );
+	}
+
+	/**
+	 * Determine if passkey-based keys are configured.
+	 *
+	 * @return bool
+	 */
+	private function has_passkey_keys() {
+		return (bool) ( get_option( 'seculoco_pro_keys_active', false ) && get_option( 'seculoco_passkey_registered', false ) );
+	}
+
+	/**
 	 * Check if free plugin directory exists.
 	 *
 	 * @return bool True if free plugin directory exists.
@@ -404,7 +448,7 @@ class SecureLoginCollector {
 		);
 
 		foreach ( $free_paths as $path ) {
-			if ( is_dir( $path ) && SECULOCO_PLUGIN_DIR !== $path ) {
+			if ( is_dir( $path ) && $path !== SECULOCO_PLUGIN_DIR ) {
 				return true;
 			}
 		}
@@ -436,7 +480,7 @@ class SecureLoginCollector {
 		$deleted = false;
 		foreach ( $free_paths as $free_path ) {
 			// Make sure we're not deleting the Pro version!
-			if ( SECULOCO_PLUGIN_DIR === $free_path ) {
+			if ( $free_path === SECULOCO_PLUGIN_DIR ) {
 				continue;
 			}
 
@@ -499,6 +543,25 @@ class SecureLoginCollector {
 	}
 }
 
+/**
+ * Initialize the plugin
+ *
+ * This function instantiates the main plugin class after Freemius has loaded.
+ * It ensures proper initialization order and prevents race conditions.
+ *
+ * @return SecureLoginCollector The plugin instance
+ */
+if(!function_exists('seculoco_init')) {
+	function seculoco_init() {
+		static $instance = null;
+
+		if ( null === $instance ) {
+			$instance = new SecureLoginCollector();
+		}
+
+		return $instance;
+	}
+}
 
 // Instantiate plugin after Freemius is loaded.
 if ( did_action( 'seculoco_fs_loaded' ) ) {

@@ -116,12 +116,16 @@ class Seculoco_Passkey_Manager {
 			'nonce'            => wp_create_nonce( 'passkey_admin_nonce' ),
 			'hasEncryptedData' => $has_encrypted_data,
 			'strings'          => array(
-				'warningDataLoss'  => __( 'WARNING: Deleting this passkey will make ALL existing encrypted data permanently inaccessible! This action CANNOT be undone. There is NO recovery method. Are you absolutely sure you want to proceed?', 'secure-login-collector' ),
-				'warningSimple'    => __( 'Are you sure you want to delete this passkey?\n\nYou can register a new passkey afterward.', 'secure-login-collector' ),
-				'deleting'         => __( 'Deleting...', 'secure-login-collector' ),
-				'deletePasskey'    => __( 'Delete Passkey', 'secure-login-collector' ),
-				'deleteSuccess'    => __( 'Passkey deleted successfully!', 'secure-login-collector' ),
-				'deleteFailed'     => __( 'Failed to delete passkey:', 'secure-login-collector' ),
+				'warningDataLoss'  => __( 'WARNING: Resetting this passkey will make ALL existing encrypted data permanently inaccessible! This action CANNOT be undone. There is NO recovery method. Are you absolutely sure you want to proceed?', 'secure-login-collector' ),
+				'warningSimple'    => __( 'Are you sure you want to reset this passkey?\n\nYou can register a new passkey afterward.', 'secure-login-collector' ),
+				'deleting'         => __( 'Resetting...', 'secure-login-collector' ),
+				'deletePasskey'    => __( 'Reset Passkey', 'secure-login-collector' ),
+				'deleteSuccess'    => __( 'Passkey reset successfully!', 'secure-login-collector' ),
+				'deleteFailed'     => __( 'Failed to reset passkey:', 'secure-login-collector' ),
+				'typeConfirmToReset' => __( 'Type "RESET" to confirm:', 'secure-login-collector' ),
+				'resetConfirmRequired' => __( 'Please type "RESET" to confirm.', 'secure-login-collector' ),
+				'resetModalTitle'  => __( 'Reset Passkey', 'secure-login-collector' ),
+				'cancel'           => __( 'Cancel', 'secure-login-collector' ),
 				'networkError'     => __( 'Network error occurred. Please try again.', 'secure-login-collector' ),
 				'noWebAuthn'       => __( 'Your browser does not support WebAuthn/Passkeys.', 'secure-login-collector' ),
 				'registerSuccess'  => __( 'Passkey registered successfully!', 'secure-login-collector' ),
@@ -148,7 +152,7 @@ class Seculoco_Passkey_Manager {
 		?>
 		<div class="seculoco-passkey-container">
 		<?php if ( ! $this->is_https() ) : ?>
-				<div class="seculoco-alert seculoco-alert-danger seculoco-margin-top-20">
+				<div class="seculoco-alert seculoco-alert-danger">
 					<span class="seculoco-alert-icon">⚠️</span>
 					<div class="seculoco-alert-content">
 						<div class="seculoco-alert-title"><?php esc_html_e( 'HTTPS Required', 'secure-login-collector' ); ?></div>
@@ -157,11 +161,10 @@ class Seculoco_Passkey_Manager {
 				</div>
 			<?php endif; ?>
 			
-			
-				
-			<div class="seculoco-card-body">
-			<?php if ( $passkey ) : ?>
-					<div class="seculoco-passkey-status" style="display: none;">
+			<div class="seculoco-card">
+				<div class="seculoco-card-body">
+				<?php if ( $passkey ) : ?>
+						
 						<div class="seculoco-passkey-status-header">
 							<div class="seculoco-passkey-status-title">
 								<span>✅</span>
@@ -223,72 +226,73 @@ class Seculoco_Passkey_Manager {
 							<strong><?php esc_html_e( 'Registered:', 'secure-login-collector' ); ?></strong> <?php echo esc_html( $passkey['registered_at'] ); ?><br>
 							<strong><?php esc_html_e( 'ID:', 'secure-login-collector' ); ?></strong> <?php echo esc_html( substr( $passkey['credential_id'], 0, 20 ) . '...' ); ?>
 						</div>
-					</div>
+						
 
-					<?php if ( $has_encrypted_data ) : ?>
-						<div class="seculoco-alert seculoco-alert-danger seculoco-margin-top-20">
-							<span class="seculoco-alert-icon">⚠️</span>
-							<div class="seculoco-alert-content">
-								<div class="seculoco-alert-title"><?php esc_html_e( 'CRITICAL WARNING: Data Loss Risk', 'secure-login-collector' ); ?></div>
-								<div class="seculoco-alert-message">
-									<p><strong><?php esc_html_e( 'Deleting this passkey will permanently prevent decryption of all existing login data encrypted with this passkey.', 'secure-login-collector' ); ?></strong></p>
-									
-									<p><strong><?php esc_html_e( 'This action CANNOT be undone. There is NO recovery method.', 'secure-login-collector' ); ?></strong></p>
+						<?php if ( $has_encrypted_data ) : ?>
+							<div class="seculoco-alert seculoco-alert-danger seculoco-margin-top-20">
+								<span class="seculoco-alert-icon">⚠️</span>
+								<div class="seculoco-alert-content">
+									<div class="seculoco-alert-title"><?php esc_html_e( 'CRITICAL WARNING: Data Loss Risk', 'secure-login-collector' ); ?></div>
+									<div class="seculoco-alert-message">
+										<p><strong><?php esc_html_e( 'Deleting this passkey will permanently prevent decryption of all existing login data encrypted with this passkey.', 'secure-login-collector' ); ?></strong></p>
+										
+										<p><strong><?php esc_html_e( 'This action CANNOT be undone. There is NO recovery method.', 'secure-login-collector' ); ?></strong></p>
+									</div>
+									<button type="button" class="seculoco-btn seculoco-btn-danger" id="delete-passkey-btn"
+											data-credential-id="<?php echo esc_attr( $passkey['credential_id'] ); ?>">
+										<?php esc_html_e( 'Reset Passkey', 'secure-login-collector' ); ?>
+									</button>
 								</div>
-								<button type="button" class="seculoco-btn seculoco-btn-danger" id="delete-passkey-btn"
-										data-credential-id="<?php echo esc_attr( $passkey['credential_id'] ); ?>">
-									<?php esc_html_e( 'Delete Passkey', 'secure-login-collector' ); ?>
-								</button>
 							</div>
+						<?php endif; ?>
+					<?php else : ?>
+						<p><?php esc_html_e( 'Register a passkey using your device biometrics or a password manager for ultra-secure encryption.', 'secure-login-collector' ); ?></p>
+
+						<div class="passkey-registration-form seculoco-passkey-form-container">
+							<div class="seculoco-form-group seculoco-passkey-form-group">
+								<label class="seculoco-form-label">
+									<?php esc_html_e( 'Choose Your Passkey Method:', 'secure-login-collector' ); ?>
+								</label>
+								<div class="seculoco-passkey-radio-group">
+									<label class="seculoco-passkey-radio-label">
+										<input type="radio" name="authenticator_type" value="cross-platform" checked>
+										<strong><?php esc_html_e( 'Password Manager', 'secure-login-collector' ); ?></strong>
+										<span class="seculoco-form-help seculoco-passkey-radio-help">
+											<?php esc_html_e( '1Password, Bitwarden, Dashlane, or other password managers', 'secure-login-collector' ); ?>
+										</span>
+									</label>
+									<label class="seculoco-passkey-radio-label">
+										<input type="radio" name="authenticator_type" value="platform">
+										<strong><?php esc_html_e( 'Device/Platform Biometrics', 'secure-login-collector' ); ?></strong>
+										<span class="seculoco-form-help seculoco-passkey-radio-help">
+											<?php esc_html_e( 'iPhone Face ID, Android Fingerprint, Windows Hello, Touch ID', 'secure-login-collector' ); ?>
+										</span>
+									</label>
+								</div>
+
+								<div class="seculoco-passkey-tip-box">
+									<span class="seculoco-passkey-tip-title">💡 <?php esc_html_e( 'Tip:', 'secure-login-collector' ); ?></span>
+									<span class="seculoco-passkey-tip-text">
+										<?php esc_html_e( 'If you select "Device/Platform Biometrics" and your password manager popup appears, simply click away from it or press Escape. Your device\'s biometric prompt will appear next.', 'secure-login-collector' ); ?>
+									</span>
+								</div>
+							</div>
+
+							<button type="button"
+									id="register-passkey-btn"
+									class="seculoco-btn seculoco-btn-primary seculoco-btn-lg seculoco-passkey-register-btn"
+									data-authenticator-type="cross-platform">
+								<span>🔑</span>
+								<?php esc_html_e( 'Register Passkey', 'secure-login-collector' ); ?>
+							</button>
+
+							<span class="spinner seculoco-spinner-inline"></span>
 						</div>
 					<?php endif; ?>
-				<?php else : ?>
-					<p><?php esc_html_e( 'Register a passkey using your device biometrics or a password manager for ultra-secure encryption.', 'secure-login-collector' ); ?></p>
-
-					<div class="passkey-registration-form seculoco-passkey-form-container">
-						<div class="seculoco-form-group seculoco-passkey-form-group">
-							<label class="seculoco-form-label">
-								<?php esc_html_e( 'Choose Your Passkey Method:', 'secure-login-collector' ); ?>
-							</label>
-							<div class="seculoco-passkey-radio-group">
-								<label class="seculoco-passkey-radio-label">
-									<input type="radio" name="authenticator_type" value="auto" checked>
-									<strong><?php esc_html_e( 'Password Manager', 'secure-login-collector' ); ?></strong>
-									<span class="seculoco-form-help seculoco-passkey-radio-help">
-										<?php esc_html_e( '1Password, Bitwarden, Dashlane, or other password managers', 'secure-login-collector' ); ?>
-									</span>
-								</label>
-								<label class="seculoco-passkey-radio-label">
-									<input type="radio" name="authenticator_type" value="platform">
-									<strong><?php esc_html_e( 'Device/Platform Biometrics', 'secure-login-collector' ); ?></strong>
-									<span class="seculoco-form-help seculoco-passkey-radio-help">
-										<?php esc_html_e( 'iPhone Face ID, Android Fingerprint, Windows Hello, Touch ID', 'secure-login-collector' ); ?>
-									</span>
-								</label>
-							</div>
-
-							<div class="seculoco-passkey-tip-box">
-								<span class="seculoco-passkey-tip-title">💡 <?php esc_html_e( 'Tip:', 'secure-login-collector' ); ?></span>
-								<span class="seculoco-passkey-tip-text">
-									<?php esc_html_e( 'If you select "Device/Platform Biometrics" and your password manager popup appears, simply click away from it or press Escape. Your device\'s biometric prompt will appear next.', 'secure-login-collector' ); ?>
-								</span>
-							</div>
-						</div>
-
-						<button type="button"
-								id="register-passkey-btn"
-								class="seculoco-btn seculoco-btn-primary seculoco-btn-lg">
-							<span>🔑</span>
-							<?php esc_html_e( 'Register Passkey', 'secure-login-collector' ); ?>
-						</button>
-
-						<span class="spinner seculoco-spinner-inline"></span>
-					</div>
-				<?php endif; ?>
-				
-				<div id="passkey-status-message"></div>
-			</div>
-			
+					
+					<div id="passkey-status-message" class="seculoco-passkey-status"></div>
+				</div>
+			</div>			
 		</div>
 
 		<?php
@@ -301,7 +305,7 @@ class Seculoco_Passkey_Manager {
 	 * @return array|null Passkey data or null if not registered.
 	 */
 	private function get_global_passkey() {
-		$passkey = get_option( SECULOCO_OPTION_GLOBAL_PASSKEY );
+		$passkey = get_option( 'seculoco_global_passkey' );
 		return is_array( $passkey ) ? $passkey : null;
 	}
 
@@ -311,7 +315,7 @@ class Seculoco_Passkey_Manager {
 	 * @return bool True if passkey is registered.
 	 */
 	private function has_passkey() {
-		return (bool) get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false );
+		return (bool) get_option( 'seculoco_passkey_registered', false );
 	}
 
 	/**
@@ -328,7 +332,7 @@ class Seculoco_Passkey_Manager {
 		check_ajax_referer( 'passkey_admin_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( 'Insufficient permissions' );
+			wp_send_json_error( __( 'Insufficient permissions', 'secure-login-collector' ) );
 		}
 
 		// Get authenticator type from request (platform, cross-platform, or auto).
@@ -349,18 +353,14 @@ class Seculoco_Passkey_Manager {
 		);
 
 		// Set authenticatorAttachment based on user choice.
-		// IMPORTANT: For password managers to work, we must OMIT authenticatorAttachment
-		// because password managers are virtual authenticators that don't fit the spec's
-		// 'platform' or 'cross-platform' categories.
 		if ( 'platform' === $authenticator_type ) {
 			// Platform authenticators: Touch ID, Face ID, Windows Hello
 			$authenticator_selection['authenticatorAttachment'] = 'platform';
-		} elseif ( 'security-key' === $authenticator_type ) {
-			// Hardware security keys: YubiKey, FIDO2 tokens
+		} elseif ( 'cross-platform' === $authenticator_type ) {
+			// Cross-platform authenticators: YubiKey, security keys
 			$authenticator_selection['authenticatorAttachment'] = 'cross-platform';
 		}
-		// For 'auto' or 'password-manager', omit authenticatorAttachment entirely
-		// This allows password managers (1Password, Bitwarden, etc.) to respond
+		// If 'auto', omit authenticatorAttachment to allow any type including password managers
 
 		wp_send_json_success(
 			array(
@@ -397,7 +397,7 @@ class Seculoco_Passkey_Manager {
 		check_ajax_referer( 'passkey_admin_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( 'Insufficient permissions' );
+			wp_send_json_error( __( 'Insufficient permissions', 'secure-login-collector' ) );
 		}
 
 		// Verify pro license.
@@ -421,7 +421,7 @@ class Seculoco_Passkey_Manager {
 		}
 
 		if ( empty( $credential_id ) ) {
-			wp_send_json_error( 'Missing required registration data (credential_id)' );
+			wp_send_json_error( __( 'Missing required registration data (credential_id)', 'secure-login-collector' ) );
 		}
 
 		// Public key might not be available in all browsers.
@@ -434,25 +434,36 @@ class Seculoco_Passkey_Manager {
 		// Verify challenge.
 		$expected_challenge = get_transient( 'passkey_reg_challenge_' . get_current_user_id() );
 		if ( ! $expected_challenge ) {
-			wp_send_json_error( 'Registration challenge expired or not set. Please try again.' );
+			wp_send_json_error( __( 'Registration challenge expired or not set. Please try again.', 'secure-login-collector' ) );
 		}
 
 		$client_data_array = json_decode( base64_decode( $client_data ), true );
 		if ( ! $client_data_array ) {
-			wp_send_json_error( 'Invalid client data format' );
+			wp_send_json_error( __( 'Invalid client data format', 'secure-login-collector' ) );
 		}
 
 		// Validate origin.
 		$expected_origin = home_url();
 		$received_origin = $client_data_array['origin'] ?? '';
 		if ( $received_origin !== $expected_origin ) {
-			wp_send_json_error( 'Origin verification failed. Expected: ' . $expected_origin . ', Received: ' . $received_origin );
+			wp_send_json_error(
+				sprintf(
+					__( 'Origin verification failed. Expected: %1$s, Received: %2$s', 'secure-login-collector' ),
+					$expected_origin,
+					$received_origin
+				)
+			);
 		}
 
 		// Validate type.
 		$received_type = $client_data_array['type'] ?? '';
 		if ( $received_type !== 'webauthn.create' ) {
-			wp_send_json_error( 'Invalid WebAuthn operation type. Expected: webauthn.create, Received: ' . $received_type );
+			wp_send_json_error(
+				sprintf(
+					__( 'Invalid WebAuthn operation type. Expected: webauthn.create, Received: %s', 'secure-login-collector' ),
+					$received_type
+				)
+			);
 		}
 
 		// Convert base64url to base64 for comparison (WebAuthn uses base64url).
@@ -474,7 +485,7 @@ class Seculoco_Passkey_Manager {
 			}
 
 			if ( $received_as_base64 !== $expected_challenge ) {
-				wp_send_json_error( 'Challenge verification failed' );
+				wp_send_json_error( __( 'Challenge verification failed', 'secure-login-collector' ) );
 			}
 		}
 
@@ -487,7 +498,7 @@ class Seculoco_Passkey_Manager {
 			// Verify attestation object is valid base64.
 			$attestation_decoded = base64_decode( $attestation, true );
 			if ( false === $attestation_decoded ) {
-				wp_send_json_error( 'Invalid attestation object format' );
+				wp_send_json_error( __( 'Invalid attestation object format', 'secure-login-collector' ) );
 			}
 
 			// Log that attestation was received (full validation would require CBOR parser).
@@ -496,7 +507,7 @@ class Seculoco_Passkey_Manager {
 
 			// Check if a global passkey is already registered.
 			if ( $this->has_passkey() ) {
-				wp_send_json_error( 'A passkey is already registered. Please delete it first to register a new one.' );
+				wp_send_json_error( __( 'A passkey is already registered. Please delete it first to register a new one.', 'secure-login-collector' ) );
 				return;
 			}
 
@@ -527,10 +538,10 @@ class Seculoco_Passkey_Manager {
 				'device_info'   => $device_info,
 				'version'       => 2,
 			);
-			update_option( SECULOCO_OPTION_GLOBAL_PASSKEY, $passkey_data );
+			update_option( 'seculoco_global_passkey', $passkey_data );
 
 			// Store credential ID for quick lookup.
-			update_option( SECULOCO_OPTION_PASSKEY_CREDENTIAL_ID, $credential_id );
+			update_option( 'seculoco_passkey_credential_id', $credential_id );
 
 			// Store globally for verification.
 			update_option(
@@ -542,18 +553,18 @@ class Seculoco_Passkey_Manager {
 			);
 
 			// Set global passkey registered flag.
-			update_option( SECULOCO_OPTION_PASSKEY_REGISTERED, true );
-			update_option( SECULOCO_OPTION_PASSKEY_REGISTERED_AT, current_time( 'mysql' ) );
+			update_option( 'seculoco_passkey_registered', true );
+			update_option( 'seculoco_passkey_registered_at', current_time( 'mysql' ) );
 
 			// Also ensure pro keys active flag is set for consistency with V2 handler.
-			update_option( SECULOCO_OPTION_PRO_KEYS_ACTIVE, true );
+			update_option( 'seculoco_pro_keys_active', true );
 
 			// Clear challenge.
 			delete_transient( 'passkey_reg_challenge_' . $user_id );
 
 			wp_send_json_success(
 				array(
-					'message' => 'Passkey registered successfully',
+					'message' => __( 'Passkey registered successfully', 'secure-login-collector' ),
 				)
 			);
 		}
@@ -566,12 +577,12 @@ class Seculoco_Passkey_Manager {
 		check_ajax_referer( 'passkey_admin_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( 'Insufficient permissions' );
+			wp_send_json_error( __( 'Insufficient permissions', 'secure-login-collector' ) );
 		}
 
 		$credential_id = sanitize_text_field( wp_unslash( $_POST['credential_id'] ?? '' ) );
 		if ( empty( $credential_id ) ) {
-			wp_send_json_error( 'Missing credential ID' );
+			wp_send_json_error( __( 'Missing credential ID', 'secure-login-collector' ) );
 		}
 
 		// Get global passkey and verify.
@@ -579,7 +590,7 @@ class Seculoco_Passkey_Manager {
 
 		// Verify this is the correct passkey.
 		if ( empty( $passkey ) || $passkey['credential_id'] !== $credential_id ) {
-			wp_send_json_error( 'Passkey not found or mismatch' );
+			wp_send_json_error( __( 'Passkey not found or mismatch', 'secure-login-collector' ) );
 			return;
 		}
 
@@ -595,23 +606,32 @@ class Seculoco_Passkey_Manager {
 		$affected_count = $db_manager->mark_login_data_as_undecryptable();
 
 		// Delete the global passkey.
-		delete_option( SECULOCO_OPTION_GLOBAL_PASSKEY );
-		delete_option( SECULOCO_OPTION_PASSKEY_CREDENTIAL_ID );
+		delete_option( 'seculoco_global_passkey' );
+		delete_option( 'seculoco_passkey_credential_id' );
 		delete_option( 'passkey_credential_' . $credential_id );
 
 		// Delete the pro keys and clear the global flag.
-		if ( ! class_exists( 'Seculoco_Encryption_Handler_V2_Premium' ) ) {
-			require_once SECULOCO_PLUGIN_DIR . 'includes/class-encryption-handler-v2__premium_only.php';
+		if ( ! class_exists( 'Seculoco_Encryption_Handler_Factory' ) ) {
+			require_once SECULOCO_PLUGIN_DIR . 'includes/class-encryption-handler-factory.php';
 		}
-		$encryption_handler = new Seculoco_Encryption_Handler_V2_Premium();
-		$encryption_handler->delete_pro_keys();
+
+		$encryption_handler = Seculoco_Encryption_Handler_Factory::get_shared_handler();
+
+		if ( ! $encryption_handler instanceof Seculoco_Encryption_Handler_V2_Premium ) {
+			wp_send_json_error( __( 'Premium encryption handler unavailable', 'secure-login-collector' ) );
+			return;
+		}
+
+		/** @var Seculoco_Encryption_Handler_V2_Premium $premium_handler */
+		$premium_handler = $encryption_handler;
+		$premium_handler->delete_pro_keys();
 
 		// Clear global passkey registered flag.
-		delete_option( SECULOCO_OPTION_PASSKEY_REGISTERED );
-		delete_option( SECULOCO_OPTION_PASSKEY_REGISTERED_AT );
+		delete_option( 'seculoco_passkey_registered' );
+		delete_option( 'seculoco_passkey_registered_at' );
 
 		// Prepare success message with undecryptable count.
-		$message = 'Passkey deleted and encryption keys removed';
+		$message = __( 'Passkey deleted and encryption keys removed', 'secure-login-collector' );
 		if ( $affected_count > 0 ) {
 			// translators: %d is the number of login entries marked as undecryptable.
 			$message .= '. ' . sprintf( _n( '%d login entry marked as permanently undecryptable.', '%d login entries marked as permanently undecryptable.', $affected_count, 'secure-login-collector' ), $affected_count );
@@ -633,7 +653,7 @@ class Seculoco_Passkey_Manager {
 		check_ajax_referer( 'passkey_admin_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( 'Insufficient permissions' );
+			wp_send_json_error( __( 'Insufficient permissions', 'secure-login-collector' ) );
 		}
 
 		$passkey = $this->get_global_passkey();
@@ -653,7 +673,7 @@ class Seculoco_Passkey_Manager {
 		check_ajax_referer( 'passkey_admin_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( 'Insufficient permissions' );
+			wp_send_json_error( __( 'Insufficient permissions', 'secure-login-collector' ) );
 		}
 
 		// Verify pro license.
@@ -664,7 +684,7 @@ class Seculoco_Passkey_Manager {
 
 		// Check if passkey already exists.
 		if ( $this->has_passkey() ) {
-			wp_send_json_error( 'A passkey is already registered.' );
+			wp_send_json_error( __( 'A passkey is already registered.', 'secure-login-collector' ) );
 		}
 
 		$user_id = get_current_user_id();
@@ -672,36 +692,50 @@ class Seculoco_Passkey_Manager {
 		// Get passkey credential data from registration.
 		$credential_id = sanitize_text_field( wp_unslash( $_POST['credential_id'] ?? '' ) );
 		if ( empty( $credential_id ) ) {
-			wp_send_json_error( 'Missing credential ID' );
+			wp_send_json_error( __( 'Missing credential ID', 'secure-login-collector' ) );
 		}
 
 		// Step 1: Initialize encryption handler V2 for dual-key system.
-		if ( ! class_exists( 'Seculoco_Encryption_Handler_V2_Premium' ) ) {
-			require_once SECULOCO_PLUGIN_DIR . 'includes/class-encryption-handler-v2__premium_only.php';
+		if ( ! class_exists( 'Seculoco_Encryption_Handler_Factory' ) ) {
+			require_once SECULOCO_PLUGIN_DIR . 'includes/class-encryption-handler-factory.php';
 		}
-		$encryption_handler = new Seculoco_Encryption_Handler_V2_Premium();
+
+		$encryption_handler = Seculoco_Encryption_Handler_Factory::get_shared_handler();
+
+		if ( ! $encryption_handler instanceof Seculoco_Encryption_Handler_V2_Premium ) {
+			wp_send_json_error( __( 'Premium encryption handler unavailable', 'secure-login-collector' ) );
+			return;
+		}
+
+		/** @var Seculoco_Encryption_Handler_V2_Premium $premium_handler */
+		$premium_handler = $encryption_handler;
 
 		// Step 2: Ensure free keys exist first.
-		/* $free_result = $encryption_handler->initialize_free_keys();
+		$free_result = $premium_handler->initialize_free_keys();
 		if ( is_wp_error( $free_result ) ) {
-			wp_send_json_error( 'Failed to initialize free keys: ' . $free_result->get_error_message() );
-		} */
+			wp_send_json_error(
+				sprintf(
+					__( 'Failed to initialize free keys: %s', 'secure-login-collector' ),
+					$free_result->get_error_message()
+				)
+			);
+		}
 
 		// Step 3: Derive key from passkey for wrapping (no user_id - global passkey).
 		$passkey_derived_key = $this->derive_wrapping_key( $credential_id );
 
 		// Step 4: Initialize PRO keys with passkey wrapping.
 		
-		$pro_result = $encryption_handler->initialize_pro_keys( $passkey_derived_key );
+		$pro_result = $premium_handler->initialize_pro_keys( $passkey_derived_key );
 
 		// The passkey-derived key directly wraps the PRO private key.
 
 		// Get the pro public key for response.
-		$public_key_pro = get_option( SECULOCO_OPTION_PUBLIC_KEY_PRO );
+		$public_key_pro = get_option( 'seculoco_public_key_pro' );
 
 		wp_send_json_success(
 			array(
-				'message'     => 'Passkey-wrapped PRO encryption initialized successfully',
+				'message'     => __( 'Passkey-wrapped PRO encryption initialized successfully', 'secure-login-collector' ),
 				'public_key'  => $public_key_pro,
 				'free_status' => $free_result,
 				'pro_status'  => $pro_result,
@@ -735,12 +769,12 @@ class Seculoco_Passkey_Manager {
 		$nonce = sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) );
 		if ( ! wp_verify_nonce( $nonce, 'seculoco_admin_nonce' ) &&
 			! wp_verify_nonce( $nonce, 'passkey_admin_nonce' ) ) {
-			wp_send_json_error( 'Invalid security token' );
+			wp_send_json_error( __( 'Invalid security token', 'secure-login-collector' ) );
 			return;
 		}
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( 'Insufficient permissions' );
+			wp_send_json_error( __( 'Insufficient permissions', 'secure-login-collector' ) );
 		}
 
 		wp_send_json_success(
@@ -761,18 +795,18 @@ class Seculoco_Passkey_Manager {
 		if ( ! wp_verify_nonce( $nonce, 'seculoco_admin_nonce' ) &&
 			! wp_verify_nonce( $nonce, 'seculoco_nonce' ) &&
 			! wp_verify_nonce( $nonce, 'passkey_admin_nonce' ) ) {
-			wp_send_json_error( 'Invalid security token' );
+			wp_send_json_error( __( 'Invalid security token', 'secure-login-collector' ) );
 			return;
 		}
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( 'Insufficient permissions' );
+			wp_send_json_error( __( 'Insufficient permissions', 'secure-login-collector' ) );
 		}
 
 		$credential_id = sanitize_text_field( wp_unslash( $_POST['credential_id'] ?? '' ) );
 
 		if ( empty( $credential_id ) ) {
-			wp_send_json_error( 'Missing credential ID' );
+			wp_send_json_error( __( 'Missing credential ID', 'secure-login-collector' ) );
 		}
 
 		// Derive the same key as server-side wrapping (no user_id - global passkey).

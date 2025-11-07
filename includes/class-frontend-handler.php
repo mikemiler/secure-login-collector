@@ -36,7 +36,7 @@ class Seculoco_Frontend_Handler {
 	/**
 	 * Encryption handler instance.
 	 *
-	 * @var Seculoco_Encryption_Handler_V2
+	 * @var Seculoco_Encryption_Service
 	 */
 	private $encryption_handler;
 
@@ -58,7 +58,7 @@ class Seculoco_Frontend_Handler {
 	 * Constructor - initializes frontend handler.
 	 *
 	 * @param string                          $table_name         Database table name.
-	 * @param Seculoco_Encryption_Handler_V2 $encryption_handler Encryption handler instance.
+	 * @param Seculoco_Encryption_Service $encryption_handler Encryption handler instance.
 	 * @param Seculoco_Database_Manager   $database_manager   Database manager instance.
 	 */
 	public function __construct( $table_name, $encryption_handler, $database_manager ) {
@@ -208,11 +208,34 @@ class Seculoco_Frontend_Handler {
 			$atts
 		);
 
+		if ( ! $this->has_encryption_keys() ) {
+			if ( current_user_can( 'manage_options' ) ) {
+				ob_start();
+				?>
+				<div class="seculoco-form-container seculoco-alert-danger">
+					<div class="seculoco-alert seculoco-alert-warning">
+						<div class="seculoco-alert-icon dashicons dashicons-warning seculoco-no-keys-icon"></div>
+						<div class="seculoco-alert-content">
+							<div class="seculoco-alert-title"><strong><?php esc_html_e( 'Finish encryption setup first', 'secure-login-collector' ); ?></strong></div>
+							<p><?php esc_html_e( 'Set up encryption in the settings before embedding the secure login form. Only admins see this alert.', 'secure-login-collector' ); ?></p>
+						</div>
+					</div>
+				</div>
+				<?php
+				return ob_get_clean();
+			}
+
+			return sprintf(
+				'<div class="seculoco-form-container"><div class="seculoco-alert seculoco-alert-info">%s</div></div>',
+				esc_html__( 'Secure login form coming soon.', 'secure-login-collector' )
+			);
+		}
+
 		ob_start();
 		?>
 		<div class="seculoco-form-container">
 			<div class="seculoco-security-info">
-				<img src="<?php echo esc_url( SECULOCO_PLUGIN_URL . 'assets/img/slc-secure-data-transfer-300.png' ); ?>" alt="<?php echo esc_attr__( 'Secure Encrypted Data Transmission', 'secure-login-collector' ); ?>" class="seculoco-security-badge-icon" />
+				<img src="<?php echo esc_url( SECULOCO_PLUGIN_URL . 'assets/img/seculoco-secure-data-transfer-300.png' ); ?>" alt="<?php echo esc_attr__( 'Secure Encrypted Data Transmission', 'secure-login-collector' ); ?>" class="seculoco-security-badge-icon" />
 				<div class="seculoco-security-info-text">
 				<?php
 				// Check text type selection.
@@ -423,7 +446,7 @@ class Seculoco_Frontend_Handler {
 		// Sanitize metadata.
 		$metadata['email']      = sanitize_email( $metadata['email'] );
 		$metadata['name']       = sanitize_text_field( $metadata['name'] );
-		$metadata['login_url']  = sanitize_text_field( $metadata['login_url'] );
+		$metadata['login_url']  = esc_url_raw( $metadata['login_url'] );
 		$metadata['created_at'] = isset( $metadata['created_at'] ) ? sanitize_text_field( $metadata['created_at'] ) : current_time( 'c' );
 
 		/**
@@ -450,7 +473,7 @@ class Seculoco_Frontend_Handler {
 			array(
 				'is_pro_encrypted' => false,
 				'credential_id'    => null,
-				'encryption_type'  => 'aes-rsa-v2',
+				'encryption_type'  => 'aes-rsa-password-v3',
 			),
 			$metadata
 		);
@@ -458,14 +481,14 @@ class Seculoco_Frontend_Handler {
 		// Extract encryption metadata.
 		$is_pro_encrypted     = isset( $encryption_metadata['is_pro_encrypted'] ) ? (bool) $encryption_metadata['is_pro_encrypted'] : false;
 		$server_credential_id = isset( $encryption_metadata['credential_id'] ) ? $encryption_metadata['credential_id'] : null;
-		$encryption_type      = isset( $encryption_metadata['encryption_type'] ) ? $encryption_metadata['encryption_type'] : 'aes-rsa-v2';
+		$encryption_type      = isset( $encryption_metadata['encryption_type'] ) ? $encryption_metadata['encryption_type'] : 'aes-rsa-password-v3';
 
 		// Create encrypted package for storage.
 		$encrypted_package = array(
-			'encryptedData'   => sanitize_text_field( $submission['encryptedData'] ),
-			'rsaEncryptedKey' => sanitize_text_field( $submission['rsaEncryptedKey'] ), // Store as-is from client.
-			'iv'              => sanitize_text_field( $submission['iv'] ),
-			'salt'            => sanitize_text_field( $submission['salt'] ),
+			'encryptedData'   => $this->sanitize_encrypted_field( $submission['encryptedData'], 'encryptedData' ),
+			'rsaEncryptedKey' => $this->sanitize_encrypted_field( $submission['rsaEncryptedKey'], 'rsaEncryptedKey' ), // Store as-is from client.
+			'iv'              => $this->sanitize_encrypted_field( $submission['iv'], 'iv' ),
+			'salt'            => $this->sanitize_encrypted_field( $submission['salt'], 'salt' ),
 			'isProEncrypted'  => $is_pro_encrypted, // Server determines this.
 			'credentialId'    => $server_credential_id, // Server's passkey credential ID.
 			'version'         => 2, // Mark as v2 format.
@@ -513,5 +536,71 @@ class Seculoco_Frontend_Handler {
 		do_action( 'seculoco_submission_recorded', $client_ip, $result );
 
 		wp_send_json_success( __( 'Login data saved securely with enhanced encryption.', 'secure-login-collector' ) );
+	}
+
+	/**
+	 * Validate and normalise base64-encoded fields received from the frontend.
+	 *
+	 * Accepts URL-safe alphabet characters, strips whitespace, fixes padding,
+	 * and rejects unexpected characters before persisting values.
+	 *
+	 * @param string $value Raw field value from the submission payload.
+	 * @param string $field Field name for error messages.
+	 * @return string Normalised base64 string.
+	 */
+	private function sanitize_encrypted_field( $value, $field ) {
+		if ( ! is_string( $value ) ) {
+			wp_send_json_error( sprintf( __( 'Invalid encrypted field: %s', 'secure-login-collector' ), $field ) );
+		}
+
+		$trimmed = trim( $value );
+		if ( '' === $trimmed ) {
+			wp_send_json_error( sprintf( __( 'Encrypted field %s cannot be empty.', 'secure-login-collector' ), $field ) );
+		}
+
+		$normalized = preg_replace( '/\s+/', '', $trimmed );
+		$normalized = strtr( $normalized, '-_', '+/' );
+
+		$padding = strlen( $normalized ) % 4;
+		if ( 0 !== $padding ) {
+			$normalized .= str_repeat( '=', 4 - $padding );
+		}
+
+		if ( preg_match( '/[^A-Za-z0-9\/+=]/', $normalized ) ) {
+			wp_send_json_error( sprintf( __( 'Encrypted field %s contains invalid characters.', 'secure-login-collector' ), $field ) );
+		}
+
+		if ( false === base64_decode( $normalized, true ) ) {
+			wp_send_json_error( sprintf( __( 'Encrypted field %s is not valid base64 data.', 'secure-login-collector' ), $field ) );
+		}
+
+		return $normalized;
+	}
+
+	/**
+	 * Determine if any encryption keys exist.
+	 *
+	 * @return bool
+	 */
+	private function has_encryption_keys() {
+		return $this->has_password_keys() || $this->has_passkey_keys();
+	}
+
+	/**
+	 * Determine if password-based encryption is configured.
+	 *
+	 * @return bool
+	 */
+	private function has_password_keys() {
+		return (bool) get_option( 'seculoco_password_encryption_active', false );
+	}
+
+	/**
+	 * Determine if passkey-based encryption is configured.
+	 *
+	 * @return bool
+	 */
+	private function has_passkey_keys() {
+		return (bool) ( get_option( 'seculoco_pro_keys_active', false ) && get_option( 'seculoco_passkey_registered', false ) );
 	}
 }

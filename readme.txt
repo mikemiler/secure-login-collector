@@ -1,7 +1,7 @@
 === Secure Login Collector ===
 Contributors: Mike.Miler
 Tags: login, password, credential management, password collection, data security
-Requires at least: 5.0
+Requires at least: 6.2
 Tested up to: 6.8
 Requires PHP: 7.4
 Stable tag: 1.4.0
@@ -117,9 +117,13 @@ Bitwarden, 1Password, LastPass, Dashlane, KeePass, Chrome, Firefox, Safari, and 
 
 == External Services ==
 
-This plugin uses Freemius SDK for optional premium features (opt-in only).
+This plugin bundles the Freemius SDK to handle optional telemetry, licensing, and upgrade flows. Opt-in is required before any data is shared.
 
-**Important:** All client credentials are processed and stored ONLY on your server. No credentials are sent to external services.
+What is sent (only after opt-in):
+* Site URL, WordPress version, PHP version, and plugin version – for compatibility checks.
+* Admin email and locale – so Freemius can send license receipts and support messages if you later purchase Pro.
 
-Terms: https://freemius.com/terms/
-Privacy: https://freemius.com/privacy/
+No client submissions, passwords, or encrypted payloads ever leave your server. All credential data stays inside your WordPress database.
+
+Freemius Terms: https://freemius.com/terms/  
+Freemius Privacy: https://freemius.com/privacy/

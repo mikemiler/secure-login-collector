@@ -31,17 +31,16 @@
             this.autoClearTimeout = 60000; // 60 seconds per entry
 
             // Per-entry timers: entryId -> { seconds, clearTimer, countdownInterval }
-            this.entryTimers = new Map();
+			this.entryTimers = new Map();
 
-            // Key cache timer (separate from per-entry UI timers)
-            this.keyCacheTimeout = 60000; // 60 seconds
-            this.keyCacheTimer = null;
+			// Key cache timer (separate from per-entry UI timers)
+			this.keyCacheTimeout = 60000; // 60 seconds
+			this.keyCacheTimer = null;
 
-            // Zero-knowledge: DEK cache and timer
-            this.cachedDEK = null;
-            this.dekCacheTimeout = 60000; // 60 seconds
-            this.dekCacheTimer = null;
-            this.dekInactivityTimer = null;
+			// Password caching for standard (password-based) encryption
+			this.passwordCache = null;
+			this.passwordCacheTimer = null;
+			this.passwordCacheTimeout = 60000; // 60 seconds
 
             // Extension Registry - PRO features register here
             this.extensions = {
@@ -68,11 +67,6 @@
         init() {
             // Bind decrypt button clicks
             $(document).on('click', '.decrypt-btn-v2', (e) => this.handleDecrypt(e));
-
-            // Clear DEK cache on page unload
-            $(window).on('beforeunload', () => {
-                this.clearDEKCache();
-            });
 
             // Trigger initialization hook for extensions
             this.triggerHook('afterInit', this);
@@ -172,7 +166,7 @@
 
                 // Step 2: Get private key (uses extension or default)
                 if (!this.privateKey) {
-                    this.privateKey = await this.getPrivateKey(entryId);
+                    this.privateKey = await this.getPrivateKey(entryId, encryptedPackage);
                 }
                 
                 // Step 3: Decrypt the data (CORE CRYPTO - shared by FREE/PRO)
@@ -192,11 +186,6 @@
 
                 // Reset key cache timer (keeps privateKey for a short window)
                 this.resetKeyCacheTimer();
-
-                // Reset DEK inactivity timer on successful decryption
-                if (this.cachedDEK) {
-                    this.resetDEKInactivityTimer();
-                }
 
             } catch (error) {
                 console.error('Decryption failed:', error);
@@ -231,158 +220,97 @@
          * Get private key - uses extension or default FREE method
          * EXTENSION POINT - PRO can override via keyProvider
          */
-         async getPrivateKey(entryId) {
+		async getPrivateKey(entryId, encryptedPackage) {
 
-            // If PRO extension registered, use it
-            if (this.extensions.keyProvider && typeof this.extensions.keyProvider.getKey === 'function') {
-                return await this.extensions.keyProvider.getKey(entryId);
+			// If PRO extension registered, use it
+			if (this.extensions.keyProvider && typeof this.extensions.keyProvider.getKey === 'function') {
+				return await this.extensions.keyProvider.getKey(entryId, encryptedPackage);
             }
 
-            // DEFAULT: Use FREE version key
-            return await this.getFreePrivateKey(entryId);
-        }
+            // Determine encryption type (defaults to password-based flow)
+            const encryptionType = encryptedPackage.encryption_type || (encryptedPackage.is_pro_encrypted ? 'aes-rsa-passkey-v2' : 'aes-rsa-password-v3');
+
+			if (encryptionType === 'aes-rsa-passkey-v2') {
+				throw new Error('Passkey-protected entries require the PRO extension.');
+			}
+
+			return await this.getStandardPrivateKey(entryId);
+		}
 
         /**
-         * Get free private key from server (PBKDF2-wrapped for zero-knowledge security)
-         * CORE FUNCTIONALITY - FREE version uses this directly
+         * Retrieve and unwrap the standard (password-protected) private key.
          */
-        async getFreePrivateKey(entryId) {
+        async getStandardPrivateKey(entryId) {
             const response = await $.ajax({
                 url: seculocoAjax.ajaxurl,
                 method: 'POST',
                 data: {
                     action: 'seculoco_get_wrapped_private_key',
-                    entry_id: entryId || 0,
+                    entry_id: entryId,
                     nonce: seculocoAjax.nonce
                 }
             });
 
             if (!response.success) {
-                throw new Error('Failed to get private key');
+                throw new Error(response.data || 'Failed to get wrapped private key');
             }
 
-            // Check if we have cached DEK for this session
-            if (this.cachedDEK) {
-                return this.cachedDEK;
+            if (response.data.type !== 'standard' || !response.data.wrapped_key) {
+                throw new Error('Expected password-based key material');
             }
 
-            // Prompt for master password
-            const masterPassword = await this.promptMasterPassword();
+            const wrappedKey = response.data.wrapped_key;
 
-            // Parse wrapped key structure - handle both formats
-            // Server sends: { wrapped_key: {wrapped_dek, iv, tag}, salt }
-            let wrappedDEK, salt, iv;
+            let password = this.passwordCache;
+            let remember = true;
 
-            if (response.data.wrapped_key && typeof response.data.wrapped_key === 'object') {
-                // FREE version format: wrapped_key is an object with {wrapped_dek, iv, tag}
-                wrappedDEK = response.data.wrapped_key;
-                salt = response.data.salt;
-                iv = response.data.wrapped_key.iv; // IV is inside wrapped_key object
-            } else if (response.data.wrapped_dek) {
-                // Alternative format: wrapped_dek directly in response
-                wrappedDEK = response.data.wrapped_dek;
-                salt = response.data.salt;
-                iv = response.data.iv;
-            } else {
-                throw new Error('Invalid private key response format. Missing wrapped_key or wrapped_dek.');
+            if (!password) {
+                const promptResult = await this.promptForPassword();
+                password = promptResult.password;
+                remember = promptResult.remember;
             }
 
-            // Validate all required fields are present
-            if (!wrappedDEK || !salt) {
-                throw new Error('Invalid private key response: Missing required fields (wrapped_dek or salt).');
+            try {
+                const privateKeyPem = await this.unwrapPrivateKeyWithPassword(wrappedKey, password);
+
+                if (remember) {
+                    this.cachePassword(password);
+                } else {
+                    this.clearPasswordCache();
+                }
+
+                return await this.importRSAPrivateKey(privateKeyPem);
+            } catch (error) {
+                this.clearPasswordCache();
+                throw error;
             }
-
-            // Unwrap DEK with master password
-            const dek = await this.unwrapDEKWithPassword(wrappedDEK, masterPassword, salt, iv);
-
-            // Cache DEK in memory (not localStorage!)
-            this.cachedDEK = dek;
-            this.startDEKCacheTimer();
-
-            return dek;
         }
 
         /**
-         * Import RSA private key from PEM or base64 string
+         * Import RSA private key from PEM
          * CORE CRYPTO - Used by both FREE and PRO
-         * @param {string} pem - PEM-formatted private key or base64 string
-         * @returns {Promise<CryptoKey>} - Imported RSA private key
          */
         async importRSAPrivateKey(pem) {
-            // Validate input
-            if (!pem || typeof pem !== 'string') {
-                throw new Error('Invalid private key: Expected non-empty string, got ' + typeof pem);
-            }
-
-            const trimmedPem = pem.trim();
-            if (trimmedPem === '') {
-                throw new Error('Invalid private key: Empty string after trimming');
-            }
-
-            console.log('🔑 PEM key length:', trimmedPem.length);
-            console.log('🔑 PEM starts with:', trimmedPem.substring(0, 50));
-            console.log('🔑 PEM ends with:', trimmedPem.substring(trimmedPem.length - 50));
-
             // Remove PEM headers and decode base64
-            // Handle both standard PEM and PKCS#1 RSA format
-            const pemContents = trimmedPem
+            const pemContents = pem
                 .replace('-----BEGIN PRIVATE KEY-----', '')
                 .replace('-----END PRIVATE KEY-----', '')
                 .replace('-----BEGIN RSA PRIVATE KEY-----', '')
                 .replace('-----END RSA PRIVATE KEY-----', '')
                 .replace(/\s/g, '');
 
-            console.log('📝 Base64 content length after header removal:', pemContents.length);
-            console.log('📝 First 50 chars:', pemContents.substring(0, 50));
-            console.log('📝 Contains non-Latin1?', /[^\x00-\xFF]/.test(pemContents));
+            const binaryDer = this.base64ToArrayBuffer(pemContents);
 
-            // Check for common encoding issues
-            if (/[^\x00-\xFF]/.test(pemContents)) {
-                console.error('❌ Base64 contains non-Latin1 characters!');
-                // Try to find problematic characters
-                for (let i = 0; i < Math.min(pemContents.length, 200); i++) {
-                    const charCode = pemContents.charCodeAt(i);
-                    if (charCode > 255) {
-                        console.error(`Character at position ${i}: "${pemContents[i]}" (code: ${charCode})`);
-                    }
-                }
-                throw new Error('Invalid private key: PEM content contains non-Latin1 characters. The key may be corrupted or use an unsupported encoding.');
-            }
-
-            // Validate base64 content
-            if (pemContents === '') {
-                throw new Error('Invalid private key: No content after removing PEM headers');
-            }
-
-            let binaryDer;
-            try {
-                binaryDer = this.base64ToArrayBuffer(pemContents);
-            } catch (error) {
-                console.error('❌ Base64 decode error:', error);
-                console.error('Base64 sample:', pemContents.substring(0, 100));
-                throw new Error('Invalid private key format: Failed to decode base64 content. ' + error.message);
-            }
-
-            // Validate decoded data has content
-            if (binaryDer.byteLength === 0) {
-                throw new Error('Invalid private key: Decoded data is empty');
-            }
-
-            try {
-                return await crypto.subtle.importKey(
-                    'pkcs8',
-                    binaryDer,
-                    {
-                        name: 'RSA-OAEP',
-                        hash: 'SHA-256'
-                    },
-                    false,
-                    ['decrypt']
-                );
-            } catch (error) {
-                console.error('Failed to import RSA private key:', error);
-                throw new Error('Failed to import private key: ' + error.message + '. The key may be corrupted or in an unsupported format.');
-            }
+            return await crypto.subtle.importKey(
+                'pkcs8',
+                binaryDer,
+                {
+                    name: 'RSA-OAEP',
+                    hash: 'SHA-256'
+                },
+                false,
+                ['decrypt']
+            );
         }
 
         /**
@@ -452,13 +380,19 @@
                     throw new Error('Invalid private key: Key must have "decrypt" usage. Available usages: ' + privateKey.usages.join(', '));
                 }
 
-                // Note: Base64 validation removed - base64ToArrayBuffer() handles all validation
-                // including whitespace cleaning and error handling
+                // Checkpoint 0.7: Validate base64 format for encrypted_aes_key
+                const normalizedAesKey = this.normalizeBase64(encryptedPackage.encrypted_aes_key, 'encrypted_aes_key');
+
+                // Checkpoint 0.8: Validate base64 format for iv
+                const normalizedIv = this.normalizeBase64(encryptedPackage.iv, 'iv');
+
+                // Checkpoint 0.9: Validate base64 format for encrypted_data
+                const normalizedEncryptedData = this.normalizeBase64(encryptedPackage.encrypted_data, 'encrypted_data');
 
                 // ===== DECRYPTION PROCESS =====
 
                 // Step 1: RSA decrypt the AES key
-                const encryptedAesKey = this.base64ToArrayBuffer(encryptedPackage.encrypted_aes_key);
+                const encryptedAesKey = this.base64ToArrayBuffer(normalizedAesKey);
 
                 let aesKeyBuffer;
                 try {
@@ -484,9 +418,9 @@
                 );
 
                 // Step 3: Prepare AES decryption parameters
-                const iv = this.base64ToArrayBuffer(encryptedPackage.iv);
+                const iv = this.base64ToArrayBuffer(normalizedIv);
 
-                const encryptedData = this.base64ToArrayBuffer(encryptedPackage.encrypted_data);
+                const encryptedData = this.base64ToArrayBuffer(normalizedEncryptedData);
 
                 // Step 4: Decrypt data with AES-GCM
                 const decrypted = await crypto.subtle.decrypt(
@@ -796,39 +730,273 @@
          * CORE UTILITY - Used by both FREE and PRO
          */
         base64ToArrayBuffer(base64) {
-            // Validate input
-            if (!base64 || typeof base64 !== 'string') {
-                throw new Error('Invalid base64 input: Expected non-empty string, got ' + typeof base64);
-            }
-
-            // Remove ALL whitespace (newlines, spaces, tabs, carriage returns)
-            // This is standard for base64 processing and handles PEM-formatted keys
-            const cleanBase64 = base64.replace(/\s+/g, '');
-
-            // Check if string is empty after cleaning
-            if (cleanBase64 === '') {
-                throw new Error('Invalid base64 input: Empty string after removing whitespace');
-            }
-
-            // Try to decode FIRST - atob() is the authoritative validator
             let binaryString;
             try {
-                binaryString = atob(cleanBase64);
-            } catch (e) {
-                // Only validate format if atob() fails
-                const base64Pattern = /^[A-Za-z0-9+/]*={0,2}$/;
-                if (!base64Pattern.test(cleanBase64)) {
-                    throw new Error('Invalid base64 format: Contains invalid characters. Decoding error: ' + e.message);
-                }
-                throw new Error('Base64 decoding failed: ' + e.message + '. This may indicate corrupted data.');
+                binaryString = atob(base64);
+            } catch (error) {
+                throw new Error(`Base64 decoding failed: ${error.message}`);
             }
-
-            // Convert to ArrayBuffer
             const bytes = new Uint8Array(binaryString.length);
             for (let i = 0; i < binaryString.length; i++) {
                 bytes[i] = binaryString.charCodeAt(i);
             }
             return bytes.buffer;
+        }
+
+        /**
+         * Helper: Normalise and validate base64 strings.
+         *
+         * Accepts base64 and base64url variants, strips whitespace, fixes padding,
+         * and ensures only expected characters remain.
+         *
+         * @param {string} value - The value to normalise.
+         * @param {string} field - Field name for error context.
+         * @returns {string} Normalised base64 string.
+         */
+        normalizeBase64(value, field) {
+            if (typeof value !== 'string') {
+                throw new Error(`Invalid encrypted package: ${field} must be a string. Received: ${typeof value}`);
+            }
+
+            let trimmed = value.trim();
+            if (trimmed === '') {
+                throw new Error(`Invalid encrypted package: ${field} is empty`);
+            }
+
+            // Remove whitespace that might have slipped through sanitisation.
+            trimmed = trimmed.replace(/\s+/g, '');
+
+            // Support URL-safe variants by converting to standard base64 alphabet.
+            let normalised = trimmed.replace(/-/g, '+').replace(/_/g, '/');
+
+            // Ensure no unexpected characters remain.
+            const invalidMatch = normalised.match(/[^A-Za-z0-9+/=]/);
+            if (invalidMatch) {
+                throw new Error(`Invalid encrypted package: ${field} contains illegal character "${invalidMatch[0]}"`);
+            }
+
+            // Fix padding if necessary.
+            const padding = normalised.length % 4;
+            if (padding !== 0) {
+                normalised += '='.repeat(4 - padding);
+            }
+
+            // Final verification using atob to ensure we have valid base64.
+            try {
+                atob(normalised);
+            } catch (error) {
+                throw new Error(`Invalid encrypted package: ${field} is not valid base64. Error: ${error.message}`);
+            }
+
+			return normalised;
+		}
+
+        /**
+         * Prompt the administrator for the password used to wrap the standard key.
+         *
+         * @returns {Promise<{password: string, remember: boolean}>}
+         */
+        async promptForPassword() {
+            return new Promise((resolve, reject) => {
+                const $backdrop = $('<div>').addClass('seculoco-password-prompt-backdrop');
+                const $modal = $('<div>').addClass('seculoco-password-prompt-modal');
+
+                $modal.html(`
+                    <h2 class="seculoco-password-prompt-title">Enter Encryption Password</h2>
+                    <p class="seculoco-password-prompt-description">
+                        This data was encrypted with a password. Please enter the password to decrypt.
+                    </p>
+                    <div class="seculoco-password-input-wrapper">
+                        <input
+                            type="password"
+                            class="seculoco-password-input"
+                            id="seculoco-password-input"
+                            placeholder="Enter password"
+                            autocomplete="off"
+                        />
+                        <button type="button" class="seculoco-password-toggle-btn" aria-label="Toggle password visibility">
+                            <span class="dashicons dashicons-visibility"></span>
+                        </button>
+                    </div>
+                    <div class="seculoco-password-prompt-checkbox">
+                        <input
+                            type="checkbox"
+                            id="seculoco-remember-password"
+                            checked
+                        />
+                        <label for="seculoco-remember-password">
+                            Remember for this session (60 seconds)
+                        </label>
+                    </div>
+                    <div class="seculoco-password-prompt-error" style="display: none;"></div>
+                    <div class="seculoco-password-prompt-buttons">
+                        <button type="button" class="seculoco-password-prompt-cancel-btn">Cancel</button>
+                        <button type="button" class="seculoco-password-prompt-decrypt-btn">Decrypt</button>
+                    </div>
+                `);
+
+                $('body').append($backdrop).append($modal);
+
+                setTimeout(() => {
+                    $('#seculoco-password-input').trigger('focus');
+                }, 50);
+
+                const closeModal = (error) => {
+                    $(document).off('keydown.password-prompt');
+                    $modal.remove();
+                    $backdrop.remove();
+                    if (error) {
+                        reject(new Error(error));
+                    }
+                };
+
+                $modal.find('.seculoco-password-toggle-btn').on('click', function() {
+                    const $input = $('#seculoco-password-input');
+                    const $icon = $(this).find('.dashicons');
+
+                    if ($input.attr('type') === 'password') {
+                        $input.attr('type', 'text');
+                        $icon.removeClass('dashicons-visibility').addClass('dashicons-hidden');
+                    } else {
+                        $input.attr('type', 'password');
+                        $icon.removeClass('dashicons-hidden').addClass('dashicons-visibility');
+                    }
+                });
+
+                const resolveWithPassword = () => {
+                    const password = $('#seculoco-password-input').val().trim();
+                    const remember = $('#seculoco-remember-password').is(':checked');
+
+                    if (!password) {
+                        $modal.find('.seculoco-password-prompt-error')
+                            .text('Please enter a password.')
+                            .show();
+                        return;
+                    }
+
+                    $(document).off('keydown.password-prompt');
+                    $modal.remove();
+                    $backdrop.remove();
+                    resolve({ password, remember });
+                };
+
+                $modal.find('.seculoco-password-prompt-decrypt-btn').on('click', resolveWithPassword);
+
+                $modal.find('.seculoco-password-prompt-cancel-btn').on('click', () => closeModal('Password prompt cancelled'));
+
+                $backdrop.on('click', () => closeModal('Password prompt cancelled'));
+
+                $(document).on('keydown.password-prompt', (event) => {
+                    if (event.key === 'Escape') {
+                        closeModal('Password prompt cancelled');
+                    }
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        resolveWithPassword();
+                    }
+                });
+            });
+        }
+
+        /**
+         * Cache the password for a short period to improve UX.
+         *
+         * @param {string} password
+         */
+        cachePassword(password) {
+            this.passwordCache = password;
+
+            if (this.passwordCacheTimer) {
+                clearTimeout(this.passwordCacheTimer);
+            }
+
+            this.passwordCacheTimer = setTimeout(() => {
+                this.clearPasswordCache();
+            }, this.passwordCacheTimeout);
+        }
+
+        /**
+         * Clear any cached password.
+         */
+        clearPasswordCache() {
+            this.passwordCache = null;
+            if (this.passwordCacheTimer) {
+                clearTimeout(this.passwordCacheTimer);
+                this.passwordCacheTimer = null;
+            }
+        }
+
+        /**
+         * Unwrap the standard RSA private key using the provided password.
+         *
+         * @param {Object} wrappedKey
+         * @param {string} password
+         * @returns {Promise<string>} PEM encoded private key.
+         */
+        async unwrapPrivateKeyWithPassword(wrappedKey, password) {
+            if (!password) {
+                throw new Error('Password is required to decrypt this data.');
+            }
+
+            if (!wrappedKey || typeof wrappedKey !== 'object') {
+                throw new Error('Invalid wrapped key data.');
+            }
+
+            try {
+                const normalizedSalt = this.normalizeBase64(wrappedKey.salt, 'wrapped_key.salt');
+                const normalizedIv = this.normalizeBase64(wrappedKey.iv, 'wrapped_key.iv');
+                const normalizedCiphertext = this.normalizeBase64(wrappedKey.encrypted_data, 'wrapped_key.encrypted_data');
+                const normalizedTag = this.normalizeBase64(wrappedKey.tag, 'wrapped_key.tag');
+
+                const salt = this.base64ToArrayBuffer(normalizedSalt);
+                const iv = new Uint8Array(this.base64ToArrayBuffer(normalizedIv));
+                const ciphertext = new Uint8Array(this.base64ToArrayBuffer(normalizedCiphertext));
+                const authTag = new Uint8Array(this.base64ToArrayBuffer(normalizedTag));
+
+                const encoder = new TextEncoder();
+                const passwordKeyMaterial = await crypto.subtle.importKey(
+                    'raw',
+                    encoder.encode(password),
+                    'PBKDF2',
+                    false,
+                    ['deriveKey']
+                );
+
+                const wrappingKey = await crypto.subtle.deriveKey(
+                    {
+                        name: 'PBKDF2',
+                        salt: salt,
+                        iterations: 100000,
+                        hash: 'SHA-256'
+                    },
+                    passwordKeyMaterial,
+                    {
+                        name: 'AES-GCM',
+                        length: 256
+                    },
+                    false,
+                    ['decrypt']
+                );
+
+                const combinedCiphertext = new Uint8Array(ciphertext.length + authTag.length);
+                combinedCiphertext.set(ciphertext);
+                combinedCiphertext.set(authTag, ciphertext.length);
+
+                const decrypted = await crypto.subtle.decrypt(
+                    {
+                        name: 'AES-GCM',
+                        iv: iv,
+                        tagLength: authTag.length * 8
+                    },
+                    wrappingKey,
+                    combinedCiphertext.buffer
+                );
+
+                return new TextDecoder().decode(decrypted);
+            } catch (error) {
+                console.error('Failed to unwrap private key:', error);
+                throw new Error('Failed to unwrap key: ' + error.message);
+            }
         }
 
         /**
@@ -844,330 +1012,6 @@
                 "'": '&#039;'
             };
             return String(text || '').replace(/[&<>"']/g, (m) => map[m]);
-        }
-
-        /**
-         * Zero-knowledge: Derive PBKDF2 key from password
-         * @param {string} password - Master password
-         * @param {string} salt - Base64-encoded salt
-         * @param {number} iterations - PBKDF2 iterations (default: 600000)
-         * @returns {Promise<CryptoKey>} - Derived AES-GCM key
-         */
-        async derivePBKDF2Key(password, salt, iterations = 600000) {
-            // Convert password to ArrayBuffer
-            const encoder = new TextEncoder();
-            const passwordBuffer = encoder.encode(password);
-
-            // Import password as CryptoKey for PBKDF2
-            const passwordKey = await crypto.subtle.importKey(
-                'raw',
-                passwordBuffer,
-                'PBKDF2',
-                false,
-                ['deriveBits', 'deriveKey']
-            );
-
-            // Convert salt from base64 to ArrayBuffer
-            const saltBuffer = this.base64ToArrayBuffer(salt);
-
-            // Derive AES-GCM key using PBKDF2
-            const derivedKey = await crypto.subtle.deriveKey(
-                {
-                    name: 'PBKDF2',
-                    salt: saltBuffer,
-                    iterations: iterations,
-                    hash: 'SHA-256'
-                },
-                passwordKey,
-                {
-                    name: 'AES-GCM',
-                    length: 256
-                },
-                false,
-                ['encrypt', 'decrypt']
-            );
-
-            return derivedKey;
-        }
-
-        /**
-         * Zero-knowledge: Unwrap DEK with master password
-         * @param {Object} wrappedDEK - Wrapped DEK object {wrapped_dek/ciphertext, iv, tag}
-         * @param {string} masterPassword - Master password
-         * @param {string} salt - Base64-encoded salt
-         * @param {string} iv - Base64-encoded IV (unused if wrappedDEK has its own IV)
-         * @returns {Promise<CryptoKey>} - Unwrapped RSA private key
-         */
-        async unwrapDEKWithPassword(wrappedDEK, masterPassword, salt, iv) {
-            // Validate input
-            if (!wrappedDEK || typeof wrappedDEK !== 'object') {
-                throw new Error('Invalid wrapped DEK: Expected object, got ' + typeof wrappedDEK);
-            }
-
-            // Derive wrapping key with PBKDF2
-            const wrappingKey = await this.derivePBKDF2Key(masterPassword, salt);
-
-            // Parse wrapped DEK - handle both field naming conventions
-            // Server may send 'wrapped_dek' or 'ciphertext'
-            const ciphertextField = wrappedDEK.wrapped_dek || wrappedDEK.ciphertext;
-            if (!ciphertextField) {
-                const availableFields = Object.keys(wrappedDEK).join(', ');
-                throw new Error('Invalid wrapped DEK format: Missing ciphertext/wrapped_dek field. Available fields: ' + availableFields);
-            }
-       
-            // Validate and parse all required components
-            if (!wrappedDEK.iv && !iv) {
-                throw new Error('Invalid wrapped DEK format: Missing IV (initialization vector)');
-            }
-            if (!wrappedDEK.tag) {
-                const availableFields = Object.keys(wrappedDEK).join(', ');
-                throw new Error('Invalid wrapped DEK format: Missing authentication tag. Available fields: ' + availableFields);
-            }
-
-            const dekIV = this.base64ToArrayBuffer(wrappedDEK.iv || iv);
-            const dekCiphertext = this.base64ToArrayBuffer(ciphertextField);
-            const dekTag = this.base64ToArrayBuffer(wrappedDEK.tag);
-
-            // Validate decoded buffers
-            if (dekIV.byteLength !== 12) {
-                throw new Error('Invalid IV length: Expected 12 bytes, got ' + dekIV.byteLength);
-            }
-            if (dekTag.byteLength !== 16) {
-                throw new Error('Invalid tag length: Expected 16 bytes, got ' + dekTag.byteLength);
-            }
-
-            // AES-GCM: concatenate ciphertext and tag
-            const encryptedDEK = new Uint8Array(dekCiphertext.byteLength + dekTag.byteLength);
-            encryptedDEK.set(new Uint8Array(dekCiphertext), 0);
-            encryptedDEK.set(new Uint8Array(dekTag), dekCiphertext.byteLength);
-
-            // Decrypt DEK with AES-256-GCM
-            let decryptedDEK;
-            try {
-                decryptedDEK = await crypto.subtle.decrypt(
-                    {
-                        name: 'AES-GCM',
-                        iv: dekIV,
-                        tagLength: 128
-                    },
-                    wrappingKey,
-                    encryptedDEK
-                );
-            } catch (error) {
-                console.error('DEK decryption failed:', error);
-                throw new Error('Invalid master password or corrupted wrapped key data. Please verify your master password is correct.');
-            }
-            // Convert DEK to PEM and import as RSA private key
-            // Use UTF-8 decoder for PEM format (should be ASCII-compatible)
-            const dekPEM = new TextDecoder('utf-8').decode(decryptedDEK);
-
-            console.log('🔐 Decrypted DEK length:', decryptedDEK.byteLength, 'bytes');
-            console.log('📄 PEM key preview (first 100 chars):', dekPEM.substring(0, 100));
-            console.log('📄 PEM key preview (last 100 chars):', dekPEM.substring(dekPEM.length - 100));
-            console.log('🔍 Contains non-ASCII?', /[^\x00-\x7F]/.test(dekPEM));
-
-            // Check if decrypted data is PEM format (should start with -----BEGIN)
-            if (!dekPEM.trim().startsWith('-----BEGIN')) {
-                console.warn('⚠️  Decrypted key is not in PEM format!');
-                console.warn('Key appears to be in DER format - attempting direct import');
-                console.warn('First 20 bytes (hex):', Array.from(new Uint8Array(decryptedDEK).slice(0, 20))
-                    .map(b => b.toString(16).padStart(2, '0')).join(' '));
-
-                // Try to import as raw DER format (PKCS#8)
-                try {
-                    console.log('🔄 Attempting to import DER format key directly...');
-                    const derKey = await crypto.subtle.importKey(
-                        'pkcs8',
-                        decryptedDEK,  // Use raw ArrayBuffer (DER format)
-                        {
-                            name: 'RSA-OAEP',
-                            hash: 'SHA-256'
-                        },
-                        false,
-                        ['decrypt']
-                    );
-                    console.log('✅ Successfully imported DER format key!');
-                    console.warn('⚠️  WARNING: Your encryption keys are stored in an old/incompatible format.');
-                    console.warn('After decrypting your data, please go to Settings and reinitialize your encryption keys.');
-                    return derKey;
-                } catch (derError) {
-                    console.error('❌ Failed to import as DER format:', derError);
-                    throw new Error(
-                        'Invalid private key format: The decrypted key is neither valid PEM nor DER format. ' +
-                        'This usually means the encryption keys are corrupted. ' +
-                        'Please go to Settings → Master Password and click "Reinitialize Encryption Keys" to fix this issue. ' +
-                        'WARNING: Reinitializing will make existing encrypted data undecryptable! ' +
-                        'Original error: ' + derError.message
-                    );
-                }
-            }
-
-            return await this.importRSAPrivateKey(dekPEM);
-        }
-
-        /**
-         * Zero-knowledge: Prompt for master password
-         * @returns {Promise<string>} - Master password
-         */
-        async promptMasterPassword() {
-            return new Promise((resolve, reject) => {
-                // Check if modal already exists
-                if ($('#seculoco-master-password-modal').length > 0) {
-                    $('#seculoco-master-password-modal').remove();
-                }
-
-                // Create modal HTML
-                const modalHTML = `
-                    <div id="seculoco-master-password-modal" class="seculoco-modal-overlay">
-                        <div class="seculoco-modal-container">
-                            <div class="seculoco-modal-header">
-                                <h2>Master Password Required</h2>
-                                <p>Enter your master password to decrypt stored credentials</p>
-                            </div>
-                            <div class="seculoco-modal-content">
-                                <div class="seculoco-field-group">
-                                    <label for="seculoco-master-password-input">Master Password:</label>
-                                    <div class="seculoco-password-input-group">
-                                        <input
-                                            type="password"
-                                            id="seculoco-master-password-input"
-                                            class="seculoco-password-input"
-                                            placeholder="Enter master password"
-                                            autocomplete="off"
-                                        />
-                                        <button type="button" class="seculoco-toggle-password-btn" id="seculoco-toggle-master-password">
-                                            <span class="dashicons dashicons-visibility"></span>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="seculoco-field-group">
-                                    <label>
-                                        <input type="checkbox" id="seculoco-remember-password" />
-                                        Remember for this session (60 seconds)
-                                    </label>
-                                </div>
-                                <div class="seculoco-error-message" id="seculoco-password-error" style="display: none;"></div>
-                            </div>
-                            <div class="seculoco-modal-footer">
-                                <button type="button" class="button button-primary" id="seculoco-submit-password">Unlock</button>
-                                <button type="button" class="button" id="seculoco-cancel-password">Cancel</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-
-                $('body').append(modalHTML);
-
-                const $modal = $('#seculoco-master-password-modal');
-                const $input = $('#seculoco-master-password-input');
-                const $error = $('#seculoco-password-error');
-
-                // Focus input
-                setTimeout(() => $input.focus(), 100);
-
-                // Toggle password visibility
-                $('#seculoco-toggle-master-password').on('click', function() {
-                    const $passwordInput = $('#seculoco-master-password-input');
-                    const $icon = $(this).find('.dashicons');
-
-                    if ($passwordInput.attr('type') === 'password') {
-                        $passwordInput.attr('type', 'text');
-                        $icon.removeClass('dashicons-visibility').addClass('dashicons-hidden');
-                    } else {
-                        $passwordInput.attr('type', 'password');
-                        $icon.removeClass('dashicons-hidden').addClass('dashicons-visibility');
-                    }
-                });
-
-                // Submit handler
-                const submitPassword = () => {
-                    const password = $input.val().trim();
-
-                    if (!password) {
-                        $error.text('Please enter your master password').show();
-                        return;
-                    }
-
-                    $modal.remove();
-                    resolve(password);
-                };
-
-                // Cancel handler
-                const cancelPassword = () => {
-                    $modal.remove();
-                    reject(new Error('Master password prompt cancelled'));
-                };
-
-                // Bind events
-                $('#seculoco-submit-password').on('click', submitPassword);
-                $('#seculoco-cancel-password').on('click', cancelPassword);
-
-                // Enter key submits
-                $input.on('keypress', (e) => {
-                    if (e.which === 13) {
-                        submitPassword();
-                    }
-                });
-
-                // Escape key cancels
-                $(document).on('keydown.seculoco-modal', (e) => {
-                    if (e.which === 27) {
-                        $(document).off('keydown.seculoco-modal');
-                        cancelPassword();
-                    }
-                });
-            });
-        }
-
-        /**
-         * Zero-knowledge: Start DEK cache timer
-         */
-        startDEKCacheTimer() {
-            // Clear existing timers
-            this.clearDEKCacheTimers();
-
-            // Main cache timer (60 seconds)
-            this.dekCacheTimer = setTimeout(() => {
-                this.clearDEKCache();
-            }, this.dekCacheTimeout);
-
-            // Inactivity timer (60 seconds)
-            this.resetDEKInactivityTimer();
-        }
-
-        /**
-         * Zero-knowledge: Reset DEK inactivity timer
-         */
-        resetDEKInactivityTimer() {
-            if (this.dekInactivityTimer) {
-                clearTimeout(this.dekInactivityTimer);
-            }
-
-            this.dekInactivityTimer = setTimeout(() => {
-                this.clearDEKCache();
-            }, 60000); // 60 seconds of inactivity
-        }
-
-        /**
-         * Zero-knowledge: Clear DEK cache timers
-         */
-        clearDEKCacheTimers() {
-            if (this.dekCacheTimer) {
-                clearTimeout(this.dekCacheTimer);
-                this.dekCacheTimer = null;
-            }
-            if (this.dekInactivityTimer) {
-                clearTimeout(this.dekInactivityTimer);
-                this.dekInactivityTimer = null;
-            }
-        }
-
-        /**
-         * Zero-knowledge: Clear DEK from memory
-         */
-        clearDEKCache() {
-            this.cachedDEK = null;
-            this.clearDEKCacheTimers();
         }
 
         /**
@@ -1190,11 +1034,11 @@
     // Initialize when DOM is ready
     $(document).ready(function() {
         // Create global instance - accessible to PRO extensions
-        window.seculocoDecrypt = new BaseAdminDecryption();
-        window.seculocoDecrypt.init();
+	        window.seculocoDecrypt = new BaseAdminDecryption();
+	        window.seculocoDecrypt.init();
 
-        // Backwards compatibility alias
-        window.freeAdminDecryption = window.seculocoDecrypt;
-    });
+	        // Backwards compatibility alias
+	        window.freeAdminDecryption = window.seculocoDecrypt;
+	    });
 
-})(jQuery);
+	})(jQuery);

@@ -24,7 +24,7 @@
             }
 
             this.base = baseFramework;
-            this.unwrappedKeys = { pro: null, free: null };
+            this.unwrappedKeys = { pro: null, standard: null };
             this.registerWithBase();
             this.initEventHandlers();
         }
@@ -78,30 +78,32 @@
                 return this.unwrappedKeys[keyType];
             }
 
-            if (keyType === 'pro') {
-                // PRO key: Handle with passkey authentication
-                const wrappedResponse = await $.ajax({
-                    url: seculocoAjax.ajaxurl,
-                    method: 'POST',
-                    data: {
-                        action: 'seculoco_get_wrapped_private_key',
-                        entry_id: entryId,
-                        nonce: seculocoAjax.nonce
-                    }
-                });
-
-                if (!wrappedResponse.success) {
-                    throw new Error('Failed to get wrapped private key');
+            // Get wrapped key from server
+            const wrappedResponse = await $.ajax({
+                url: seculocoAjax.ajaxurl,
+                method: 'POST',
+                data: {
+                    action: 'seculoco_get_wrapped_private_key',
+                    entry_id: entryId,
+                    nonce: seculocoAjax.nonce
                 }
+            });
 
+            if (!wrappedResponse.success) {
+                throw new Error('Failed to get wrapped private key');
+            }
+
+            // Handle PRO vs FREE keys differently
+            if (wrappedResponse.data.type === 'pro') {
+                // PRO key: Authenticate with passkey and unwrap
                 const wrappedKey = wrappedResponse.data.wrapped_key;
                 const unwrappingKey = await this.authenticateWithPasskey();
                 this.unwrappedKeys.pro = await this.unwrapKey(wrappedKey, unwrappingKey);
                 return this.unwrappedKeys.pro;
             } else {
-                // FREE key: Delegate to base framework (includes master password prompt)
-                this.unwrappedKeys.free = await this.base.getFreePrivateKey(entryId);
-                return this.unwrappedKeys.free;
+                // Standard password-based key: delegate to base handler
+                this.unwrappedKeys.standard = await this.base.getStandardPrivateKey(entryId);
+                return this.unwrappedKeys.standard;
             }
         }
 
@@ -123,7 +125,7 @@
                 throw new Error('Failed to get key type information');
             }
 
-            return { type: response.data.type || 'free' };
+            return { type: response.data.type || 'standard' };
         }
 
         /**
@@ -260,7 +262,7 @@
          * Clear PRO keys from memory
          */
         clearProKeys() {
-            this.unwrappedKeys = { pro: null, free: null };
+            this.unwrappedKeys = { pro: null, standard: null };
         }
 
         /**
@@ -507,34 +509,7 @@
          * Utility: Base64 to ArrayBuffer
          */
         base64ToArrayBuffer(base64) {
-            // Validate input
-            if (!base64 || typeof base64 !== 'string') {
-                throw new Error('Invalid base64 input: Expected non-empty string, got ' + typeof base64);
-            }
-
-            // Remove ALL whitespace (newlines, spaces, tabs, carriage returns)
-            // This is standard for base64 processing and handles PEM-formatted keys
-            const cleanBase64 = base64.replace(/\s+/g, '');
-
-            // Check if string is empty after cleaning
-            if (cleanBase64 === '') {
-                throw new Error('Invalid base64 input: Empty string after removing whitespace');
-            }
-
-            // Try to decode FIRST - atob() is the authoritative validator
-            let binary;
-            try {
-                binary = atob(cleanBase64);
-            } catch (e) {
-                // Only validate format if atob() fails
-                const base64Pattern = /^[A-Za-z0-9+/]*={0,2}$/;
-                if (!base64Pattern.test(cleanBase64)) {
-                    throw new Error('Invalid base64 format: Contains invalid characters. Decoding error: ' + e.message);
-                }
-                throw new Error('Base64 decoding failed: ' + e.message + '. This may indicate corrupted data.');
-            }
-
-            // Convert to ArrayBuffer
+            const binary = atob(base64);
             const bytes = new Uint8Array(binary.length);
             for (let i = 0; i < binary.length; i++) {
                 bytes[i] = binary.charCodeAt(i);

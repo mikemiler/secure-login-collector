@@ -15,20 +15,572 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// Load list table class.
-require_once SECULOCO_PLUGIN_DIR . 'includes/class-seculoco-list-table.php';
+// Include WP_List_Table if not already included.
+if ( ! class_exists( 'WP_List_Table' ) ) {
+	include_once ABSPATH . 'wp-admin/includes/class-wp-list-table.php';
+}
+
 /**
- * Admin Interface Class
+ * Secure Login List Table Class extending WP_List_Table
  *
- * Handles the admin interface for the secure login collector plugin including:
- * - Admin pages and menus
- * - Data viewing and management via WP_List_Table
- * - AJAX handlers for admin operations
- * - Script and style enqueuing
- *
- * @package SecureLoginCollector
+ * Custom list table for displaying secure login data with WordPress admin styling.
  */
+class Seculoco_List_Table extends WP_List_Table {
+
+
+	/**
+	 * Database table name.
+	 *
+	 * @var string
+	 */
+	private $table_name;
+
+	/**
+	 * Database manager instance.
+	 *
+	 * @var Seculoco_Database_Manager
+	 */
+	private $database_manager;
+
+	/**
+	 * Encryption handler instance.
+	 *
+	 * @var Seculoco_Encryption_Service
+	 */
+	private $encryption_handler;
+
+	/**
+	 * Constructor - initializes list table.
+	 *
+	 * @param string                          $table_name         Database table name.
+	 * @param Seculoco_Database_Manager   $database_manager   Database manager instance.
+	 * @param Seculoco_Encryption_Service $encryption_handler Encryption handler instance.
+	 */
+	public function __construct( $table_name, $database_manager, $encryption_handler ) {
+		$this->table_name         = $table_name;
+		$this->database_manager   = $database_manager;
+		$this->encryption_handler = $encryption_handler;
+
+		parent::__construct(
+			array(
+				'singular' => 'login_entry',
+				'plural'   => 'login_entries',
+				'ajax'     => false,
+			)
+		);
+	}
+
+	/**
+	 * Define table columns.
+	 *
+	 * @return array Column definitions.
+	 */
+	public function get_columns() {
+		return array(
+			'cb'         => '<input type="checkbox" />',
+			'email'      => __( 'Email Address', 'secure-login-collector' ),
+			'name'       => __( 'Name', 'secure-login-collector' ),
+			'login_url'  => __( 'Login URL', 'secure-login-collector' ),
+			'created_at' => __( 'Date', 'secure-login-collector' ),
+			'encryption' => __( 'Encryption Method', 'secure-login-collector' ),
+			'expires'    => __( 'Expires In', 'secure-login-collector' ),
+			'actions'    => __( 'Actions', 'secure-login-collector' ),
+		);
+	}
+
+	/**
+	 * Define sortable columns.
+	 *
+	 * @return array Sortable column definitions.
+	 */
+	public function get_sortable_columns() {
+		return array(
+			'email'      => array( 'email', false ),
+			'name'       => array( 'name', false ),
+			'login_url'  => array( 'login_url', false ),
+			'created_at' => array( 'created_at', false ),
+			'encryption' => array( 'encryption', false ),
+			'expires'    => array( 'expires', false ),
+		);
+	}
+
+	/**
+	 * Define bulk actions.
+	 *
+	 * @return array Bulk action definitions.
+	 */
+	public function get_bulk_actions() {
+		
+		$bulk_actions = array(
+			'delete'           => __( 'Delete', 'secure-login-collector' ),
+		);
+		return apply_filters('seculoco_bulk_actions', $bulk_actions);
+	}
+
+	/**
+	 * Render checkbox column.
+	 *
+	 * @param object $item Row data.
+	 * @return string Checkbox HTML.
+	 */
+	public function column_cb( $item ) {
+		return sprintf(
+			'<input type="checkbox" name="login_entries[]" value="%s" class="select-entry" data-id="%s" />',
+			$item->id,
+			$item->id
+		);
+	}
+
+	/**
+	 * Render email column.
+	 *
+	 * @param object $item Row data.
+	 * @return string Email column HTML.
+	 */
+	public function column_email( $item ) {
+		$metadata = $this->parse_metadata( $item->metadata );
+		$email    = $metadata['email'] ?? __( 'N/A', 'secure-login-collector' );
+
+		return sprintf(
+			'<span class="editable-field" data-field="email" data-id="%s">%s</span>',
+			$item->id,
+			esc_html( $email )
+		);
+	}
+
+	/**
+	 * Render name column.
+	 *
+	 * @param object $item Row data.
+	 * @return string Name column HTML.
+	 */
+	public function column_name( $item ) {
+		$metadata = $this->parse_metadata( $item->metadata );
+		$name     = $metadata['name'] ?? __( 'N/A', 'secure-login-collector' );
+
+		return sprintf(
+			'<span class="editable-field" data-field="name" data-id="%s">%s</span>',
+			$item->id,
+			esc_html( $name )
+		);
+	}
+
+	/**
+	 * Render login URL column.
+	 *
+	 * @param object $item Row data.
+	 * @return string Login URL column HTML.
+	 */
+	public function column_login_url( $item ) {
+		$metadata  = $this->parse_metadata( $item->metadata );
+		$login_url = $metadata['login_url'] ?? $metadata['service_name'] ?? __( 'Not provided', 'secure-login-collector' );
+
+		return sprintf(
+			'<span class="editable-field" data-field="login_url" data-id="%s">%s</span>',
+			$item->id,
+			esc_html( $login_url )
+		);
+	}
+
+	/**
+	 * Render created date column.
+	 *
+	 * @param object $item Row data.
+	 * @return string Date column HTML.
+	 */
+	public function column_created_at( $item ) {
+		return esc_html( gmdate( 'M j, Y g:i A', strtotime( $item->created_at ) ) );
+	}
+
+	/**
+	 * Render encryption method column.
+	 *
+	 * @param object $item Row data.
+	 * @return string Encryption method column HTML.
+	 */
+	public function column_encryption( $item ) {
+		$metadata        = json_decode( $item->metadata, true );
+		$encryption_type = isset( $metadata['encryption_type'] ) ? $metadata['encryption_type'] : 'aes-rsa-password-v3';
+		$encryption_info = $this->get_encryption_method_info( $encryption_type );
+
+		return sprintf(
+			'<span class="encryption-method %s" title="%s">%s</span>',
+			esc_attr( $encryption_info['class'] ),
+			esc_attr( $encryption_info['description'] ),
+			$encryption_info['name']
+		);
+	}
+
+	/**
+	 * Render expires column.
+	 *
+	 * @param object $item Row data.
+	 * @return string Expires column HTML.
+	 */
+	public function column_expires( $item ) {
+		$is_expired = isset( $item->is_expired ) ? $item->is_expired : 0;
+		return $this->database_manager->calculate_expiration( $item->retention_until, $is_expired );
+	}
+
+	/**
+	 * Render actions column.
+	 *
+	 * @param object $item Row data.
+	 * @return string Actions column HTML.
+	 */
+	public function column_actions( $item ) {
+		$metadata         = json_decode( $item->metadata, true );
+		$encryption_type  = isset( $metadata['encryption_type'] ) ? $metadata['encryption_type'] : 'aes-rsa-password-v3';
+		$hostname         = isset( $metadata['key_hostname'] ) ? $metadata['key_hostname'] : '';
+		$timestamp_suffix = isset( $metadata['key_timestamp_suffix'] ) ? $metadata['key_timestamp_suffix'] : '';
+		$is_expired       = isset( $item->is_expired ) && 1 === $item->is_expired;
+
+		// Check if entry is undecryptable (passkey-encrypted but passkey was deleted).
+		// Use database flag as primary indicator (more reliable than checking options).
+		$is_undecryptable = false;
+		
+		if ( isset( $item->undecryptable ) && 1 === (int)$item->undecryptable ) {
+			$is_undecryptable = true;
+		} else {
+			// Fallback: Check encrypted_data for legacy entries not yet marked.
+			$encrypted_data = json_decode( $item->encrypted_data, true );
+			if ( is_array( $encrypted_data ) && ! empty( $encrypted_data['credentialId'] ) && $encrypted_data['isProEncrypted'] ) {
+				// Entry was encrypted with a passkey. Check if that passkey still exists.
+				$credential_id = $encrypted_data['credentialId'];
+				$passkey_data  = get_option( 'passkey_credential_' . $credential_id, false );
+				if ( ! $passkey_data ) {
+					$is_undecryptable = true;
+				}
+			}
+		}
+		
+
+		$actions = array();
+
+		// Decrypt button (disabled for expired or undecryptable entries).
+		if ( $is_expired ) {
+			// Show disabled decrypt button for expired entries.
+			$actions[] = sprintf(
+				'<button type="button" class="button button-expired" disabled title="%s"><span class="dashicons dashicons-unlock"></span></button>',
+				esc_attr__( 'Data has been purged (expired)', 'secure-login-collector' )
+			);
+		} elseif ( $is_undecryptable ) {
+			// Show disabled decrypt button with undecryptable indicator.
+			
+			$actions[] = sprintf(
+				'<button type="button" class="button decrypt-btn-v2" data-id="%s" data-undecryptable="true" disabled title="%s"><span class="dashicons dashicons-lock"></span></button>',
+				$item->id,
+				esc_attr__( 'Cannot decrypt: passkey was deleted', 'secure-login-collector' )
+			);
+		} else {
+			// Normal decrypt button.
+			$actions[] = sprintf(
+				'<button type="button" class="button decrypt-btn-v2" data-id="%s" data-hostname="%s" data-timestamp="%s" data-encryption-type="%s" title="%s"><span class="dashicons dashicons-unlock"></span></button>',
+				$item->id,
+				esc_attr( $hostname ),
+				esc_attr( $timestamp_suffix ),
+				esc_attr( $encryption_type ),
+				esc_attr__( 'Decrypt data', 'secure-login-collector' )
+			);
+		}
+
+		// Extend button (only for non-expired entries if expiration is enabled) with icon.
+		$expiration_days = get_option( 'seculoco_expiration_days', 30 );
+		if ( $expiration_days > 0 && ! $is_expired && !$is_undecryptable ) {
+			$actions[] = sprintf(
+				'<button type="button" class="button button-secondary extend-btn" data-id="%s" title="%s"><span class="dashicons dashicons-calendar-alt"></span></button>',
+				$item->id,
+				esc_attr__( 'Extend retention period', 'secure-login-collector' )
+			);
+		} else {
+			$actions[] = sprintf(
+				'<button type="button" class="button button-secondary extend-btn" title="%s" style="opacity: 0.7" disabled><span class="dashicons dashicons-calendar-alt"></span></button>',
+				$item->id,
+				esc_attr__( 'Cannot extend retention period', 'secure-login-collector' )
+			);
+		}
+
+		// Edit button with icon (disabled for expired entries).
+		if ( ! $is_expired ) {
+			$actions[] = sprintf(
+				'<button type="button" class="button edit-btn" data-id="%s" title="%s"><span class="dashicons dashicons-edit"></span></button>',
+				$item->id,
+				esc_attr__( 'Edit entry', 'secure-login-collector' )
+			);
+
+			// Save/Cancel buttons (hidden by default) with icons.
+			$actions[] = sprintf(
+				'<button type="button" class="button button-primary save-btn" data-id="%s" title="%s" style="display: none;"><span class="dashicons dashicons-yes"></span></button>',
+				$item->id,
+				esc_attr__( 'Save changes', 'secure-login-collector' )
+			);
+
+			$actions[] = sprintf(
+				'<button type="button" class="button cancel-btn" data-id="%s" title="%s" style="display: none;"><span class="dashicons dashicons-no"></span></button>',
+				$item->id,
+				esc_attr__( 'Cancel editing', 'secure-login-collector' )
+			);
+		}
+
+		// Delete button with icon.
+		$actions[] = sprintf(
+			'<button type="button" class="button button-secondary delete-btn" data-id="%s" title="%s"><span class="dashicons dashicons-trash" style="color: #d63384;"></span></button>',
+			$item->id,
+			esc_attr__( 'Delete entry', 'secure-login-collector' )
+		);
+
+		return implode( ' ', $actions );
+	}
+
+	/**
+	 * Get encryption method info.
+	 *
+	 * @param string $encryption_type The encryption type.
+	 * @return array Encryption method information.
+	 */
+	private function get_encryption_method_info( $encryption_type ) {
+		switch ( $encryption_type ) {
+			case 'aes-rsa-password-v3':
+				return array(
+					'name'        => __( 'Secure', 'secure-login-collector' ),
+					'class'       => 'encryption-rsa',
+					'description' => __( 'AES-256-GCM encryption with RSA key protection.', 'secure-login-collector' ),
+				);
+			case 'aes-rsa-passkey-v2':
+				return array(
+					'name'        => __( 'Ultra-Secure', 'secure-login-collector' ),
+					'class'       => 'encryption-ultra-secure',
+					'description' => __( 'AES-256-GCM + RSA with passkey authentication required for decryption.', 'secure-login-collector' ),
+				);
+			case 'rsa_passkey_protected':
+				return array(
+					'name'        => __( 'Ultra-Secure', 'secure-login-collector' ),
+					'class'       => 'encryption-ultra-secure',
+					'description' => __( 'Passkey-derived encryption for maximum security.', 'secure-login-collector' ),
+				);
+			default:
+				return array(
+					'name'        => __( 'Secure', 'secure-login-collector' ),
+					'class'       => 'encryption-rsa',
+					'description' => __( 'AES-256-GCM encryption with RSA key protection.', 'secure-login-collector' ),
+				);
+		}
+	}
+
+	/**
+	 * Prepare table items.
+	 */
+	public function prepare_items() {
+		$columns  = $this->get_columns();
+		$hidden   = array();
+		$sortable = $this->get_sortable_columns();
+
+		$this->_column_headers = array( $columns, $hidden, $sortable );
+
+		// Handle bulk actions.
+		$this->process_bulk_action();
+
+		// Get search term.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Standard WP_List_Table search/sort parameters.
+		$search = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
+
+		// Get sorting parameters.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Standard WP_List_Table search/sort parameters.
+		$orderby = isset( $_GET['orderby'] ) ? sanitize_text_field( wp_unslash( $_GET['orderby'] ) ) : 'created_at';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Standard WP_List_Table search/sort parameters.
+		$order = isset( $_GET['order'] ) ? sanitize_text_field( wp_unslash( $_GET['order'] ) ) : 'desc';
+
+		// Get pagination parameters.
+		$per_page     = $this->get_items_per_page( 'login_entries_per_page', 20 );
+		$current_page = $this->get_pagenum();
+		$offset       = ( $current_page - 1 ) * $per_page;
+
+		// Get data.
+		$data        = $this->database_manager->get_entries_for_list_table( $search, $orderby, $order, $per_page, $offset );
+		$total_items = $this->database_manager->get_total_entries( $search );
+
+		$this->items = $data;
+
+		// Set pagination.
+		$this->set_pagination_args(
+			array(
+				'total_items' => $total_items,
+				'per_page'    => $per_page,
+				'total_pages' => ceil( $total_items / $per_page ),
+			)
+		);
+	}
+
+	/**
+	 * Parse metadata JSON for display.
+	 * In v2 format, metadata is stored as plain JSON (not encrypted).
+	 *
+	 * @param string $metadata_json The metadata JSON string.
+	 * @return array Parsed metadata array.
+	 */
+	private function parse_metadata( $metadata_json ) {
+		$metadata = json_decode( $metadata_json, true );
+
+		if ( ! $metadata ) {
+			return array();
+		}
+
+		// V2 format: metadata is stored in plain text.
+		if ( isset( $metadata['encryption_version'] ) && 2 === $metadata['encryption_version'] ) {
+			return $metadata;
+		}
+
+		// Legacy format: may have encrypted fields.
+		if ( isset( $metadata['metadata_encrypted'] ) && $metadata['metadata_encrypted'] && isset( $metadata['encrypted_fields'] ) ) {
+			// Decrypt legacy encrypted fields.
+			$key = substr( hash( 'sha256', AUTH_KEY . SECURE_AUTH_KEY ), 0, 32 );
+
+			foreach ( $metadata['encrypted_fields'] as $field => $encrypted_value ) {
+				$data = base64_decode( $encrypted_value );
+				if ( strlen( $data ) > 16 ) {
+					$iv        = substr( $data, 0, 16 );
+					$encrypted = substr( $data, 16 );
+					$decrypted = openssl_decrypt(
+						$encrypted,
+						'aes-256-cbc',
+						$key,
+						OPENSSL_RAW_DATA,
+						$iv
+					);
+					if ( false !== $decrypted ) {
+						$metadata[ $field ] = $decrypted;
+					}
+				}
+			}
+
+			unset( $metadata['encrypted_fields'] );
+		}
+
+		return $metadata;
+	}
+
+	/**
+	 * Process bulk actions.
+	 */
+	public function process_bulk_action() {
+		$action = $this->current_action();
+
+		if ( ! $action ) {
+			return;
+		}
+
+		// Verify nonce.
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ?? '' ) ), 'bulk-login_entries' ) ) {
+			wp_die( esc_html__( 'Security check failed.', 'secure-login-collector' ) );
+		}
+
+		$ids = isset( $_POST['login_entries'] ) ? array_map( 'intval', wp_unslash( $_POST['login_entries'] ) ) : array();
+
+		if ( empty( $ids ) ) {
+			return;
+		}
+
+		if ( 'delete' === $action ) {
+			foreach ( $ids as $id ) {
+				$this->database_manager->delete_entry( $id );
+			}
+
+			/* translators: %d: number of entries deleted */
+			$message = sprintf(
+				_n( '%d entry deleted.', '%d entries deleted.', count( $ids ), 'secure-login-collector' ),
+				count( $ids )
+			);
+
+			add_settings_error( 'seculoco_bulk', 'bulk_delete', $message, 'updated' );
+		} elseif ( strpos( $action, 'export-' ) === 0 ) {
+			// Handle CSV exports via AJAX (will be processed by JavaScript).
+			$manager = str_replace( 'export-', '', $action );
+
+			// Store export request in transient for AJAX processing.
+			set_transient(
+				'seculoco_bulk_export_' . get_current_user_id(),
+				array(
+					'manager' => $manager,
+					'ids'     => $ids,
+				),
+				300
+			);
+
+			/* translators: %d: number of entries prepared for export */
+			$message = sprintf(
+				__( 'Bulk export initiated for %d entries. Please wait...', 'secure-login-collector' ),
+				count( $ids )
+			);
+
+			add_settings_error( 'seculoco_bulk', 'bulk_export', $message, 'updated' );
+		}
+	}
+
+	/**
+	 * Display the search box.
+	 *
+	 * @param string $text     The search button text.
+	 * @param string $input_id The search input ID.
+	 */
+	public function search_box( $text, $input_id ) {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- These are read-only GET parameters used for display/filtering, not form submissions.
+		$search_term = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
+		if ( empty( $search_term ) && ! $this->has_items() ) {
+			return;
+		}
+
+		$input_id = $input_id . '-search-input';
+
+		if ( ! empty( $_GET['orderby'] ) ) {
+			echo '<input type="hidden" name="orderby" value="' . esc_attr( sanitize_text_field( wp_unslash( $_GET['orderby'] ) ) ) . '" />';
+		}
+		if ( ! empty( $_GET['order'] ) ) {
+			echo '<input type="hidden" name="order" value="' . esc_attr( sanitize_text_field( wp_unslash( $_GET['order'] ) ) ) . '" />';
+		}
+		?>
+		<p class="search-box">
+			<label class="screen-reader-text" for="<?php echo esc_attr( $input_id ); ?>"><?php echo esc_html( $text ); ?>:</label>
+			<input type="search" id="<?php echo esc_attr( $input_id ); ?>" name="s" value="<?php echo esc_attr( sanitize_text_field( wp_unslash( $_GET['s'] ?? '' ) ) ); ?>" placeholder="<?php echo esc_attr__( 'Search in email, name, login URL...', 'secure-login-collector' ); ?>" />
+			<?php submit_button( $text, '', '', false, array( 'id' => 'search-submit' ) ); ?>
+		</p>
+		<?php
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+	}
+
+	/**
+	 * Override the single row display to add decrypted data row.
+	 *
+	 * @param object $item Row data.
+	 */
+	public function single_row( $item ) {
+		echo '<tr id="row-' . esc_attr( $item->id ) . '">';
+		$this->single_row_columns( $item );
+		echo '</tr>';
+
+		// Add hidden row for decrypted data.
+		echo '<tr id="decrypted-row-' . esc_attr( $item->id ) . '" class="decrypted-data-row" style="display: none;">';
+		echo '<td colspan="' . count( $this->get_columns() ) . '">';
+		echo '<div class="decrypted-content">';
+		echo '<h4>' . esc_html__( 'Decrypted Data:', 'secure-login-collector' ) . '</h4>';
+		echo '<div class="decrypted-json"></div>';
+		echo '<div style="margin-top: 10px;">';
+		echo '<button type="button" class="button button-primary export-to-password-manager" data-id="' . esc_attr( $item->id ) . '" title="' . esc_attr__( 'Export to Password Manager', 'secure-login-collector' ) . '"> ' . esc_html__( 'Export to Password Manager', 'secure-login-collector' ) . '</button>';
+		echo '<button type="button" class="button hide-decrypted" data-id="' . esc_attr( $item->id ) . '" title="' . esc_attr__( 'Hide decrypted data', 'secure-login-collector' ) . '"><span class="dashicons dashicons-hidden"></span></button>';
+		echo '</div>';
+		echo '</div>';
+		echo '</td>';
+		echo '</tr>';
+	}
+}
+
+/**
+ * Class Seculoco_Admin_Interface
+ *
+ * Handles the admin interface for the secure login collector plugin.
+ */
+// phpcs:ignore WordPress.Files.OneObjectStructurePerFile.MultipleFound -- List table class included for functionality.
 class Seculoco_Admin_Interface {
+
 
 	/**
 	 * Database table name.
@@ -40,7 +592,7 @@ class Seculoco_Admin_Interface {
 	/**
 	 * Encryption handler instance.
 	 *
-	 * @var Seculoco_Encryption_Handler_V2
+	 * @var Seculoco_Encryption_Service
 	 */
 	private $encryption_handler;
 
@@ -61,9 +613,9 @@ class Seculoco_Admin_Interface {
 	/**
 	 * Constructor - initializes admin interface.
 	 *
-	 * @param string                         $table_name         Database table name.
-	 * @param Seculoco_Encryption_Handler_V2 $encryption_handler Encryption handler instance.
-	 * @param Seculoco_Database_Manager      $database_manager   Database manager instance.
+	 * @param string                          $table_name         Database table name.
+	 * @param Seculoco_Encryption_Service $encryption_handler Encryption handler instance.
+	 * @param Seculoco_Database_Manager   $database_manager   Database manager instance.
 	 */
 	public function __construct( $table_name, $encryption_handler, $database_manager ) {
 		$this->table_name         = $table_name;
@@ -196,21 +748,21 @@ class Seculoco_Admin_Interface {
 			),
 		);
 
-		// Primary localization: seculocoAjax (standard variable name).
+		// Primary localization: seculocoAjax (standard variable name)
 		wp_localize_script( 'secure-login-admin-js', 'seculocoAjax', $ajax_data );
 
-		// Backward compatibility: Also provide as seculocoAdmin during transition period.
-		// Both variables contain identical data to support legacy premium scripts.
+		// Backward compatibility: Also provide as seculocoAdmin during transition period
+		// Both variables contain identical data to support legacy premium scripts
 		wp_localize_script( 'secure-login-admin-js', 'seculocoAdmin', $ajax_data );
 
-		// CRITICAL: Also localize for the decrypt script (needed for AJAX calls in admin-decrypt.js).
-		// Provide both variable names for maximum compatibility.
+		// CRITICAL: Also localize for the decrypt script (needed for AJAX calls in admin-decrypt.js)
+		// Provide both variable names for maximum compatibility
 		wp_localize_script( 'seculoco-admin-decrypt', 'seculocoAjax', $ajax_data );
 		wp_localize_script( 'seculoco-admin-decrypt', 'seculocoAdmin', $ajax_data );
 
 		// Localize script with configuration data.
 		$admin_config = array(
-			'passkeyRegistered' => get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false ),
+			'passkeyRegistered' => get_option( 'seculoco_passkey_registered', false ),
 			'currentUserId'     => get_current_user_id(),
 		);
 
@@ -265,6 +817,8 @@ class Seculoco_Admin_Interface {
 		<div class="wrap seculoco-admin-wrap">
 			<h1 class="wp-heading-inline"><?php echo esc_html__( 'Secure Login Data', 'secure-login-collector' ); ?></h1>
 			<hr class="wp-header-end">
+
+			
 
 			<?php
 			// Allow pro version to show diagnostic info and fix button.
@@ -337,7 +891,7 @@ class Seculoco_Admin_Interface {
 			}
 
 			$metadata        = json_decode( $row->metadata, true );
-			$encryption_type = $metadata['encryption_type'] ?? 'aes-rsa-v2';
+		$encryption_type = $metadata['encryption_type'] ?? 'aes-rsa-password-v3';
 
 			// CRITICAL: Server NEVER decrypts. Always return encrypted packages for client-side decryption.
 			// This maintains zero-knowledge architecture for both FREE and PRO entries.
@@ -356,7 +910,7 @@ class Seculoco_Admin_Interface {
 			array(
 				'manager' => $manager,
 				'data'    => $csv_data,
-				/* translators: %d: number of entries prepared for export */
+				/* translators: %d: number of entries */
 				'message' => sprintf( __( 'Bulk export prepared for %d entries.', 'secure-login-collector' ), count( $csv_data ) ),
 			)
 		);
@@ -412,10 +966,10 @@ class Seculoco_Admin_Interface {
 		$row                    = $this->database_manager->get_entry( $extend_id );
 		$is_expired             = isset( $row->is_expired ) ? $row->is_expired : 0;
 		$new_expiration_display = $this->database_manager->calculate_expiration( $row->retention_until, $is_expired );
-		$expiration_days        = get_option( SECULOCO_OPTION_EXPIRATION_DAYS, 30 );
+		$expiration_days        = get_option( 'seculoco_expiration_days', 30 );
+		/* translators: %d: number of days retention period extended */
 		wp_send_json_success(
 			array(
-				/* translators: %d: number of days retention period extended */
 				'message'        => sprintf( __( 'Retention period extended by %d days.', 'secure-login-collector' ), $expiration_days ),
 				'new_expiration' => $new_expiration_display,
 			)
@@ -554,6 +1108,8 @@ class Seculoco_Admin_Interface {
 			return;
 		}
 
+		$metadata = json_decode( $entry->metadata, true );
+
 		// Return encrypted package for client-side decryption.
 		// Note: The frontend sends camelCase, we return snake_case for consistency with JS expectations.
 		wp_send_json_success(
@@ -561,167 +1117,13 @@ class Seculoco_Admin_Interface {
 				'encrypted_data'    => $encrypted_data['encryptedData'] ?? '',
 				'encrypted_aes_key' => $encrypted_data['rsaEncryptedKey'] ?? '', // Frontend uses rsaEncryptedKey, not encryptedAESKey.
 				'iv'                => $encrypted_data['iv'] ?? '',
+				'salt'              => $encrypted_data['salt'] ?? '',
 				'version'           => $encrypted_data['version'] ?? 'v2',
-				'metadata'          => json_decode( $entry->metadata, true ),
+				'encryption_type'   => $metadata['encryption_type'] ?? 'aes-rsa-password-v3',
+				'is_pro_encrypted'  => $metadata['is_pro_encrypted'] ?? false,
+				'metadata'          => $metadata,
 			)
 		);
 	}
 
-	/**
-	 * Encryption setup page.
-	 *
-	 * @since 2.0.0
-	 */
-	public function encryption_setup_page() {
-		// Check if encryption is already initialized.
-		$is_initialized = seculoco_is_encryption_initialized();
-
-		// Get encryption status details.
-		$status = array();
-		if ( class_exists( 'Seculoco_Encryption_Handler_V2' ) && method_exists( 'Seculoco_Encryption_Handler_V2', 'get_status' ) ) {
-			$status = Seculoco_Encryption_Handler_V2::get_status();
-		}
-
-		?>
-		<div class="wrap seculoco-admin-wrap">
-			<h1><?php echo esc_html__( 'Encryption Setup', 'secure-login-collector' ); ?></h1>
-
-			<div class="seculoco-card">
-				<div class="seculoco-card-header">
-					<h2><?php echo esc_html__( 'Master Password Configuration', 'secure-login-collector' ); ?></h2>
-				</div>
-				<div class="seculoco-card-body">
-					<?php if ( $is_initialized ) : ?>
-						<div class="notice notice-success inline">
-							<p>
-								<span class="dashicons dashicons-yes-alt"></span>
-								<strong><?php echo esc_html__( 'Encryption is initialized and ready!', 'secure-login-collector' ); ?></strong>
-							</p>
-						</div>
-
-						<div class="seculoco-encryption-status">
-							<h3><?php echo esc_html__( 'Encryption Status', 'secure-login-collector' ); ?></h3>
-							<table class="widefat">
-								<tbody>
-									<tr>
-										<th><?php echo esc_html__( 'Encryption Version:', 'secure-login-collector' ); ?></th>
-										<td><?php echo esc_html( get_option( SECULOCO_OPTION_ENCRYPTION_VERSION, 'Unknown' ) ); ?></td>
-									</tr>
-									<tr>
-										<th><?php echo esc_html__( 'Public Key:', 'secure-login-collector' ); ?></th>
-										<td>
-											<?php echo $status['free']['has_public_key'] ?? false ? '<span class="dashicons dashicons-yes-alt seculoco-status-ok"></span>' : '<span class="dashicons dashicons-dismiss seculoco-status-error"></span>'; ?>
-											<?php echo ( $status['free']['has_public_key'] ?? false ) ? esc_html__( 'Available', 'secure-login-collector' ) : esc_html__( 'Missing', 'secure-login-collector' ); ?>
-										</td>
-									</tr>
-									<tr>
-										<th><?php echo esc_html__( 'Private Key:', 'secure-login-collector' ); ?></th>
-										<td>
-											<?php echo $status['free']['has_private_key'] ?? false ? '<span class="dashicons dashicons-yes-alt seculoco-status-ok"></span>' : '<span class="dashicons dashicons-dismiss seculoco-status-error"></span>'; ?>
-											<?php echo ( $status['free']['has_private_key'] ?? false ) ? esc_html__( 'Wrapped & Secured', 'secure-login-collector' ) : esc_html__( 'Missing', 'secure-login-collector' ); ?>
-										</td>
-									</tr>
-									<tr>
-										<th><?php echo esc_html__( 'Master Password Salt:', 'secure-login-collector' ); ?></th>
-										<td>
-											<?php echo $status['free']['has_salt'] ?? false ? '<span class="dashicons dashicons-yes-alt seculoco-status-ok"></span>' : '<span class="dashicons dashicons-dismiss seculoco-status-error"></span>'; ?>
-											<?php echo ( $status['free']['has_salt'] ?? false ) ? esc_html__( 'Configured', 'secure-login-collector' ) : esc_html__( 'Missing', 'secure-login-collector' ); ?>
-										</td>
-									</tr>
-									<tr>
-										<th><?php echo esc_html__( 'Setup Date:', 'secure-login-collector' ); ?></th>
-										<td><?php echo esc_html( get_option( SECULOCO_OPTION_SETUP_TIMESTAMP, __( 'Unknown', 'secure-login-collector' ) ) ); ?></td>
-									</tr>
-								</tbody>
-							</table>
-						</div>
-
-						<div class="seculoco-encryption-info">
-							<h3><?php echo esc_html__( 'Security Information', 'secure-login-collector' ); ?></h3>
-							<p>
-								<?php
-								echo wp_kses_post(
-									__( 'Your encryption is configured with <strong>Zero-Knowledge Architecture</strong>. Your master password is never stored on the server and all login credentials are encrypted client-side before transmission.', 'secure-login-collector' )
-								);
-								?>
-							</p>
-							<p>
-								<strong><?php echo esc_html__( 'Important:', 'secure-login-collector' ); ?></strong>
-								<?php
-								echo wp_kses_post(
-									__( 'If you lose your master password, encrypted data cannot be recovered. Please store your password securely.', 'secure-login-collector' )
-								);
-								?>
-							</p>
-						</div>
-
-						<div class="seculoco-encryption-actions">
-							<h3><?php echo esc_html__( 'Advanced Options', 'secure-login-collector' ); ?></h3>
-							<p>
-								<button type="button" class="button button-secondary seculoco-launch-wizard" data-mode="change">
-									<?php echo esc_html__( 'Change Master Password', 'secure-login-collector' ); ?>
-								</button>
-								<span class="description">
-									<?php echo esc_html__( '(This will re-encrypt your private key with a new master password)', 'secure-login-collector' ); ?>
-								</span>
-							</p>
-						</div>
-
-					<?php else : ?>
-						<div class="notice notice-warning inline">
-							<p>
-								<span class="dashicons dashicons-warning"></span>
-								<strong><?php echo esc_html__( 'Encryption not configured!', 'secure-login-collector' ); ?></strong>
-							</p>
-							<p>
-								<?php
-								echo wp_kses_post(
-									__( 'You must set up a master password before you can use Secure Login Collector. Your master password will be used to encrypt and protect all collected login credentials.', 'secure-login-collector' )
-								);
-								?>
-							</p>
-						</div>
-
-						<div class="seculoco-setup-info">
-							<h3><?php echo esc_html__( 'What is a Master Password?', 'secure-login-collector' ); ?></h3>
-							<p>
-								<?php
-								echo wp_kses_post(
-									__( 'Your master password is used to encrypt your private encryption keys using <strong>Zero-Knowledge Architecture</strong>. This means:', 'secure-login-collector' )
-								);
-								?>
-							</p>
-							<ul>
-								<li><?php echo esc_html__( 'Your master password is never stored on the server', 'secure-login-collector' ); ?></li>
-								<li><?php echo esc_html__( 'Only you can decrypt the collected login credentials', 'secure-login-collector' ); ?></li>
-								<li><?php echo esc_html__( 'All encryption happens in your browser before data reaches the server', 'secure-login-collector' ); ?></li>
-								<li><?php echo esc_html__( 'Even the server administrator cannot access encrypted data without your password', 'secure-login-collector' ); ?></li>
-							</ul>
-						</div>
-
-						<div class="seculoco-setup-requirements">
-							<h3><?php echo esc_html__( 'Password Requirements', 'secure-login-collector' ); ?></h3>
-							<ul>
-								<li><?php echo esc_html__( 'Minimum 12 characters', 'secure-login-collector' ); ?></li>
-								<li><?php echo esc_html__( 'Use a strong, unique password', 'secure-login-collector' ); ?></li>
-								<li><?php echo esc_html__( 'Store it securely (password manager recommended)', 'secure-login-collector' ); ?></li>
-								<li>
-									<strong><?php echo esc_html__( 'WARNING:', 'secure-login-collector' ); ?></strong>
-									<?php echo esc_html__( 'If you lose this password, encrypted data cannot be recovered!', 'secure-login-collector' ); ?>
-								</li>
-							</ul>
-						</div>
-
-						<div class="seculoco-setup-action">
-							<button type="button" class="button button-primary button-large seculoco-launch-wizard">
-								<span class="dashicons dashicons-lock"></span>
-								<?php echo esc_html__( 'Setup Master Password Now', 'secure-login-collector' ); ?>
-							</button>
-						</div>
-					<?php endif; ?>
-				</div>
-			</div>
-		</div>
-		<?php
-	}
 }

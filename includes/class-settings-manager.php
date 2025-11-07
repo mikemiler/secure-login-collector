@@ -23,14 +23,14 @@ class Seculoco_Settings_Manager {
 	/**
 	 * Encryption handler instance.
 	 *
-	 * @var Seculoco_Encryption_Handler_V2
+	 * @var Seculoco_Encryption_Service
 	 */
 	private $encryption_handler;
 
 	/**
 	 * Constructor - initializes settings manager.
 	 *
-	 * @param Seculoco_Encryption_Handler_V2 $encryption_handler Encryption handler instance.
+	 * @param Seculoco_Encryption_Service $encryption_handler Encryption handler instance.
 	 */
 	public function __construct( $encryption_handler ) {
 		$this->encryption_handler = $encryption_handler;
@@ -39,6 +39,11 @@ class Seculoco_Settings_Manager {
 		add_action( 'admin_menu', array( $this, 'add_settings_menu' ), 20 );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_scripts' ) );
+
+		// Register AJAX handlers for password-based encryption.
+		add_action( 'wp_ajax_seculoco_setup_password_encryption', array( $this, 'ajax_setup_password_encryption' ) );
+		add_action( 'wp_ajax_seculoco_reset_password_encryption', array( $this, 'ajax_reset_password_encryption' ) );
+		add_action( 'wp_ajax_seculoco_check_password_status', array( $this, 'ajax_check_password_status' ) );
 	}
 
 	/**
@@ -60,20 +65,80 @@ class Seculoco_Settings_Manager {
 			'1.0.0'
 		);
 
-		// Enqueue jQuery for inline scripts.
+		// Enqueue jQuery for admin interactions.
 		wp_enqueue_script( 'jquery' );
 
-		// Enqueue merged admin script.
+		// Enqueue password setup script on settings page.
+		// Remove the hook check to always enqueue on admin pages - WordPress will handle script dependencies.
 		wp_enqueue_script(
-			'seculoco-admin-js',
-			plugin_dir_url( __FILE__ ) . '../assets/js/admin.js',
+			'seculoco-password-setup',
+			plugin_dir_url( __FILE__ ) . '../assets/js/admin-password-setup.js',
 			array( 'jquery' ),
-			filemtime( plugin_dir_path( __FILE__ ) . '../assets/js/admin.js' ),
+			'1.0.0',
 			true
 		);
 
-		// Localize master password reset script.
-		$this->localize_master_password_reset_script();
+		// Localize script with AJAX URL and nonce.
+		wp_localize_script(
+			'seculoco-password-setup',
+			'secuLocoPasswordSetup',
+			array(
+				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+				'nonce'   => wp_create_nonce( 'seculoco_password_setup_nonce' ),
+				'i18n'    => array(
+					'setupPassword'         => __( 'Setup Password', 'secure-login-collector' ),
+					'resetPassword'         => __( 'Reset Password', 'secure-login-collector' ),
+					'password'              => __( 'Password', 'secure-login-collector' ),
+					'confirmPassword'       => __( 'Confirm Password', 'secure-login-collector' ),
+					'setupButton'           => __( 'Setup Encryption', 'secure-login-collector' ),
+					'resetButton'           => __( 'Reset Encryption', 'secure-login-collector' ),
+					'cancel'                => __( 'Cancel', 'secure-login-collector' ),
+					'passwordMismatch'      => __( 'Passwords do not match.', 'secure-login-collector' ),
+					'passwordTooShort'      => __( 'Password must be at least 8 characters.', 'secure-login-collector' ),
+					'setupSuccess'          => __( 'Password-based encryption setup successfully!', 'secure-login-collector' ),
+					'resetSuccess'          => __( 'Password-based encryption reset successfully!', 'secure-login-collector' ),
+					'setupFailed'           => __( 'Failed to setup password encryption.', 'secure-login-collector' ),
+					'resetFailed'           => __( 'Failed to reset password encryption.', 'secure-login-collector' ),
+					'resetWarningTitle'     => __( 'Warning: Data Loss', 'secure-login-collector' ),
+					'resetWarningMessage'   => __( 'Deleting this password will permanently prevent decryption of all existing login data encrypted with this password. Are you sure you want to continue?', 'secure-login-collector' ),
+					'typeConfirmToReset'    => __( 'Type "RESET" to confirm:', 'secure-login-collector' ),
+					'resetConfirmRequired'  => __( 'Please type "RESET" to confirm.', 'secure-login-collector' ),
+					'passwordStrengthWeak'  => __( 'Weak password - consider using a stronger one', 'secure-login-collector' ),
+					'passwordStrengthFair'  => __( 'Fair password', 'secure-login-collector' ),
+					'passwordStrengthGood'  => __( 'Good password', 'secure-login-collector' ),
+					'passwordStrengthStrong' => __( 'Strong password', 'secure-login-collector' ),
+					'show'                  => __( 'Show', 'secure-login-collector' ),
+					'hide'                  => __( 'Hide', 'secure-login-collector' ),
+				),
+			)
+		);
+
+		// Enqueue zxcvbn for password strength meter.
+		wp_enqueue_script( 'zxcvbn-async' );
+
+		wp_enqueue_script(
+			'seculoco-key-management',
+			plugin_dir_url( __FILE__ ) . '../assets/js/admin-key-management.js',
+			array( 'jquery' ),
+			defined( 'SECULOCO_VERSION' ) ? SECULOCO_VERSION : '1.0.0',
+			true
+		);
+
+		wp_localize_script(
+			'seculoco-key-management',
+			'seculocoKeyManager',
+			array(
+				'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
+				'nonce'     => wp_create_nonce( 'seculoco_admin_nonce' ),
+				'strings'   => array(
+					'networkError'        => __( 'Network error occurred.', 'secure-login-collector' ),
+					'exportFailedPrefix'  => __( 'Failed to export public key: ', 'secure-login-collector' ),
+				),
+				'passwordExportFileName' => 'secure-login-password-public-key.pem',
+				'passkeyExportFileName'  => 'secure-login-passkey-public-key.pem',
+				'defaultFrontendText'    => $this->get_default_frontend_text(),
+			)
+		);
 	}
 
 	/**
@@ -355,326 +420,80 @@ class Seculoco_Settings_Manager {
 	}
 
 	/**
-	 * Add key management inline script.
-	 */
-	private function add_key_management_inline_script() {
-		$nonce = wp_create_nonce( 'seculoco_admin_nonce' );
-
-		$script = "
-		jQuery(document).ready(function($) {
-			// Initialize free keys
-			$('#initialize-free-keys').on('click', function() {
-				var button = $(this);
-				button.prop('disabled', true).text('" . esc_js( __( 'Initializing...', 'secure-login-collector' ) ) . "');
-
-				$.ajax({
-					url: ajaxurl,
-					type: 'POST',
-					data: {
-						action: 'seculoco_initialize_free_keys',
-						nonce: '" . esc_js( $nonce ) . "'
-					},
-					success: function(response) {
-						if (response.success) {
-							alert('" . esc_js( __( 'Free RSA keys initialized successfully!', 'secure-login-collector' ) ) . "');
-							location.reload();
-						} else {
-							alert('" . esc_js( __( 'Failed to initialize keys:', 'secure-login-collector' ) ) . "' + response.data);
-							button.prop('disabled', false).text('" . esc_js( __( 'Initialize Free Keys Now', 'secure-login-collector' ) ) . "');
-						}
-					},
-					error: function() {
-						alert('" . esc_js( __( 'Network error occurred.', 'secure-login-collector' ) ) . "');
-						button.prop('disabled', false).text('" . esc_js( __( 'Initialize Free Keys Now', 'secure-login-collector' ) ) . "');
-					}
-				});
-			});
-		});
-		";
-
-		wp_add_inline_script( 'seculoco-admin-js', $script );
-	}
-
-	/**
-	 * Localize master password reset script data.
-	 */
-	private function localize_master_password_reset_script() {
-		// Check if there are any encrypted entries for the warning message.
-		global $wpdb;
-		$table_name = $wpdb->prefix . 'seculoco_data';
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$has_encrypted_data = $wpdb->get_var( "SELECT COUNT(*) FROM {$table_name}" ) > 0;
-
-		// Prepare localized data.
-		$script_data = array(
-			'ajaxUrl'          => admin_url( 'admin-ajax.php' ),
-			'nonce'            => wp_create_nonce( 'seculoco_wizard_nonce' ),
-			'hasEncryptedData' => $has_encrypted_data,
-			'strings'          => array(
-				// Legacy strings (kept for backward compatibility)
-				'warningDataLoss'              => __( 'WARNING: Resetting your master password will make ALL existing encrypted data permanently inaccessible!\n\nAll encrypted login credentials will be lost forever. This action CANNOT be undone. There is NO recovery method.\n\nAre you absolutely sure you want to proceed?', 'secure-login-collector' ),
-				'warningSimple'                => __( 'Are you sure you want to reset your master password?\n\nYou will need to set up a new master password afterward.', 'secure-login-collector' ),
-				'resetting'                    => __( 'Resetting...', 'secure-login-collector' ),
-				'resetButton'                  => __( 'Reset Master Password', 'secure-login-collector' ),
-				'resetSuccess'                 => __( 'Master password reset successfully! Please set up a new master password.', 'secure-login-collector' ),
-				'resetFailed'                  => __( 'Failed to reset master password:', 'secure-login-collector' ),
-				'networkError'                 => __( 'Network error occurred. Please try again.', 'secure-login-collector' ),
-				// Modal strings for enhanced reset dialog
-				'modal_warning_title_with_data' => __( 'CRITICAL WARNING: Master Password Reset', 'secure-login-collector' ),
-				'modal_warning_title_no_data'   => __( 'Master Password Reset', 'secure-login-collector' ),
-				'critical_warning_title'        => __( 'CRITICAL WARNING:', 'secure-login-collector' ),
-				'critical_warning_main'         => __( 'Resetting your master password will permanently prevent decryption of all existing encrypted login data.', 'secure-login-collector' ),
-				'warning_list_item_1'           => __( 'All encrypted login credentials will become permanently inaccessible', 'secure-login-collector' ),
-				'warning_list_item_2'           => __( 'This action CANNOT be undone', 'secure-login-collector' ),
-				'warning_list_item_3'           => __( 'There is NO recovery method', 'secure-login-collector' ),
-				'warning_list_item_4'           => __( 'You will need to collect new login data from clients', 'secure-login-collector' ),
-				'confirmation_checkbox_label'   => __( 'I understand that all encrypted data will be permanently lost', 'secure-login-collector' ),
-				'safe_reset_message_1'          => __( 'You can safely reset your master password and start fresh.', 'secure-login-collector' ),
-				'safe_reset_message_2'          => __( 'Since you have no encrypted data stored, this is completely safe.', 'secure-login-collector' ),
-				'cancel_button'                 => __( 'Cancel', 'secure-login-collector' ),
-				'confirm_reset_with_data'       => __( 'Yes, Reset Master Password', 'secure-login-collector' ),
-				'confirm_reset_no_data'         => __( 'Reset Master Password', 'secure-login-collector' ),
-				'unknown_error'                 => __( 'An unknown error occurred.', 'secure-login-collector' ),
-			),
-		);
-
-		// Use wp_localize_script for proper escaping.
-		wp_localize_script( 'seculoco-admin-js', 'secureLoginMasterPasswordData', $script_data );
-	}
-
-	/**
 	 * Display encryption content inside the card
 	 */
 	private function display_encryption_content() {
-		// Get key status for free version.
-		// Note: Using legacy constants for backward compatibility.
-		// The actual option name is 'seculoco_private_key_free' (not _encrypted).
-		$free_public_key  = get_option( SECULOCO_OPTION_PUBLIC_KEY );
-		$free_private_key = get_option( SECULOCO_OPTION_PRIVATE_KEY_WRAPPED );
+		$password_active      = (bool) get_option( 'seculoco_password_encryption_active', false );
+		$password_public_key  = get_option( 'seculoco_public_key_standard' );
 
-		// Check if passkey encryption is active (pro keys).
-		$pro_keys_active = get_option( SECULOCO_OPTION_PRO_KEYS_ACTIVE, false );
-
-		// If passkey encryption is active, free encryption should be shown as inactive.
-		// Otherwise, show actual free encryption status.
-		if ( $pro_keys_active ) {
-			$free_status = 'inactive';
-		} else {
-			$free_status = ( $free_public_key && $free_private_key ) ? 'active' : 'needs-init';
-		}
-
-		// Check if encryption is initialized (master password setup).
-		$is_initialized = seculoco_is_encryption_initialized();
-		$setup_date     = get_option( SECULOCO_OPTION_SETUP_TIMESTAMP, '' );
-
-		// Display active encryption method status bar.
-		$this->render_active_encryption_status_bar( $free_status, $pro_keys_active );
-
-		// 2-column layout: Free on left, Pro on right.
+		// Two-column layout: password encryption + pro extension.
 		echo '<div class="seculoco-encryption-grid">';
 
-		// ===== LEFT COLUMN: FREE VERSION =====
+		// ===== PASSWORD-BASED ENCRYPTION COLUMN =====
 		echo '<div class="seculoco-encryption-column">';
 
-		// Master Password Status Card - displayed prominently at the top.
-		echo '<div class="seculoco-card">';
+		echo '<div class="seculoco-encryption-status-card">';
+		echo '<div class="seculoco-encryption-status-header">';
+		echo '<div>';
+		echo '<strong class="seculoco-encryption-status-title">' . esc_html__( 'Password-Based Encryption', 'secure-login-collector' ) . '</strong>';
+		echo '<p class="seculoco-encryption-status-subtitle">' . esc_html__( 'RSA-2048 protected with your master password', 'secure-login-collector' ) . '</p>';
+		echo '</div>';
 
-		if ( ! $is_initialized ) {
-			// Master password NOT configured - show setup required state.
-			echo '<div class="seculoco-passkey-benefit-text">';
-			echo '<div class="seculoco-card-title">';
-			echo '<span class="seculoco-badge seculoco-badge-warning">' . esc_html__( 'SETUP REQUIRED', 'secure-login-collector' ) . '</span>';
-			echo ' ' . esc_html__( 'Master Password', 'secure-login-collector' );
-			echo '</div>';
-			echo '<div class="seculoco-passkey-benefit-desc">';
-			echo esc_html__( 'Configure your master password to secure encryption keys and protect sensitive data.', 'secure-login-collector' );
-			echo '<br><button type="button" class="seculoco-btn seculoco-btn-primary seculoco-btn-lg seculoco-launch-wizard seculoco-margin-top-8">';
-			echo '<span>🔒</span> ';
-			echo esc_html__( 'Start Master Password Wizard', 'secure-login-collector' );
-			echo '</button>';
-			echo '</div>';
+		if ( $password_active ) {
+			echo '<div class="seculoco-encryption-status-label">';
+			echo '<span class="seculoco-encryption-badge-active">' . esc_html__( 'ACTIVE', 'secure-login-collector' ) . '</span>';
 			echo '</div>';
 		} else {
-			// Master password IS configured - show active state.
-			echo '<div class="seculoco-passkey-benefit-text">';
-			echo '<div class="seculoco-card-title">';
-			echo '<span class="seculoco-badge seculoco-badge-success">' . esc_html__( 'ACTIVE', 'secure-login-collector' ) . '</span>';
-			echo ' ' . esc_html__( 'Master Password Protection', 'secure-login-collector' );
+			echo '<div class="seculoco-encryption-status-label">';
+			echo '<span class="seculoco-encryption-badge-not-init">' . esc_html__( 'NOT SET', 'secure-login-collector' ) . '</span>';
+			echo '<p class="seculoco-encryption-hint">' . esc_html__( 'Create a master password to enable encryption.', 'secure-login-collector' ) . '</p>';
 			echo '</div>';
-			echo '<div class="seculoco-passkey-benefit-desc">';
-			if ( $setup_date ) {
-				echo '<strong>' . esc_html__( 'Setup Date:', 'secure-login-collector' ) . '</strong> ' . esc_html( $setup_date ) . '<br>';
-			}
-			echo esc_html__( 'Your encryption keys are securely protected with your master password. All sensitive data is encrypted at rest.', 'secure-login-collector' );
-			
-			echo '</div>';
-			echo '</div>';
+		}
+		echo '</div>';
+		echo '</div>';
 
-			// Master Password Reset Section - always show if encryption is initialized.
-			// Check if there are any encrypted entries to customize the warning message.
-			global $wpdb;
-			$table_name = $wpdb->prefix . 'seculoco_data';
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-			$has_encrypted_data = $wpdb->get_var( "SELECT COUNT(*) FROM {$table_name}" ) > 0;
-
-			if ( $has_encrypted_data ) {
-				// SEVERE WARNING: Data exists and will be lost.
-				echo '<div class="seculoco-alert seculoco-alert-danger seculoco-margin-top-20">';
-				echo '<span class="seculoco-alert-icon">⚠️</span>';
-				echo '<div class="seculoco-alert-content">';
-				echo '<div class="seculoco-alert-title">' . esc_html__( 'CRITICAL WARNING: Master Password Reset', 'secure-login-collector' ) . '</div>';
-				echo '<div class="seculoco-alert-message">';
-				echo '<p><strong>' . esc_html__( 'Resetting your master password will permanently prevent decryption of all existing encrypted login data.', 'secure-login-collector' ) . '</strong></p>';
-				echo '<p><strong>' . esc_html__( 'This action CANNOT be undone. There is NO recovery method.', 'secure-login-collector' ) . '</strong></p>';
-				echo '</div>';
-				echo '<button type="button" class="seculoco-btn seculoco-btn-danger" id="reset-master-password-btn">';
-				echo esc_html__( 'Reset Master Password', 'secure-login-collector' );
-				echo '</button>';
-				echo '</div>';
-				echo '</div>';
-			} else {
-				// FRIENDLY MESSAGE: No data exists, safe to reset.
-				echo '<div class="seculoco-alert seculoco-alert-info seculoco-margin-top-20">';
-				echo '<span class="seculoco-alert-icon">ℹ️</span>';
-				echo '<div class="seculoco-alert-content">';
-				echo '<div class="seculoco-alert-title">' . esc_html__( 'Master Password Reset', 'secure-login-collector' ) . '</div>';
-				echo '<div class="seculoco-alert-message">';
-				echo '<p>' . esc_html__( 'You can reset your master password and start fresh. Since you have no encrypted data stored, this is completely safe.', 'secure-login-collector' ) . '</p>';
-				echo '</div>';
-				echo '<button type="button" class="seculoco-btn seculoco-btn-secondary" id="reset-master-password-btn">';
-				echo esc_html__( 'Reset Master Password', 'secure-login-collector' );
-				echo '</button>';
-				echo '</div>';
-				echo '</div>';
-			}
+		// Password setup/reset buttons.
+		echo '<p>';
+		 if(! $password_active) {
+			echo '<button type="button" class="seculoco-btn seculoco-btn-primary seculoco-btn-lg seculoco-password-setup-btn">';
+			echo '<span>🔐</span> ';
+			echo esc_html__( 'Setup Password', 'secure-login-collector' );
+			echo '</button>';
+		}
+		echo '</p>';
+		if ( $password_active ) {
+		// Warning text (matching passkey style).
+		echo '<div class="seculoco-alert seculoco-alert-danger seculoco-margin-top-20">';
+		echo '<span class="seculoco-alert-icon">⚠️</span>';
+		echo '<div class="seculoco-alert-content">';
+		echo '<div class="seculoco-alert-title">' . esc_html__( 'CRITICAL WARNING: Data Loss Risk', 'secure-login-collector' ) . '</div>';
+		echo '<div class="seculoco-alert-message">';
+		echo '<p><strong>' . esc_html__( 'Deleting this password will permanently prevent decryption of all existing login data encrypted with this password.', 'secure-login-collector' ) . '</strong></p>';
+		echo '<p><strong>' . esc_html__( 'This action CANNOT be undone. There is NO recovery method.', 'secure-login-collector' ) . '</strong></p>';
+		
+			echo '<button type="button" class="seculoco-btn seculoco-btn-danger seculoco-password-reset-btn">';
+			echo esc_html__( 'Reset Password', 'secure-login-collector' );
+			echo '</button>';
+		
+		echo '</div>';
+		echo '</div>';
+		echo '</div>';
+		}
+		if ( $password_public_key ) {
+			echo '<p>';
+			echo '<button type="button" class="button button-secondary seculoco-export-key" data-key-type="standard">' . esc_html__( 'Export Public Key', 'secure-login-collector' ) . '</button>';
+			echo '</p>';
 		}
 
-		echo '</div>'; // Close master password card
-
-		echo '</div>'; // Close left column
+		echo '</div>'; // Close password column
 
 		// ===== RIGHT COLUMN: PRO VERSION =====
 		// Allow pro version to add its entire column or show upgrade notice.
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in get_pro_encryption_column().
-		echo '<div class="seculoco-encryption-column">';
-
 		echo apply_filters( 'seculoco_encryption_pro_column', $this->get_pro_encryption_column() );
-		echo '</div>'; // close right column.
+
 		echo '</div>'; // Close 2-column grid
 
-		// Add JavaScript for key management via wp_add_inline_script.
-		$this->add_key_management_inline_script();
-	}
-
-	/**
-	 * Render active encryption method status bar.
-	 * Displays which encryption method is currently active for new incoming logins.
-	 *
-	 * @param string $free_status Free encryption status: 'active', 'inactive', or 'needs-init'.
-	 * @param bool   $pro_keys_active Whether pro keys are active.
-	 */
-	private function render_active_encryption_status_bar( $free_status, $pro_keys_active ) {
-		echo '<div class="seculoco-encryption-status-bar">';
-		echo '<div class="seculoco-encryption-status-bar-header">';
-		echo '<h4 class="seculoco-encryption-status-bar-title">';
-		echo '<span class="seculoco-status-icon">🔐</span>';
-		echo esc_html__( 'Active Encryption Method for New Logins', 'secure-login-collector' );
-		echo '</h4>';
-		echo '</div>';
-		echo '<div class="seculoco-encryption-status-bar-body">';
-
-		// Determine which encryption is active and display appropriate status.
-		if ( $pro_keys_active ) {
-			// Pro/Passkey encryption is active.
-			echo '<div class="seculoco-encryption-status-item seculoco-encryption-status-item-active">';
-			echo '<span class="seculoco-status-dot seculoco-status-dot-active"></span>';
-			echo '<div class="seculoco-encryption-status-content">';
-			echo '<div class="seculoco-encryption-status-label">';
-			echo '<strong>' . esc_html__( 'Passkey Protection', 'secure-login-collector' ) . '</strong>';
-			echo ' <span class="seculoco-badge seculoco-badge-success">' . esc_html__( 'ACTIVE', 'secure-login-collector' ) . '</span>';
-			echo '</div>';
-			echo '<p class="seculoco-encryption-status-desc">';
-			echo esc_html__( 'New login data will be encrypted using passkey-protected RSA keys (ultra-secure, zero-knowledge encryption).', 'secure-login-collector' );
-			echo '</p>';
-			echo '</div>';
-			echo '</div>';
-
-			// Show password encryption as inactive.
-			echo '<div class="seculoco-encryption-status-item seculoco-encryption-status-item-inactive">';
-			echo '<span class="seculoco-status-dot seculoco-status-dot-inactive"></span>';
-			echo '<div class="seculoco-encryption-status-content">';
-			echo '<div class="seculoco-encryption-status-label">';
-			echo '<strong>' . esc_html__( 'Password Encryption', 'secure-login-collector' ) . '</strong>';
-			echo ' <span class="seculoco-badge seculoco-badge-inactive">' . esc_html__( 'INACTIVE', 'secure-login-collector' ) . '</span>';
-			echo '</div>';
-			echo '<p class="seculoco-encryption-status-desc">';
-			echo esc_html__( 'Password-based encryption is disabled while passkey protection is active.', 'secure-login-collector' );
-			echo '</p>';
-			echo '</div>';
-			echo '</div>';
-		} elseif ( 'active' === $free_status ) {
-			// Free/Password encryption is active.
-			echo '<div class="seculoco-encryption-status-item seculoco-encryption-status-item-active">';
-			echo '<span class="seculoco-status-dot seculoco-status-dot-active"></span>';
-			echo '<div class="seculoco-encryption-status-content">';
-			echo '<div class="seculoco-encryption-status-label">';
-			echo '<strong>' . esc_html__( 'Password Encryption', 'secure-login-collector' ) . '</strong>';
-			echo ' <span class="seculoco-badge seculoco-badge-success">' . esc_html__( 'ACTIVE', 'secure-login-collector' ) . '</span>';
-			echo '</div>';
-			echo '<p class="seculoco-encryption-status-desc">';
-			echo esc_html__( 'New login data will be encrypted using master password-protected RSA keys (secure encryption).', 'secure-login-collector' );
-			echo '</p>';
-			echo '</div>';
-			echo '</div>';
-
-			// Show passkey as not available (free version) or available but not active (pro version).
-			if ( function_exists( 'seculoco_fs' ) && seculoco_fs()->is_premium() ) {
-				// Pro version - passkey available but not active.
-				echo '<div class="seculoco-encryption-status-item seculoco-encryption-status-item-inactive">';
-				echo '<span class="seculoco-status-dot seculoco-status-dot-inactive"></span>';
-				echo '<div class="seculoco-encryption-status-content">';
-				echo '<div class="seculoco-encryption-status-label">';
-				echo '<strong>' . esc_html__( 'Passkey Protection', 'secure-login-collector' ) . '</strong>';
-				echo ' <span class="seculoco-badge seculoco-badge-inactive">' . esc_html__( 'AVAILABLE', 'secure-login-collector' ) . '</span>';
-				echo '</div>';
-				echo '<p class="seculoco-encryption-status-desc">';
-				echo esc_html__( 'Passkey encryption is available but not currently active. Configure passkey protection below to enable ultra-secure encryption.', 'secure-login-collector' );
-				echo '</p>';
-				echo '</div>';
-				echo '</div>';
-			} else {
-				// Free version - passkey not available.
-				echo '<div class="seculoco-encryption-status-item seculoco-encryption-status-item-unavailable">';
-				echo '<span class="seculoco-status-dot seculoco-status-dot-inactive"></span>';
-				echo '<div class="seculoco-encryption-status-content">';
-				echo '<div class="seculoco-encryption-status-label">';
-				echo '<strong>' . esc_html__( 'Passkey Protection', 'secure-login-collector' ) . '</strong>';
-				echo ' <span class="seculoco-badge seculoco-badge-pro">' . esc_html__( 'PRO ONLY', 'secure-login-collector' ) . '</span>';
-				echo '</div>';
-				echo '<p class="seculoco-encryption-status-desc">';
-				echo esc_html__( 'Upgrade to Pro for ultra-secure passkey-protected encryption with true zero-knowledge security.', 'secure-login-collector' );
-				echo '</p>';
-				echo '</div>';
-				echo '</div>';
-			}
-		} else {
-			// Neither encryption is active - setup required.
-			echo '<div class="seculoco-encryption-status-item seculoco-encryption-status-item-warning">';
-			echo '<span class="seculoco-status-dot seculoco-status-dot-warning"></span>';
-			echo '<div class="seculoco-encryption-status-content">';
-			echo '<div class="seculoco-encryption-status-label">';
-			echo '<strong>' . esc_html__( 'Encryption Not Active', 'secure-login-collector' ) . '</strong>';
-			echo ' <span class="seculoco-badge seculoco-badge-warning">' . esc_html__( 'SETUP REQUIRED', 'secure-login-collector' ) . '</span>';
-			echo '</div>';
-			echo '<p class="seculoco-encryption-status-desc">';
-			echo esc_html__( 'No encryption method is currently active. Configure your master password below to start encrypting login data.', 'secure-login-collector' );
-			echo '</p>';
-			echo '</div>';
-			echo '</div>';
-		}
-
-		echo '</div>'; // Close status bar body.
-		echo '</div>'; // Close status bar.
 	}
 
 	/**
@@ -688,28 +507,28 @@ class Seculoco_Settings_Manager {
 
 		ob_start();
 		?>
-		
-		<!-- Pro status card with upgrade notice -->
-		<div class="seculoco-passkey-benefit seculoco-pro-upgrade-card">
-			<div class="seculoco-pro-upgrade-header">
-				<span class="seculoco-badge seculoco-pro-badge"><?php echo esc_html__( 'PRO ONLY', 'secure-login-collector' ); ?></span>
-				<span class="seculoco-pro-status-unavailable"><?php echo esc_html__( 'NOT AVAILABLE', 'secure-login-collector' ); ?></span>
-			</div>
-			<span class="seculoco-passkey-benefit-icon"></span>
-			<div class="seculoco-passkey-benefit-text">
-				<div class="seculoco-passkey-benefit-title">
-					<?php echo esc_html__( 'Ultra-Secure (Passkey-Protected)', 'secure-login-collector' ); ?>
+		<div class="seculoco-encryption-column">
+			<!-- Pro status card with upgrade notice -->
+			<div class="seculoco-passkey-benefit seculoco-pro-upgrade-card">
+				<div class="seculoco-pro-upgrade-header">
+					<span class="seculoco-badge seculoco-pro-badge"><?php echo esc_html__( 'PRO ONLY', 'secure-login-collector' ); ?></span>
+					<span class="seculoco-pro-status-unavailable"><?php echo esc_html__( 'NOT AVAILABLE', 'secure-login-collector' ); ?></span>
 				</div>
-				<div class="seculoco-passkey-benefit-desc">
-					<?php echo esc_html__( 'Passkey-protected encryption with WebAuthn/FIDO2. True zero-knowledge - server cannot decrypt without your physical device.', 'secure-login-collector' ); ?>
+				<span class="seculoco-passkey-benefit-icon"></span>
+				<div class="seculoco-passkey-benefit-text">
+					<div class="seculoco-passkey-benefit-title">
+						<?php echo esc_html__( 'Ultra-Secure (Passkey-Protected)', 'secure-login-collector' ); ?>
+					</div>
+					<div class="seculoco-passkey-benefit-desc">
+						<?php echo esc_html__( 'Passkey-protected encryption with WebAuthn/FIDO2. True zero-knowledge - server cannot decrypt without your physical device.', 'secure-login-collector' ); ?>
+					</div>
 				</div>
 			</div>
-		</div>
-		<a href="<?php echo esc_url( $upgrade_url ); ?>" class="button button-primary">
-			<?php echo esc_html__( 'Upgrade to Pro', 'secure-login-collector' ); ?>
-		</a>
+			<a href="<?php echo esc_url( $upgrade_url ); ?>" class="button button-primary">
+				<?php echo esc_html__( 'Upgrade to Pro', 'secure-login-collector' ); ?>
+			</a>
 
-		
+		</div>
 		<?php
 		return ob_get_clean();
 	}
@@ -739,7 +558,7 @@ class Seculoco_Settings_Manager {
 	 * Enable notifications field callback.
 	 */
 	public function enable_notifications_callback() {
-		$enabled = get_option( SECULOCO_OPTION_ENABLE_NOTIFICATIONS, false );
+		$enabled = get_option( 'seculoco_enable_notifications', false );
 		echo '<input type="checkbox" id="seculoco_enable_notifications" name="seculoco_enable_notifications" value="1" ' . checked( 1, $enabled, false ) . ' />';
 		echo '<label for="seculoco_enable_notifications"> ' . esc_html__( 'Send email notifications when new login data is received', 'secure-login-collector' ) . '</label>';
 	}
@@ -748,72 +567,48 @@ class Seculoco_Settings_Manager {
 	 * Notification email field callback.
 	 */
 	public function notification_email_callback() {
-		$email = get_option( SECULOCO_OPTION_NOTIFICATION_EMAIL, get_option( 'admin_email' ) );
+		$email = get_option( 'seculoco_notification_email', get_option( 'admin_email' ) );
 		echo '<input type="email" id="seculoco_notification_email" name="seculoco_notification_email" value="' . esc_attr( $email ) . '" class="regular-text" />';
 		echo '<p class="description">' . esc_html__( 'Email address to receive notifications. Defaults to site admin email.', 'secure-login-collector' ) . '</p>';
 	}
 
 
 	/**
-	 * Add textarea toggle inline script.
+	 * Retrieve the default frontend description text.
 	 *
-	 * @param string $default_text Default text value.
+	 * @return string
 	 */
-	private function add_textarea_toggle_inline_script( $default_text ) {
-		$script = "
-		jQuery(document).ready(function($) {
-			var defaultText = " . wp_json_encode( $default_text ) . ";
-			var originalText = $('#seculoco_frontend_form_text').val();
+	private function get_default_frontend_text() {
+		$text  = '<p><strong>' . __( 'What happens to your data:', 'secure-login-collector' ) . '</strong> ' . __( 'Your login data is encrypted in your browser before being sent to our server. We use strong RSA-2048 encryption to ensure maximum security.', 'secure-login-collector' ) . '</p>';
+		$text .= '<p><strong>' . __( 'Security & Privacy:', 'secure-login-collector' ) . '</strong> ' . __( 'Your data is encrypted in your browser before being sent to our server. We store the encrypted data securely{EXPIRATION_TEXT}.', 'secure-login-collector' ) . '</p>';
 
-			function toggleTextarea() {
-				var selectedType = $('input[name=\"seculoco_frontend_text_type\"]:checked').val();
-				var textarea = $('#seculoco_frontend_form_text');
-
-				if (selectedType === 'default') {
-					textarea.prop('disabled', true).addClass('seculoco-textarea-disabled');
-					if (textarea.val() === '' || textarea.val() === defaultText) {
-						textarea.val(defaultText);
-					}
-				} else {
-					textarea.prop('disabled', false).removeClass('seculoco-textarea-disabled');
-				}
-			}
-
-			toggleTextarea();
-			$('input[name=\"seculoco_frontend_text_type\"]').on('change', toggleTextarea);
-		});
-		";
-
-		wp_add_inline_script( 'seculoco-admin-js', $script );
+		return $text;
 	}
 
 	/**
 	 * Frontend form text field callback.
 	 */
 	public function frontend_form_text_callback() {
-		$text      = get_option( SECULOCO_OPTION_FRONTEND_FORM_TEXT, '' );
-		$text_type = get_option( SECULOCO_OPTION_FRONTEND_TEXT_TYPE, 'default' );
+		$text      = get_option( 'seculoco_frontend_form_text', '' );
+		$text_type = get_option( 'seculoco_frontend_text_type', 'default' );
 
 		// Generate the default text with placeholder for dynamic expiration text.
-		$default_text  = '<p><strong>' . __( 'What happens to your data:', 'secure-login-collector' ) . '</strong> ' . __( 'Your login data is encrypted in your browser before being sent to our server. We use strong RSA-2048 encryption to ensure maximum security.', 'secure-login-collector' ) . '</p>';
-		$default_text .= '<p><strong>' . __( 'Security & Privacy:', 'secure-login-collector' ) . '</strong> ' . __( 'Your data is encrypted in your browser before being sent to our server. We store the encrypted data securely{EXPIRATION_TEXT}.', 'secure-login-collector' ) . '</p>';
+		$default_text = $this->get_default_frontend_text();
 
 		// If no custom text is set, show the default text.
 		$display_text = ! empty( $text ) ? $text : $default_text;
 		$is_disabled  = ( 'default' === $text_type ) ? 'disabled' : '';
 
-		echo '<textarea id="seculoco_frontend_form_text" name="seculoco_frontend_form_text" rows="6" class="large-text seculoco-full-width" ' . esc_attr( $is_disabled ) . '>' . esc_textarea( $display_text ) . '</textarea>';
+		echo '<textarea id="seculoco_frontend_form_text" name="seculoco_frontend_form_text" rows="6" class="large-text" style="width: 100%;" ' . esc_attr( $is_disabled ) . '>' . esc_textarea( $display_text ) . '</textarea>';
 		echo '<p class="description">' . esc_html__( 'Custom text to display above the login form. Basic HTML allowed (p, strong, em, br, a). This field is automatically populated with the default text when no custom text is provided. Use {EXPIRATION_TEXT} placeholder for automatic expiration information.', 'secure-login-collector' ) . '</p>';
 
-		// Add JavaScript for radio button interaction via wp_add_inline_script.
-		$this->add_textarea_toggle_inline_script( $default_text );
 	}
 
 	/**
 	 * Frontend text type field callback.
 	 */
 	public function frontend_text_type_callback() {
-		$text_type = get_option( SECULOCO_OPTION_FRONTEND_TEXT_TYPE, 'default' );
+		$text_type = get_option( 'seculoco_frontend_text_type', 'default' );
 
 		echo '<fieldset>';
 		echo '<label>';
@@ -837,9 +632,9 @@ class Seculoco_Settings_Manager {
 	 */
 	public function hide_service_footer_callback() {
 		// Free version default content (informational text)
-		$content  = '<p class="description">';
-		$content .= '<span class="seculoco-badge seculoco-pro-badge">' . esc_html__( 'PRO ONLY', 'secure-login-collector' ) . '</span>';
-		$content .= ' ' . esc_html__( 'The Pro version allows you to hide the branding footer on the frontend form. Free version users help support the plugin by displaying this footer.', 'secure-login-collector' );
+		$content  = '<p class="description" style="color: #666;">';
+		$content .= '<span class="seculoco-badge seculoco-pro-badge" style="margin-right: 8px;">' . esc_html__( 'PRO ONLY', 'secure-login-collector' ) . '</span>';
+		$content .= esc_html__( 'The Pro version allows you to hide the branding footer on the frontend form. Free version users help support the plugin by displaying this footer.', 'secure-login-collector' );
 		$content .= '</p>';
 
 		/**
@@ -857,7 +652,7 @@ class Seculoco_Settings_Manager {
 	 * Expiration days field callback.
 	 */
 	public function expiration_days_callback() {
-		$days = get_option( SECULOCO_OPTION_EXPIRATION_DAYS, 30 );
+		$days = get_option( 'seculoco_expiration_days', 30 );
 		echo '<input type="number" id="seculoco_expiration_days" name="seculoco_expiration_days" value="' . esc_attr( $days ) . '" min="0" class="small-text" />';
 		echo '<p class="description">' . esc_html__( 'Number of days after which login data will be automatically deleted. Set to 0 to disable automatic deletion (data will be retained until manually deleted).', 'secure-login-collector' ) . '</p>';
 	}
@@ -866,7 +661,7 @@ class Seculoco_Settings_Manager {
 	 * Honeypot enabled field callback.
 	 */
 	public function honeypot_enabled_callback() {
-		$enabled = get_option( SECULOCO_OPTION_HONEYPOT_ENABLED, true );
+		$enabled = get_option( 'seculoco_honeypot_enabled', true );
 		echo '<input type="checkbox" id="seculoco_honeypot_enabled" name="seculoco_honeypot_enabled" value="1" ' . checked( 1, $enabled, false ) . ' />';
 		echo '<label for="seculoco_honeypot_enabled"> ' . esc_html__( 'Add hidden field to detect automated bot submissions', 'secure-login-collector' ) . '</label>';
 		echo '<p class="description">' . esc_html__( 'The honeypot technique adds a hidden field to the form that bots typically fill out but humans cannot see. If the field contains data, the submission is rejected.', 'secure-login-collector' ) . '</p>';
@@ -876,7 +671,7 @@ class Seculoco_Settings_Manager {
 	 * Plugin management section callback.
 	 */
 	public function plugin_management_section_callback() {
-		echo '<div class="seculoco-card seculoco-card-margin-top">';
+		echo '<div class="seculoco-card" style="margin-top: 20px;">';
 		echo '<div class="seculoco-card-header">';
 		echo '<h3 class="seculoco-card-title">';
 		echo esc_html__( 'Plugin Management', 'secure-login-collector' );
@@ -891,16 +686,12 @@ class Seculoco_Settings_Manager {
 	 * Delete on uninstall field callback.
 	 */
 	public function delete_on_uninstall_callback() {
-		$enabled = get_option( SECULOCO_OPTION_DELETE_ON_UNINSTALL, false );
+		$enabled = get_option( 'seculoco_delete_on_uninstall', false );
 		echo '<input type="checkbox" id="seculoco_delete_on_uninstall" name="seculoco_delete_on_uninstall" value="1" ' . checked( 1, $enabled, false ) . ' />';
 		echo '<label for="seculoco_delete_on_uninstall"> ' . esc_html__( 'Completely remove all plugin data when uninstalling', 'secure-login-collector' ) . '</label>';
 		echo '<p class="description">' . esc_html__( 'When checked, all login data, encryption keys, settings, and database tables will be permanently deleted when the plugin is uninstalled. This action cannot be undone.', 'secure-login-collector' ) . '</p>';
-		echo '<div class="seculoco-alert seculoco-alert-warning seculoco-margin-top-8">';
-		echo '<span class="seculoco-alert-icon">⚠️</span>';
-		echo '<div class="seculoco-alert-content">';
-		echo '<div class="seculoco-alert-title">' . esc_html__( 'Warning', 'secure-login-collector' ) . '</div>';
-		echo '<div class="seculoco-alert-message">' . esc_html__( 'If you enable this option, all encrypted login data will be permanently lost when you uninstall the plugin. Make sure to export any important data before uninstalling.', 'secure-login-collector' ) . '</div>';
-		echo '</div>';
+		echo '<div class="notice notice-warning inline" style="margin-top: 10px;">';
+		echo '<p><strong>' . esc_html__( 'Warning:', 'secure-login-collector' ) . '</strong> ' . esc_html__( 'If you enable this option, all encrypted login data will be permanently lost when you uninstall the plugin. Make sure to export any important data before uninstalling.', 'secure-login-collector' ) . '</p>';
 		echo '</div>';
 	}
 
@@ -923,15 +714,15 @@ class Seculoco_Settings_Manager {
 				</div>
 				<div class="seculoco-card-body">
 					<p><?php echo esc_html__( 'Use this shortcode to display the secure login form on any page or post:', 'secure-login-collector' ); ?></p>
-					<div class="seculoco-shortcode-box">
+					<div style="background: var(--seculoco-bg-light); padding: 12px 16px; border-radius: var(--seculoco-radius-sm); display: inline-block; font-family: 'Monaco', 'Menlo', monospace; font-size: 16px; border: 2px solid var(--seculoco-border); font-weight: 500;">
 						[seculoco_form]
 					</div>
-					<div class="seculoco-margin-top-8">
+					<div style="margin-top: 12px;">
 						<button type="button" class="button" onclick="navigator.clipboard.writeText('[seculoco_form]'); this.innerHTML = '<?php echo esc_js( __( 'Copied!', 'secure-login-collector' ) ); ?>'; setTimeout(() => { this.innerHTML = '<?php echo esc_js( __( 'Copy Shortcode', 'secure-login-collector' ) ); ?>'; }, 2000);">
 							<?php echo esc_html__( 'Copy Shortcode', 'secure-login-collector' ); ?>
 						</button>
 					</div>
-					<p class="seculoco-form-help seculoco-margin-top-8">
+					<p class="seculoco-form-help" style="margin-top: 16px;">
 						<?php echo esc_html__( 'Simply paste this shortcode into any page or post where you want clients to submit their login credentials.', 'secure-login-collector' ); ?>
 					</p>
 				</div>
@@ -1014,6 +805,107 @@ class Seculoco_Settings_Manager {
 					'href'   => array(),
 					'target' => array(),
 				),
+			)
+		);
+	}
+
+	/**
+	 * AJAX handler: Setup password-based encryption.
+	 */
+	public function ajax_setup_password_encryption() {
+		// Verify nonce.
+		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'seculoco_password_setup_nonce' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed.', 'secure-login-collector' ) ) );
+		}
+
+		// Check permissions.
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Insufficient permissions.', 'secure-login-collector' ) ) );
+		}
+
+		// Get password from request.
+		if ( ! isset( $_POST['password'] ) || empty( $_POST['password'] ) ) {
+			wp_send_json_error( array( 'message' => __( 'Password is required.', 'secure-login-collector' ) ) );
+		}
+
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Password should not be sanitized.
+		$password = wp_unslash( $_POST['password'] );
+
+		// Validate password length.
+		if ( strlen( $password ) < 8 ) {
+			wp_send_json_error( array( 'message' => __( 'Password must be at least 8 characters.', 'secure-login-collector' ) ) );
+		}
+
+		try {
+			// Verify method exists before calling.
+			if ( ! method_exists( $this->encryption_handler, 'initialize_password_keys' ) ) {
+				wp_send_json_error( array( 'message' => __( 'Encryption handler configuration error. Please check logs.', 'secure-login-collector' ) ) );
+				return;
+			}
+
+			// Generate password-based keys using encryption handler.
+			$result = $this->encryption_handler->initialize_password_keys( $password );
+
+			if ( $result ) {
+				// Store password status.
+				update_option( 'seculoco_password_encryption_active', true );
+				wp_send_json_success( array( 'message' => __( 'Password-based encryption setup successfully!', 'secure-login-collector' ) ) );
+			} else {
+				wp_send_json_error( array( 'message' => __( 'Failed to initialize password-based keys.', 'secure-login-collector' ) ) );
+			}
+		} catch ( Exception $e ) {
+			wp_send_json_error( array( 'message' => $e->getMessage() ) );
+		}
+	}
+
+	/**
+	 * AJAX handler: Reset password-based encryption.
+	 */
+	public function ajax_reset_password_encryption() {
+		// Verify nonce.
+		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'seculoco_password_setup_nonce' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed.', 'secure-login-collector' ) ) );
+		}
+
+		// Check permissions.
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Insufficient permissions.', 'secure-login-collector' ) ) );
+		}
+
+		try {
+			$result = $this->encryption_handler->reset_password_keys();
+
+			wp_send_json_success(
+				array(
+					'message'         => __( 'Password-based encryption reset successfully!', 'secure-login-collector' ),
+					'entries_updated' => isset( $result['affected_entries'] ) ? $result['affected_entries'] : false,
+				)
+			);
+		} catch ( Exception $e ) {
+			wp_send_json_error( array( 'message' => $e->getMessage() ) );
+		}
+	}
+
+	/**
+	 * AJAX handler: Check password encryption status.
+	 */
+	public function ajax_check_password_status() {
+		// Verify nonce.
+		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'seculoco_password_setup_nonce' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed.', 'secure-login-collector' ) ) );
+		}
+
+		// Check permissions.
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Insufficient permissions.', 'secure-login-collector' ) ) );
+		}
+
+		$is_active = get_option( 'seculoco_password_encryption_active', false );
+
+		wp_send_json_success(
+			array(
+				'is_active' => (bool) $is_active,
+				'status'    => $is_active ? 'active' : 'not_set',
 			)
 		);
 	}

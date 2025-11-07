@@ -4,8 +4,8 @@
  */
 
 /* ==========================================================================
-	Base Variables and Reusable Classes
-	========================================================================== */
+   Base Variables and Reusable Classes
+   ========================================================================== */
 
 :root {
 	--seculoco-primary: #2271b1;
@@ -31,43 +31,8 @@
 }
 
 /* ==========================================================================
-	Utility Classes
-	========================================================================== */
-
-.seculoco-margin-top-8 {
-	margin-top: 8px;
-}
-
-.seculoco-margin-top-12 {
-	margin-top: 12px;
-}
-
-.seculoco-margin-top-20 {
-	margin-top: 20px;
-}
-
-.seculoco-full-width {
-	width: 100%;
-}
-
-.seculoco-textarea-disabled {
-	background-color: #f1f1f1 !important;
-}
-
-.seculoco-shortcode-box {
-	background: var(--seculoco-bg-light);
-	padding: 12px 16px;
-	border-radius: var(--seculoco-radius-sm);
-	display: inline-block;
-	font-family: 'Monaco', 'Menlo', monospace;
-	font-size: 16px;
-	border: 2px solid var(--seculoco-border);
-	font-weight: 500;
-}
-
-/* ==========================================================================
-	Card Components
-	========================================================================== */
+   Card Components
+   ========================================================================== */
 
 .seculoco-card {
 	background: var(--seculoco-bg-white);
@@ -97,7 +62,6 @@
 	font-weight: 600;
 	color: var(--seculoco-text-primary);
 	margin: 0;
-	
 	display: flex;
 	align-items: center;
 	gap: 8px;
@@ -119,13 +83,9 @@
 	border-top: 1px solid var(--seculoco-border-light);
 }
 
-.seculoco-card-margin-top {
-	margin-top: 20px;
-}
-
 /* ==========================================================================
-	Alert/Notice Components
-	========================================================================== */
+   Alert/Notice Components
+   ========================================================================== */
 
 .seculoco-alert {
 	padding: 16px 20px;
@@ -215,8 +175,8 @@
 }
 
 /* ==========================================================================
-	Button Styles
-	========================================================================== */
+   Button Styles
+   ========================================================================== */
 
 .seculoco-btn {
 	display: inline-flex;
@@ -304,8 +264,8 @@
 }
 
 /* ==========================================================================
-	Badge Component
-	========================================================================== */
+   Badge Component
+   ========================================================================== */
 
 .seculoco-badge {
 	display: inline-flex;
@@ -344,14 +304,9 @@
 	font-weight: 600;
 }
 
-.seculoco-badge-inactive {
-	background: #f3f4f6;
-	color: #6b7280;
-}
-
 /* ==========================================================================
-	Status Indicators
-	========================================================================== */
+   Status Indicators
+   ========================================================================== */
 
 .seculoco-status {
 	display: inline-flex;
@@ -394,17 +349,166 @@
 }
 
 /* ==========================================================================
-	Passkey Specific Styles
-	========================================================================== */
+   Password Prompt Modal Styles
+   ========================================================================== */
+
+.seculoco-password-prompt-modal {
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	z-index: 999999;
+	background: white;
+	padding: 30px;
+	border-radius: var(--seculoco-radius-md);
+	box-shadow: var(--seculoco-shadow-lg);
+	min-width: 400px;
+	max-width: 500px;
+}
+
+.seculoco-password-prompt-backdrop {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.5);
+	z-index: 999998;
+}
+
+.seculoco-password-prompt-title {
+	margin: 0 0 20px 0;
+	color: var(--seculoco-text-primary);
+	font-size: 18px;
+	font-weight: 600;
+}
+
+.seculoco-password-prompt-description {
+	margin-bottom: 20px;
+	color: var(--seculoco-text-secondary);
+	font-size: 14px;
+	line-height: 1.5;
+}
+
+.seculoco-password-input-wrapper {
+	position: relative;
+	margin-bottom: 15px;
+}
+
+.seculoco-password-input {
+	width: 100%;
+	padding: 10px 45px 10px 12px;
+	border: 1px solid var(--seculoco-border);
+	border-radius: var(--seculoco-radius-sm);
+	font-size: 14px;
+	transition: border-color 0.2s ease;
+}
+
+.seculoco-password-input:focus {
+	outline: none;
+	border-color: var(--seculoco-primary);
+	box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.1);
+}
+
+.seculoco-password-toggle-btn {
+	position: absolute;
+	right: 8px;
+	top: 50%;
+	transform: translateY(-50%);
+	background: none;
+	border: none;
+	cursor: pointer;
+	font-size: 18px;
+	color: var(--seculoco-text-muted);
+	padding: 5px;
+	line-height: 1;
+	transition: color 0.2s ease;
+}
+
+.seculoco-password-toggle-btn:hover {
+	color: var(--seculoco-text-primary);
+}
+
+.seculoco-password-prompt-checkbox {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 20px;
+}
+
+.seculoco-password-prompt-checkbox input[type="checkbox"] {
+	margin: 0;
+}
+
+.seculoco-password-prompt-checkbox label {
+	margin: 0;
+	font-size: 14px;
+	color: var(--seculoco-text-secondary);
+	cursor: pointer;
+}
+
+.seculoco-password-prompt-buttons {
+	display: flex;
+	gap: 10px;
+	justify-content: flex-end;
+}
+
+.seculoco-password-prompt-decrypt-btn {
+	background: var(--seculoco-primary);
+	color: white;
+	border: none;
+	padding: 10px 20px;
+	border-radius: var(--seculoco-radius-sm);
+	font-size: 14px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.seculoco-password-prompt-decrypt-btn:hover:not(:disabled) {
+	background: var(--seculoco-primary-hover);
+}
+
+.seculoco-password-prompt-decrypt-btn:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.seculoco-password-prompt-cancel-btn {
+	background: var(--seculoco-bg-white);
+	color: var(--seculoco-text-primary);
+	border: 1px solid var(--seculoco-border);
+	padding: 10px 20px;
+	border-radius: var(--seculoco-radius-sm);
+	font-size: 14px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.seculoco-password-prompt-cancel-btn:hover {
+	background: var(--seculoco-bg-light);
+	border-color: var(--seculoco-text-secondary);
+}
+
+.seculoco-password-prompt-error {
+	color: var(--seculoco-danger);
+	font-size: 13px;
+	margin-top: 8px;
+}
+
+/* ==========================================================================
+   Passkey Specific Styles
+   ========================================================================== */
 
 .seculoco-passkey-container {
 	max-width: 800px;
 }
 
 .seculoco-passkey-status {
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	/*background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 	color: white;
-	padding: 20px;
+	padding: 20px;*/
 	border-radius: var(--seculoco-radius-md);
 	margin-bottom: 24px;
 	box-shadow: var(--seculoco-shadow-md);
@@ -476,8 +580,8 @@
 }
 
 /* ==========================================================================
-	Table Enhancements
-	========================================================================== */
+   Table Enhancements
+   ========================================================================== */
 
 .seculoco-table-container {
 	background: var(--seculoco-bg-white);
@@ -554,8 +658,8 @@
 }
 
 /* ==========================================================================
-	Form Enhancements
-	========================================================================== */
+   Form Enhancements
+   ========================================================================== */
 
 .seculoco-form-group {
 	margin-bottom: 20px;
@@ -590,8 +694,8 @@
 }
 
 /* ==========================================================================
-	Loading States
-	========================================================================== */
+   Loading States
+   ========================================================================== */
 
 .seculoco-loading {
 	display: inline-flex;
@@ -625,18 +729,18 @@ button .dashicons {
 }
 
 /* ==========================================================================
-	Responsive Adjustments
-	========================================================================== */
+   Responsive Adjustments
+   ========================================================================== */
 
 @media (max-width: 782px) {
 	.seculoco-card {
 		padding: 16px;
 	}
-
+	
 	.seculoco-passkey-benefits {
 		grid-template-columns: 1fr;
 	}
-
+	
 	.seculoco-btn {
 		width: 100%;
 		justify-content: center;
@@ -644,8 +748,8 @@ button .dashicons {
 }
 
 /* ==========================================================================
-	WordPress Admin Integration
-	========================================================================== */
+   WordPress Admin Integration
+   ========================================================================== */
 
 .wrap.seculoco-admin-wrap {
 	max-width: 1440px;
@@ -682,8 +786,8 @@ button .dashicons {
 }
 
 /* ==========================================================================
-	Settings Page Specific
-	========================================================================== */
+   Settings Page Specific
+   ========================================================================== */
 
 /* Settings form sections */
 .seculoco-settings-form h2 {
@@ -746,7 +850,7 @@ button .dashicons {
 	padding: 20px 0;
 	margin: 0;
 	border-top: 1px solid var(--seculoco-border-light);
-
+	
 }
 
 .seculoco-settings-form .submit .button-primary {
@@ -767,8 +871,8 @@ button .dashicons {
 }
 
 /* ==========================================================================
-	Decrypted Data Display
-	========================================================================== */
+   Decrypted Data Display
+   ========================================================================== */
 
 .decrypted-content {
 	padding: 25px;
@@ -924,8 +1028,8 @@ button .dashicons {
 }
 
 /* ==========================================================================
-	Encryption Method Badges
-	========================================================================== */
+   Encryption Method Badges
+   ========================================================================== */
 
 .encryption-method {
 	display: inline-block;
@@ -964,8 +1068,8 @@ button .dashicons {
 }
 
 /* ==========================================================================
-	Delete Button Styles
-	========================================================================== */
+   Delete Button Styles
+   ========================================================================== */
 
 .delete-btn {
 	border-color: var(--seculoco-danger) !important;
@@ -984,8 +1088,8 @@ button .dashicons {
 }
 
 /* ==========================================================================
-	Editable Fields
-	========================================================================== */
+   Editable Fields
+   ========================================================================== */
 
 .editable-field {
 	cursor: pointer;
@@ -999,8 +1103,8 @@ button .dashicons {
 }
 
 /* ==========================================================================
-	Formatted Data Display
-	========================================================================== */
+   Formatted Data Display
+   ========================================================================== */
 
 .formatted-data {
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -1048,8 +1152,8 @@ button .dashicons {
 }
 
 /* ==========================================================================
-	Password Manager Export Notifications
-	========================================================================== */
+   Password Manager Export Notifications
+   ========================================================================== */
 
 .seculoco-notification {
 	position: fixed;
@@ -1127,8 +1231,8 @@ button .dashicons {
 }
 
 /* ==========================================================================
-	Undecryptable Entry Indicators
-	========================================================================== */
+   Undecryptable Entry Indicators
+   ========================================================================== */
 
 .undecryptable-badge {
 	display: inline-flex !important;
@@ -1181,8 +1285,12 @@ button.button-expired[disabled]:hover {
 }
 
 /* ==========================================================================
-	Settings Page Additional Classes
-	========================================================================== */
+   Settings Page Additional Classes
+   ========================================================================== */
+
+.seculoco-card-margin-top {
+	margin-top: 20px;
+}
 
 .seculoco-encryption-grid {
 	display: grid;
@@ -1284,62 +1392,8 @@ button.button-expired[disabled]:hover {
 }
 
 /* ==========================================================================
-	Icon Modifiers for Dashicons
-	========================================================================== */
-
-.seculoco-icon-warning {
-	color: var(--seculoco-warning) !important;
-	font-size: 24px !important;
-}
-
-.seculoco-icon-success {
-	color: var(--seculoco-success) !important;
-	font-size: 24px !important;
-}
-
-.seculoco-icon-inactive {
-	color: var(--seculoco-text-muted) !important;
-	font-size: 24px !important;
-	opacity: 0.7;
-}
-
-.seculoco-icon-info {
-	color: var(--seculoco-info) !important;
-	font-size: 24px !important;
-}
-
-.seculoco-icon-danger {
-	color: var(--seculoco-danger) !important;
-	font-size: 24px !important;
-}
-
-/* ==========================================================================
-	Benefit List for Feature Cards
-	========================================================================== */
-
-.seculoco-benefit-list {
-	list-style: none;
-	margin: 8px 0 0 0;
-	padding: 0;
-}
-
-.seculoco-benefit-list li {
-	padding: 6px 0;
-	font-size: 13px;
-	line-height: 1.5;
-	color: var(--seculoco-text-secondary);
-}
-
-.seculoco-benefit-list li:before {
-	content: "✓";
-	color: var(--seculoco-success);
-	font-weight: bold;
-	margin-right: 8px;
-}
-
-/* ==========================================================================
-	JavaScript Utility Classes (for dynamic styling)
-	========================================================================== */
+   JavaScript Utility Classes (for dynamic styling)
+   ========================================================================== */
 
 .seculoco-copy-btn-success {
 	background: #28a745 !important;
@@ -1367,8 +1421,8 @@ button.button-expired[disabled]:hover {
 }
 
 /* ==========================================================================
-	Export Form Modal
-	========================================================================== */
+   Export Form Modal
+   ========================================================================== */
 
 .seculoco-export-form-modal {
 	position: fixed;
@@ -1507,8 +1561,8 @@ button.button-expired[disabled]:hover {
 }
 
 /* ==========================================================================
-	Bulk Export Error Modal
-	========================================================================== */
+   Bulk Export Error Modal
+   ========================================================================== */
 
 .seculoco-error-modal-overlay {
 	position: fixed;
@@ -1587,16 +1641,16 @@ button.button-expired[disabled]:hover {
 }
 
 /* ==========================================================================
-	Hidden Element Utility
-	========================================================================== */
+   Hidden Element Utility
+   ========================================================================== */
 
 .seculoco-hidden {
 	display: none !important;
 }
 
 /* ==========================================================================
-	Passkey Manager Specific Styles
-	========================================================================== */
+   Passkey Manager Specific Styles
+   ========================================================================== */
 
 /* Device info box - clean blue box with left border */
 .seculoco-device-info-box {
@@ -1669,40 +1723,42 @@ button.button-expired[disabled]:hover {
 	margin-top: 4px;
 }
 
+/* Utility class for 20px top margin */
+.seculoco-margin-top-20 {
+	margin-top: 20px;
+}
+
+/* Utility class for 8px top margin */
+.seculoco-margin-top-8 {
+	margin-top: 8px;
+}
+
 /* Inline spinner styling */
 .seculoco-spinner-inline {
 	float: none;
 	margin-left: 10px;
 }
-
 /* ==========================================================================
-	Master Password Modal (V2 Zero-Knowledge)
-	========================================================================== */
+   Password Setup Modal
+   ========================================================================== */
 
-.seculoco-modal-overlay {
+.seculoco-password-modal-backdrop {
 	position: fixed;
 	top: 0;
 	left: 0;
 	right: 0;
 	bottom: 0;
-	background: rgba(0, 0, 0, 0.6);
-	z-index: 999999;
-	display: flex;
-	align-items: center;
-	justify-content: center;
+	background: rgba(0, 0, 0, 0.7);
+	z-index: 999998;
 	animation: fadeIn 0.2s ease;
 }
 
-@keyframes fadeIn {
-	from {
-		opacity: 0;
-	}
-	to {
-		opacity: 1;
-	}
-}
-
-.seculoco-modal-container {
+.seculoco-password-modal {
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	z-index: 999999;
 	background: white;
 	border-radius: var(--seculoco-radius-md);
 	box-shadow: var(--seculoco-shadow-lg);
@@ -1714,110 +1770,33 @@ button.button-expired[disabled]:hover {
 @keyframes slideInDown {
 	from {
 		opacity: 0;
-		transform: translateY(-50px);
+		transform: translate(-50%, -60%);
 	}
 	to {
 		opacity: 1;
-		transform: translateY(0);
+		transform: translate(-50%, -50%);
 	}
 }
 
-.seculoco-modal-header {
-	padding: 24px 24px 16px;
+.seculoco-password-modal-header {
+	padding: 20px 24px;
 	border-bottom: 1px solid var(--seculoco-border-light);
 }
 
-.seculoco-modal-header h2 {
-	margin: 0 0 8px 0;
-	color: var(--seculoco-text-primary);
+.seculoco-password-modal-header h2 {
+	margin: 0;
 	font-size: 20px;
 	font-weight: 600;
+	color: var(--seculoco-text-primary);
 }
 
-.seculoco-modal-header p {
-	margin: 0;
-	color: var(--seculoco-text-secondary);
-	font-size: 14px;
-}
-
-.seculoco-modal-content {
+.seculoco-password-modal-body {
 	padding: 24px;
+	max-height: 70vh;
+	overflow-y: auto;
 }
 
-.seculoco-field-group {
-	margin-bottom: 20px;
-}
-
-.seculoco-field-group:last-child {
-	margin-bottom: 0;
-}
-
-.seculoco-field-group label {
-	display: block;
-	margin-bottom: 8px;
-	color: var(--seculoco-text-primary);
-	font-weight: 500;
-	font-size: 14px;
-}
-
-.seculoco-password-input-group {
-	display: flex;
-	align-items: stretch;
-	gap: 0;
-	position: relative;
-}
-
-.seculoco-password-input {
-	flex: 1;
-	padding: 10px 50px 10px 14px;
-	border: 1px solid var(--seculoco-border);
-	border-radius: var(--seculoco-radius-sm);
-	font-size: 14px;
-	font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Courier New', monospace;
-	transition: all 0.2s ease;
-}
-
-.seculoco-password-input:focus {
-	outline: none;
-	border-color: var(--seculoco-primary);
-	box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.08);
-}
-
-.seculoco-toggle-password-btn {
-	position: absolute;
-	right: 0;
-	top: 0;
-	bottom: 0;
-	background: transparent;
-	border: none;
-	padding: 0 12px;
-	cursor: pointer;
-	color: var(--seculoco-text-muted);
-	transition: color 0.2s ease;
-	z-index: 1;
-}
-
-.seculoco-toggle-password-btn:hover {
-	color: var(--seculoco-text-primary);
-}
-
-.seculoco-toggle-password-btn .dashicons {
-	font-size: 18px;
-	line-height: 1;
-	vertical-align: middle;
-}
-
-.seculoco-error-message {
-	padding: 12px 16px;
-	background: #fff5f5;
-	border-left: 4px solid var(--seculoco-danger);
-	border-radius: var(--seculoco-radius-sm);
-	color: var(--seculoco-danger);
-	font-size: 13px;
-	margin-top: 12px;
-}
-
-.seculoco-modal-footer {
+.seculoco-password-modal-footer {
 	padding: 16px 24px;
 	border-top: 1px solid var(--seculoco-border-light);
 	display: flex;
@@ -1825,155 +1804,15 @@ button.button-expired[disabled]:hover {
 	gap: 10px;
 }
 
-.seculoco-modal-footer .button {
-	margin: 0;
-}
-
-.seculoco-modal-footer .button-primary {
-	min-width: 100px;
-}
-
-/* ==========================================================================
-	Master Password Setup Wizard
-	========================================================================== */
-
-.seculoco-wizard-overlay {
-	position: fixed;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	background: rgba(0, 0, 0, 0.7);
-	z-index: 999999;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	animation: fadeIn 0.3s ease;
-}
-
-.seculoco-wizard-modal {
-	background: white;
-	border-radius: var(--seculoco-radius-lg);
-	box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-	width: 90%;
-	max-width: 700px;
-	max-height: 90vh;
-	display: flex;
-	flex-direction: column;
-	animation: slideInDown 0.4s ease;
-}
-
-.seculoco-wizard-header {
-	padding: 30px 30px 20px;
-	border-bottom: 1px solid var(--seculoco-border-light);
-}
-
-.seculoco-wizard-header h2 {
-	margin: 0 0 20px 0;
-	color: var(--seculoco-text-primary);
-	font-size: 24px;
-	font-weight: 600;
-	text-align: center;
-}
-
-.seculoco-wizard-progress {
-	height: 6px;
-	background: var(--seculoco-bg-light);
-	border-radius: 3px;
-	overflow: hidden;
-	margin-bottom: 10px;
-}
-
-.seculoco-wizard-progress-bar {
-	height: 100%;
-	background: linear-gradient(90deg, var(--seculoco-primary), var(--seculoco-success));
-	width: 20%;
-	transition: width 0.3s ease;
-	border-radius: 3px;
-}
-
-/* Progress bar data-step attribute styling */
-.seculoco-wizard-progress-bar[data-step="1"] {
-	width: 20%;
-}
-
-.seculoco-wizard-progress-bar[data-step="2"] {
-	width: 40%;
-}
-
-.seculoco-wizard-progress-bar[data-step="3"] {
-	width: 60%;
-}
-
-.seculoco-wizard-progress-bar[data-step="4"] {
-	width: 80%;
-}
-
-.seculoco-wizard-progress-bar[data-step="5"] {
-	width: 100%;
-}
-
-.seculoco-wizard-step-indicator {
-	text-align: center;
-	color: var(--seculoco-text-secondary);
-	font-size: 13px;
-	font-weight: 500;
-}
-
-.seculoco-wizard-current-step {
-	color: var(--seculoco-primary);
-	font-weight: 600;
-}
-
-.seculoco-wizard-body {
-	padding: 30px;
-	overflow-y: auto;
-	flex: 1;
-}
-
-.seculoco-wizard-step {
-	display: none;
-}
-
-.seculoco-wizard-step:not(.seculoco-hidden) {
-	display: block;
-	animation: fadeInUp 0.3s ease;
-}
-
-@keyframes fadeInUp {
-	from {
-		opacity: 0;
-		transform: translateY(20px);
-	}
-	to {
-		opacity: 1;
-		transform: translateY(0);
-	}
-}
-
-.seculoco-wizard-icon {
-	font-size: 64px;
-	text-align: center;
+.seculoco-password-form-group {
 	margin-bottom: 20px;
-	line-height: 1;
 }
 
-.seculoco-wizard-step h3 {
-	margin: 0 0 20px 0;
+.seculoco-password-label {
+	display: block;
+	margin-bottom: 8px;
+	font-weight: 500;
 	color: var(--seculoco-text-primary);
-	font-size: 20px;
-	font-weight: 600;
-	text-align: center;
-}
-
-.seculoco-wizard-explanation {
-	font-size: 15px;
-	line-height: 1.6;
-	color: var(--seculoco-text-secondary);
-}
-
-.seculoco-wizard-explanation p {
-	margin-bottom: 15px;
 }
 
 .seculoco-password-input-wrapper {
@@ -1982,558 +1821,164 @@ button.button-expired[disabled]:hover {
 	align-items: center;
 }
 
+.seculoco-password-input {
+	width: 100%;
+	padding: 10px 40px 10px 12px;
+	border: 1px solid var(--seculoco-border);
+	border-radius: var(--seculoco-radius-sm);
+	font-size: 14px;
+	transition: border-color 0.2s ease;
+}
+
+.seculoco-password-input:focus {
+	outline: none;
+	border-color: var(--seculoco-primary);
+	box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.1);
+}
+
 .seculoco-password-toggle {
 	position: absolute;
-	right: 12px;
+	right: 8px;
 	background: none;
 	border: none;
 	cursor: pointer;
-	font-size: 20px;
-	line-height: 1;
-	padding: 8px;
-	opacity: 0.6;
-	transition: opacity 0.2s ease;
+	padding: 4px;
+	color: var(--seculoco-text-muted);
+	transition: color 0.2s ease;
 }
 
 .seculoco-password-toggle:hover {
-	opacity: 1;
+	color: var(--seculoco-text-primary);
 }
 
-.seculoco-password-strength {
-	margin-top: 12px;
-	margin-bottom: 20px;
+.seculoco-password-toggle .dashicons {
+	width: 20px;
+	height: 20px;
+	font-size: 20px;
 }
 
-.seculoco-password-strength-label {
-	font-size: 13px;
-	font-weight: 500;
-	color: var(--seculoco-text-secondary);
-	margin-bottom: 6px;
+/* Password Strength Meter */
+.seculoco-password-strength-meter {
+	width: 100%;
+	height: 4px;
+	background: var(--seculoco-bg-light);
+	border-radius: 2px;
+	margin-top: 8px;
+	overflow: hidden;
 }
 
 .seculoco-password-strength-bar {
-	height: 8px;
-	background: var(--seculoco-bg-light);
-	border-radius: 4px;
-	overflow: hidden;
-	margin-bottom: 6px;
-}
-
-.seculoco-password-strength-fill {
 	height: 100%;
-	transition: width 0.3s ease, background 0.3s ease;
-	border-radius: 4px;
-}
-
-.seculoco-password-strength-fill[data-strength="0"] {
 	width: 0%;
-	background: var(--seculoco-text-muted);
+	transition: width 0.3s ease, background-color 0.3s ease;
+	border-radius: 2px;
 }
 
-.seculoco-password-strength-fill[data-strength="1"] {
-	background: var(--seculoco-danger);
-}
-
-.seculoco-password-strength-fill[data-strength="2"] {
-	background: var(--seculoco-warning);
-}
-
-.seculoco-password-strength-fill[data-strength="3"] {
-	background: var(--seculoco-info);
-}
-
-.seculoco-password-strength-fill[data-strength="4"] {
-	background: var(--seculoco-success);
-}
-
-/* Password strength level classes (alternative to data-strength) */
-.seculoco-password-strength-fill.strength-weak {
+.seculoco-password-strength-bar.seculoco-strength-weak {
 	width: 25%;
 	background: var(--seculoco-danger);
 }
 
-.seculoco-password-strength-fill.strength-fair {
+.seculoco-password-strength-bar.seculoco-strength-fair {
 	width: 50%;
 	background: var(--seculoco-warning);
 }
 
-.seculoco-password-strength-fill.strength-good {
+.seculoco-password-strength-bar.seculoco-strength-good {
 	width: 75%;
-	background: var(--seculoco-info);
+	background: #2196f3;
 }
 
-.seculoco-password-strength-fill.strength-strong {
+.seculoco-password-strength-bar.seculoco-strength-strong {
 	width: 100%;
 	background: var(--seculoco-success);
 }
 
 .seculoco-password-strength-text {
-	font-size: 13px;
+	margin-top: 6px;
+	font-size: 12px;
 	font-weight: 500;
-	color: var(--seculoco-text-secondary);
 }
 
-.seculoco-password-requirements {
-	background: var(--seculoco-bg-light);
-	padding: 16px;
-	border-radius: var(--seculoco-radius-sm);
-	margin-bottom: 20px;
-}
-
-.seculoco-password-requirements h4 {
-	margin: 0 0 12px 0;
-	font-size: 14px;
-	font-weight: 600;
-	color: var(--seculoco-text-primary);
-}
-
-.seculoco-password-requirements ul {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-}
-
-.seculoco-password-requirements li {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	padding: 6px 0;
-	font-size: 13px;
-	color: var(--seculoco-text-secondary);
-}
-
-.seculoco-password-requirements li.seculoco-requirement-met {
-	color: var(--seculoco-success);
-}
-
-.seculoco-requirement-icon {
-	font-size: 16px;
-	line-height: 1;
-}
-
-.seculoco-password-match-indicator {
-	margin-top: 8px;
-	padding: 8px 12px;
-	border-radius: var(--seculoco-radius-sm);
-	font-size: 13px;
-	font-weight: 500;
-	display: inline-block;
-}
-
-.seculoco-password-match {
-	background: #dcfce7;
-	color: var(--seculoco-success);
-}
-
-.seculoco-password-mismatch {
-	background: #fee2e2;
+.seculoco-password-strength-text.seculoco-strength-weak {
 	color: var(--seculoco-danger);
 }
 
-.seculoco-warning-acknowledgment {
-	background: var(--seculoco-bg-light);
-	padding: 20px;
-	border-radius: var(--seculoco-radius-md);
-	border: 2px solid var(--seculoco-border);
-	margin-top: 20px;
+.seculoco-password-strength-text.seculoco-strength-fair {
+	color: var(--seculoco-warning);
 }
 
-.seculoco-checkbox-label {
-	display: flex;
-	align-items: flex-start;
-	gap: 12px;
-	cursor: pointer;
-	user-select: none;
+.seculoco-password-strength-text.seculoco-strength-good {
+	color: #2196f3;
 }
 
-.seculoco-checkbox-label input[type="checkbox"] {
-	margin-top: 3px;
-	width: 18px;
-	height: 18px;
-	cursor: pointer;
+.seculoco-password-strength-text.seculoco-strength-strong {
+	color: var(--seculoco-success);
 }
 
-.seculoco-checkbox-label span {
-	flex: 1;
-	font-size: 14px;
-	line-height: 1.5;
-	color: var(--seculoco-text-primary);
-}
-
-.seculoco-setup-summary {
-	font-size: 15px;
-	line-height: 1.6;
-}
-
-.seculoco-setup-summary p {
-	margin-bottom: 15px;
-}
-
-.seculoco-setup-summary ol {
-	margin-left: 20px;
-}
-
-.seculoco-setup-summary li {
-	margin-bottom: 8px;
-}
-
-.seculoco-setup-reminder {
-	background: var(--seculoco-bg-light);
-	padding: 16px;
-	border-radius: var(--seculoco-radius-sm);
-	border-left: 4px solid var(--seculoco-primary);
-	margin-top: 20px;
-	font-size: 14px;
-}
-
-.seculoco-setup-progress {
-	margin-top: 30px;
-}
-
-.seculoco-progress-bar {
-	height: 8px;
-	background: var(--seculoco-bg-light);
-	border-radius: 4px;
-	overflow: hidden;
-	margin-bottom: 12px;
-}
-
-.seculoco-progress-fill {
-	height: 100%;
-	background: linear-gradient(90deg, var(--seculoco-primary), var(--seculoco-success));
-	width: 0%;
-	transition: width 0.3s ease;
-	border-radius: 4px;
-}
-
-/* Setup progress fill data-progress attribute styling */
-.seculoco-progress-fill[data-progress="20"] {
-	width: 20%;
-}
-
-.seculoco-progress-fill[data-progress="40"] {
-	width: 40%;
-}
-
-.seculoco-progress-fill[data-progress="60"] {
-	width: 60%;
-}
-
-.seculoco-progress-fill[data-progress="80"] {
-	width: 80%;
-}
-
-.seculoco-progress-fill[data-progress="100"] {
-	width: 100%;
-}
-
-.seculoco-progress-text {
-	text-align: center;
-	font-size: 14px;
-	color: var(--seculoco-text-secondary);
+/* Password Match Indicator */
+.seculoco-password-match-indicator {
+	margin-top: 8px;
+	font-size: 13px;
 	font-weight: 500;
-}
-
-.seculoco-wizard-footer {
-	padding: 20px 30px;
-	border-top: 1px solid var(--seculoco-border-light);
+	min-height: 20px;
 	display: flex;
-	justify-content: space-between;
 	align-items: center;
+	gap: 6px;
 }
 
-.seculoco-wizard-nav {
-	display: flex;
-	gap: 10px;
+.seculoco-password-match-indicator.seculoco-match-success {
+	color: var(--seculoco-success);
 }
 
-.seculoco-wizard-footer .button {
-	margin: 0;
-	padding: 10px 24px;
-	font-size: 14px;
-	font-weight: 500;
+.seculoco-password-match-indicator.seculoco-match-error {
+	color: var(--seculoco-danger);
 }
 
-.seculoco-wizard-footer .button-primary {
-	min-width: 120px;
+/* Password Error */
+.seculoco-password-error {
+	margin-top: 16px;
+	padding: 12px;
+	background: #fee2e2;
+	border-left: 4px solid var(--seculoco-danger);
+	border-radius: var(--seculoco-radius-sm);
+	color: #991b1b;
+	font-size: 13px;
+	display: none;
 }
 
-.seculoco-wizard-success {
-	text-align: center;
-	padding: 40px 20px;
+.seculoco-password-error.seculoco-password-error-visible {
+	display: block;
 }
 
-.seculoco-wizard-success .seculoco-wizard-icon {
-	font-size: 80px;
-	margin-bottom: 30px;
-}
-
-.seculoco-wizard-success h3 {
-	font-size: 24px;
-	margin-bottom: 20px;
-}
-
-.seculoco-wizard-success p {
-	font-size: 15px;
-	color: var(--seculoco-text-secondary);
-	margin-bottom: 10px;
-}
-
-/* Setup Notice */
-.seculoco-setup-notice {
-	border-left-width: 4px;
-}
-
-.seculoco-setup-notice p {
-	margin: 0.5em 0;
-}
-
-.seculoco-setup-notice .button {
-	margin-top: 10px;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-	.seculoco-wizard-modal {
-		width: 95%;
-		max-height: 95vh;
-	}
-
-	.seculoco-wizard-header,
-	.seculoco-wizard-body,
-	.seculoco-wizard-footer {
-		padding: 20px;
-	}
-
-	.seculoco-wizard-icon {
-		font-size: 48px;
-	}
-
-	.seculoco-wizard-step h3 {
-		font-size: 18px;
-	}
-}
-
-/* Encryption Setup Page Styles */
-.seculoco-encryption-status {
-	margin: 20px 0;
-}
-
-.seculoco-encryption-status h3,
-.seculoco-encryption-info h3,
-.seculoco-encryption-actions h3,
-.seculoco-setup-info h3,
-.seculoco-setup-requirements h3 {
-	font-size: 18px;
-	margin-top: 20px;
-	margin-bottom: 15px;
-	color: var(--seculoco-primary);
-}
-
-.seculoco-encryption-status table {
-	margin-top: 15px;
-}
-
-.seculoco-encryption-status th {
-	width: 30%;
-	font-weight: 600;
-	padding: 10px;
-}
-
-.seculoco-encryption-status td {
-	padding: 10px;
-}
-
-.seculoco-status-ok {
-	color: #46b450;
-}
-
-.seculoco-status-error {
-	color: #dc3232;
-}
-
-.seculoco-encryption-info p,
-.seculoco-setup-info p {
-	margin: 10px 0;
-	line-height: 1.6;
-}
-
-.seculoco-setup-info ul,
-.seculoco-setup-requirements ul {
-	margin: 10px 0 20px 20px;
-	line-height: 1.8;
-}
-
-.seculoco-setup-info li,
-.seculoco-setup-requirements li {
-	margin: 5px 0;
-}
-
-.seculoco-setup-action {
-	margin-top: 30px;
-	padding: 20px;
-	background: #f9f9f9;
-	border-radius: 5px;
-	text-align: center;
-}
-
-.seculoco-setup-action .button-large {
-	font-size: 16px;
-	padding: 10px 30px;
-	height: auto;
-}
-
-.seculoco-setup-action .button .dashicons {
-	margin-right: 5px;
-}
-
-.seculoco-encryption-actions p {
-	margin: 10px 0;
-}
-
-.seculoco-encryption-actions .description {
-	color: #666;
-	font-style: italic;
-}
-
-/* WordPress-style danger button */
-.button.button-danger {
-	background-color: var(--seculoco-danger);
+/* Button Styles */
+.button-danger {
+	background: var(--seculoco-danger);
+	color: white;
 	border-color: var(--seculoco-danger);
-	color: #ffffff;
-	text-shadow: none;
 }
 
-.button.button-danger:hover:not(:disabled),
-.button.button-danger:focus:not(:disabled) {
-	background-color: var(--seculoco-danger-hover);
+.button-danger:hover {
+	background: var(--seculoco-danger-hover);
 	border-color: var(--seculoco-danger-hover);
-	color: #ffffff;
+	color: white;
 }
 
-.button.button-danger:disabled {
+.button-danger:disabled {
 	opacity: 0.5;
 	cursor: not-allowed;
 }
 
-/* ==========================================================================
-	Active Encryption Status Bar
-	========================================================================== */
-
-.seculoco-encryption-status-bar {
-	background: var(--seculoco-bg-white);
-	border: 2px solid var(--seculoco-border-light);
-	border-radius: var(--seculoco-radius-md);
-	padding: 20px;
-	margin-bottom: 24px;
-	box-shadow: var(--seculoco-shadow-sm);
+/* Password Setup/Reset Buttons */
+.seculoco-password-setup-btn,
+.seculoco-password-reset-btn {
+	margin-top: 10px;
 }
 
-.seculoco-encryption-status-bar-header {
-	margin-bottom: 16px;
-	padding-bottom: 12px;
-	border-bottom: 1px solid var(--seculoco-border-light);
-}
-
-.seculoco-encryption-status-bar-title {
-	font-size: 16px;
-	font-weight: 600;
-	color: var(--seculoco-text-primary);
-	margin: 0;
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
-.seculoco-status-icon {
-	font-size: 20px;
-	line-height: 1;
-}
-
-.seculoco-encryption-status-bar-body {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-}
-
-.seculoco-encryption-status-item {
-	display: flex;
-	align-items: flex-start;
-	gap: 12px;
-	padding: 12px;
-	border-radius: var(--seculoco-radius-sm);
-	transition: all 0.2s ease;
-}
-
-.seculoco-encryption-status-item-active {
-	background: #f0fdf4;
-	border-left: 3px solid var(--seculoco-success);
-}
-
-.seculoco-encryption-status-item-inactive {
-	background: var(--seculoco-bg-light);
-	border-left: 3px solid var(--seculoco-text-muted);
-	opacity: 0.7;
-}
-
-.seculoco-encryption-status-item-warning {
-	background: #fffdf0;
-	border-left: 3px solid var(--seculoco-warning);
-}
-
-.seculoco-encryption-status-item-unavailable {
-	background: var(--seculoco-bg-light);
-	border-left: 3px solid var(--seculoco-border);
-	opacity: 0.6;
-}
-
-.seculoco-encryption-status-content {
-	flex: 1;
-}
-
-.seculoco-encryption-status-label {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	margin-bottom: 4px;
-	font-size: 14px;
-}
-
-.seculoco-encryption-status-label strong {
-	color: var(--seculoco-text-primary);
-	font-weight: 600;
-}
-
-.seculoco-encryption-status-desc {
-	font-size: 13px;
-	color: var(--seculoco-text-secondary);
-	line-height: 1.5;
-	margin: 0;
-}
-
-/* Status dot positioning */
-.seculoco-encryption-status-item .seculoco-status-dot {
-	margin-top: 2px;
-	flex-shrink: 0;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-	.seculoco-encryption-status-bar {
-		padding: 16px;
-	}
-
-	.seculoco-encryption-status-item {
-		padding: 10px;
-	}
-
-	.seculoco-encryption-status-bar-title {
-		font-size: 14px;
-	}
-
-	.seculoco-encryption-status-label {
-		flex-direction: column;
-		align-items: flex-start;
-		gap: 4px;
+/* Responsive */
+@media (max-width: 782px) {
+	.seculoco-password-modal {
+		min-width: 90%;
+		max-width: 90%;
 	}
 }
