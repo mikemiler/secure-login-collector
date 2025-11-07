@@ -603,7 +603,7 @@ class Seculoco_Passkey_Manager {
 			require_once SECULOCO_PLUGIN_DIR . 'includes/class-database-manager.php';
 		}
 		$db_manager     = new Seculoco_Database_Manager( $table_name );
-		$affected_count = $db_manager->mark_login_data_as_undecryptable();
+		$affected_count = $db_manager->mark_login_data_as_undecryptable( 'pro' );
 
 		// Delete the global passkey.
 		delete_option( SECULOCO_OPTION_GLOBAL_PASSKEY );
