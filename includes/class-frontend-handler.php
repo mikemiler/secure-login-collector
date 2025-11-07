@@ -590,7 +590,7 @@ class Seculoco_Frontend_Handler {
 			return seculoco_has_password_encryption();
 		}
 
-		return (bool) get_option( 'seculoco_password_encryption_active', false );
+		return (bool) get_option( SECULOCO_OPTION_PASSWORD_ENCRYPTION_ACTIVE, false );
 	}
 
 	/**
@@ -603,6 +603,6 @@ class Seculoco_Frontend_Handler {
 			return seculoco_has_passkey_encryption();
 		}
 
-		return (bool) ( get_option( 'seculoco_pro_keys_active', false ) && get_option( 'seculoco_passkey_registered', false ) );
+		return (bool) ( get_option( SECULOCO_OPTION_PRO_KEYS_ACTIVE, false ) && get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false ) );
 	}
 }

@@ -31,7 +31,7 @@ if ( ! interface_exists( 'Seculoco_Encryption_Service' ) ) {
 		 * Initialize password-based keys via admin-provided password.
 		 *
 		 * @param string $password Admin password for key wrapping.
-		 * @return bool True on success, false on failure.
+		 * @return array|WP_Error Result metadata or error.
 		 */
 		public function initialize_password_keys( $password );
 
@@ -88,7 +88,6 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 		add_action( 'wp_ajax_nopriv_seculoco_get_public_key', array( $this, 'handle_get_public_key' ) );
 		add_action( 'wp_ajax_seculoco_get_wrapped_private_key', array( $this, 'handle_get_wrapped_private_key' ) );
 		add_action( 'wp_ajax_seculoco_initialize_free_keys', array( $this, 'handle_initialize_free_keys' ) );
-		add_action( 'wp_ajax_seculoco_export_public_key', array( $this, 'handle_export_public_key' ) );
 
 		// Cleanup old WP-salts keys on init (run once).
 		add_action( 'admin_init', array( $this, 'cleanup_old_keys' ) );
@@ -117,6 +116,10 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 		
 		// Check if standard keys already exist.
 		if ( $unified->has_keys( 'standard' ) ) {
+			// Ensure status flags stay in sync when keys already exist.
+			update_option( SECULOCO_OPTION_PASSWORD_ACTIVE, true );
+			update_option( SECULOCO_OPTION_PASSWORD_ENCRYPTION_ACTIVE, true );
+
 			return array(
 				'status' => 'already_initialized',
 				'type'   => 'standard',
@@ -158,7 +161,8 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 		}
 
 		// Mark standard encryption as active.
-		update_option( 'seculoco_password_active', true );
+		update_option( SECULOCO_OPTION_PASSWORD_ACTIVE, true );
+		update_option( SECULOCO_OPTION_PASSWORD_ENCRYPTION_ACTIVE, true );
 
 		// Log initialization.
 		$this->log_key_operation( 'standard_keys_initialized' );
@@ -175,18 +179,28 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 	 * Used by AJAX handlers for password setup.
 	 *
 	 * @param string $password Admin password for key wrapping.
-	 * @return bool True on success, false on failure.
+	 * @return array|WP_Error Result metadata or error.
 	 */
 	public function initialize_password_keys( $password ) {
 		$result = $this->initialize_free_keys( $password );
 
 		if ( is_wp_error( $result ) ) {
-			return false;
+			return $result;
 		}
 
-		$status  = isset( $result['status'] ) ? $result['status'] : null;
+		$status  = isset( $result['status'] ) ? $result['status'] : 'unknown';
 		$success = in_array( $status, array( 'success', 'already_initialized' ), true );
-		return $success;
+
+		if ( $success ) {
+			update_option( SECULOCO_OPTION_PASSWORD_ENCRYPTION_ACTIVE, true );
+		}
+
+		return array(
+			'success' => $success,
+			'status'  => $status,
+			'type'    => isset( $result['type'] ) ? $result['type'] : 'standard',
+			'message' => isset( $result['message'] ) ? $result['message'] : '',
+		);
 	}
 
 	/**
@@ -217,8 +231,8 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 		$unified->delete_keys( 'standard' );
 
 		// Clear password active flag.
-		delete_option( 'seculoco_password_active' );
-		delete_option( 'seculoco_password_encryption_active' );
+		delete_option( SECULOCO_OPTION_PASSWORD_ACTIVE );
+		delete_option( SECULOCO_OPTION_PASSWORD_ENCRYPTION_ACTIVE );
 
 		// Log operation.
 		$this->log_key_operation( 'password_keys_reset', array( 'affected_entries' => $affected ) );
@@ -357,9 +371,20 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 		$this->log_key_access( get_current_user_id(), 'standard' );
 
 		// Return wrapped key for client-side unwrapping.
+		$wrapped_response = array(
+			'wrapped_dek'    => isset( $wrapped_key['encrypted_data'] ) ? $wrapped_key['encrypted_data'] : '',
+			'iv'             => isset( $wrapped_key['iv'] ) ? $wrapped_key['iv'] : '',
+			'tag'            => isset( $wrapped_key['tag'] ) ? $wrapped_key['tag'] : '',
+			'algorithm'      => isset( $wrapped_key['algorithm'] ) ? $wrapped_key['algorithm'] : '',
+			'kdf'            => isset( $wrapped_key['kdf'] ) ? $wrapped_key['kdf'] : '',
+			'kdf_iterations' => isset( $wrapped_key['kdf_iterations'] ) ? $wrapped_key['kdf_iterations'] : '',
+			'kdf_hash'       => isset( $wrapped_key['kdf_hash'] ) ? $wrapped_key['kdf_hash'] : '',
+		);
+
 		wp_send_json_success(
 			array(
-				'wrapped_key' => $wrapped_key,
+				'wrapped_key' => $wrapped_response,
+				'salt'        => isset( $wrapped_key['salt'] ) ? $wrapped_key['salt'] : '',
 				'type'        => 'standard',
 				'message'     => 'Password required for unwrapping',
 			)
@@ -393,49 +418,6 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 	}
 
 	/**
-	 * Handle AJAX request to export public key.
-	 */
-	public function handle_export_public_key() {
-		// Check admin permissions.
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( 'Insufficient permissions' );
-			return;
-		}
-
-		// Verify nonce.
-		$nonce = sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) );
-		if ( ! wp_verify_nonce( $nonce, 'seculoco_admin_nonce' ) ) {
-			wp_send_json_error( 'Invalid security token' );
-			return;
-		}
-
-		$unified = $this->get_unified_crypto();
-
-		$requested_type = isset( $_POST['key_type'] ) ? sanitize_text_field( wp_unslash( $_POST['key_type'] ) ) : '';
-		$method         = 'standard';
-
-		if ( 'passkey' === $requested_type ) {
-			$method = 'passkey';
-		} elseif ( 'standard' !== $requested_type && $this->is_passkey_active() ) {
-			$method = 'passkey';
-		}
-
-		$public_key = $unified->get_public_key( $method );
-
-		if ( is_wp_error( $public_key ) ) {
-			wp_send_json_error( 'No public key found: ' . $public_key->get_error_message() );
-			return;
-		}
-
-		wp_send_json_success(
-			array(
-				'public_key' => $public_key,
-				'type'       => $method,
-			)
-		);
-	}
-
-	/**
 	 * Log key access for audit trail.
 	 *
 	 * Marked protected to allow premium class to use it.
@@ -444,7 +426,7 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 	 * @param string $type    Type of key accessed (default: 'free').
 	 */
 	protected function log_key_access( $user_id, $type = 'standard' ) {
-		$log = get_option( 'seculoco_key_access_log', array() );
+		$log = get_option( SECULOCO_OPTION_KEY_ACCESS_LOG, array() );
 
 		// Keep only last 100 entries.
 		if ( count( $log ) > 100 ) {
@@ -459,7 +441,7 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 			'type'      => $type,
 		);
 
-		update_option( 'seculoco_key_access_log', $log );
+		update_option( SECULOCO_OPTION_KEY_ACCESS_LOG, $log );
 	}
 
 	/**
@@ -471,7 +453,7 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 	 * @param array  $metadata Optional metadata to include in log entry.
 	 */
 	protected function log_key_operation( $operation, $metadata = array() ) {
-		$log = get_option( 'seculoco_key_operations_log', array() );
+		$log = get_option( SECULOCO_OPTION_KEY_OPERATIONS_LOG, array() );
 
 		// Keep only last 50 operations.
 		if ( count( $log ) > 50 ) {
@@ -491,7 +473,7 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 
 		$log[] = $log_entry;
 
-		update_option( 'seculoco_key_operations_log', $log );
+		update_option( SECULOCO_OPTION_KEY_OPERATIONS_LOG, $log );
 	}
 
 	/**
@@ -530,8 +512,8 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 	 * @return bool True if passkey is registered and active.
 	 */
 	protected function is_passkey_active() {
-		return (bool) get_option( 'seculoco_passkey_active', false ) &&
-			   (bool) get_option( 'seculoco_passkey_registered', false );
+		return (bool) get_option( SECULOCO_OPTION_PASSKEY_ACTIVE, false ) &&
+			   (bool) get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false );
 	}
 
 	/**
@@ -540,7 +522,7 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 	 * @return bool True if PRO keys are active.
 	 */
 	public static function is_pro_active() {
-		return (bool) get_option( 'seculoco_pro_keys_active', false );
+		return (bool) get_option( SECULOCO_OPTION_PRO_KEYS_ACTIVE, false );
 	}
 
 	/**
@@ -557,14 +539,14 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 		return array(
 			'standard' => array(
 				'has_public_key'  => $unified->has_keys( 'standard' ),
-				'has_wrapped_key' => ! empty( get_option( 'seculoco_wrapped_private_key_standard' ) ),
-				'active'          => (bool) get_option( 'seculoco_password_active', false ),
+				'has_wrapped_key' => ! empty( get_option( SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_STANDARD ) ),
+				'active'          => (bool) get_option( SECULOCO_OPTION_PASSWORD_ACTIVE, false ),
 			),
 			'passkey'  => array(
 				'has_public_key'  => $unified->has_keys( 'passkey' ),
-				'has_wrapped_key' => ! empty( get_option( 'seculoco_wrapped_private_key_passkey' ) ),
-				'active'          => (bool) get_option( 'seculoco_passkey_active', false ),
-				'registered'      => (bool) get_option( 'seculoco_passkey_registered', false ),
+				'has_wrapped_key' => ! empty( get_option( SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PASSKEY ) ),
+				'active'          => (bool) get_option( SECULOCO_OPTION_PASSKEY_ACTIVE, false ),
+				'registered'      => (bool) get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false ),
 			),
 		);
 	}
@@ -579,16 +561,16 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 	 */
 	public function cleanup_old_keys() {
 		// Check if cleanup has already been performed.
-		if ( get_option( 'seculoco_keys_cleanup_v3', false ) ) {
+		if ( get_option( SECULOCO_OPTION_KEYS_CLEANUP_V3, false ) ) {
 			return;
 		}
 
 		// Remove old free version keys (WP-salts based).
-		delete_option( 'seculoco_private_key_free_encrypted' );
-		delete_option( 'seculoco_public_key_free' );
+		delete_option( SECULOCO_OPTION_PRIVATE_KEY_FREE_ENCRYPTED );
+		delete_option( SECULOCO_OPTION_PUBLIC_KEY_FREE );
 
 		// Mark cleanup as complete.
-		update_option( 'seculoco_keys_cleanup_v3', true );
+		update_option( SECULOCO_OPTION_KEYS_CLEANUP_V3, true );
 
 		// Log the cleanup operation.
 		$this->log_key_operation( 'old_keys_cleaned_up' );

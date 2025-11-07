@@ -128,15 +128,7 @@ class Seculoco_Settings_Manager {
 			'seculoco-key-management',
 			'seculocoKeyManager',
 			array(
-				'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
-				'nonce'     => wp_create_nonce( 'seculoco_admin_nonce' ),
-				'strings'   => array(
-					'networkError'        => __( 'Network error occurred.', 'secure-login-collector' ),
-					'exportFailedPrefix'  => __( 'Failed to export public key: ', 'secure-login-collector' ),
-				),
-				'passwordExportFileName' => 'secure-login-password-public-key.pem',
-				'passkeyExportFileName'  => 'secure-login-passkey-public-key.pem',
-				'defaultFrontendText'    => $this->get_default_frontend_text(),
+				'defaultFrontendText' => $this->get_default_frontend_text(),
 			)
 		);
 	}
@@ -162,7 +154,7 @@ class Seculoco_Settings_Manager {
 	public function register_settings() {
 		register_setting(
 			'seculoco_settings',
-			'seculoco_notification_email',
+			SECULOCO_OPTION_NOTIFICATION_EMAIL,
 			array(
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_email',
@@ -170,7 +162,7 @@ class Seculoco_Settings_Manager {
 		);
 		register_setting(
 			'seculoco_settings',
-			'seculoco_enable_notifications',
+			SECULOCO_OPTION_ENABLE_NOTIFICATIONS,
 			array(
 				'type'              => 'boolean',
 				'sanitize_callback' => array( $this, 'sanitize_boolean' ),
@@ -178,7 +170,7 @@ class Seculoco_Settings_Manager {
 		);
 		register_setting(
 			'seculoco_settings',
-			'seculoco_expiration_days',
+			SECULOCO_OPTION_EXPIRATION_DAYS,
 			array(
 				'type'              => 'integer',
 				'sanitize_callback' => 'absint',
@@ -186,7 +178,7 @@ class Seculoco_Settings_Manager {
 		);
 		register_setting(
 			'seculoco_settings',
-			'seculoco_frontend_form_text',
+			SECULOCO_OPTION_FRONTEND_FORM_TEXT,
 			array(
 				'type'              => 'string',
 				'sanitize_callback' => array( $this, 'sanitize_frontend_form_text' ),
@@ -194,7 +186,7 @@ class Seculoco_Settings_Manager {
 		);
 		register_setting(
 			'seculoco_settings',
-			'seculoco_frontend_text_type',
+			SECULOCO_OPTION_FRONTEND_TEXT_TYPE,
 			array(
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_text_field',
@@ -202,7 +194,7 @@ class Seculoco_Settings_Manager {
 		);
 		register_setting(
 			'seculoco_settings',
-			'seculoco_delete_on_uninstall',
+			SECULOCO_OPTION_DELETE_ON_UNINSTALL,
 			array(
 				'type'              => 'boolean',
 				'sanitize_callback' => array( $this, 'sanitize_boolean' ),
@@ -211,7 +203,7 @@ class Seculoco_Settings_Manager {
 
 		register_setting(
 			'seculoco_settings',
-			'seculoco_hide_service_footer',
+			SECULOCO_OPTION_HIDE_SERVICE_FOOTER,
 			array(
 				'type'              => 'boolean',
 				'sanitize_callback' => array( $this, 'sanitize_boolean' ),
@@ -221,7 +213,7 @@ class Seculoco_Settings_Manager {
 		// Spam Protection settings.
 		register_setting(
 			'seculoco_settings',
-			'seculoco_honeypot_enabled',
+			SECULOCO_OPTION_HONEYPOT_ENABLED,
 			array(
 				'type'              => 'boolean',
 				'sanitize_callback' => array( $this, 'sanitize_boolean' ),
@@ -276,7 +268,7 @@ class Seculoco_Settings_Manager {
 		);
 
 		add_settings_field(
-			'seculoco_delete_on_uninstall',
+			SECULOCO_OPTION_DELETE_ON_UNINSTALL,
 			__( 'Delete Data on Uninstall', 'secure-login-collector' ),
 			array( $this, 'delete_on_uninstall_callback' ),
 			'seculoco_settings',
@@ -284,7 +276,7 @@ class Seculoco_Settings_Manager {
 		);
 
 		add_settings_field(
-			'seculoco_enable_notifications',
+			SECULOCO_OPTION_ENABLE_NOTIFICATIONS,
 			__( 'Enable Email Notifications', 'secure-login-collector' ),
 			array( $this, 'enable_notifications_callback' ),
 			'seculoco_settings',
@@ -292,7 +284,7 @@ class Seculoco_Settings_Manager {
 		);
 
 		add_settings_field(
-			'seculoco_notification_email',
+			SECULOCO_OPTION_NOTIFICATION_EMAIL,
 			__( 'Notification Email Address', 'secure-login-collector' ),
 			array( $this, 'notification_email_callback' ),
 			'seculoco_settings',
@@ -300,7 +292,7 @@ class Seculoco_Settings_Manager {
 		);
 
 		add_settings_field(
-			'seculoco_frontend_text_type',
+			SECULOCO_OPTION_FRONTEND_TEXT_TYPE,
 			__( 'Text Type', 'secure-login-collector' ),
 			array( $this, 'frontend_text_type_callback' ),
 			'seculoco_settings',
@@ -308,7 +300,7 @@ class Seculoco_Settings_Manager {
 		);
 
 		add_settings_field(
-			'seculoco_frontend_form_text',
+			SECULOCO_OPTION_FRONTEND_FORM_TEXT,
 			__( 'Custom Description Text', 'secure-login-collector' ),
 			array( $this, 'frontend_form_text_callback' ),
 			'seculoco_settings',
@@ -316,7 +308,7 @@ class Seculoco_Settings_Manager {
 		);
 
 		add_settings_field(
-			'seculoco_hide_service_footer',
+			SECULOCO_OPTION_HIDE_SERVICE_FOOTER,
 			__( 'Hide Branding Footer', 'secure-login-collector' ),
 			array( $this, 'hide_service_footer_callback' ),
 			'seculoco_settings',
@@ -324,7 +316,7 @@ class Seculoco_Settings_Manager {
 		);
 
 		add_settings_field(
-			'seculoco_expiration_days',
+			SECULOCO_OPTION_EXPIRATION_DAYS,
 			__( 'Auto-Delete After (Days)', 'secure-login-collector' ),
 			array( $this, 'expiration_days_callback' ),
 			'seculoco_settings',
@@ -332,7 +324,7 @@ class Seculoco_Settings_Manager {
 		);
 
 		add_settings_field(
-			'seculoco_honeypot_enabled',
+			SECULOCO_OPTION_HONEYPOT_ENABLED,
 			__( 'Enable Honeypot Protection', 'secure-login-collector' ),
 			array( $this, 'honeypot_enabled_callback' ),
 			'seculoco_settings',
@@ -423,8 +415,9 @@ class Seculoco_Settings_Manager {
 	 * Display encryption content inside the card
 	 */
 	private function display_encryption_content() {
-		$password_active      = (bool) get_option( 'seculoco_password_encryption_active', false );
-		$password_public_key  = get_option( 'seculoco_public_key_standard' );
+		$password_active = function_exists( 'seculoco_has_password_encryption' )
+			? seculoco_has_password_encryption()
+			: (bool) get_option( SECULOCO_OPTION_PASSWORD_ENCRYPTION_ACTIVE, false );
 
 		// Two-column layout: password encryption + pro extension.
 		echo '<div class="seculoco-encryption-grid">';
@@ -454,35 +447,29 @@ class Seculoco_Settings_Manager {
 
 		// Password setup/reset buttons.
 		echo '<p>';
-		 if(! $password_active) {
+		if ( ! $password_active ) {
 			echo '<button type="button" class="seculoco-btn seculoco-btn-primary seculoco-btn-lg seculoco-password-setup-btn">';
 			echo '<span>🔐</span> ';
 			echo esc_html__( 'Setup Password', 'secure-login-collector' );
 			echo '</button>';
-		}
-		echo '</p>';
-		if ( $password_active ) {
-		// Warning text (matching passkey style).
-		echo '<div class="seculoco-alert seculoco-alert-danger seculoco-margin-top-20">';
-		echo '<span class="seculoco-alert-icon">⚠️</span>';
-		echo '<div class="seculoco-alert-content">';
-		echo '<div class="seculoco-alert-title">' . esc_html__( 'CRITICAL WARNING: Data Loss Risk', 'secure-login-collector' ) . '</div>';
-		echo '<div class="seculoco-alert-message">';
-		echo '<p><strong>' . esc_html__( 'Deleting this password will permanently prevent decryption of all existing login data encrypted with this password.', 'secure-login-collector' ) . '</strong></p>';
-		echo '<p><strong>' . esc_html__( 'This action CANNOT be undone. There is NO recovery method.', 'secure-login-collector' ) . '</strong></p>';
-		
+			echo '</p>';
+		} else {
+			echo '</p>';
+			echo '<div class="seculoco-alert seculoco-alert-danger seculoco-margin-top-20">';
+			echo '<span class="seculoco-alert-icon">⚠️</span>';
+			echo '<div class="seculoco-alert-content">';
+			echo '<div class="seculoco-alert-title">' . esc_html__( 'CRITICAL WARNING: Data Loss Risk', 'secure-login-collector' ) . '</div>';
+			echo '<div class="seculoco-alert-message">';
+			echo '<p><strong>' . esc_html__( 'Deleting this password will permanently prevent decryption of all existing login data encrypted with this password.', 'secure-login-collector' ) . '</strong></p>';
+			echo '<p><strong>' . esc_html__( 'This action CANNOT be undone. There is NO recovery method.', 'secure-login-collector' ) . '</strong></p>';
+
 			echo '<button type="button" class="seculoco-btn seculoco-btn-danger seculoco-password-reset-btn">';
 			echo esc_html__( 'Reset Password', 'secure-login-collector' );
 			echo '</button>';
-		
-		echo '</div>';
-		echo '</div>';
-		echo '</div>';
-		}
-		if ( $password_public_key ) {
-			echo '<p>';
-			echo '<button type="button" class="button button-secondary seculoco-export-key" data-key-type="standard">' . esc_html__( 'Export Public Key', 'secure-login-collector' ) . '</button>';
-			echo '</p>';
+
+			echo '</div>';
+			echo '</div>';
+			echo '</div>';
 		}
 
 		echo '</div>'; // Close password column
@@ -557,7 +544,7 @@ class Seculoco_Settings_Manager {
 	 * Enable notifications field callback.
 	 */
 	public function enable_notifications_callback() {
-		$enabled = get_option( 'seculoco_enable_notifications', false );
+		$enabled = get_option( SECULOCO_OPTION_ENABLE_NOTIFICATIONS, false );
 		echo '<input type="checkbox" id="seculoco_enable_notifications" name="seculoco_enable_notifications" value="1" ' . checked( 1, $enabled, false ) . ' />';
 		echo '<label for="seculoco_enable_notifications"> ' . esc_html__( 'Send email notifications when new login data is received', 'secure-login-collector' ) . '</label>';
 	}
@@ -566,7 +553,7 @@ class Seculoco_Settings_Manager {
 	 * Notification email field callback.
 	 */
 	public function notification_email_callback() {
-		$email = get_option( 'seculoco_notification_email', get_option( 'admin_email' ) );
+		$email = get_option( SECULOCO_OPTION_NOTIFICATION_EMAIL, get_option( 'admin_email' ) );
 		echo '<input type="email" id="seculoco_notification_email" name="seculoco_notification_email" value="' . esc_attr( $email ) . '" class="regular-text" />';
 		echo '<p class="description">' . esc_html__( 'Email address to receive notifications. Defaults to site admin email.', 'secure-login-collector' ) . '</p>';
 	}
@@ -588,8 +575,8 @@ class Seculoco_Settings_Manager {
 	 * Frontend form text field callback.
 	 */
 	public function frontend_form_text_callback() {
-		$text      = get_option( 'seculoco_frontend_form_text', '' );
-		$text_type = get_option( 'seculoco_frontend_text_type', 'default' );
+		$text      = get_option( SECULOCO_OPTION_FRONTEND_FORM_TEXT, '' );
+		$text_type = get_option( SECULOCO_OPTION_FRONTEND_TEXT_TYPE, 'default' );
 
 		// Generate the default text with placeholder for dynamic expiration text.
 		$default_text = $this->get_default_frontend_text();
@@ -607,7 +594,7 @@ class Seculoco_Settings_Manager {
 	 * Frontend text type field callback.
 	 */
 	public function frontend_text_type_callback() {
-		$text_type = get_option( 'seculoco_frontend_text_type', 'default' );
+		$text_type = get_option( SECULOCO_OPTION_FRONTEND_TEXT_TYPE, 'default' );
 
 		echo '<fieldset>';
 		echo '<label>';
@@ -651,7 +638,7 @@ class Seculoco_Settings_Manager {
 	 * Expiration days field callback.
 	 */
 	public function expiration_days_callback() {
-		$days = get_option( 'seculoco_expiration_days', 30 );
+		$days = get_option( SECULOCO_OPTION_EXPIRATION_DAYS, 30 );
 		echo '<input type="number" id="seculoco_expiration_days" name="seculoco_expiration_days" value="' . esc_attr( $days ) . '" min="0" class="small-text" />';
 		echo '<p class="description">' . esc_html__( 'Number of days after which login data will be automatically deleted. Set to 0 to disable automatic deletion (data will be retained until manually deleted).', 'secure-login-collector' ) . '</p>';
 	}
@@ -660,7 +647,7 @@ class Seculoco_Settings_Manager {
 	 * Honeypot enabled field callback.
 	 */
 	public function honeypot_enabled_callback() {
-		$enabled = get_option( 'seculoco_honeypot_enabled', true );
+		$enabled = get_option( SECULOCO_OPTION_HONEYPOT_ENABLED, true );
 		echo '<input type="checkbox" id="seculoco_honeypot_enabled" name="seculoco_honeypot_enabled" value="1" ' . checked( 1, $enabled, false ) . ' />';
 		echo '<label for="seculoco_honeypot_enabled"> ' . esc_html__( 'Add hidden field to detect automated bot submissions', 'secure-login-collector' ) . '</label>';
 		echo '<p class="description">' . esc_html__( 'The honeypot technique adds a hidden field to the form that bots typically fill out but humans cannot see. If the field contains data, the submission is rejected.', 'secure-login-collector' ) . '</p>';
@@ -685,7 +672,7 @@ class Seculoco_Settings_Manager {
 	 * Delete on uninstall field callback.
 	 */
 	public function delete_on_uninstall_callback() {
-		$enabled = get_option( 'seculoco_delete_on_uninstall', false );
+		$enabled = get_option( SECULOCO_OPTION_DELETE_ON_UNINSTALL, false );
 		echo '<input type="checkbox" id="seculoco_delete_on_uninstall" name="seculoco_delete_on_uninstall" value="1" ' . checked( 1, $enabled, false ) . ' />';
 		echo '<label for="seculoco_delete_on_uninstall"> ' . esc_html__( 'Completely remove all plugin data when uninstalling', 'secure-login-collector' ) . '</label>';
 		echo '<p class="description">' . esc_html__( 'When checked, all login data, encryption keys, settings, and database tables will be permanently deleted when the plugin is uninstalled. This action cannot be undone.', 'secure-login-collector' ) . '</p>';
@@ -785,7 +772,7 @@ class Seculoco_Settings_Manager {
 	public function sanitize_frontend_form_text( $text ) {
 		// Get the text type selection.
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled by WordPress settings API.
-		$text_type = isset( $_POST['seculoco_frontend_text_type'] ) ? sanitize_text_field( wp_unslash( $_POST['seculoco_frontend_text_type'] ) ) : 'default';
+		$text_type = isset( $_POST[SECULOCO_OPTION_FRONTEND_TEXT_TYPE] ) ? sanitize_text_field( wp_unslash( $_POST[SECULOCO_OPTION_FRONTEND_TEXT_TYPE] ) ) : 'default';
 
 		// If "default" is selected, don't save any custom text (save empty string).
 		if ( 'default' === $text_type ) {
@@ -845,13 +832,27 @@ class Seculoco_Settings_Manager {
 			// Generate password-based keys using encryption handler.
 			$result = $this->encryption_handler->initialize_password_keys( $password );
 
-			if ( $result ) {
-				// Store password status.
-				update_option( 'seculoco_password_encryption_active', true );
-				wp_send_json_success( array( 'message' => __( 'Password-based encryption setup successfully!', 'secure-login-collector' ) ) );
-			} else {
+			if ( is_wp_error( $result ) ) {
+				wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+			}
+
+			if ( empty( $result['success'] ) ) {
 				wp_send_json_error( array( 'message' => __( 'Failed to initialize password-based keys.', 'secure-login-collector' ) ) );
 			}
+
+			$status  = isset( $result['status'] ) ? $result['status'] : 'success';
+			$message = __( 'Password-based encryption setup successfully!', 'secure-login-collector' );
+
+			if ( 'already_initialized' === $status ) {
+				$message = __( 'Password-based encryption is already configured.', 'secure-login-collector' );
+			}
+
+			wp_send_json_success(
+				array(
+					'message' => $message,
+					'status'  => $status,
+				)
+			);
 		} catch ( Exception $e ) {
 			wp_send_json_error( array( 'message' => $e->getMessage() ) );
 		}
@@ -899,7 +900,9 @@ class Seculoco_Settings_Manager {
 			wp_send_json_error( array( 'message' => __( 'Insufficient permissions.', 'secure-login-collector' ) ) );
 		}
 
-		$is_active = get_option( 'seculoco_password_encryption_active', false );
+		$is_active = function_exists( 'seculoco_has_password_encryption' )
+			? seculoco_has_password_encryption()
+			: (bool) get_option( SECULOCO_OPTION_PASSWORD_ENCRYPTION_ACTIVE, false );
 
 		wp_send_json_success(
 			array(

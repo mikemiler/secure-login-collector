@@ -47,7 +47,7 @@ class Seculoco_Spam_Protection {
 	 * @since 1.0.0
 	 * @var string
 	 */
-	const SETTINGS_KEY = 'seculoco_spam_protection_settings';
+	const SETTINGS_KEY = SECULOCO_OPTION_SPAM_SETTINGS;
 
 	/**
 	 * Default minimum time threshold (seconds).

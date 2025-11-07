@@ -1299,10 +1299,6 @@ button.button-expired[disabled]:hover {
 	margin-bottom: 20px;
 }
 
-.seculoco-encryption-column {
-	/* Placeholder for encryption column styling */
-}
-
 .seculoco-encryption-status-card {
 	background: white;
 	border: 1px solid #c3c4c7;
@@ -1981,4 +1977,123 @@ button.button-expired[disabled]:hover {
 		min-width: 90%;
 		max-width: 90%;
 	}
+}
+.seculoco-modal-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 100000;
+	background: rgba(18, 24, 38, 0.65);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 20px;
+}
+
+.seculoco-modal-container {
+	background: #fff;
+	border-radius: 10px;
+	box-shadow: 0 18px 40px rgba(10, 16, 34, 0.25);
+	width: 480px;
+	max-width: 100%;
+	animation: seculoco-modal-fade 0.2s ease-out;
+}
+
+@keyframes seculoco-modal-fade {
+	from {
+		transform: translateY(10px);
+		opacity: 0;
+	}
+	to {
+		transform: translateY(0);
+		opacity: 1;
+	}
+}
+
+.seculoco-modal-header {
+	padding: 24px 24px 12px;
+	border-bottom: 1px solid #ececec;
+}
+
+.seculoco-modal-header h2 {
+	margin: 0;
+	font-size: 20px;
+	color: #111;
+}
+
+.seculoco-modal-header p {
+	margin: 6px 0 0;
+	color: #5f6b7c;
+}
+
+.seculoco-modal-content {
+	padding: 24px;
+}
+
+.seculoco-field-group {
+	margin-bottom: 16px;
+}
+
+.seculoco-field-group label {
+	display: block;
+	font-weight: 600;
+	margin-bottom: 8px;
+	color: #111;
+}
+
+.seculoco-password-input-group {
+	display: flex;
+	align-items: center;
+	border: 1px solid #c3c4c7;
+	border-radius: 6px;
+	overflow: hidden;
+	background: #fff;
+}
+
+.seculoco-password-input-group input {
+	border: none;
+	flex: 1;
+	padding: 10px 12px;
+	font-size: 14px;
+}
+
+.seculoco-password-input-group input:focus {
+	outline: none;
+	box-shadow: none;
+}
+
+.seculoco-toggle-password-btn {
+	border: none;
+	background: transparent;
+	padding: 8px 12px;
+	cursor: pointer;
+	color: #50575e;
+}
+
+.seculoco-toggle-password-btn:hover {
+	background: rgba(17, 121, 239, 0.08);
+	color: #111;
+}
+
+.seculoco-error-message {
+	display: none;
+	color: #d63638;
+	background: rgba(214, 54, 56, 0.1);
+	border-radius: 4px;
+	padding: 8px 10px;
+	font-size: 13px;
+}
+
+.seculoco-modal-footer {
+	padding: 16px 24px 24px;
+	display: flex;
+	justify-content: flex-end;
+	gap: 12px;
+	border-top: 1px solid #ececec;
+}
+
+.seculoco-modal-footer .button {
+	min-width: 110px;
 }

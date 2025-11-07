@@ -285,7 +285,7 @@ class Seculoco_List_Table extends WP_List_Table {
 		}
 
 		// Extend button (only for non-expired entries if expiration is enabled) with icon.
-		$expiration_days = get_option( 'seculoco_expiration_days', 30 );
+		$expiration_days = get_option( SECULOCO_OPTION_EXPIRATION_DAYS, 30 );
 		if ( $expiration_days > 0 && ! $is_expired && !$is_undecryptable ) {
 			$actions[] = sprintf(
 				'<button type="button" class="button button-secondary extend-btn" data-id="%s" title="%s"><span class="dashicons dashicons-calendar-alt"></span></button>',
@@ -762,7 +762,7 @@ class Seculoco_Admin_Interface {
 
 		// Localize script with configuration data.
 		$admin_config = array(
-			'passkeyRegistered' => get_option( 'seculoco_passkey_registered', false ),
+			'passkeyRegistered' => get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false ),
 			'currentUserId'     => get_current_user_id(),
 		);
 
@@ -966,7 +966,7 @@ class Seculoco_Admin_Interface {
 		$row                    = $this->database_manager->get_entry( $extend_id );
 		$is_expired             = isset( $row->is_expired ) ? $row->is_expired : 0;
 		$new_expiration_display = $this->database_manager->calculate_expiration( $row->retention_until, $is_expired );
-		$expiration_days        = get_option( 'seculoco_expiration_days', 30 );
+		$expiration_days        = get_option( SECULOCO_OPTION_EXPIRATION_DAYS, 30 );
 		/* translators: %d: number of days retention period extended */
 		wp_send_json_success(
 			array(

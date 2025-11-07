@@ -305,7 +305,7 @@ class Seculoco_Passkey_Manager {
 	 * @return array|null Passkey data or null if not registered.
 	 */
 	private function get_global_passkey() {
-		$passkey = get_option( 'seculoco_global_passkey' );
+		$passkey = get_option( SECULOCO_OPTION_GLOBAL_PASSKEY );
 		return is_array( $passkey ) ? $passkey : null;
 	}
 
@@ -315,7 +315,7 @@ class Seculoco_Passkey_Manager {
 	 * @return bool True if passkey is registered.
 	 */
 	private function has_passkey() {
-		return (bool) get_option( 'seculoco_passkey_registered', false );
+		return (bool) get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false );
 	}
 
 	/**
@@ -538,10 +538,10 @@ class Seculoco_Passkey_Manager {
 				'device_info'   => $device_info,
 				'version'       => 2,
 			);
-			update_option( 'seculoco_global_passkey', $passkey_data );
+			update_option( SECULOCO_OPTION_GLOBAL_PASSKEY, $passkey_data );
 
 			// Store credential ID for quick lookup.
-			update_option( 'seculoco_passkey_credential_id', $credential_id );
+			update_option( SECULOCO_OPTION_PASSKEY_CREDENTIAL_ID, $credential_id );
 
 			// Store globally for verification.
 			update_option(
@@ -553,11 +553,11 @@ class Seculoco_Passkey_Manager {
 			);
 
 			// Set global passkey registered flag.
-			update_option( 'seculoco_passkey_registered', true );
-			update_option( 'seculoco_passkey_registered_at', current_time( 'mysql' ) );
+			update_option( SECULOCO_OPTION_PASSKEY_REGISTERED, true );
+			update_option( SECULOCO_OPTION_PASSKEY_REGISTERED_AT, current_time( 'mysql' ) );
 
 			// Also ensure pro keys active flag is set for consistency with V2 handler.
-			update_option( 'seculoco_pro_keys_active', true );
+			update_option( SECULOCO_OPTION_PRO_KEYS_ACTIVE, true );
 
 			// Clear challenge.
 			delete_transient( 'passkey_reg_challenge_' . $user_id );
@@ -606,8 +606,8 @@ class Seculoco_Passkey_Manager {
 		$affected_count = $db_manager->mark_login_data_as_undecryptable();
 
 		// Delete the global passkey.
-		delete_option( 'seculoco_global_passkey' );
-		delete_option( 'seculoco_passkey_credential_id' );
+		delete_option( SECULOCO_OPTION_GLOBAL_PASSKEY );
+		delete_option( SECULOCO_OPTION_PASSKEY_CREDENTIAL_ID );
 		delete_option( 'passkey_credential_' . $credential_id );
 
 		// Delete the pro keys and clear the global flag.
@@ -627,8 +627,8 @@ class Seculoco_Passkey_Manager {
 		$premium_handler->delete_pro_keys();
 
 		// Clear global passkey registered flag.
-		delete_option( 'seculoco_passkey_registered' );
-		delete_option( 'seculoco_passkey_registered_at' );
+		delete_option( SECULOCO_OPTION_PASSKEY_REGISTERED );
+		delete_option( SECULOCO_OPTION_PASSKEY_REGISTERED_AT );
 
 		// Prepare success message with undecryptable count.
 		$message = __( 'Passkey deleted and encryption keys removed', 'secure-login-collector' );
@@ -731,7 +731,7 @@ class Seculoco_Passkey_Manager {
 		// The passkey-derived key directly wraps the PRO private key.
 
 		// Get the pro public key for response.
-		$public_key_pro = get_option( 'seculoco_public_key_pro' );
+		$public_key_pro = get_option( SECULOCO_OPTION_PUBLIC_KEY_PRO );
 
 		wp_send_json_success(
 			array(

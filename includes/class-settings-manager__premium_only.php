@@ -68,7 +68,7 @@ class Seculoco_Settings_Manager_Pro {
 	public function register_pro_settings() {
 		register_setting(
 			'seculoco_settings',
-			'seculoco_ultra_secure_mode',
+			SECULOCO_OPTION_ULTRA_SECURE_MODE,
 			array(
 				'type'              => 'boolean',
 				'sanitize_callback' => array( $this, 'sanitize_boolean' ),
@@ -78,7 +78,7 @@ class Seculoco_Settings_Manager_Pro {
 		// Rate limiting settings (spam protection).
 		register_setting(
 			'seculoco_settings',
-			'seculoco_rate_limit_enabled',
+			SECULOCO_OPTION_RATE_LIMIT_ENABLED,
 			array(
 				'type'              => 'boolean',
 				'sanitize_callback' => array( $this, 'sanitize_boolean' ),
@@ -86,7 +86,7 @@ class Seculoco_Settings_Manager_Pro {
 		);
 		register_setting(
 			'seculoco_settings',
-			'seculoco_rate_limit_max_attempts',
+			SECULOCO_OPTION_RATE_LIMIT_MAX_ATTEMPTS,
 			array(
 				'type'              => 'integer',
 				'sanitize_callback' => array( $this, 'sanitize_rate_limit_max_attempts' ),
@@ -94,7 +94,7 @@ class Seculoco_Settings_Manager_Pro {
 		);
 		register_setting(
 			'seculoco_settings',
-			'seculoco_rate_limit_time_window',
+			SECULOCO_OPTION_RATE_LIMIT_TIME_WINDOW,
 			array(
 				'type'              => 'integer',
 				'sanitize_callback' => 'absint',
@@ -104,7 +104,7 @@ class Seculoco_Settings_Manager_Pro {
 		// Honeypot minimum time (spam protection).
 		register_setting(
 			'seculoco_settings',
-			'seculoco_honeypot_min_time',
+			SECULOCO_OPTION_HONEYPOT_MIN_TIME,
 			array(
 				'type'              => 'integer',
 				'sanitize_callback' => array( $this, 'sanitize_honeypot_min_time' ),
@@ -125,7 +125,7 @@ class Seculoco_Settings_Manager_Pro {
 		);
 
 		add_settings_field(
-			'seculoco_ultra_secure_mode',
+			SECULOCO_OPTION_ULTRA_SECURE_MODE,
 			__( 'Ultra-Secure Mode', 'secure-login-collector' ),
 			array( $this, 'ultra_secure_mode_callback' ),
 			'seculoco_settings',
@@ -152,12 +152,12 @@ class Seculoco_Settings_Manager_Pro {
 	 * Ultra secure mode field callback.
 	 */
 	public function ultra_secure_mode_callback() {
-		$enabled = get_option( 'seculoco_ultra_secure_mode', false );
+		$enabled = get_option( SECULOCO_OPTION_ULTRA_SECURE_MODE, false );
 		echo '<input type="checkbox" id="seculoco_ultra_secure_mode" name="seculoco_ultra_secure_mode" value="1" ' . checked( 1, $enabled, false ) . ' />';
 		echo '<label for="seculoco_ultra_secure_mode"> ' . esc_html__( 'Enable passkey-protected encryption (zero-knowledge)', 'secure-login-collector' ) . '</label>';
 		echo '<p class="description">' . esc_html__( 'When enabled, the RSA private key is wrapped with passkey authentication. This provides true zero-knowledge - the server cannot decrypt data without your physical passkey device. Requires passkey registration.', 'secure-login-collector' ) . '</p>';
 
-		$passkey_registered = get_option( 'seculoco_passkey_registered', false );
+		$passkey_registered = get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false );
 		if ( ! $passkey_registered ) {
 			echo '<div class="seculoco-alert seculoco-alert-warning" style="margin-top: 12px;">';
 			echo '<span class="seculoco-alert-icon"></span>';
@@ -175,7 +175,7 @@ class Seculoco_Settings_Manager_Pro {
 	 */
 	public function add_rate_limiting_fields() {
 		add_settings_field(
-			'seculoco_honeypot_min_time',
+			SECULOCO_OPTION_HONEYPOT_MIN_TIME,
 			__( 'Minimum Submission Time', 'secure-login-collector' ) ,
 			array( $this, 'honeypot_min_time_callback' ),
 			'seculoco_settings',
@@ -183,7 +183,7 @@ class Seculoco_Settings_Manager_Pro {
 		);
 
 		add_settings_field(
-			'seculoco_rate_limit_enabled',
+			SECULOCO_OPTION_RATE_LIMIT_ENABLED,
 			__( 'Enable Rate Limiting', 'secure-login-collector' ),
 			array( $this, 'rate_limit_enabled_callback' ),
 			'seculoco_settings',
@@ -191,7 +191,7 @@ class Seculoco_Settings_Manager_Pro {
 		);
 
 		add_settings_field(
-			'seculoco_rate_limit_max_attempts',
+			SECULOCO_OPTION_RATE_LIMIT_MAX_ATTEMPTS,
 			__( 'Max Attempts', 'secure-login-collector' ),
 			array( $this, 'rate_limit_max_attempts_callback' ),
 			'seculoco_settings',
@@ -199,7 +199,7 @@ class Seculoco_Settings_Manager_Pro {
 		);
 
 		add_settings_field(
-			'seculoco_rate_limit_time_window',
+			SECULOCO_OPTION_RATE_LIMIT_TIME_WINDOW,
 			__( 'Time Window', 'secure-login-collector' ),
 			array( $this, 'rate_limit_time_window_callback' ),
 			'seculoco_settings',
@@ -211,7 +211,7 @@ class Seculoco_Settings_Manager_Pro {
 	 * Honeypot minimum time field callback.
 	 */
 	public function honeypot_min_time_callback() {
-		$min_time = get_option( 'seculoco_honeypot_min_time', 2 );
+		$min_time = get_option( SECULOCO_OPTION_HONEYPOT_MIN_TIME, 2 );
 		echo '<div class="seculoco-premium-field">';
 		echo '<input type="number" id="seculoco_honeypot_min_time" name="seculoco_honeypot_min_time" value="' . esc_attr( $min_time ) . '" min="0" max="60" class="small-text" /> ';
 		echo esc_html__( 'seconds', 'secure-login-collector' ) . ' ';
@@ -224,7 +224,7 @@ class Seculoco_Settings_Manager_Pro {
 	 * Rate limit enabled field callback.
 	 */
 	public function rate_limit_enabled_callback() {
-		$enabled = get_option( 'seculoco_rate_limit_enabled', false );
+		$enabled = get_option( SECULOCO_OPTION_RATE_LIMIT_ENABLED, false );
 		echo '<input type="checkbox" id="seculoco_rate_limit_enabled" name="seculoco_rate_limit_enabled" value="1" ' . checked( 1, $enabled, false ) . ' />';
 		echo '<label for="seculoco_rate_limit_enabled"> ' . esc_html__( 'Enable rate limiting for form submissions', 'secure-login-collector' ) . '</label>';
 		echo ' <span class="seculoco-badge seculoco-badge-success">PRO</span>';
@@ -235,7 +235,7 @@ class Seculoco_Settings_Manager_Pro {
 	 * Rate limit max attempts field callback.
 	 */
 	public function rate_limit_max_attempts_callback() {
-		$max_attempts = get_option( 'seculoco_rate_limit_max_attempts', 10 );
+		$max_attempts = get_option( SECULOCO_OPTION_RATE_LIMIT_MAX_ATTEMPTS, 10 );
 		echo '<input type="number" id="seculoco_rate_limit_max_attempts" name="seculoco_rate_limit_max_attempts" value="' . esc_attr( $max_attempts ) . '" min="1" max="100" />';
 		echo ' <span class="seculoco-badge seculoco-badge-success">PRO</span>';
 		echo '<p class="description">' . esc_html__( 'Maximum number of form submissions allowed from the same IP address within the time window (1-100). Default: 10', 'secure-login-collector' ) . '</p>';
@@ -245,7 +245,7 @@ class Seculoco_Settings_Manager_Pro {
 	 * Rate limit time window field callback.
 	 */
 	public function rate_limit_time_window_callback() {
-		$time_window = get_option( 'seculoco_rate_limit_time_window', 300 );
+		$time_window = get_option( SECULOCO_OPTION_RATE_LIMIT_TIME_WINDOW, 300 );
 		echo '<select id="seculoco_rate_limit_time_window" name="seculoco_rate_limit_time_window">';
 		echo '<option value="60"' . selected( 60, $time_window, false ) . '>' . esc_html__( '1 minute', 'secure-login-collector' ) . '</option>';
 		echo '<option value="180"' . selected( 180, $time_window, false ) . '>' . esc_html__( '3 minutes', 'secure-login-collector' ) . '</option>';
@@ -271,7 +271,6 @@ class Seculoco_Settings_Manager_Pro {
 		<div class="seculoco-encryption-column">
 			
 			<?php $this->render_pro_key_status(); ?>
-			<?php $this->render_pro_export_button(); ?>
 			<?php $this->render_passkey_management(); ?>
 		</div>
 		<?php
@@ -282,10 +281,10 @@ class Seculoco_Settings_Manager_Pro {
 	 * Render pro key status box.
 	 */
 	private function render_pro_key_status() {
-		$pro_public_key     = get_option( 'seculoco_public_key_pro' );
-		$pro_private_key    = get_option( 'seculoco_wrapped_private_key_pro' );
-		$pro_keys_active    = get_option( 'seculoco_pro_keys_active', false );
-		$passkey_registered = get_option( 'seculoco_passkey_registered', false );
+		$pro_public_key     = get_option( SECULOCO_OPTION_PUBLIC_KEY_PRO );
+		$pro_private_key    = get_option( SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PRO );
+		$pro_keys_active    = get_option( SECULOCO_OPTION_PRO_KEYS_ACTIVE, false );
+		$passkey_registered = get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false );
 
 		echo '<div style="background: white; border: 1px solid #c3c4c7; border-radius: 4px; padding: 15px; margin-bottom: 15px;">';
 		echo '<div style="display: flex; justify-content: space-between; align-items: center;">';
@@ -315,18 +314,6 @@ class Seculoco_Settings_Manager_Pro {
 	}
 
 	/**
-	 * Render pro export button.
-	 */
-	private function render_pro_export_button() {
-		$pro_public_key = get_option( 'seculoco_public_key_pro' );
-		if ( $pro_public_key ) {
-			echo '<p>';
-			echo '<button type="button" class="button button-secondary seculoco-export-key" data-key-type="passkey">' . esc_html__( 'Export Pro Public Key', 'secure-login-collector' ) . '</button>';
-			echo '</p>';
-		}
-	}
-
-	/**
 	 * Render passkey management section.
 	 */
 	private function render_passkey_management() {
@@ -340,8 +327,8 @@ class Seculoco_Settings_Manager_Pro {
 	 * Add pro key management messages.
 	 */
 	public function add_pro_key_management_messages() {
-		$pro_public_key     = get_option( 'seculoco_public_key_pro' );
-		$passkey_registered = get_option( 'seculoco_passkey_registered', false );
+		$pro_public_key     = get_option( SECULOCO_OPTION_PUBLIC_KEY_PRO );
+		$passkey_registered = get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false );
 
 		if ( ! $pro_public_key && $passkey_registered ) {
 			echo '<p>' . esc_html__( 'Ultra-secure RSA keys need to be initialized with your passkey.', 'secure-login-collector' ) . '</p>';
@@ -349,16 +336,6 @@ class Seculoco_Settings_Manager_Pro {
 			echo '<p>' . esc_html__( 'To enable ultra-secure encryption, register a passkey in the Pro settings.', 'secure-login-collector' ) . '</p>';
 		} elseif ( $pro_public_key ) {
 			echo '<p>' . esc_html__( 'Ultra-secure RSA keys are active and ready for use.', 'secure-login-collector' ) . '</p>';
-		}
-	}
-
-	/**
-	 * Add pro export button.
-	 */
-	public function add_pro_export_button() {
-		$pro_public_key = get_option( 'seculoco_public_key_pro' );
-		if ( $pro_public_key ) {
-			echo '<button type="button" class="button button-secondary seculoco-export-key" data-key-type="passkey">' . esc_html__( 'Export Pro Public Key', 'secure-login-collector' ) . '</button>';
 		}
 	}
 
@@ -372,7 +349,7 @@ class Seculoco_Settings_Manager_Pro {
 	 * @return string The Pro version HTML with actual checkbox control.
 	 */
 	public function replace_service_footer_setting_content( $content ) {
-		$hidden = get_option( 'seculoco_hide_service_footer', false );
+		$hidden = get_option( SECULOCO_OPTION_HIDE_SERVICE_FOOTER, false );
 
 		$pro_content  = '<input type="checkbox" id="seculoco_hide_service_footer" name="seculoco_hide_service_footer" value="1" ' . checked( 1, $hidden, false ) . ' />';
 		$pro_content .= '<label for="seculoco_hide_service_footer"> ' . esc_html__( 'Hide branding footer on frontend form', 'secure-login-collector' ) . '</label>';
@@ -392,7 +369,7 @@ class Seculoco_Settings_Manager_Pro {
 	 */
 	public function filter_service_footer_visibility( $show_footer ) {
 		// Check if Pro user has enabled the hide setting.
-		$hide_footer = get_option( 'seculoco_hide_service_footer', false );
+		$hide_footer = get_option( SECULOCO_OPTION_HIDE_SERVICE_FOOTER, false );
 
 		// If setting is enabled, return false to hide footer.
 		if ( $hide_footer ) {

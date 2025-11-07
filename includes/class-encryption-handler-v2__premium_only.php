@@ -86,11 +86,11 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
 		}
 
 		// Check if pro keys are initialized and passkey is registered.
-		$is_pro_active      = get_option( 'seculoco_pro_keys_active', false );
-		$passkey_registered = get_option( 'seculoco_passkey_registered', false );
+		$is_pro_active      = get_option( SECULOCO_OPTION_PRO_KEYS_ACTIVE, false );
+		$passkey_registered = get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false );
 
 		if ( $is_pro_active && $passkey_registered ) {
-			$pro_key = get_option( 'seculoco_public_key_pro' );
+			$pro_key = get_option( SECULOCO_OPTION_PUBLIC_KEY_PRO );
 			if ( ! empty( $pro_key ) ) {
 				return $pro_key;
 			}
@@ -148,7 +148,7 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
 		}
 
 		// This is a pro entry - send pro wrapped key and exit.
-		$pro_wrapped_key = get_option( 'seculoco_wrapped_private_key_pro' );
+		$pro_wrapped_key = get_option( SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PRO );
 
 		if ( empty( $pro_wrapped_key ) ) {
 			wp_send_json_error( 'No PRO private key available' );
@@ -188,15 +188,15 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
 		}
 
 		// Check if pro keys are active and passkey is registered.
-		$is_pro_active      = get_option( 'seculoco_pro_keys_active', false );
-		$passkey_registered = get_option( 'seculoco_passkey_registered', false );
+		$is_pro_active      = get_option( SECULOCO_OPTION_PRO_KEYS_ACTIVE, false );
+		$passkey_registered = get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false );
 
 		if ( ! $is_pro_active || ! $passkey_registered ) {
 			return $encryption_metadata;
 		}
 
 		// Get the passkey credential ID.
-		$passkey = get_option( 'seculoco_global_passkey' );
+		$passkey = get_option( SECULOCO_OPTION_GLOBAL_PASSKEY );
 		if ( ! is_array( $passkey ) || empty( $passkey['credential_id'] ) ) {
 			return $encryption_metadata;
 		}
@@ -223,8 +223,8 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
 		}
 
 		// Check if pro keys are active.
-		$is_pro_active      = get_option( 'seculoco_pro_keys_active', false );
-		$passkey_registered = get_option( 'seculoco_passkey_registered', false );
+		$is_pro_active      = get_option( SECULOCO_OPTION_PRO_KEYS_ACTIVE, false );
+		$passkey_registered = get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false );
 
 		if ( $is_pro_active && $passkey_registered ) {
 			return 'aes-rsa-passkey-v2';
@@ -299,10 +299,10 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
 		// Add pro status information.
 		$status['pro'] = array(
 			'license_active'     => true,
-			'has_public_key'     => ! empty( get_option( 'seculoco_public_key_pro' ) ),
-			'has_wrapped_key'    => ! empty( get_option( 'seculoco_wrapped_private_key_pro' ) ),
-			'keys_active'        => (bool) get_option( 'seculoco_pro_keys_active', false ),
-			'passkey_registered' => (bool) get_option( 'seculoco_passkey_registered', false ),
+			'has_public_key'     => ! empty( get_option( SECULOCO_OPTION_PUBLIC_KEY_PRO ) ),
+			'has_wrapped_key'    => ! empty( get_option( SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PRO ) ),
+			'keys_active'        => (bool) get_option( SECULOCO_OPTION_PRO_KEYS_ACTIVE, false ),
+			'passkey_registered' => (bool) get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false ),
 		);
 
 		return $status;
@@ -324,10 +324,10 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
 		if ( Seculoco_License_Manager::has_pro_license() ) {
 			$status['pro'] = array(
 				'license_active'     => true,
-				'has_public_key'     => ! empty( get_option( 'seculoco_public_key_pro' ) ),
-				'has_wrapped_key'    => ! empty( get_option( 'seculoco_wrapped_private_key_pro' ) ),
-				'keys_active'        => (bool) get_option( 'seculoco_pro_keys_active', false ),
-				'passkey_registered' => (bool) get_option( 'seculoco_passkey_registered', false ),
+				'has_public_key'     => ! empty( get_option( SECULOCO_OPTION_PUBLIC_KEY_PRO ) ),
+				'has_wrapped_key'    => ! empty( get_option( SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PRO ) ),
+				'keys_active'        => (bool) get_option( SECULOCO_OPTION_PRO_KEYS_ACTIVE, false ),
+				'passkey_registered' => (bool) get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false ),
 			);
 		}
 
@@ -355,8 +355,8 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
 		}
 
 		// Check if pro keys already exist.
-		$public_key_pro         = get_option( 'seculoco_public_key_pro' );
-		$wrapped_private_key_pro = get_option( 'seculoco_wrapped_private_key_pro' );
+		$public_key_pro         = get_option( SECULOCO_OPTION_PUBLIC_KEY_PRO );
+		$wrapped_private_key_pro = get_option( SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PRO );
 
 		if ( $public_key_pro && $wrapped_private_key_pro ) {
 			return array(
@@ -374,21 +374,21 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
 		}
 
 		// Store public key (publicly accessible).
-		update_option( 'seculoco_public_key_pro', $keypair['public'] );
+		update_option( SECULOCO_OPTION_PUBLIC_KEY_PRO, $keypair['public'] );
 
 		// Wrap private key with passkey-derived key using AES-256-GCM.
 		$wrapped_key_data = $this->wrap_private_key( $keypair['private'], $passkey_derived_key );
 		if ( is_wp_error( $wrapped_key_data ) ) {
 			// Cleanup public key if wrapping fails.
-			delete_option( 'seculoco_public_key_pro' );
+			delete_option( SECULOCO_OPTION_PUBLIC_KEY_PRO );
 			return $wrapped_key_data;
 		}
 
 		// Store wrapped private key.
-		update_option( 'seculoco_wrapped_private_key_pro', $wrapped_key_data );
+		update_option( SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PRO, $wrapped_key_data );
 
 		// Mark pro keys as active.
-		update_option( 'seculoco_pro_keys_active', true );
+		update_option( SECULOCO_OPTION_PRO_KEYS_ACTIVE, true );
 
 		// Log operation.
 		$this->log_key_operation( 'pro_keys_initialized' );
@@ -415,9 +415,9 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
 		}
 
 		// Delete pro keys.
-		delete_option( 'seculoco_public_key_pro' );
-		delete_option( 'seculoco_wrapped_private_key_pro' );
-		delete_option( 'seculoco_pro_keys_active' );
+		delete_option( SECULOCO_OPTION_PUBLIC_KEY_PRO );
+		delete_option( SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PRO );
+		delete_option( SECULOCO_OPTION_PRO_KEYS_ACTIVE );
 
 		// Log operation.
 		$this->log_key_operation( 'pro_keys_deleted' );

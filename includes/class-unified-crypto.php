@@ -402,7 +402,7 @@ class Secure_Login_Collector_Unified_Crypto {
 			);
 		}
 
-		$option_name = 'seculoco_public_key_' . $method;
+		$option_name = SECULOCO_OPTION_PUBLIC_KEY_PREFIX . $method;
 		$public_key  = get_option( $option_name );
 
 		if ( empty( $public_key ) ) {
@@ -446,11 +446,11 @@ class Secure_Login_Collector_Unified_Crypto {
 		}
 
 		// Store wrapped private key.
-		$wrapped_key_option = 'seculoco_wrapped_private_key_' . $method;
+		$wrapped_key_option = SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PREFIX . $method;
 		$updated_wrapped    = update_option( $wrapped_key_option, $wrapped_data );
 
 		// Store public key.
-		$public_key_option = 'seculoco_public_key_' . $method;
+		$public_key_option = SECULOCO_OPTION_PUBLIC_KEY_PREFIX . $method;
 		$updated_public    = update_option( $public_key_option, $public_key );
 
 		if ( false === $updated_wrapped || false === $updated_public ) {
@@ -483,7 +483,7 @@ class Secure_Login_Collector_Unified_Crypto {
 			);
 		}
 
-		$option_name  = 'seculoco_wrapped_private_key_' . $method;
+		$option_name  = SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PREFIX . $method;
 		$wrapped_data = get_option( $option_name );
 
 		if ( empty( $wrapped_data ) ) {
@@ -509,8 +509,8 @@ class Secure_Login_Collector_Unified_Crypto {
 			return false;
 		}
 
-		$public_key   = get_option( 'seculoco_public_key_' . $method );
-		$wrapped_key  = get_option( 'seculoco_wrapped_private_key_' . $method );
+		$public_key   = get_option( SECULOCO_OPTION_PUBLIC_KEY_PREFIX . $method );
+		$wrapped_key  = get_option( SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PREFIX . $method );
 
 		return ! empty( $public_key ) && ! empty( $wrapped_key );
 	}
@@ -529,8 +529,8 @@ class Secure_Login_Collector_Unified_Crypto {
 			return false;
 		}
 
-		delete_option( 'seculoco_public_key_' . $method );
-		delete_option( 'seculoco_wrapped_private_key_' . $method );
+		delete_option( SECULOCO_OPTION_PUBLIC_KEY_PREFIX . $method );
+		delete_option( SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PREFIX . $method );
 
 		$this->log_key_operation( 'keys_deleted', $method );
 
@@ -546,7 +546,7 @@ class Secure_Login_Collector_Unified_Crypto {
 	 * @param string $method    Method: 'standard' or 'passkey'.
 	 */
 	private function log_key_operation( $operation, $method ) {
-		$log = get_option( 'seculoco_unified_crypto_log', array() );
+		$log = get_option( SECULOCO_OPTION_UNIFIED_CRYPTO_LOG, array() );
 
 		// Keep only last 100 operations.
 		if ( count( $log ) > 100 ) {
@@ -561,7 +561,7 @@ class Secure_Login_Collector_Unified_Crypto {
 			'ip'        => isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '',
 		);
 
-		update_option( 'seculoco_unified_crypto_log', $log );
+		update_option( SECULOCO_OPTION_UNIFIED_CRYPTO_LOG, $log );
 	}
 
 	/**
@@ -574,7 +574,7 @@ class Secure_Login_Collector_Unified_Crypto {
 	 * @return array Array of log entries.
 	 */
 	public function get_operation_log( $limit = 50 ) {
-		$log = get_option( 'seculoco_unified_crypto_log', array() );
+		$log = get_option( SECULOCO_OPTION_UNIFIED_CRYPTO_LOG, array() );
 
 		if ( $limit > 0 && count( $log ) > $limit ) {
 			$log = array_slice( $log, -$limit );
@@ -593,12 +593,12 @@ class Secure_Login_Collector_Unified_Crypto {
 	public function get_status() {
 		return array(
 			'standard' => array(
-				'has_public_key'  => ! empty( get_option( 'seculoco_public_key_standard' ) ),
-				'has_wrapped_key' => ! empty( get_option( 'seculoco_wrapped_private_key_standard' ) ),
+				'has_public_key'  => ! empty( get_option( SECULOCO_OPTION_PUBLIC_KEY_STANDARD ) ),
+				'has_wrapped_key' => ! empty( get_option( SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_STANDARD ) ),
 			),
 			'passkey'  => array(
-				'has_public_key'  => ! empty( get_option( 'seculoco_public_key_passkey' ) ),
-				'has_wrapped_key' => ! empty( get_option( 'seculoco_wrapped_private_key_passkey' ) ),
+				'has_public_key'  => ! empty( get_option( SECULOCO_OPTION_PUBLIC_KEY_PASSKEY ) ),
+				'has_wrapped_key' => ! empty( get_option( SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PASSKEY ) ),
 			),
 			'openssl'  => array(
 				'available' => function_exists( 'openssl_pkey_new' ),

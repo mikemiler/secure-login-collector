@@ -23,7 +23,20 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @since 1.0.1
  * @return void
  */
-function seculoco_fs_uninstall_cleanup() {
+/**
+ * Core uninstall cleanup routine (idempotent).
+ *
+ * @return void
+ */
+function seculoco_run_uninstall_cleanup() {
+	static $has_run = false;
+
+	if ( $has_run ) {
+		return;
+	}
+
+	$has_run = true;
+
 	try {
 		// ============================================
 		// CRITICAL: Check if Pro version is active
@@ -92,8 +105,20 @@ function seculoco_fs_uninstall_cleanup() {
 			SECULOCO_OPTION_SPAM_SETTINGS,
 			SECULOCO_OPTION_HONEYPOT_LOG,
 			SECULOCO_OPTION_DELETE_ON_UNINSTALL,
+			SECULOCO_OPTION_RATE_LIMIT_ENABLED,
+			SECULOCO_OPTION_RATE_LIMIT_MAX_ATTEMPTS,
+			SECULOCO_OPTION_RATE_LIMIT_TIME_WINDOW,
 
 			// Encryption keys and related data - using constants.
+			SECULOCO_OPTION_PASSWORD_ACTIVE,
+			SECULOCO_OPTION_PASSWORD_ENCRYPTION_ACTIVE,
+			SECULOCO_OPTION_PUBLIC_KEY_STANDARD,
+			SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_STANDARD,
+			SECULOCO_OPTION_PUBLIC_KEY_PASSKEY,
+			SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PASSKEY,
+			SECULOCO_OPTION_PASSKEY_ACTIVE,
+			SECULOCO_OPTION_PUBLIC_KEY_FREE,
+			SECULOCO_OPTION_PRIVATE_KEY_FREE_ENCRYPTED,
 			SECULOCO_OPTION_PUBLIC_KEY,
 			SECULOCO_OPTION_PRIVATE_KEY_WRAPPED,
 			SECULOCO_OPTION_PUBLIC_KEY_JWK_FREE,
@@ -113,6 +138,8 @@ function seculoco_fs_uninstall_cleanup() {
 			// Logging - using constants.
 			SECULOCO_OPTION_KEY_ACCESS_LOG,
 			SECULOCO_OPTION_KEY_OPERATIONS_LOG,
+			SECULOCO_OPTION_UNIFIED_CRYPTO_LOG,
+			SECULOCO_OPTION_KEYS_CLEANUP_V3,
 
 			// Version tracking - using constants.
 			SECULOCO_OPTION_DB_VERSION,
@@ -125,7 +152,7 @@ function seculoco_fs_uninstall_cleanup() {
 			'seculoco_private_key', // Legacy option name.
 			'seculoco_wrapped_private_key', // Legacy option name.
 			'seculoco_private_key_encrypted', // Legacy option name.
-			'seculoco_ultra_secure_mode', // Legacy option name.
+			SECULOCO_OPTION_ULTRA_SECURE_MODE, // Legacy option name.
 			'seculoco_master_key_wrapped', // Legacy option name.
 			'seculoco_session_keys', // Legacy option name.
 
@@ -208,6 +235,24 @@ function seculoco_fs_uninstall_cleanup() {
 }
 
 /**
+ * Wrapper for Freemius uninstall hook.
+ *
+ * @return void
+ */
+function seculoco_fs_uninstall_cleanup() {
+	seculoco_run_uninstall_cleanup();
+}
+
+/**
+ * Wrapper for WordPress core uninstall hook.
+ *
+ * @return void
+ */
+function seculoco_wp_uninstall_cleanup() {
+	seculoco_run_uninstall_cleanup();
+}
+
+/**
  * Register the uninstall cleanup function with Freemius
  *
  * This hooks into Freemius's after_uninstall action to ensure
@@ -218,10 +263,6 @@ function seculoco_fs_uninstall_cleanup() {
 function seculoco_register_freemius_uninstall() {
 	if ( function_exists( 'seculoco_fs' ) && seculoco_fs() ) {
 		seculoco_fs()->add_action( 'after_uninstall', 'seculoco_fs_uninstall_cleanup' );
-
-		if ( defined( 'WP_DEBUG' ) && WP_DEBUG === true ) {
-			error_log( 'Secure Login Collector: Freemius uninstall handler registered.' );
-		}
 	}
 }
 

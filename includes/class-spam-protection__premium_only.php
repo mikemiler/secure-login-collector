@@ -71,14 +71,14 @@ class Seculoco_Rate_Limiter {
 	 *
 	 * @var string
 	 */
-	const OPTION_TIME_WINDOW = 'seculoco_rate_limit_time_window';
+	const OPTION_TIME_WINDOW = SECULOCO_OPTION_RATE_LIMIT_TIME_WINDOW;
 
 	/**
 	 * Option key for max attempts.
 	 *
 	 * @var string
 	 */
-	const OPTION_MAX_ATTEMPTS = 'seculoco_rate_limit_max_attempts';
+	const OPTION_MAX_ATTEMPTS = SECULOCO_OPTION_RATE_LIMIT_MAX_ATTEMPTS;
 
 	/**
 	 * Option key for whitelist.
@@ -92,7 +92,7 @@ class Seculoco_Rate_Limiter {
 	 *
 	 * @var string
 	 */
-	const OPTION_ENABLED = 'seculoco_rate_limit_enabled';
+	const OPTION_ENABLED = SECULOCO_OPTION_RATE_LIMIT_ENABLED;
 
 	/**
 	 * Constructor - initializes rate limiter.

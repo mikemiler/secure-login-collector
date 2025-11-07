@@ -40,18 +40,18 @@ if ( ! function_exists( 'seculoco_has_password_encryption' ) ) {
 	 */
 	function seculoco_has_password_encryption() {
 		// Modern flags written by the current setup wizard.
-		if ( (bool) get_option( 'seculoco_password_encryption_active', false ) ) {
+		if ( (bool) get_option( SECULOCO_OPTION_PASSWORD_ENCRYPTION_ACTIVE, false ) ) {
 			return true;
 		}
 
 		// Fallback flag written by the encryption handler.
-		if ( (bool) get_option( 'seculoco_password_active', false ) ) {
+		if ( (bool) get_option( SECULOCO_OPTION_PASSWORD_ACTIVE, false ) ) {
 			return true;
 		}
 
 		// Unified crypto storage (standard/password keys).
-		$has_unified_keys = ! empty( get_option( 'seculoco_public_key_standard', '' ) )
-			&& ! empty( get_option( 'seculoco_wrapped_private_key_standard', array() ) );
+		$has_unified_keys = ! empty( get_option( SECULOCO_OPTION_PUBLIC_KEY_STANDARD, '' ) )
+			&& ! empty( get_option( SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_STANDARD, array() ) );
 		if ( $has_unified_keys ) {
 			return true;
 		}
@@ -81,15 +81,15 @@ if ( ! function_exists( 'seculoco_has_passkey_encryption' ) ) {
 	 * @return bool
 	 */
 	function seculoco_has_passkey_encryption() {
-		$active     = (bool) get_option( 'seculoco_passkey_active', false );
-		$registered = (bool) get_option( 'seculoco_passkey_registered', false );
+		$active     = (bool) get_option( SECULOCO_OPTION_PASSKEY_ACTIVE, false );
+		$registered = (bool) get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false );
 
 		if ( $active && $registered ) {
 			return true;
 		}
 
 		// Back-compat: older builds stored a more generic "pro keys active" flag.
-		$pro_active = (bool) get_option( 'seculoco_pro_keys_active', false );
+		$pro_active = (bool) get_option( SECULOCO_OPTION_PRO_KEYS_ACTIVE, false );
 		return $pro_active && $registered;
 	}
 }

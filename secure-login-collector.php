@@ -46,6 +46,9 @@ if ( ! defined( 'SECULOCO_PLUGIN_URL' ) ) {
 	define( 'SECULOCO_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 }
 
+require_once SECULOCO_PLUGIN_DIR . 'includes/class-loader.php';
+Seculoco_Loader::load();
+
 // Initialize Freemius.
 if ( ! function_exists( 'seculoco_fs' ) ) {
 	// Check if vendor directory exists with Freemius SDK.
@@ -138,9 +141,6 @@ class SecureLoginCollector {
 		global $wpdb;
 		$this->table_name = $wpdb->prefix . 'seculoco_data';
 
-		// Load dependencies.
-		$this->load_dependencies();
-
 		// Initialize components.
 		$this->init_components();
 
@@ -157,86 +157,6 @@ class SecureLoginCollector {
 
 		// Handle free plugin deletion (Pro version only).
 		add_action( 'admin_post_seculoco_delete_free_plugin', array( $this, 'handle_delete_free_plugin' ) );
-	}
-
-	/**
-	 * Load plugin dependencies.
-	 */
-	private function load_dependencies() {
-		// Always load free version classes.
-		include_once SECULOCO_PLUGIN_DIR . 'includes/constants.php';
-		include_once SECULOCO_PLUGIN_DIR . 'includes/functions.php';
-		include_once SECULOCO_PLUGIN_DIR . 'includes/class-encryption-handler-v2.php';
-		include_once SECULOCO_PLUGIN_DIR . 'includes/class-encryption-handler-factory.php';
-		include_once SECULOCO_PLUGIN_DIR . 'includes/class-database-manager.php';
-		include_once SECULOCO_PLUGIN_DIR . 'includes/class-admin-interface.php';
-		include_once SECULOCO_PLUGIN_DIR . 'includes/class-frontend-handler.php';
-		include_once SECULOCO_PLUGIN_DIR . 'includes/class-spam-protection.php';
-		include_once SECULOCO_PLUGIN_DIR . 'includes/class-settings-manager.php';
-
-		// Load premium base classes only if available and licensed.
-		// These provide pro functionality (passkey management, licensing, etc).
-		// Files with __premium_only suffix are automatically removed by Freemius in free version.
-		// For local testing: Add define( 'SECULOCO_SIMULATE_FREE_VERSION', true ); to wp-config.php
-		$can_load_premium = function_exists( 'seculoco_fs' )
-			&& seculoco_fs()->can_use_premium_code()
-			&& ! defined( 'SECULOCO_SIMULATE_FREE_VERSION' );
-
-		if ( $can_load_premium ) {
-			$premium_base_files = array(
-				'includes/class-passkey-manager__premium_only.php',
-				'includes/class-master-key-manager__premium_only.php',
-				'includes/class-license-manager__premium_only.php',
-				'includes/class-spam-protection__premium_only.php',
-			);
-
-			foreach ( $premium_base_files as $file ) {
-				if ( file_exists( SECULOCO_PLUGIN_DIR . $file ) ) {
-					include_once SECULOCO_PLUGIN_DIR . $file;
-				}
-			}
-
-			// Load pro extension files (hook into free version via filters/actions).
-			// These files extend the free version with pro features.
-			$premium_extension_files = array(
-				'includes/class-encryption-handler-v2__premium_only.php',
-				'includes/class-frontend-handler__premium_only.php',
-				'includes/class-admin-interface__premium_only.php',
-				'includes/class-settings-manager__premium_only.php',
-			);
-
-			foreach ( $premium_extension_files as $file ) {
-				if ( file_exists( SECULOCO_PLUGIN_DIR . $file ) ) {
-					include_once SECULOCO_PLUGIN_DIR . $file;
-				}
-			}
-
-			// Initialize Passkey Manager globally to register admin hooks.
-			if ( class_exists( 'Seculoco_Passkey_Manager' ) ) {
-				new Seculoco_Passkey_Manager();
-			}
-		}
-
-		// Load Freemius hooks if available.
-		if ( function_exists( 'seculoco_fs' ) && file_exists( SECULOCO_PLUGIN_DIR . 'includes/freemius-hooks.php' ) ) {
-			include_once SECULOCO_PLUGIN_DIR . 'includes/freemius-hooks.php';
-		}
-
-		// Load Freemius initialization check.
-		if ( file_exists( SECULOCO_PLUGIN_DIR . 'includes/freemius-init-check.php' ) ) {
-			include_once SECULOCO_PLUGIN_DIR . 'includes/freemius-init-check.php';
-		}
-
-		// Load Freemius uninstall handler.
-		if ( file_exists( SECULOCO_PLUGIN_DIR . 'includes/freemius-uninstall.php' ) ) {
-			include_once SECULOCO_PLUGIN_DIR . 'includes/freemius-uninstall.php';
-		}
-
-		// Load upgrade handler for migration logic (Pro version only).
-		// This file has __premium_only suffix and will be automatically removed in free version.
-		if ( $can_load_premium && file_exists( SECULOCO_PLUGIN_DIR . 'includes/class-upgrade-handler__premium_only.php' ) ) {
-			include_once SECULOCO_PLUGIN_DIR . 'includes/class-upgrade-handler__premium_only.php';
-		}
 	}
 
 	/**
@@ -271,7 +191,11 @@ class SecureLoginCollector {
 		// Signal that encryption handler is ready for pro extensions.
 		do_action( 'seculoco_encryption_handler_ready', $this->encryption_handler );
 
-		$this->encryption_ready = $this->has_password_keys() || $this->has_passkey_keys();
+		if ( function_exists( 'seculoco_is_encryption_initialized' ) ) {
+			$this->encryption_ready = seculoco_is_encryption_initialized();
+		} else {
+			$this->encryption_ready = $this->has_password_keys() || $this->has_passkey_keys();
+		}
 	}
 
 	/**
@@ -297,7 +221,7 @@ class SecureLoginCollector {
 		$this->database_manager->schedule_cleanup();
 
 		// Store database version for future schema migrations.
-		update_option( 'seculoco_db_version', SECULOCO_VERSION );
+		update_option( SECULOCO_OPTION_DB_VERSION, SECULOCO_VERSION );
 
 		// Allow pro extensions to run activation tasks.
 		// Premium plugin will handle its own table creation (wrapped keys, etc).
@@ -426,7 +350,11 @@ class SecureLoginCollector {
 	 * @return bool
 	 */
 	private function has_password_keys() {
-		return (bool) get_option( 'seculoco_password_encryption_active', false );
+		if ( function_exists( 'seculoco_has_password_encryption' ) ) {
+			return seculoco_has_password_encryption();
+		}
+
+		return (bool) get_option( SECULOCO_OPTION_PASSWORD_ENCRYPTION_ACTIVE, false );
 	}
 
 	/**
@@ -435,7 +363,11 @@ class SecureLoginCollector {
 	 * @return bool
 	 */
 	private function has_passkey_keys() {
-		return (bool) ( get_option( 'seculoco_pro_keys_active', false ) && get_option( 'seculoco_passkey_registered', false ) );
+		if ( function_exists( 'seculoco_has_passkey_encryption' ) ) {
+			return seculoco_has_passkey_encryption();
+		}
+
+		return (bool) ( get_option( SECULOCO_OPTION_PRO_KEYS_ACTIVE, false ) && get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false ) );
 	}
 
 	/**
@@ -564,6 +496,8 @@ if(!function_exists('seculoco_init')) {
 		return $instance;
 	}
 }
+
+register_uninstall_hook( __FILE__, 'seculoco_wp_uninstall_cleanup' );
 
 // Instantiate plugin after Freemius is loaded.
 if ( did_action( 'seculoco_fs_loaded' ) ) {
