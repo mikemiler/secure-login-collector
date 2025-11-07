@@ -65,15 +65,8 @@ class Seculoco_Settings_Manager {
 			'1.0.0'
 		);
 
-		// Enqueue jQuery for inline scripts.
+		// Enqueue jQuery for admin interactions.
 		wp_enqueue_script( 'jquery' );
-
-		// Register placeholder scripts for inline functionality.
-		wp_register_script( 'seculoco-key-management', '', array( 'jquery' ), '1.0.0', true );
-		wp_enqueue_script( 'seculoco-key-management' );
-
-		wp_register_script( 'seculoco-textarea-toggle', '', array( 'jquery' ), '1.0.0', true );
-		wp_enqueue_script( 'seculoco-textarea-toggle' );
 
 		// Enqueue password setup script on settings page.
 		// Remove the hook check to always enqueue on admin pages - WordPress will handle script dependencies.
@@ -122,6 +115,33 @@ class Seculoco_Settings_Manager {
 
 		// Enqueue zxcvbn for password strength meter.
 		wp_enqueue_script( 'zxcvbn-async' );
+
+		wp_enqueue_script(
+			'seculoco-key-management',
+			plugin_dir_url( __FILE__ ) . '../assets/js/admin-key-management.js',
+			array( 'jquery' ),
+			defined( 'SECULOCO_VERSION' ) ? SECULOCO_VERSION : '1.0.0',
+			true
+		);
+
+		wp_localize_script(
+			'seculoco-key-management',
+			'seculocoKeyManager',
+			array(
+				'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
+				'nonce'     => wp_create_nonce( 'seculoco_admin_nonce' ),
+					'strings'   => array(
+						'initializing'        => __( 'Initializing...', 'secure-login-collector' ),
+						'initSuccess'         => __( 'Free RSA keys initialized successfully!', 'secure-login-collector' ),
+						'initFailedPrefix'    => __( 'Failed to initialize keys: ', 'secure-login-collector' ),
+						'networkError'        => __( 'Network error occurred.', 'secure-login-collector' ),
+						'initButtonLabel'     => __( 'Initialize Free Keys Now', 'secure-login-collector' ),
+						'exportFailedPrefix'  => __( 'Failed to export public key: ', 'secure-login-collector' ),
+					),
+					'exportFileName' => 'secure-login-free-public-key.pem',
+					'defaultFrontendText' => $this->get_default_frontend_text(),
+				)
+			);
 	}
 
 	/**
@@ -403,99 +423,6 @@ class Seculoco_Settings_Manager {
 	}
 
 	/**
-	 * Add key management inline script.
-	 */
-	private function add_key_management_inline_script() {
-		$nonce = wp_create_nonce( 'seculoco_admin_nonce' );
-
-		$script = "
-		jQuery(document).ready(function($) {
-			// Initialize free keys
-			$('#initialize-free-keys').on('click', function() {
-				var button = $(this);
-				button.prop('disabled', true).text('" . esc_js( __( 'Initializing...', 'secure-login-collector' ) ) . "');
-
-				$.ajax({
-					url: ajaxurl,
-					type: 'POST',
-					data: {
-						action: 'seculoco_initialize_free_keys',
-						nonce: '" . esc_js( $nonce ) . "'
-					},
-					success: function(response) {
-						if (response.success) {
-							alert('" . esc_js( __( 'Free RSA keys initialized successfully!', 'secure-login-collector' ) ) . "');
-							location.reload();
-						} else {
-							alert('" . esc_js( __( 'Failed to initialize keys:', 'secure-login-collector' ) ) . "' + response.data);
-							button.prop('disabled', false).text('" . esc_js( __( 'Initialize Free Keys Now', 'secure-login-collector' ) ) . "');
-						}
-					},
-					error: function() {
-						alert('" . esc_js( __( 'Network error occurred.', 'secure-login-collector' ) ) . "');
-						button.prop('disabled', false).text('" . esc_js( __( 'Initialize Free Keys Now', 'secure-login-collector' ) ) . "');
-					}
-				});
-			});
-
-			// Export free public key
-			$('#export-free-public-key').on('click', function() {
-				$.ajax({
-					url: ajaxurl,
-					type: 'POST',
-					data: {
-						action: 'seculoco_export_public_key',
-						key_type: 'free',
-						nonce: '" . esc_js( $nonce ) . "'
-					},
-					success: function(response) {
-						if (response.success) {
-							var blob = new Blob([response.data.public_key], {type: 'text/plain'});
-							var url = window.URL.createObjectURL(blob);
-							var a = document.createElement('a');
-							a.href = url;
-							a.download = 'secure-login-free-public-key.pem';
-							a.click();
-							window.URL.revokeObjectURL(url);
-						} else {
-							alert('" . esc_js( __( 'Failed to export public key:', 'secure-login-collector' ) ) . "' + response.data);
-						}
-					}
-				});
-			});
-
-			// Export pro public key
-			$('#export-pro-public-key').on('click', function() {
-				$.ajax({
-					url: ajaxurl,
-					type: 'POST',
-					data: {
-						action: 'seculoco_export_public_key',
-						key_type: 'pro',
-						nonce: '" . esc_js( $nonce ) . "'
-					},
-					success: function(response) {
-						if (response.success) {
-							var blob = new Blob([response.data.public_key], {type: 'text/plain'});
-							var url = window.URL.createObjectURL(blob);
-							var a = document.createElement('a');
-							a.href = url;
-							a.download = 'secure-login-pro-public-key.pem';
-							a.click();
-							window.URL.revokeObjectURL(url);
-						} else {
-							alert('" . esc_js( __( 'Failed to export public key:', 'secure-login-collector' ) ) . "' + response.data);
-						}
-					}
-				});
-			});
-		});
-		";
-
-		wp_add_inline_script( 'seculoco-key-management', $script );
-	}
-
-	/**
 	 * Display encryption content inside the card
 	 */
 	private function display_encryption_content() {
@@ -618,8 +545,6 @@ class Seculoco_Settings_Manager {
 
 		echo '</div>'; // Close 2-column grid
 
-		// Add JavaScript for key management via wp_add_inline_script.
-		$this->add_key_management_inline_script();
 	}
 
 	/**
@@ -700,36 +625,15 @@ class Seculoco_Settings_Manager {
 
 
 	/**
-	 * Add textarea toggle inline script.
+	 * Retrieve the default frontend description text.
 	 *
-	 * @param string $default_text Default text value.
+	 * @return string
 	 */
-	private function add_textarea_toggle_inline_script( $default_text ) {
-		$script = "
-		jQuery(document).ready(function($) {
-			var defaultText = " . wp_json_encode( $default_text ) . ";
-			var originalText = $('#seculoco_frontend_form_text').val();
+	private function get_default_frontend_text() {
+		$text  = '<p><strong>' . __( 'What happens to your data:', 'secure-login-collector' ) . '</strong> ' . __( 'Your login data is encrypted in your browser before being sent to our server. We use strong RSA-2048 encryption to ensure maximum security.', 'secure-login-collector' ) . '</p>';
+		$text .= '<p><strong>' . __( 'Security & Privacy:', 'secure-login-collector' ) . '</strong> ' . __( 'Your data is encrypted in your browser before being sent to our server. We store the encrypted data securely{EXPIRATION_TEXT}.', 'secure-login-collector' ) . '</p>';
 
-			function toggleTextarea() {
-				var selectedType = $('input[name=\"seculoco_frontend_text_type\"]:checked').val();
-				var textarea = $('#seculoco_frontend_form_text');
-
-				if (selectedType === 'default') {
-					textarea.prop('disabled', true).css('background-color', '#f1f1f1');
-					if (textarea.val() === '' || textarea.val() === defaultText) {
-						textarea.val(defaultText);
-					}
-				} else {
-					textarea.prop('disabled', false).css('background-color', '#fff');
-				}
-			}
-
-			toggleTextarea();
-			$('input[name=\"seculoco_frontend_text_type\"]').on('change', toggleTextarea);
-		});
-		";
-
-		wp_add_inline_script( 'seculoco-textarea-toggle', $script );
+		return $text;
 	}
 
 	/**
@@ -740,8 +644,7 @@ class Seculoco_Settings_Manager {
 		$text_type = get_option( 'seculoco_frontend_text_type', 'default' );
 
 		// Generate the default text with placeholder for dynamic expiration text.
-		$default_text  = '<p><strong>' . __( 'What happens to your data:', 'secure-login-collector' ) . '</strong> ' . __( 'Your login data is encrypted in your browser before being sent to our server. We use strong RSA-2048 encryption to ensure maximum security.', 'secure-login-collector' ) . '</p>';
-		$default_text .= '<p><strong>' . __( 'Security & Privacy:', 'secure-login-collector' ) . '</strong> ' . __( 'Your data is encrypted in your browser before being sent to our server. We store the encrypted data securely{EXPIRATION_TEXT}.', 'secure-login-collector' ) . '</p>';
+		$default_text = $this->get_default_frontend_text();
 
 		// If no custom text is set, show the default text.
 		$display_text = ! empty( $text ) ? $text : $default_text;
@@ -750,8 +653,6 @@ class Seculoco_Settings_Manager {
 		echo '<textarea id="seculoco_frontend_form_text" name="seculoco_frontend_form_text" rows="6" class="large-text" style="width: 100%;" ' . esc_attr( $is_disabled ) . '>' . esc_textarea( $display_text ) . '</textarea>';
 		echo '<p class="description">' . esc_html__( 'Custom text to display above the login form. Basic HTML allowed (p, strong, em, br, a). This field is automatically populated with the default text when no custom text is provided. Use {EXPIRATION_TEXT} placeholder for automatic expiration information.', 'secure-login-collector' ) . '</p>';
 
-		// Add JavaScript for radio button interaction via wp_add_inline_script.
-		$this->add_textarea_toggle_inline_script( $default_text );
 	}
 
 	/**

@@ -376,7 +376,7 @@ class Seculoco_Frontend_Handler {
 		// Sanitize metadata.
 		$metadata['email']      = sanitize_email( $metadata['email'] );
 		$metadata['name']       = sanitize_text_field( $metadata['name'] );
-		$metadata['login_url']  = sanitize_text_field( $metadata['login_url'] );
+		$metadata['login_url']  = esc_url_raw( $metadata['login_url'] );
 		$metadata['created_at'] = isset( $metadata['created_at'] ) ? sanitize_text_field( $metadata['created_at'] ) : current_time( 'c' );
 
 		/**
@@ -415,10 +415,10 @@ class Seculoco_Frontend_Handler {
 
 		// Create encrypted package for storage.
 		$encrypted_package = array(
-			'encryptedData'   => sanitize_text_field( $submission['encryptedData'] ),
-			'rsaEncryptedKey' => sanitize_text_field( $submission['rsaEncryptedKey'] ), // Store as-is from client.
-			'iv'              => sanitize_text_field( $submission['iv'] ),
-			'salt'            => sanitize_text_field( $submission['salt'] ),
+			'encryptedData'   => $this->sanitize_encrypted_field( $submission['encryptedData'], 'encryptedData' ),
+			'rsaEncryptedKey' => $this->sanitize_encrypted_field( $submission['rsaEncryptedKey'], 'rsaEncryptedKey' ), // Store as-is from client.
+			'iv'              => $this->sanitize_encrypted_field( $submission['iv'], 'iv' ),
+			'salt'            => $this->sanitize_encrypted_field( $submission['salt'], 'salt' ),
 			'isProEncrypted'  => $is_pro_encrypted, // Server determines this.
 			'credentialId'    => $server_credential_id, // Server's passkey credential ID.
 			'version'         => 2, // Mark as v2 format.
@@ -466,5 +466,44 @@ class Seculoco_Frontend_Handler {
 		do_action( 'seculoco_submission_recorded', $client_ip, $result );
 
 		wp_send_json_success( __( 'Login data saved securely with enhanced encryption.', 'secure-login-collector' ) );
+	}
+
+	/**
+	 * Validate and normalise base64-encoded fields received from the frontend.
+	 *
+	 * Accepts URL-safe alphabet characters, strips whitespace, fixes padding,
+	 * and rejects unexpected characters before persisting values.
+	 *
+	 * @param string $value Raw field value from the submission payload.
+	 * @param string $field Field name for error messages.
+	 * @return string Normalised base64 string.
+	 */
+	private function sanitize_encrypted_field( $value, $field ) {
+		if ( ! is_string( $value ) ) {
+			wp_send_json_error( sprintf( __( 'Invalid encrypted field: %s', 'secure-login-collector' ), $field ) );
+		}
+
+		$trimmed = trim( $value );
+		if ( '' === $trimmed ) {
+			wp_send_json_error( sprintf( __( 'Encrypted field %s cannot be empty.', 'secure-login-collector' ), $field ) );
+		}
+
+		$normalized = preg_replace( '/\s+/', '', $trimmed );
+		$normalized = strtr( $normalized, '-_', '+/' );
+
+		$padding = strlen( $normalized ) % 4;
+		if ( 0 !== $padding ) {
+			$normalized .= str_repeat( '=', 4 - $padding );
+		}
+
+		if ( preg_match( '/[^A-Za-z0-9\/+=]/', $normalized ) ) {
+			wp_send_json_error( sprintf( __( 'Encrypted field %s contains invalid characters.', 'secure-login-collector' ), $field ) );
+		}
+
+		if ( false === base64_decode( $normalized, true ) ) {
+			wp_send_json_error( sprintf( __( 'Encrypted field %s is not valid base64 data.', 'secure-login-collector' ), $field ) );
+		}
+
+		return $normalized;
 	}
 }
