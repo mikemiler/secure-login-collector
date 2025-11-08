@@ -37,9 +37,6 @@ class Seculoco_Settings_Manager_Pro {
 		// Register pro settings.
 		add_action( 'seculoco_register_settings', array( $this, 'register_pro_settings' ) );
 
-		// Add pro settings sections.
-		add_action( 'seculoco_add_settings_sections', array( $this, 'add_pro_settings_sections' ) );
-
 		// Replace free version's pro column with actual pro content.
 		add_filter( 'seculoco_encryption_pro_column', array( $this, 'get_pro_encryption_column' ) );
 
@@ -110,64 +107,6 @@ class Seculoco_Settings_Manager_Pro {
 				'sanitize_callback' => array( $this, 'sanitize_honeypot_min_time' ),
 			)
 		);
-	}
-
-	/**
-	 * Add pro settings sections.
-	 */
-	public function add_pro_settings_sections() {
-		// Add advanced security settings section.
-		add_settings_section(
-			'seculoco_pro_section',
-			__( 'Advanced Security Settings', 'secure-login-collector' ),
-			array( $this, 'pro_section_callback' ),
-			'seculoco_settings'
-		);
-
-		add_settings_field(
-			SECULOCO_OPTION_ULTRA_SECURE_MODE,
-			__( 'Ultra-Secure Mode', 'secure-login-collector' ),
-			array( $this, 'ultra_secure_mode_callback' ),
-			'seculoco_settings',
-			'seculoco_pro_section'
-		);
-	}
-
-	/**
-	 * Advanced security settings section callback.
-	 */
-	public function pro_section_callback() {
-		echo '<div class="seculoco-card" style="margin-top: 20px;">';
-		echo '<div class="seculoco-card-header">';
-		echo '<h3 class="seculoco-card-title">';
-		echo esc_html__( 'Advanced Security Features', 'secure-login-collector' );
-		echo '</h3>';
-		echo '<span class="seculoco-badge seculoco-badge-success">PRO</span>';
-		echo '</div>';
-		echo '<div class="seculoco-card-body">';
-		echo '<p>' . esc_html__( 'Advanced security settings including passkey authentication for enhanced protection.', 'secure-login-collector' ) . '</p>';
-	}
-
-	/**
-	 * Ultra secure mode field callback.
-	 */
-	public function ultra_secure_mode_callback() {
-		$enabled = get_option( SECULOCO_OPTION_ULTRA_SECURE_MODE, false );
-		echo '<input type="checkbox" id="seculoco_ultra_secure_mode" name="seculoco_ultra_secure_mode" value="1" ' . checked( 1, $enabled, false ) . ' />';
-		echo '<label for="seculoco_ultra_secure_mode"> ' . esc_html__( 'Enable passkey-protected encryption (zero-knowledge)', 'secure-login-collector' ) . '</label>';
-		echo '<p class="description">' . esc_html__( 'When enabled, the RSA private key is wrapped with passkey authentication. This provides true zero-knowledge - the server cannot decrypt data without your physical passkey device. Requires passkey registration.', 'secure-login-collector' ) . '</p>';
-
-		$passkey_registered = get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false );
-		if ( ! $passkey_registered ) {
-			echo '<div class="seculoco-alert seculoco-alert-warning" style="margin-top: 12px;">';
-			echo '<span class="seculoco-alert-icon"></span>';
-			echo '<div class="seculoco-alert-content">';
-			echo '<div class="seculoco-alert-message">';
-			echo '<strong>' . esc_html__( 'Warning:', 'secure-login-collector' ) . '</strong> ' . esc_html__( 'You must register a passkey before enabling ultra-secure mode.', 'secure-login-collector' );
-			echo '</div>';
-			echo '</div>';
-			echo '</div>';
-		}
 	}
 
 	/**

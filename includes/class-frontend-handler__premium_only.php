@@ -29,8 +29,6 @@ class Seculoco_Frontend_Handler_Pro {
 		// Add pro flag to frontend JS config.
 		add_filter( 'seculoco_frontend_js_config', array( $this, 'add_pro_js_config' ) );
 
-		// Filter encryption metadata for pro keys.
-		add_filter( 'seculoco_encryption_metadata', array( $this, 'add_pro_encryption_metadata' ), 10, 2 );
 	}
 
 	/**
@@ -44,24 +42,6 @@ class Seculoco_Frontend_Handler_Pro {
 		return $config;
 	}
 
-	/**
-	 * Add pro encryption metadata if pro keys are active.
-	 *
-	 * @param array $metadata      Existing metadata.
-	 * @param array $login_data    Login data being saved.
-	 * @return array Modified metadata.
-	 */
-	public function add_pro_encryption_metadata( $metadata, $login_data ) {
-		// Check if pro keys are active.
-		if ( get_option( SECULOCO_OPTION_PRO_KEYS_ACTIVE, false ) ) {
-			// Mark as Pro encrypted - data will be encrypted with pro public key.
-			// The passkey decryption happens on the admin side during decryption.
-			$metadata['is_pro_encrypted']     = true;
-			$metadata['server_credential_id'] = get_option( SECULOCO_OPTION_PASSKEY_CREDENTIAL_ID );
-		}
-
-		return $metadata;
-	}
 }
 
 // Initialize pro frontend handler.

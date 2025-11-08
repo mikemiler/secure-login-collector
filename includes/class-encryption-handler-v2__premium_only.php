@@ -58,18 +58,6 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
 
 		// Filter: Determine encryption type for frontend submissions.
 		add_filter( 'seculoco_determine_encryption_type', array( $this, 'filter_determine_encryption_type' ), 10, 2 );
-
-		// Filter: Set encryption type based on pro status (legacy).
-		add_filter( 'seculoco_encryption_type', array( $this, 'filter_encryption_type' ), 10, 1 );
-
-		// Action: Initialize pro encryption keys.
-		add_action( 'seculoco_initialize_encryption_keys', array( $this, 'action_initialize_pro_keys' ), 10, 1 );
-
-		// Action: Delete pro encryption keys.
-		add_action( 'seculoco_delete_encryption_keys', array( $this, 'action_delete_pro_keys' ), 10, 0 );
-
-		// Filter: Enhance status with pro information.
-		add_filter( 'seculoco_encryption_status', array( $this, 'filter_encryption_status' ), 10, 1 );
 	}
 
 	/**
@@ -207,105 +195,6 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
 			'credential_id'    => $passkey['credential_id'],
 			'encryption_type'  => 'aes-rsa-passkey-v2',
 		);
-	}
-
-	/**
-	 * Filter encryption type based on pro status (legacy support).
-	 *
-	 * @since 1.0.0
-	 * @param string $type Default encryption type.
-	 * @return string Encryption type (pro or free).
-	 */
-	public function filter_encryption_type( $type ) {
-		// Check if pro license is active.
-		if ( ! $this->is_pro_license_active() ) {
-			return 'aes-rsa-password-v3';
-		}
-
-		// Check if pro keys are active.
-		$is_pro_active      = get_option( SECULOCO_OPTION_PRO_KEYS_ACTIVE, false );
-		$passkey_registered = get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false );
-
-		if ( $is_pro_active && $passkey_registered ) {
-			return 'aes-rsa-passkey-v2';
-		}
-
-		return 'aes-rsa-password-v3';
-	}
-
-	/**
-	 * Action: Initialize pro encryption keys with passkey wrapping.
-	 *
-	 * @since 1.0.0
-	 * @param string $passkey_derived_key 32-byte key derived from passkey.
-	 * @return void
-	 */
-	public function action_initialize_pro_keys( $passkey_derived_key ) {
-		// Check if pro license is active.
-		if ( ! $this->is_pro_license_active() ) {
-			return;
-		}
-
-		// Check admin permissions.
-		if ( ! current_user_can( 'manage_options' ) ) {
-			return;
-		}
-
-		// Call parent method to initialize pro keys.
-		$result = $this->initialize_pro_keys( $passkey_derived_key );
-	}
-
-	/**
-	 * Action: Delete pro encryption keys.
-	 *
-	 * @since 1.0.0
-	 * @return void
-	 */
-	public function action_delete_pro_keys() {
-		// Check if pro license is active.
-		if ( ! $this->is_pro_license_active() ) {
-			return;
-		}
-
-		// Check admin permissions.
-		if ( ! current_user_can( 'manage_options' ) ) {
-			return;
-		}
-
-		// Call parent method to delete pro keys.
-		$result = $this->delete_pro_keys();
-
-		// Log result for debugging.
-		if ( is_wp_error( $result ) ) {
-			error_log( 'Pro key deletion failed: ' . $result->get_error_message() );
-		}
-	}
-
-	/**
-	 * Filter encryption status to add pro information.
-	 *
-	 * Overrides parent get_status() to add pro status information.
-	 *
-	 * @since 1.0.0
-	 * @param array $status Default status from parent class.
-	 * @return array Enhanced status with pro information.
-	 */
-	public function filter_encryption_status( $status ) {
-		// Check if pro license is active.
-		if ( ! $this->is_pro_license_active() ) {
-			return $status;
-		}
-
-		// Add pro status information.
-		$status['pro'] = array(
-			'license_active'     => true,
-			'has_public_key'     => ! empty( get_option( SECULOCO_OPTION_PUBLIC_KEY_PRO ) ),
-			'has_wrapped_key'    => ! empty( get_option( SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PRO ) ),
-			'keys_active'        => (bool) get_option( SECULOCO_OPTION_PRO_KEYS_ACTIVE, false ),
-			'passkey_registered' => (bool) get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false ),
-		);
-
-		return $status;
 	}
 
 	/**
