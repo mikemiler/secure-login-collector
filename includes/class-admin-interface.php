@@ -502,8 +502,8 @@ class Seculoco_List_Table extends WP_List_Table
                 $this->database_manager->delete_entry($id);
             }
 
-            /* translators: 1: Number of entries deleted. */
             $message = sprintf(
+                /* translators: 1: Number of entries deleted. */
                 _n('%1$d entry deleted.', '%1$d entries deleted.', count($ids), 'secure-login-collector'),
                 count($ids)
             );
@@ -523,8 +523,8 @@ class Seculoco_List_Table extends WP_List_Table
                 300
             );
 
-            /* translators: 1: Number of entries prepared for export. */
             $message = sprintf(
+                /* translators: 1: Number of entries prepared for export. */
                 __('Bulk export initiated for %1$d entries. Please wait...', 'secure-login-collector'),
                 count($ids)
             );
