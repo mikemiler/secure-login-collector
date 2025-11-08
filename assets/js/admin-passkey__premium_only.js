@@ -15,7 +15,12 @@ jQuery(document).ready(function($) {
 	var ajaxUrl = secureLoginPasskeyData.ajaxUrl;
 	var nonce = secureLoginPasskeyData.nonce;
 	var hasEncryptedData = secureLoginPasskeyData.hasEncryptedData;
+	var secureContextAllowed = !!secureLoginPasskeyData.secureContextAllowed;
 	var strings = secureLoginPasskeyData.strings;
+
+	if (!secureContextAllowed) {
+		$('.seculoco-passkey-register-btn').prop('disabled', true).addClass('is-disabled');
+	}
 
 	/**
 	 * Handle passkey reset via confirmation modal
@@ -153,7 +158,15 @@ jQuery(document).ready(function($) {
 		$button.prop('disabled', true);
 		$spinner.addClass('is-active');
 
+		if (!secureContextAllowed || !window.isSecureContext) {
+			$statusMessage.html('<div class="notice notice-error inline"><p>' + strings.httpsRequired + '</p></div>');
+			$button.prop('disabled', false);
+			$spinner.removeClass('is-active');
+			return;
+		}
+
 		try {
+			
 			// Start registration to get challenge
 			const startResponse = await $.ajax({
 				url: ajaxUrl,
@@ -164,7 +177,7 @@ jQuery(document).ready(function($) {
 					authenticator_type: authenticatorType
 				}
 			});
-
+			console.log(startResponse);
 			if (!startResponse.success) {
 				throw new Error(startResponse.data || 'Failed to start registration');
 			}
@@ -179,7 +192,7 @@ jQuery(document).ready(function($) {
 			const credential = await navigator.credentials.create({
 				publicKey: options
 			});
-
+			
 			// Initialize the zero-knowledge setup
 			const initResponse = await $.ajax({
 				url: ajaxUrl,
@@ -224,7 +237,7 @@ jQuery(document).ready(function($) {
 					device_info: JSON.stringify(deviceInfo)
 				}
 			});
-
+console.log(completeResponse);
 			if (!completeResponse.success) {
 				throw new Error(completeResponse.data || 'Failed to complete registration');
 			}

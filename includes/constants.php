@@ -15,8 +15,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * ========================================
- * SHARED CONSTANTS (Free & Pro)
+ * GENERAL OPTION CONSTANTS (Free & Shared)
  * ========================================
+ *
+ * Premium-only general constants register themselves via the
+ * `seculoco_register_premium_constants` hook defined at the end of this file.
  */
 
 // Version and setup.
@@ -59,8 +62,11 @@ define( 'SECULOCO_OPTION_UNIFIED_CRYPTO_LOG', 'seculoco_unified_crypto_log' );
 
 /**
  * ========================================
- * FREE VERSION CONSTANTS
+ * FREE ENCRYPTION CONSTANTS
  * ========================================
+ *
+ * Premium encryption constants (e.g., PRO key storage, passkeys) are
+ * registered via `seculoco_register_premium_constants`.
  */
 
 // Free encryption keys (v2 format / unified crypto).
@@ -84,30 +90,13 @@ define( 'SECULOCO_OPTION_PUBLIC_KEY_FREE', 'seculoco_public_key_free' );
 define( 'SECULOCO_OPTION_PRIVATE_KEY_FREE_ENCRYPTED', 'seculoco_private_key_free_encrypted' );
 define( 'SECULOCO_OPTION_ULTRA_SECURE_MODE', 'seculoco_ultra_secure_mode' );
 
-
 /**
- * ========================================
- * PRO VERSION CONSTANTS (Premium Only)
- * ========================================
+ * Allow premium builds to register their own general/encryption constants.
  */
-
-// Pro encryption keys.
-define( 'SECULOCO_OPTION_PUBLIC_KEY_PRO', 'seculoco_public_key_pro' );
-define( 'SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PRO', 'seculoco_wrapped_private_key_pro' );
-define( 'SECULOCO_OPTION_PRO_KEYS_ACTIVE', 'seculoco_pro_keys_active' );
-
-// Passkey (WebAuthn) settings.
-define( 'SECULOCO_OPTION_GLOBAL_PASSKEY', 'seculoco_global_passkey' );
-define( 'SECULOCO_OPTION_PASSKEY_CREDENTIAL_ID', 'seculoco_passkey_credential_id' );
-define( 'SECULOCO_OPTION_PASSKEY_REGISTERED', 'seculoco_passkey_registered' );
-define( 'SECULOCO_OPTION_PASSKEY_REGISTERED_AT', 'seculoco_passkey_registered_at' );
-define( 'SECULOCO_OPTION_PASSKEY_AAGUID_HASH', 'seculoco_passkey_aaguid_hash' );
-
-// Rate limiting (premium spam protection).
-define( 'SECULOCO_OPTION_RATE_LIMIT_ENABLED', 'seculoco_rate_limit_enabled' );
-define( 'SECULOCO_OPTION_RATE_LIMIT_MAX_ATTEMPTS', 'seculoco_rate_limit_max_attempts' );
-define( 'SECULOCO_OPTION_RATE_LIMIT_TIME_WINDOW', 'seculoco_rate_limit_time_window' );
-
-// Upgrade tracking.
-define( 'SECULOCO_OPTION_UPGRADE_COMPLETED', 'seculoco_upgrade_completed' );
-define( 'SECULOCO_OPTION_USING_PRO_VERSION', 'seculoco_using_pro_version' );
+if ( function_exists( 'do_action' ) ) {
+	/**
+	 * Fires when the free constants have loaded, giving the premium add-on
+	 * a spot to register its general and encryption constants.
+	 */
+	do_action( 'seculoco_register_premium_constants' );
+}

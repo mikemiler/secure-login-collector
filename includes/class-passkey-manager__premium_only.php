@@ -112,10 +112,11 @@ class Seculoco_Passkey_Manager {
 
 		// Prepare localized data.
 		$script_data = array(
-			'ajaxUrl'          => admin_url( 'admin-ajax.php' ),
-			'nonce'            => wp_create_nonce( 'passkey_admin_nonce' ),
-			'hasEncryptedData' => $has_encrypted_data,
-			'strings'          => array(
+			'ajaxUrl'              => admin_url( 'admin-ajax.php' ),
+			'nonce'                => wp_create_nonce( 'passkey_admin_nonce' ),
+			'hasEncryptedData'     => $has_encrypted_data,
+			'secureContextAllowed' => $this->is_secure_context_allowed(),
+			'strings'              => array(
 				'warningDataLoss'  => __( 'WARNING: Resetting this passkey will make ALL existing encrypted data permanently inaccessible! This action CANNOT be undone. There is NO recovery method. Are you absolutely sure you want to proceed?', 'secure-login-collector' ),
 				'warningSimple'    => __( 'Are you sure you want to reset this passkey?\n\nYou can register a new passkey afterward.', 'secure-login-collector' ),
 				'deleting'         => __( 'Resetting...', 'secure-login-collector' ),
@@ -129,6 +130,7 @@ class Seculoco_Passkey_Manager {
 				'networkError'     => __( 'Network error occurred. Please try again.', 'secure-login-collector' ),
 				'noWebAuthn'       => __( 'Your browser does not support WebAuthn/Passkeys.', 'secure-login-collector' ),
 				'registerSuccess'  => __( 'Passkey registered successfully!', 'secure-login-collector' ),
+				'httpsRequired'    => __( 'Passkeys require HTTPS (or http://localhost / 127.0.0.1 while developing). Please enable SSL before registering.', 'secure-login-collector' ),
 			),
 		);
 
@@ -278,17 +280,25 @@ class Seculoco_Passkey_Manager {
 								</div>
 							</div>
 
-							<button type="button"
-									id="register-passkey-btn"
-									class="seculoco-btn seculoco-btn-primary seculoco-btn-lg seculoco-passkey-register-btn"
-									data-authenticator-type="cross-platform">
-								<span>🔑</span>
-								<?php esc_html_e( 'Register Passkey', 'secure-login-collector' ); ?>
-							</button>
+								<?php $secure_context_allowed = $this->is_secure_context_allowed(); ?>
+								<button type="button"
+										id="register-passkey-btn"
+										class="seculoco-btn seculoco-btn-primary seculoco-btn-lg seculoco-passkey-register-btn<?php echo $secure_context_allowed ? '' : ' is-disabled'; ?>"
+										<?php echo $secure_context_allowed ? '' : 'disabled="disabled" aria-disabled="true"'; ?>
+										data-authenticator-type="cross-platform">
+									<span>🔑</span>
+									<?php esc_html_e( 'Register Passkey', 'secure-login-collector' ); ?>
+								</button>
 
-							<span class="spinner seculoco-spinner-inline"></span>
-						</div>
-					<?php endif; ?>
+								<?php if ( ! $secure_context_allowed ) : ?>
+									<p class="seculoco-form-help seculoco-passkey-warning">
+										<?php esc_html_e( 'Passkey registration requires HTTPS or running the site from localhost/127.0.0.1.', 'secure-login-collector' ); ?>
+									</p>
+								<?php endif; ?>
+
+								<span class="spinner seculoco-spinner-inline"></span>
+							</div>
+						<?php endif; ?>
 					
 					<div id="passkey-status-message" class="seculoco-passkey-status"></div>
 				</div>
@@ -326,6 +336,32 @@ class Seculoco_Passkey_Manager {
 	}
 
 	/**
+	 * Determine if the current host is allowed for insecure WebAuthn use (localhost/loopback).
+	 *
+	 * @return bool
+	 */
+	private function is_local_dev_host() {
+		$host = isset( $_SERVER['HTTP_HOST'] ) ? strtolower( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '';
+
+		if ( empty( $host ) ) {
+			return false;
+		}
+
+		$host = preg_replace( '/:\\d+$/', '', $host );
+
+		return in_array( $host, array( 'localhost', '127.0.0.1', '::1' ), true );
+	}
+
+	/**
+	 * Check whether the current context meets WebAuthn secure-context requirements.
+	 *
+	 * @return bool
+	 */
+	private function is_secure_context_allowed() {
+		return $this->is_https() || $this->is_local_dev_host();
+	}
+
+	/**
 	 * Handle start registration AJAX.
 	 */
 	public function handle_start_registration() {
@@ -333,6 +369,10 @@ class Seculoco_Passkey_Manager {
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( __( 'Insufficient permissions', 'secure-login-collector' ) );
+		}
+
+		if ( ! $this->is_secure_context_allowed() ) {
+			wp_send_json_error( __( 'Passkey registration requires HTTPS or running the site from localhost/127.0.0.1.', 'secure-login-collector' ) );
 		}
 
 		// Get authenticator type from request (platform, cross-platform, or auto).
@@ -398,6 +438,10 @@ class Seculoco_Passkey_Manager {
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( __( 'Insufficient permissions', 'secure-login-collector' ) );
+		}
+
+		if ( ! $this->is_secure_context_allowed() ) {
+			wp_send_json_error( __( 'Passkey registration requires HTTPS or running the site from localhost/127.0.0.1.', 'secure-login-collector' ) );
 		}
 
 		// Verify pro license.
@@ -674,6 +718,10 @@ class Seculoco_Passkey_Manager {
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( __( 'Insufficient permissions', 'secure-login-collector' ) );
+		}
+
+		if ( ! $this->is_secure_context_allowed() ) {
+			wp_send_json_error( __( 'Passkey registration requires HTTPS or running the site from localhost/127.0.0.1.', 'secure-login-collector' ) );
 		}
 
 		// Verify pro license.

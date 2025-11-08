@@ -234,17 +234,17 @@ class Seculoco_Settings_Manager_Pro {
 
 		if ( $pro_public_key && $pro_private_key && $pro_keys_active ) {
 			echo '<div style="text-align: right;">';
-			echo '<span style="background: #d1ecf1; color: #0c5460; padding: 4px 12px; border-radius: 3px; font-size: 12px; font-weight: 600;">' . esc_html__( 'ACTIVE', 'secure-login-collector' ) . '</span>';
+			echo '<span class="seculoco-encryption-badge-active">' . esc_html__( 'ACTIVE', 'secure-login-collector' ) . '</span>';
 			echo '<p style="margin: 5px 0 0; font-size: 11px; color: #666;">' . esc_html__( 'Using passkey protection', 'secure-login-collector' ) . '</p>';
 			echo '</div>';
 		} elseif ( $passkey_registered ) {
 			echo '<div style="text-align: right;">';
-			echo '<span style="background: #fff3cd; color: #856404; padding: 4px 12px; border-radius: 3px; font-size: 12px; font-weight: 600;">' . esc_html__( 'NEEDS INITIALIZATION', 'secure-login-collector' ) . '</span>';
+			echo '<span class="seculoco-encryption-badge-inactive">' . esc_html__( 'NEEDS INITIALIZATION', 'secure-login-collector' ) . '</span>';
 			echo '<p style="margin: 5px 0 0; font-size: 11px; color: #666;">' . esc_html__( 'Passkey registered but keys not initialized', 'secure-login-collector' ) . '</p>';
 			echo '</div>';
 		} else {
 			echo '<div style="text-align: right;">';
-			echo '<span style="background: #f8f9fa; color: #6c757d; padding: 4px 12px; border-radius: 3px; font-size: 12px; font-weight: 600;">' . esc_html__( 'NOT AVAILABLE', 'secure-login-collector' ) . '</span>';
+			echo '<span class="seculoco-encryption-badge-not-init">' . esc_html__( 'NOT SET', 'secure-login-collector' ) . '</span>';
 			echo '<p style="margin: 5px 0 0; font-size: 11px; color: #666;">' . esc_html__( 'Register passkey to enable', 'secure-login-collector' ) . '</p>';
 			echo '</div>';
 		}

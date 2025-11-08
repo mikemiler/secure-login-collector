@@ -70,6 +70,7 @@ function seculoco_load_premium_dependencies() {
 	$loaded = true;
 
 	$premium_files = array(
+		'includes/constants__premium_only.php',
 		'includes/class-passkey-manager__premium_only.php',
 		'includes/class-master-key-manager__premium_only.php',
 		'includes/class-license-manager__premium_only.php',

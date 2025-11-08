@@ -33,6 +33,11 @@ class Seculoco_Encryption_Handler_Factory {
 	public static function get_shared_handler() {
 		if ( null === self::$shared_handler ) {
 			self::$shared_handler = self::instantiate_handler();
+			return self::$shared_handler;
+		}
+
+		if ( self::should_use_premium_handler() && ! self::$shared_handler instanceof Seculoco_Encryption_Handler_V2_Premium ) {
+			self::$shared_handler = self::instantiate_handler();
 		}
 
 		return self::$shared_handler;
@@ -53,10 +58,19 @@ class Seculoco_Encryption_Handler_Factory {
 	 * @return Seculoco_Encryption_Service
 	 */
 	private static function instantiate_handler() {
-		if ( class_exists( 'Seculoco_Encryption_Handler_V2_Premium' ) ) {
+		if ( self::should_use_premium_handler() ) {
 			return new Seculoco_Encryption_Handler_V2_Premium();
 		}
 
 		return new Seculoco_Encryption_Handler_V2();
+	}
+
+	/**
+	 * Determine if premium handler should be used.
+	 *
+	 * @return bool
+	 */
+	private static function should_use_premium_handler() {
+		return class_exists( 'Seculoco_Encryption_Handler_V2_Premium' );
 	}
 }
