@@ -485,9 +485,9 @@ class Seculoco_List_Table extends WP_List_Table {
 				$this->database_manager->delete_entry( $id );
 			}
 
-			/* translators: %d: number of entries deleted */
+			/* translators: 1: Number of entries deleted. */
 			$message = sprintf(
-				_n( '%d entry deleted.', '%d entries deleted.', count( $ids ), 'secure-login-collector' ),
+				_n( '%1$d entry deleted.', '%1$d entries deleted.', count( $ids ), 'secure-login-collector' ),
 				count( $ids )
 			);
 
@@ -506,9 +506,9 @@ class Seculoco_List_Table extends WP_List_Table {
 				300
 			);
 
-			/* translators: %d: number of entries prepared for export */
+			/* translators: 1: Number of entries prepared for export. */
 			$message = sprintf(
-				__( 'Bulk export initiated for %d entries. Please wait...', 'secure-login-collector' ),
+				__( 'Bulk export initiated for %1$d entries. Please wait...', 'secure-login-collector' ),
 				count( $ids )
 			);
 
@@ -967,10 +967,10 @@ class Seculoco_Admin_Interface {
 		$is_expired             = isset( $row->is_expired ) ? $row->is_expired : 0;
 		$new_expiration_display = $this->database_manager->calculate_expiration( $row->retention_until, $is_expired );
 		$expiration_days        = get_option( SECULOCO_OPTION_EXPIRATION_DAYS, 30 );
-		/* translators: %d: number of days retention period extended */
 		wp_send_json_success(
 			array(
-				'message'        => sprintf( __( 'Retention period extended by %d days.', 'secure-login-collector' ), $expiration_days ),
+				/* translators: 1: Number of days the retention period was extended. */
+				'message'        => sprintf( __( 'Retention period extended by %1$d days.', 'secure-login-collector' ), $expiration_days ),
 				'new_expiration' => $new_expiration_display,
 			)
 		);
