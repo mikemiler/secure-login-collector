@@ -30,7 +30,7 @@ seculoco_register_premium_loader();
  * @return bool
  */
 function seculoco_can_load_premium_code() {
-	if ( defined( 'SECULOCO_SIMULATE_FREE_VERSION' ) && SECULOCO_SIMULATE_FREE_VERSION ) {
+	if ( SECULOCO_SIMULATE_FREE_VERSION ) {
 		return false;
 	}
 

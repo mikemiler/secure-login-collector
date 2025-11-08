@@ -60,6 +60,10 @@ define( 'SECULOCO_OPTION_KEY_ACCESS_LOG', 'seculoco_key_access_log' );
 define( 'SECULOCO_OPTION_KEY_OPERATIONS_LOG', 'seculoco_key_operations_log' );
 define( 'SECULOCO_OPTION_UNIFIED_CRYPTO_LOG', 'seculoco_unified_crypto_log' );
 
+if(!defined('SECULOCO_SIMULATE_FREE_VERSION')) {
+	define('SECULOCO_SIMULATE_FREE_VERSION', false);
+}
+
 /**
  * ========================================
  * FREE ENCRYPTION CONSTANTS
