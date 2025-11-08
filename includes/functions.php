@@ -81,6 +81,12 @@ if ( ! function_exists( 'seculoco_has_passkey_encryption' ) ) {
 	 * @return bool
 	 */
 	function seculoco_has_passkey_encryption() {
+
+		// Early return if we don't have passkey files
+		if(! class_exists('Seculoco_Passkey_Manager')) {
+			return false;
+		}
+		
 		$active     = (bool) get_option( SECULOCO_OPTION_PASSKEY_ACTIVE, false );
 		$registered = (bool) get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false );
 

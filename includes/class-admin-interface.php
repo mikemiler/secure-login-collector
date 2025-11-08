@@ -760,9 +760,9 @@ class Seculoco_Admin_Interface {
 		wp_localize_script( 'seculoco-admin-decrypt', 'seculocoAjax', $ajax_data );
 		wp_localize_script( 'seculoco-admin-decrypt', 'seculocoAdmin', $ajax_data );
 
-		// Localize script with configuration data.
+		// Localize script with configuration data.		
 		$admin_config = array(
-			'passkeyRegistered' => get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false ),
+			'passkeyRegistered' => class_exists('Seculoco_Passkey_Manager') ? get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false ) : false,
 			'currentUserId'     => get_current_user_id(),
 		);
 
