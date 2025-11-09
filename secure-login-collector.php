@@ -34,7 +34,7 @@ if (defined('SECULOCO_VERSION') ) {
     return; // Stop execution.
 }
 
-define('SECULOCO_VERSION', '1.4.7');
+define('SECULOCO_VERSION', '1.4.8');
 
 // Define plugin constants with guards.
 if (! defined('SECULOCO_PLUGIN_DIR') ) {
