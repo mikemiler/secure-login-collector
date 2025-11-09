@@ -538,8 +538,7 @@ class Seculoco_Settings_Manager {
 	 * @return string
 	 */
 	private function get_default_frontend_text() {
-		$text  = '<p><strong>' . __( 'What happens to your data:', 'secure-login-collector' ) . '</strong> ' . __( 'Your login data is encrypted in your browser before being sent to our server. We use strong RSA-2048 encryption to ensure maximum security.', 'secure-login-collector' ) . '</p>';
-		$text .= '<p><strong>' . __( 'Security & Privacy:', 'secure-login-collector' ) . '</strong> ' . __( 'Your data is encrypted in your browser before being sent to our server. We store the encrypted data securely{EXPIRATION_TEXT}.', 'secure-login-collector' ) . '</p>';
+		$text  = '<p><strong>' . __( 'What happens to your data:', 'secure-login-collector' ) . '</strong> ' . __( 'Your login details are sealed on your device before they travel to us. Only our team can unlock them with an extra security key, and our zero-knowledge integration guarantees the highest possible protection for your data.', 'secure-login-collector' ) . '</p>';
 
 		return $text;
 	}
@@ -559,8 +558,7 @@ class Seculoco_Settings_Manager {
 		$is_disabled  = ( 'default' === $text_type ) ? 'disabled' : '';
 
 		echo '<textarea id="seculoco_frontend_form_text" name="seculoco_frontend_form_text" rows="6" class="large-text" style="width: 100%;" ' . esc_attr( $is_disabled ) . '>' . esc_textarea( $display_text ) . '</textarea>';
-		echo '<p class="description">' . esc_html__( 'Custom text to display above the login form. Basic HTML allowed (p, strong, em, br, a). This field is automatically populated with the default text when no custom text is provided. Use {EXPIRATION_TEXT} placeholder for automatic expiration information.', 'secure-login-collector' ) . '</p>';
-
+		echo '<p class="description">' . esc_html__( 'Custom text to display above the login form. Basic HTML allowed (p, strong, em, br, a). This field is automatically populated with the default text when no custom text is provided. Use {EXPIRATION_TEXT} placeholder to insert the data retention days.', 'secure-login-collector' ) . '</p>';
 	}
 
 	/**

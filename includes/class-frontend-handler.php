@@ -239,9 +239,9 @@ class Seculoco_Frontend_Handler {
 					// Handle placeholder replacement for custom text.
 					if ( $expiration_days > 0 ) {
 						// translators: %d is the number of days after which data will be deleted.
-						$expiration_text = ' ' . sprintf( __( 'for %d days, after which it will be automatically deleted', 'secure-login-collector' ), $expiration_days );
+						$expiration_text = sprintf( __( '%d', 'secure-login-collector' ), $expiration_days );
 					} else {
-						$expiration_text = '. ' . __( 'Auto-deletion is disabled, so data will be retained until manually deleted by the administrator', 'secure-login-collector' );
+						$expiration_text =  __( 'unlimited', 'secure-login-collector' );
 					}
 
 					// Replace the placeholder with actual expiration text.
@@ -265,17 +265,8 @@ class Seculoco_Frontend_Handler {
 					?>
 					</div>
 				<?php else : ?>
-					<p><strong><?php echo esc_html__( 'What happens to your data:', 'secure-login-collector' ); ?></strong> <?php echo esc_html__( 'Your login data is encrypted in your browser before being sent to our server. We use strong RSA-2048 encryption to ensure maximum security.', 'secure-login-collector' ); ?></p>
-					<?php if ( $expiration_days > 0 ) : ?>
-						<p><strong><?php echo esc_html__( 'Security & Privacy:', 'secure-login-collector' ); ?></strong> 
-						<?php
-						// translators: %d is the number of days after which data will be deleted.
-						printf( esc_html__( 'Your data is encrypted in your browser before being sent to our server. We store the encrypted data securely for %d days, after which it will be automatically deleted.', 'secure-login-collector' ), (int) $expiration_days );
-						?>
-						</p>
-					<?php else : ?>
-						<p><strong><?php echo esc_html__( 'Security & Privacy:', 'secure-login-collector' ); ?></strong> <?php echo esc_html__( 'Your data is encrypted in your browser before being sent to our server. We store the encrypted data securely. Auto-deletion is disabled, so data will be retained until manually deleted by the administrator.', 'secure-login-collector' ); ?></p>
-					<?php endif; ?>
+								<p><strong><?php echo esc_html__( 'What happens to your data:', 'secure-login-collector' ); ?></strong><br> <?php echo esc_html__( 'Your login details are sealed on your device before they travel to us. Only our team can unlock them with an extra security key, and our zero-knowledge integration guarantees the highest possible protection for your data.', 'secure-login-collector' ); ?></p>
+					
 				<?php endif; ?>
 				</div>
 			</div>
@@ -477,7 +468,7 @@ class Seculoco_Frontend_Handler {
 		// Extract encryption metadata.
 		$is_pro_encrypted     = isset( $encryption_metadata['is_pro_encrypted'] ) ? (bool) $encryption_metadata['is_pro_encrypted'] : false;
 		$encryption_type      = isset( $encryption_metadata['encryption_type'] ) ? $encryption_metadata['encryption_type'] : 'aes-rsa-password-v3';
-		$server_credential_id = isset( $encryption_metadata['credential_id'] ) ? sanitize_text_field( $encryption_metadata['credential_id'] ) : null;
+		$server_credential_id = isset( $encryption_metadata['credential_id'] ) ? $encryption_metadata['credential_id'] : null;
 
 		// Create encrypted package for storage.
 		$encrypted_package = array(
