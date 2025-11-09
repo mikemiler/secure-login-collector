@@ -157,7 +157,7 @@ class Seculoco_Admin_Interface_Premium extends Seculoco_Admin_Interface {
 	 * Include passkey status in encryption status array.
 	 *
 	 * @param array $status  Current status.
-	 * @param Secure_Login_Collector_Unified_Crypto $unified Crypto handler.
+	 * @param Seculoco_Unified_Crypto $unified Crypto handler.
 	 * @return array
 	 */
 	public function extend_encryption_status( $status, $unified ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found

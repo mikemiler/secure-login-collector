@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class Secure_Login_Collector_Unified_Crypto {
+class Seculoco_Unified_Crypto {
 
 	const PBKDF2_ITERATIONS = 100000;
 	const SALT_LENGTH       = 32;

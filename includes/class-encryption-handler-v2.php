@@ -93,12 +93,12 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 	/**
 	 * Get unified crypto instance.
 	 *
-	 * @return Secure_Login_Collector_Unified_Crypto Unified crypto instance.
+	 * @return Seculoco_Unified_Crypto Unified crypto instance.
 	 */
 	protected function get_unified_crypto() {
-		$class = apply_filters( 'seculoco_unified_crypto_class', 'Secure_Login_Collector_Unified_Crypto' );
+		$class = apply_filters( 'seculoco_unified_crypto_class', 'Seculoco_Unified_Crypto' );
 
-		if ( 'Secure_Login_Collector_Unified_Crypto' === $class && ! class_exists( $class ) ) {
+		if ( 'Seculoco_Unified_Crypto' === $class && ! class_exists( $class ) ) {
 			require_once SECULOCO_PLUGIN_DIR . 'includes/class-unified-crypto.php';
 		}
 
@@ -504,10 +504,10 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 	 * @return array Status information.
 	 */
 	public static function get_status() {
-		if ( ! class_exists( 'Secure_Login_Collector_Unified_Crypto' ) ) {
+		if ( ! class_exists( 'Seculoco_Unified_Crypto' ) ) {
 			require_once SECULOCO_PLUGIN_DIR . 'includes/class-unified-crypto.php';
 		}
-		$unified = new Secure_Login_Collector_Unified_Crypto();
+		$unified = new Seculoco_Unified_Crypto();
 
 		$status = array(
 			'standard' => array(
