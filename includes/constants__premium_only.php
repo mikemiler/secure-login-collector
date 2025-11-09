@@ -49,6 +49,8 @@ class Seculoco_Premium_Constants
      */
     private static function register_general_constants()
     {
+        define('SECULOCO_OPTION_EXPIRATION_DAYS', 'seculoco_expiration_days');
+        define('SECULOCO_OPTION_HIDE_SERVICE_FOOTER', 'seculoco_hide_service_footer');
         define('SECULOCO_OPTION_RATE_LIMIT_ENABLED', 'seculoco_rate_limit_enabled');
         define('SECULOCO_OPTION_RATE_LIMIT_MAX_ATTEMPTS', 'seculoco_rate_limit_max_attempts');
         define('SECULOCO_OPTION_RATE_LIMIT_TIME_WINDOW', 'seculoco_rate_limit_time_window');
@@ -97,6 +99,10 @@ function seculoco_premium_extend_uninstall_options( $option_names ) {
         defined('SECULOCO_OPTION_RATE_LIMIT_ENABLED') ? SECULOCO_OPTION_RATE_LIMIT_ENABLED : null,
         defined('SECULOCO_OPTION_RATE_LIMIT_MAX_ATTEMPTS') ? SECULOCO_OPTION_RATE_LIMIT_MAX_ATTEMPTS : null,
         defined('SECULOCO_OPTION_RATE_LIMIT_TIME_WINDOW') ? SECULOCO_OPTION_RATE_LIMIT_TIME_WINDOW : null,
+        defined('SECULOCO_OPTION_EXPIRATION_DAYS') ? SECULOCO_OPTION_EXPIRATION_DAYS : null,
+        defined('SECULOCO_OPTION_HIDE_SERVICE_FOOTER') ? SECULOCO_OPTION_HIDE_SERVICE_FOOTER : null,
+        defined('SECULOCO_OPTION_HONEYPOT_ENABLED') ? SECULOCO_OPTION_HONEYPOT_ENABLED : null,
+        defined('SECULOCO_OPTION_HONEYPOT_MIN_TIME') ? SECULOCO_OPTION_HONEYPOT_MIN_TIME : null,
     );
 
     return array_values(

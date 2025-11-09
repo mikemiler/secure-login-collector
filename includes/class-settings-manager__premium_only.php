@@ -42,9 +42,6 @@ class Seculoco_Settings_Manager_Pro
         // Replace free version's pro column with actual pro content.
         add_filter('seculoco_encryption_pro_column', array( $this, 'get_pro_encryption_column' ));
 
-        // Filter service footer setting content to replace with actual control.
-        add_filter('seculoco_hide_service_footer_setting_content', array( $this, 'replace_service_footer_setting_content' ));
-
         // Filter frontend service footer visibility based on Pro setting.
         add_filter('seculoco_show_service_footer', array( $this, 'filter_service_footer_visibility' ));
 
@@ -79,6 +76,14 @@ class Seculoco_Settings_Manager_Pro
         register_setting(
             'seculoco_settings',
             SECULOCO_OPTION_HONEYPOT_ENABLED,
+            array(
+            'type'              => 'boolean',
+            'sanitize_callback' => array( $this, 'sanitize_boolean' ),
+            )
+        );
+        register_setting(
+            'seculoco_settings',
+            SECULOCO_OPTION_HIDE_SERVICE_FOOTER,
             array(
             'type'              => 'boolean',
             'sanitize_callback' => array( $this, 'sanitize_boolean' ),
@@ -136,6 +141,14 @@ class Seculoco_Settings_Manager_Pro
      */
     public function add_additional_settings_fields()
     {
+        add_settings_field(
+            SECULOCO_OPTION_HIDE_SERVICE_FOOTER,
+            __('Hide Branding Footer', 'secure-login-collector'),
+            array( $this, 'hide_service_footer_callback' ),
+            'seculoco_settings',
+            'seculoco_frontend_section'
+        );
+
         $this->add_expiration_settings_fields();
         $this->add_spam_protection_fields();
     }
@@ -184,6 +197,20 @@ class Seculoco_Settings_Manager_Pro
             'seculoco_settings',
             'seculoco_spam_protection_section'
         );
+    }
+
+    /**
+     * Hide service footer field callback.
+     */
+    public function hide_service_footer_callback()
+    {
+        $hidden = get_option(SECULOCO_OPTION_HIDE_SERVICE_FOOTER, false);
+        echo '<div class="seculoco-premium-field">';
+        echo '<input type="checkbox" id="seculoco_hide_service_footer" name="seculoco_hide_service_footer" value="1" ' . checked(1, $hidden, false) . ' />';
+        echo '<label for="seculoco_hide_service_footer"> ' . esc_html__('Hide branding footer on frontend form', 'secure-login-collector') . '</label>';
+        echo ' <span class="seculoco-badge seculoco-badge-success">PRO</span>';
+        echo '<p class="description">' . esc_html__('When enabled, the branding footer will be hidden from the frontend form.', 'secure-login-collector') . '</p>';
+        echo '</div>';
     }
 
     /**
@@ -368,26 +395,6 @@ class Seculoco_Settings_Manager_Pro
     }
 
 
-
-    /**
-     * Replace the free version's informational text with actual setting control (Pro only).
-     * Hooks into 'seculoco_hide_service_footer_setting_content' filter.
-     *
-     * @param  string $content The default free version content (ignored in Pro).
-     * @return string The Pro version HTML with actual checkbox control.
-     */
-    public function replace_service_footer_setting_content( $content )
-    {
-        $hidden = get_option(SECULOCO_OPTION_HIDE_SERVICE_FOOTER, false);
-
-        $pro_content  = '<input type="checkbox" id="seculoco_hide_service_footer" name="seculoco_hide_service_footer" value="1" ' . checked(1, $hidden, false) . ' />';
-        $pro_content .= '<label for="seculoco_hide_service_footer"> ' . esc_html__('Hide branding footer on frontend form', 'secure-login-collector') . '</label>';
-        $pro_content .= ' <span class="seculoco-badge seculoco-badge-success">PRO</span>';
-
-        $pro_content .= '<p class="description">' . esc_html__('When enabled, the branding footer will be hidden from the frontend form.', 'secure-login-collector') . '</p>';
-
-        return $pro_content;
-    }
 
     /**
      * Filter service footer visibility based on Pro setting.

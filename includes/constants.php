@@ -24,17 +24,11 @@ if (! defined('ABSPATH') ) {
 
 // Version and setup.
 define('SECULOCO_OPTION_DB_VERSION', 'seculoco_db_version');
-define('SECULOCO_OPTION_ENCRYPTION_VERSION', 'seculoco_encryption_version');
-define('SECULOCO_OPTION_SETUP_TIMESTAMP', 'seculoco_setup_timestamp');
 
 // Master password salt (shared between free and pro).
-define('SECULOCO_OPTION_MASTER_PASSWORD_SALT', 'seculoco_master_password_salt');
 define('SECULOCO_OPTION_PASSWORD_ENCRYPTION_ACTIVE', 'seculoco_password_encryption_active');
 define('SECULOCO_OPTION_PASSWORD_ACTIVE', 'seculoco_password_active');
 define('SECULOCO_OPTION_PASSKEY_ACTIVE', 'seculoco_passkey_active');
-
-// Data expiration.
-define('SECULOCO_OPTION_EXPIRATION_DAYS', 'seculoco_expiration_days');
 
 // Notifications.
 define('SECULOCO_OPTION_ENABLE_NOTIFICATIONS', 'seculoco_enable_notifications');
@@ -43,7 +37,6 @@ define('SECULOCO_OPTION_NOTIFICATION_EMAIL', 'seculoco_notification_email');
 // Frontend settings.
 define('SECULOCO_OPTION_FRONTEND_TEXT_TYPE', 'seculoco_frontend_text_type');
 define('SECULOCO_OPTION_FRONTEND_FORM_TEXT', 'seculoco_frontend_form_text');
-define('SECULOCO_OPTION_HIDE_SERVICE_FOOTER', 'seculoco_hide_service_footer');
 
 // Uninstall settings.
 define('SECULOCO_OPTION_DELETE_ON_UNINSTALL', 'seculoco_delete_on_uninstall');
@@ -72,7 +65,6 @@ if(!defined('SECULOCO_SIMULATE_FREE_VERSION')) {
 
 // Free encryption keys (v2 format / unified crypto).
 define('SECULOCO_OPTION_PUBLIC_KEY', 'seculoco_public_key');
-define('SECULOCO_OPTION_PRIVATE_KEY_WRAPPED', 'seculoco_private_key_wrapped');
 define('SECULOCO_OPTION_PUBLIC_KEY_STANDARD', 'seculoco_public_key_standard');
 define('SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_STANDARD', 'seculoco_wrapped_private_key_standard');
 

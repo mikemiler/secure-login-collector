@@ -150,11 +150,9 @@ function seculoco_run_uninstall_cleanup() {
 					seculoco_get_constant_value( 'SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PASSKEY' ),
 					seculoco_get_constant_value( 'SECULOCO_OPTION_PASSKEY_ACTIVE' ),
 					seculoco_get_constant_value( 'SECULOCO_OPTION_PUBLIC_KEY' ),
-					seculoco_get_constant_value( 'SECULOCO_OPTION_PRIVATE_KEY_WRAPPED' ),
 					seculoco_get_constant_value( 'SECULOCO_OPTION_PUBLIC_KEY_PRO' ),
 					seculoco_get_constant_value( 'SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PRO' ),
 					seculoco_get_constant_value( 'SECULOCO_OPTION_PRO_KEYS_ACTIVE' ),
-					seculoco_get_constant_value( 'SECULOCO_OPTION_MASTER_PASSWORD_SALT' ),
 
 					// Passkey options - using constants.
 					seculoco_get_constant_value( 'SECULOCO_OPTION_GLOBAL_PASSKEY' ),
@@ -170,8 +168,6 @@ function seculoco_run_uninstall_cleanup() {
 
 					// Version tracking - using constants.
 					seculoco_get_constant_value( 'SECULOCO_OPTION_DB_VERSION' ),
-					seculoco_get_constant_value( 'SECULOCO_OPTION_ENCRYPTION_VERSION' ),
-					seculoco_get_constant_value( 'SECULOCO_OPTION_SETUP_TIMESTAMP' ),
 					seculoco_get_constant_value( 'SECULOCO_OPTION_UPGRADE_COMPLETED' ),
 					seculoco_get_constant_value( 'SECULOCO_OPTION_USING_PRO_VERSION' ),
 

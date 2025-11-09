@@ -192,17 +192,9 @@ class Seculoco_Settings_Manager {
 				'sanitize_callback' => array( $this, 'sanitize_boolean' ),
 			)
 		);
-
-		register_setting(
-			'seculoco_settings',
-			SECULOCO_OPTION_HIDE_SERVICE_FOOTER,
-			array(
-				'type'              => 'boolean',
-				'sanitize_callback' => array( $this, 'sanitize_boolean' ),
-			)
-		);
-
-		// Premium builds register additional settings via hooks.
+		/**
+		 * Allow premium builds to register their own settings.
+		 */
 		do_action( 'seculoco_register_settings' );
 
 		add_settings_section(
@@ -290,18 +282,22 @@ class Seculoco_Settings_Manager {
 			'seculoco_frontend_section'
 		);
 
-		add_settings_field(
-			SECULOCO_OPTION_HIDE_SERVICE_FOOTER,
-			__( 'Hide Branding Footer', 'secure-login-collector' ),
-			array( $this, 'hide_service_footer_callback' ),
-			'seculoco_settings',
-			'seculoco_frontend_section'
-		);
+		if ( ! seculoco_is_premium_active() ) {
+			add_settings_field(
+				'seculoco_hide_service_footer_placeholder',
+				__( 'Hide Branding Footer', 'secure-login-collector' ),
+				array( $this, 'render_service_footer_pro_placeholder' ),
+				'seculoco_settings',
+				'seculoco_frontend_section'
+			);
+		}
 
 		/**
-		 * Allow premium builds to inject additional settings fields.
+		 * Allow premium/pro builds to register additional settings fields.
 		 */
 		do_action( 'seculoco_additional_settings_fields' );
+
+		do_action( 'seculoco_spam_protection_settings_fields' );
 	}
 
 	/**
@@ -483,11 +479,11 @@ class Seculoco_Settings_Manager {
 				</div>
 				<span class="seculoco-passkey-benefit-icon"></span>
 				<div class="seculoco-passkey-benefit-text">
-					<div class="seculoco-passkey-benefit-title">
-						<?php echo esc_html__( 'Ultra-Secure (Passkey-Protected)', 'secure-login-collector' ); ?>
-					</div>
+					<strong class="seculoco-encryption-status-title">
+						<?php echo esc_html__( 'Passkey-Protected', 'secure-login-collector' ); ?>
+					</strong>
 					<div class="seculoco-passkey-benefit-desc">
-						<?php echo esc_html__( 'Passkey-protected encryption with WebAuthn/FIDO2. True zero-knowledge - server cannot decrypt without your physical device.', 'secure-login-collector' ); ?>
+						<?php echo esc_html__( 'Passkey-protected encryption with WebAuthn/FIDO2.', 'secure-login-collector' ); ?>
 					</div>
 				</div>
 			</div>
@@ -589,26 +585,13 @@ class Seculoco_Settings_Manager {
 	}
 
 	/**
-	 * Hide service footer field callback.
-	 * Free version: Shows informational text about PRO feature
-	 * Pro version: Filters the content to replace with actual setting control
+	 * Display Pro-only placeholder for the branding footer setting.
 	 */
-	public function hide_service_footer_callback() {
-		// Free version default content (informational text)
-		$content  = '<p class="description" style="color: #666;">';
-		$content .= '<span class="seculoco-badge seculoco-pro-badge seculoco-pro-badge-inline">' . esc_html__( 'PRO ONLY', 'secure-login-collector' ) . '</span>';
-		$content .= esc_html__( 'The Pro version allows you to hide the branding footer on the frontend form. Free version users help support the plugin by displaying this footer.', 'secure-login-collector' );
-		$content .= '</p>';
-
-		/**
-		 * Filter the service footer setting content.
-		 * Pro version can replace the informational text with actual controls.
-		 *
-		 * @param string $content The default content (informational text for free version).
-		 */
-		$content = apply_filters( 'seculoco_hide_service_footer_setting_content', $content );
-
-		echo $content;
+	public function render_service_footer_pro_placeholder() {
+		echo '<p class="description" style="color: #666;">';
+		echo '<span class="seculoco-badge seculoco-pro-badge seculoco-pro-badge-inline">' . esc_html__( 'PRO ONLY', 'secure-login-collector' ) . '</span>';
+		echo esc_html__( 'Upgrade to Secure Login Collector Pro to hide the branding footer on the frontend form.', 'secure-login-collector' );
+		echo '</p>';
 	}
 
 	/**

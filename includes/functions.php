@@ -58,21 +58,6 @@ if (! function_exists('seculoco_has_password_encryption') ) {
             return true;
         }
 
-        // Legacy v2 storage (pre-unified crypto).
-        if (defined('SECULOCO_OPTION_ENCRYPTION_VERSION')
-            && defined('SECULOCO_OPTION_PRIVATE_KEY_WRAPPED')
-            && defined('SECULOCO_OPTION_MASTER_PASSWORD_SALT') 
-        ) {
-
-            $legacy_version = get_option(SECULOCO_OPTION_ENCRYPTION_VERSION, '');
-            $legacy_key     = get_option(SECULOCO_OPTION_PRIVATE_KEY_WRAPPED, false);
-            $legacy_salt    = get_option(SECULOCO_OPTION_MASTER_PASSWORD_SALT, false);
-
-            if ('v2' === $legacy_version && $legacy_key && $legacy_salt ) {
-                return true;
-            }
-        }
-
         return false;
     }
 }
@@ -150,7 +135,7 @@ if ( ! function_exists( 'seculoco_get_expiration_days' ) ) {
      * @return int Number of days, or 0 when disabled/unavailable.
      */
     function seculoco_get_expiration_days() {
-        if ( ! seculoco_is_premium_active() ) {
+        if ( ! seculoco_is_premium_active() || ! defined( 'SECULOCO_OPTION_EXPIRATION_DAYS' ) ) {
             return 0;
         }
 
@@ -189,6 +174,10 @@ if ( ! function_exists( 'seculoco_is_honeypot_enabled' ) ) {
      */
     function seculoco_is_honeypot_enabled() {
         if ( ! seculoco_has_honeypot_feature() ) {
+            return false;
+        }
+
+        if ( ! defined( 'SECULOCO_OPTION_HONEYPOT_ENABLED' ) ) {
             return false;
         }
 
