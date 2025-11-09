@@ -32,6 +32,8 @@ jobs:
             --exclude='.git*' \
             --exclude='node_modules' \
             --exclude='tests' \
+            --exclude='.claude' \
+            --exclude='.claude-flow' \
             --exclude='.swarm' \
             --exclude='*.log' \
             --exclude='.DS_Store' \
