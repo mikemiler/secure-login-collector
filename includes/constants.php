@@ -26,7 +26,6 @@ if (! defined('ABSPATH') ) {
 define('SECULOCO_OPTION_DB_VERSION', 'seculoco_db_version');
 define('SECULOCO_OPTION_ENCRYPTION_VERSION', 'seculoco_encryption_version');
 define('SECULOCO_OPTION_SETUP_TIMESTAMP', 'seculoco_setup_timestamp');
-define('SECULOCO_OPTION_KEYS_CLEANUP_V3', 'seculoco_keys_cleanup_v3');
 
 // Master password salt (shared between free and pro).
 define('SECULOCO_OPTION_MASTER_PASSWORD_SALT', 'seculoco_master_password_salt');
@@ -50,11 +49,8 @@ define('SECULOCO_OPTION_HIDE_SERVICE_FOOTER', 'seculoco_hide_service_footer');
 define('SECULOCO_OPTION_DELETE_ON_UNINSTALL', 'seculoco_delete_on_uninstall');
 define('SECULOCO_OPTION_USING_PRO_VERSION', 'seculoco_using_pro_version');
 
-// Spam protection.
+// Spam protection (honeypot settings/flags register via premium constants hook).
 define('SECULOCO_OPTION_SPAM_SETTINGS', 'seculoco_spam_protection_settings');
-define('SECULOCO_OPTION_HONEYPOT_ENABLED', 'seculoco_honeypot_enabled');
-define('SECULOCO_OPTION_HONEYPOT_MIN_TIME', 'seculoco_honeypot_min_time');
-define('SECULOCO_OPTION_HONEYPOT_LOG', 'seculoco_honeypot_log');
 
 // Logging.
 define('SECULOCO_OPTION_KEY_ACCESS_LOG', 'seculoco_key_access_log');
@@ -90,10 +86,7 @@ define('SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PREFIX', 'seculoco_wrapped_private_k
 
 // Legacy free encryption keys (old naming - to be migrated).
 define('SECULOCO_OPTION_PUBLIC_KEY_JWK_FREE', 'seculoco_public_key_jwk_free');
-define('SECULOCO_OPTION_KEY_WRAPPING_IV_FREE', 'seculoco_key_wrapping_iv_free');
 define('SECULOCO_OPTION_PUBLIC_KEY_FREE', 'seculoco_public_key_free');
-define('SECULOCO_OPTION_PRIVATE_KEY_FREE_ENCRYPTED', 'seculoco_private_key_free_encrypted');
-define('SECULOCO_OPTION_ULTRA_SECURE_MODE', 'seculoco_ultra_secure_mode');
 
 /**
  * Allow premium builds to register their own general/encryption constants.

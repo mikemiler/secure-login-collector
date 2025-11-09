@@ -168,16 +168,6 @@ class Seculoco_Settings_Manager {
 				'sanitize_callback' => array( $this, 'sanitize_boolean' ),
 			)
 		);
-		if ( seculoco_is_premium_active() ) {
-			register_setting(
-				'seculoco_settings',
-				SECULOCO_OPTION_EXPIRATION_DAYS,
-				array(
-					'type'              => 'integer',
-					'sanitize_callback' => 'absint',
-				)
-			);
-		}
 		register_setting(
 			'seculoco_settings',
 			SECULOCO_OPTION_FRONTEND_FORM_TEXT,
@@ -212,17 +202,8 @@ class Seculoco_Settings_Manager {
 			)
 		);
 
-		// Spam Protection settings (Premium).
-		if ( seculoco_is_premium_active() ) {
-			register_setting(
-				'seculoco_settings',
-				SECULOCO_OPTION_HONEYPOT_ENABLED,
-				array(
-					'type'              => 'boolean',
-					'sanitize_callback' => array( $this, 'sanitize_boolean' ),
-				)
-			);
-		}
+		// Premium builds register additional settings via hooks.
+		do_action( 'seculoco_register_settings' );
 
 		add_settings_section(
 			'seculoco_notification_section',
@@ -260,9 +241,6 @@ class Seculoco_Settings_Manager {
 			array( $this, 'spam_protection_section_callback' ),
 			'seculoco_settings'
 		);
-
-		// Allow pro version to register its settings.
-		do_action( 'seculoco_register_settings' );
 
 		// Add plugin management section.
 		add_settings_section(
@@ -320,28 +298,10 @@ class Seculoco_Settings_Manager {
 			'seculoco_frontend_section'
 		);
 
-		if ( seculoco_is_premium_active() ) {
-			add_settings_field(
-				SECULOCO_OPTION_EXPIRATION_DAYS,
-				__( 'Auto-Delete After (Days)', 'secure-login-collector' ),
-				array( $this, 'expiration_days_callback' ),
-				'seculoco_settings',
-				'seculoco_expiration_section'
-			);
-		}
-
-		if ( seculoco_is_premium_active() ) {
-			add_settings_field(
-				SECULOCO_OPTION_HONEYPOT_ENABLED,
-				__( 'Enable Honeypot Protection', 'secure-login-collector' ),
-				array( $this, 'honeypot_enabled_callback' ),
-				'seculoco_settings',
-				'seculoco_spam_protection_section'
-			);
-		}
-
-		// Allow pro version to add additional spam protection settings fields.
-		do_action( 'seculoco_spam_protection_settings_fields' );
+		/**
+		 * Allow premium builds to inject additional settings fields.
+		 */
+		do_action( 'seculoco_additional_settings_fields' );
 	}
 
 	/**
@@ -649,25 +609,6 @@ class Seculoco_Settings_Manager {
 		$content = apply_filters( 'seculoco_hide_service_footer_setting_content', $content );
 
 		echo $content;
-	}
-
-	/**
-	 * Expiration days field callback.
-	 */
-	public function expiration_days_callback() {
-		$days = get_option( SECULOCO_OPTION_EXPIRATION_DAYS, 30 );
-		echo '<input type="number" id="seculoco_expiration_days" name="seculoco_expiration_days" value="' . esc_attr( $days ) . '" min="0" class="small-text" />';
-		echo '<p class="description">' . esc_html__( 'Number of days after which login data will be automatically deleted. Set to 0 to disable automatic deletion (data will be retained until manually deleted).', 'secure-login-collector' ) . '</p>';
-	}
-
-	/**
-	 * Honeypot enabled field callback.
-	 */
-	public function honeypot_enabled_callback() {
-		$enabled = get_option( SECULOCO_OPTION_HONEYPOT_ENABLED, true );
-		echo '<input type="checkbox" id="seculoco_honeypot_enabled" name="seculoco_honeypot_enabled" value="1" ' . checked( 1, $enabled, false ) . ' />';
-		echo '<label for="seculoco_honeypot_enabled"> ' . esc_html__( 'Add hidden field to detect automated bot submissions', 'secure-login-collector' ) . '</label>';
-		echo '<p class="description">' . esc_html__( 'The honeypot technique adds a hidden field to the form that bots typically fill out but humans cannot see. If the field contains data, the submission is rejected.', 'secure-login-collector' ) . '</p>';
 	}
 
 	/**

@@ -14,6 +14,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+if ( ! function_exists( 'seculoco_get_constant_value' ) ) {
+	/**
+	 * Helper to safely fetch constant values.
+	 *
+	 * @param string $constant_name Constant identifier.
+	 *
+	 * @return string|null
+	 */
+	function seculoco_get_constant_value( $constant_name ) {
+		return defined( $constant_name ) ? constant( $constant_name ) : null;
+	}
+}
+
 /**
  * Freemius uninstall cleanup function
  *
@@ -36,6 +49,15 @@ function seculoco_run_uninstall_cleanup() {
 	}
 
 	$has_run = true;
+
+	/**
+	 * Fires before the uninstall cleanup routine runs.
+	 *
+	 * Allows premium add-ons to bootstrap anything needed for uninstall (e.g. constants).
+	 *
+	 * @since 1.3.0
+	 */
+	do_action( 'seculoco_before_uninstall_cleanup' );
 
 	try {
 		// ============================================
@@ -95,75 +117,73 @@ function seculoco_run_uninstall_cleanup() {
 		}
 
 		// 2. Delete all plugin options.
-		$plugin_options = array(
-			// Settings - using constants.
-			SECULOCO_OPTION_NOTIFICATION_EMAIL,
-			SECULOCO_OPTION_ENABLE_NOTIFICATIONS,
-			SECULOCO_OPTION_EXPIRATION_DAYS,
-			SECULOCO_OPTION_FRONTEND_FORM_TEXT,
-			SECULOCO_OPTION_FRONTEND_TEXT_TYPE,
-			SECULOCO_OPTION_SPAM_SETTINGS,
-			SECULOCO_OPTION_HONEYPOT_LOG,
-			SECULOCO_OPTION_DELETE_ON_UNINSTALL,
-			SECULOCO_OPTION_RATE_LIMIT_ENABLED,
-			SECULOCO_OPTION_RATE_LIMIT_MAX_ATTEMPTS,
-			SECULOCO_OPTION_RATE_LIMIT_TIME_WINDOW,
-			SECULOCO_OPTION_HONEYPOT_ENABLED,
-			SECULOCO_OPTION_HONEYPOT_MIN_TIME,
-			SECULOCO_OPTION_SPAM_SETTINGS,
+		/**
+		 * Filters the option names scheduled for deletion during uninstall.
+		 *
+		 * @since 1.3.0
+		 *
+		 * @param array $option_names Option identifiers slated for deletion.
+		 */
+		$plugin_options = apply_filters(
+			'seculoco_uninstall_option_names',
+			array_filter(
+				array(
+					// Settings - using constants.
+					seculoco_get_constant_value( 'SECULOCO_OPTION_NOTIFICATION_EMAIL' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_ENABLE_NOTIFICATIONS' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_EXPIRATION_DAYS' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_FRONTEND_FORM_TEXT' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_FRONTEND_TEXT_TYPE' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_SPAM_SETTINGS' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_HONEYPOT_LOG' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_DELETE_ON_UNINSTALL' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_HONEYPOT_ENABLED' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_HONEYPOT_MIN_TIME' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_SPAM_SETTINGS' ),
 
-			// Encryption keys and related data - using constants.
-			SECULOCO_OPTION_PASSWORD_ACTIVE,
-			SECULOCO_OPTION_PASSWORD_ENCRYPTION_ACTIVE,
-			SECULOCO_OPTION_PUBLIC_KEY_STANDARD,
-			SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_STANDARD,
-			SECULOCO_OPTION_PUBLIC_KEY_PASSKEY,
-			SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PASSKEY,
-			SECULOCO_OPTION_PASSKEY_ACTIVE,
-			SECULOCO_OPTION_PUBLIC_KEY_FREE,
-			SECULOCO_OPTION_PRIVATE_KEY_FREE_ENCRYPTED,
-			SECULOCO_OPTION_PUBLIC_KEY,
-			SECULOCO_OPTION_PRIVATE_KEY_WRAPPED,
-			SECULOCO_OPTION_PUBLIC_KEY_JWK_FREE,
-			SECULOCO_OPTION_KEY_WRAPPING_IV_FREE,
-			SECULOCO_OPTION_PUBLIC_KEY_PRO,
-			SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PRO,
-			SECULOCO_OPTION_PRO_KEYS_ACTIVE,
-			SECULOCO_OPTION_MASTER_PASSWORD_SALT,
+					// Encryption keys and related data - using constants.
+					seculoco_get_constant_value( 'SECULOCO_OPTION_PASSWORD_ACTIVE' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_PASSWORD_ENCRYPTION_ACTIVE' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_PUBLIC_KEY_STANDARD' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_STANDARD' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_PUBLIC_KEY_PASSKEY' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PASSKEY' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_PASSKEY_ACTIVE' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_PUBLIC_KEY_FREE' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_PUBLIC_KEY' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_PRIVATE_KEY_WRAPPED' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_PUBLIC_KEY_JWK_FREE' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_PUBLIC_KEY_PRO' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PRO' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_PRO_KEYS_ACTIVE' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_MASTER_PASSWORD_SALT' ),
 
-			// Passkey options - using constants.
-			SECULOCO_OPTION_GLOBAL_PASSKEY,
-			SECULOCO_OPTION_PASSKEY_CREDENTIAL_ID,
-			SECULOCO_OPTION_PASSKEY_REGISTERED,
-			SECULOCO_OPTION_PASSKEY_REGISTERED_AT,
-			SECULOCO_OPTION_PASSKEY_AAGUID_HASH,
+					// Passkey options - using constants.
+					seculoco_get_constant_value( 'SECULOCO_OPTION_GLOBAL_PASSKEY' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_PASSKEY_CREDENTIAL_ID' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_PASSKEY_REGISTERED' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_PASSKEY_REGISTERED_AT' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_PASSKEY_AAGUID_HASH' ),
 
-			// Logging - using constants.
-			SECULOCO_OPTION_KEY_ACCESS_LOG,
-			SECULOCO_OPTION_KEY_OPERATIONS_LOG,
-			SECULOCO_OPTION_UNIFIED_CRYPTO_LOG,
-			SECULOCO_OPTION_KEYS_CLEANUP_V3,
+					// Logging - using constants.
+					seculoco_get_constant_value( 'SECULOCO_OPTION_KEY_ACCESS_LOG' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_KEY_OPERATIONS_LOG' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_UNIFIED_CRYPTO_LOG' ),
 
-			// Version tracking - using constants.
-			SECULOCO_OPTION_DB_VERSION,
-			SECULOCO_OPTION_ENCRYPTION_VERSION,
-			SECULOCO_OPTION_SETUP_TIMESTAMP,
-			SECULOCO_OPTION_UPGRADE_COMPLETED,
-			SECULOCO_OPTION_USING_PRO_VERSION,
+					// Version tracking - using constants.
+					seculoco_get_constant_value( 'SECULOCO_OPTION_DB_VERSION' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_ENCRYPTION_VERSION' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_SETUP_TIMESTAMP' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_UPGRADE_COMPLETED' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_USING_PRO_VERSION' ),
 
-			// Legacy option names (no constants needed - deprecated).
-			'seculoco_private_key', // Legacy option name.
-			'seculoco_wrapped_private_key', // Legacy option name.
-			'seculoco_private_key_encrypted', // Legacy option name.
-			SECULOCO_OPTION_ULTRA_SECURE_MODE, // Legacy option name.
-			'seculoco_master_key_wrapped', // Legacy option name.
-			'seculoco_session_keys', // Legacy option name.
-
-			// Freemius related options (external library - no constants).
-			'fs_accounts',
-			'fs_active_plugins',
-			'fs_api_cache',
-			'fs_debug_mode',
+					// Freemius related options (external library - no constants).
+					'fs_accounts',
+					'fs_active_plugins',
+					'fs_api_cache',
+					'fs_debug_mode',
+				)
+			)
 		);
 
 		// Delete each option with error handling.

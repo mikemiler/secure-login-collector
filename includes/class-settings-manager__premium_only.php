@@ -48,8 +48,8 @@ class Seculoco_Settings_Manager_Pro
         // Filter frontend service footer visibility based on Pro setting.
         add_filter('seculoco_show_service_footer', array( $this, 'filter_service_footer_visibility' ));
 
-        // Add rate limiting fields to spam protection section.
-        add_action('seculoco_spam_protection_settings_fields', array( $this, 'add_rate_limiting_fields' ));
+        // Add pro-only settings fields.
+        add_action('seculoco_additional_settings_fields', array( $this, 'add_additional_settings_fields' ));
     }
 
     /**
@@ -67,6 +67,24 @@ class Seculoco_Settings_Manager_Pro
      */
     public function register_pro_settings()
     {
+        register_setting(
+            'seculoco_settings',
+            SECULOCO_OPTION_EXPIRATION_DAYS,
+            array(
+            'type'              => 'integer',
+            'sanitize_callback' => 'absint',
+            )
+        );
+
+        register_setting(
+            'seculoco_settings',
+            SECULOCO_OPTION_HONEYPOT_ENABLED,
+            array(
+            'type'              => 'boolean',
+            'sanitize_callback' => array( $this, 'sanitize_boolean' ),
+            )
+        );
+
         register_setting(
             'seculoco_settings',
             SECULOCO_OPTION_ULTRA_SECURE_MODE,
@@ -114,10 +132,27 @@ class Seculoco_Settings_Manager_Pro
     }
 
     /**
+     * Register all additional settings fields exposed by the premium build.
+     */
+    public function add_additional_settings_fields()
+    {
+        $this->add_expiration_settings_fields();
+        $this->add_spam_protection_fields();
+    }
+
+    /**
      * Add rate limiting fields to spam protection section.
      */
-    public function add_rate_limiting_fields()
+    public function add_spam_protection_fields()
     {
+        add_settings_field(
+            SECULOCO_OPTION_HONEYPOT_ENABLED,
+            __('Enable Honeypot Protection', 'secure-login-collector'),
+            array( $this, 'honeypot_enabled_callback' ),
+            'seculoco_settings',
+            'seculoco_spam_protection_section'
+        );
+
         add_settings_field(
             SECULOCO_OPTION_HONEYPOT_MIN_TIME,
             __('Minimum Submission Time', 'secure-login-collector'),
@@ -152,6 +187,20 @@ class Seculoco_Settings_Manager_Pro
     }
 
     /**
+     * Add data expiration fields to the expiration section.
+     */
+    public function add_expiration_settings_fields()
+    {
+        add_settings_field(
+            SECULOCO_OPTION_EXPIRATION_DAYS,
+            __('Auto-Delete After (Days)', 'secure-login-collector'),
+            array( $this, 'expiration_days_callback' ),
+            'seculoco_settings',
+            'seculoco_expiration_section'
+        );
+    }
+
+    /**
      * Honeypot minimum time field callback.
      */
     public function honeypot_min_time_callback()
@@ -166,6 +215,20 @@ class Seculoco_Settings_Manager_Pro
     }
 
     /**
+     * Honeypot enabled field callback.
+     */
+    public function honeypot_enabled_callback()
+    {
+        $enabled = get_option(SECULOCO_OPTION_HONEYPOT_ENABLED, true);
+        echo '<div class="seculoco-premium-field">';
+        echo '<input type="checkbox" id="seculoco_honeypot_enabled" name="seculoco_honeypot_enabled" value="1" ' . checked(1, $enabled, false) . ' />';
+        echo '<label for="seculoco_honeypot_enabled"> ' . esc_html__('Add hidden field to detect automated bot submissions', 'secure-login-collector') . '</label>';
+        echo ' <span class="seculoco-badge seculoco-badge-success">PRO</span>';
+        echo '<p class="description">' . esc_html__('The honeypot technique adds a hidden field that bots typically complete but humans never see. Any submission that fills it is automatically rejected.', 'secure-login-collector') . '</p>';
+        echo '</div>';
+    }
+
+    /**
      * Rate limit enabled field callback.
      */
     public function rate_limit_enabled_callback()
@@ -175,6 +238,19 @@ class Seculoco_Settings_Manager_Pro
         echo '<label for="seculoco_rate_limit_enabled"> ' . esc_html__('Enable rate limiting for form submissions', 'secure-login-collector') . '</label>';
         echo ' <span class="seculoco-badge seculoco-badge-success">PRO</span>';
         echo '<p class="description">' . esc_html__('Prevent spam by limiting the number of form submissions from the same IP address within a time window.', 'secure-login-collector') . '</p>';
+    }
+
+    /**
+     * Expiration days field callback.
+     */
+    public function expiration_days_callback()
+    {
+        $days = get_option(SECULOCO_OPTION_EXPIRATION_DAYS, 30);
+        echo '<div class="seculoco-premium-field">';
+        echo '<input type="number" id="seculoco_expiration_days" name="seculoco_expiration_days" value="' . esc_attr($days) . '" min="0" class="small-text" />';
+        echo ' <span class="seculoco-badge seculoco-badge-success">PRO</span>';
+        echo '<p class="description">' . esc_html__('Number of days after which login data will be automatically deleted. Set to 0 to disable automatic deletion.', 'secure-login-collector') . '</p>';
+        echo '</div>';
     }
 
     /**

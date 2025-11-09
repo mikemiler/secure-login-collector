@@ -53,6 +53,9 @@ class Seculoco_Premium_Constants
         define('SECULOCO_OPTION_RATE_LIMIT_MAX_ATTEMPTS', 'seculoco_rate_limit_max_attempts');
         define('SECULOCO_OPTION_RATE_LIMIT_TIME_WINDOW', 'seculoco_rate_limit_time_window');
         define('SECULOCO_OPTION_UPGRADE_COMPLETED', 'seculoco_upgrade_completed');
+        define('SECULOCO_OPTION_HONEYPOT_ENABLED', 'seculoco_honeypot_enabled');
+        define('SECULOCO_OPTION_HONEYPOT_MIN_TIME', 'seculoco_honeypot_min_time');
+        define('SECULOCO_OPTION_HONEYPOT_LOG', 'seculoco_honeypot_log');
     }
 
     /**
@@ -70,25 +73,39 @@ class Seculoco_Premium_Constants
         define('SECULOCO_OPTION_PASSKEY_REGISTERED', 'seculoco_passkey_registered');
         define('SECULOCO_OPTION_PASSKEY_REGISTERED_AT', 'seculoco_passkey_registered_at');
         define('SECULOCO_OPTION_PASSKEY_AAGUID_HASH', 'seculoco_passkey_aaguid_hash');
-    }
+		define('SECULOCO_OPTION_ULTRA_SECURE_MODE', 'seculoco_ultra_secure_mode');
 
-    /**
-     * Define a constant only if it has not been set already.
-     *
-     * @param  string $name  Constant name.
-     * @param  string $value Constant value.
-     * @return void
-     */
-    private static function define( $name, $value )
-    {
-        if (! defined($name) ) {
-            define($name, $value);
-        }
     }
 }
 
 add_action('seculoco_register_premium_constants', array( 'Seculoco_Premium_Constants', 'register' ), 5);
+add_action('seculoco_before_uninstall_cleanup', array( 'Seculoco_Premium_Constants', 'register' ), 5);
 
 if (did_action('seculoco_register_premium_constants') ) {
     Seculoco_Premium_Constants::register();
 }
+
+/**
+ * Ensure Pro-specific options are removed alongside the base plugin options.
+ *
+ * @param array $option_names Free plugin option identifiers slated for deletion.
+ *
+ * @return array
+ */
+function seculoco_premium_extend_uninstall_options( $option_names ) {
+    $premium_only_options = array(
+        defined('SECULOCO_OPTION_RATE_LIMIT_ENABLED') ? SECULOCO_OPTION_RATE_LIMIT_ENABLED : null,
+        defined('SECULOCO_OPTION_RATE_LIMIT_MAX_ATTEMPTS') ? SECULOCO_OPTION_RATE_LIMIT_MAX_ATTEMPTS : null,
+        defined('SECULOCO_OPTION_RATE_LIMIT_TIME_WINDOW') ? SECULOCO_OPTION_RATE_LIMIT_TIME_WINDOW : null,
+    );
+
+    return array_values(
+        array_unique(
+            array_filter(
+                array_merge( $option_names, $premium_only_options )
+            )
+        )
+    );
+}
+
+add_filter( 'seculoco_uninstall_option_names', 'seculoco_premium_extend_uninstall_options' );

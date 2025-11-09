@@ -88,9 +88,6 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 		add_action( 'wp_ajax_nopriv_seculoco_get_public_key', array( $this, 'handle_get_public_key' ) );
 		add_action( 'wp_ajax_seculoco_get_wrapped_private_key', array( $this, 'handle_get_wrapped_private_key' ) );
 		add_action( 'wp_ajax_seculoco_initialize_free_keys', array( $this, 'handle_initialize_free_keys' ) );
-
-		// Cleanup old WP-salts keys on init (run once).
-		add_action( 'admin_init', array( $this, 'cleanup_old_keys' ) );
 	}
 
 	/**
@@ -549,30 +546,5 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 				'registered'      => (bool) get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false ),
 			),
 		);
-	}
-
-	/**
-	 * Clean up old WP-salts based encryption keys.
-	 *
-	 * Removes deprecated option keys from older versions.
-	 * This method runs once on admin_init to migrate to unified crypto.
-	 *
-	 * @return void
-	 */
-	public function cleanup_old_keys() {
-		// Check if cleanup has already been performed.
-		if ( get_option( SECULOCO_OPTION_KEYS_CLEANUP_V3, false ) ) {
-			return;
-		}
-
-		// Remove old free version keys (WP-salts based).
-		delete_option( SECULOCO_OPTION_PRIVATE_KEY_FREE_ENCRYPTED );
-		delete_option( SECULOCO_OPTION_PUBLIC_KEY_FREE );
-
-		// Mark cleanup as complete.
-		update_option( SECULOCO_OPTION_KEYS_CLEANUP_V3, true );
-
-		// Log the cleanup operation.
-		$this->log_key_operation( 'old_keys_cleaned_up' );
 	}
 }

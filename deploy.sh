@@ -96,7 +96,7 @@ sed -i '' "s/^\( \* Version: \).*/\1${NEW_VERSION}/" "$PLUGIN_FILE"
 echo -e "${GREEN}✓ Updated plugin header${NC}"
 
 # Update PHP constant (define( 'SECULOCO_VERSION', 'X.Y.Z' );)
-sed -i '' "s/^define( 'SECULOCO_VERSION', '[0-9.]*' );/define( 'SECULOCO_VERSION', '${NEW_VERSION}' );/" "$PLUGIN_FILE"
+sed -i '' "s/^define('SECULOCO_VERSION', '[0-9.]*');/define('SECULOCO_VERSION', '${NEW_VERSION}');/" "$PLUGIN_FILE"
 echo -e "${GREEN}✓ Updated PHP constant${NC}"
 
 # Update readme.txt (Stable tag: X.Y.Z)
