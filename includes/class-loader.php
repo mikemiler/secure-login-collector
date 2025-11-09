@@ -27,13 +27,7 @@ class Seculoco_Loader
         self::load_free_classes();
         self::load_integrations();
         self::include_file('includes/class-loader__premium_only.php');
-
-        if (did_action('plugins_loaded') ) {
-            self::fire_pro_loader_hook();
-            return;
-        }
-
-        add_action('plugins_loaded', array( __CLASS__, 'fire_pro_loader_hook' ), 5);
+        self::fire_pro_loader_hook();
     }
 
     /**
@@ -78,7 +72,6 @@ class Seculoco_Loader
     private static function load_integrations()
     {
         self::include_file('includes/freemius-hooks.php');
-        self::include_file('includes/freemius-init-check.php');
         self::include_file('includes/freemius-uninstall.php');
     }
 

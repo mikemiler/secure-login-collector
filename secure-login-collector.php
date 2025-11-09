@@ -147,7 +147,6 @@ class SecureLoginCollector
         $this->init_components();
 
 		$this->encryption_handler = Seculoco_Encryption_Handler_Factory::get_shared_handler();
-error_log( 'Handler class: ' . get_class( $this->encryption_handler ) );
 
         // Hook into WordPress.
         add_action('init', array( $this, 'init' ));

@@ -484,8 +484,6 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
      * @return string
      */
     public function determine_public_key_method( $method ) {
-		error_log("is pro" . $this->is_pro_license_active());
-		error_log("is passkey_ready" . $this->is_passkey_ready());
         if ( $this->is_passkey_ready() && $this->is_pro_license_active() ) {
             return 'passkey';
         }

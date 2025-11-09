@@ -252,7 +252,6 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 	public function handle_get_public_key() {
 		$unified = $this->get_unified_crypto();
 		$method  = apply_filters( 'seculoco_public_key_method', 'standard' );
-		error_log("method: " .$method);
 		$last_error = '';
 		$public_key = '';
 
