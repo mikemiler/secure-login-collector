@@ -27,15 +27,13 @@ class Seculoco_Loader
         self::load_free_classes();
         self::load_integrations();
         self::include_file('includes/class-loader__premium_only.php');
-        if (function_exists('seculoco_load_premium_dependencies') ) {
-            seculoco_load_premium_dependencies();
-        }
 
         if (did_action('plugins_loaded') ) {
             self::fire_pro_loader_hook();
-        } else {
-            add_action('plugins_loaded', array( __CLASS__, 'fire_pro_loader_hook' ), 5);
+            return;
         }
+
+        add_action('plugins_loaded', array( __CLASS__, 'fire_pro_loader_hook' ), 5);
     }
 
     /**

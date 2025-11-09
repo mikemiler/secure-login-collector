@@ -84,10 +84,6 @@ define('SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PASSKEY', 'seculoco_wrapped_private_
 define('SECULOCO_OPTION_PUBLIC_KEY_PREFIX', 'seculoco_public_key_');
 define('SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PREFIX', 'seculoco_wrapped_private_key_');
 
-// Legacy free encryption keys (old naming - to be migrated).
-define('SECULOCO_OPTION_PUBLIC_KEY_JWK_FREE', 'seculoco_public_key_jwk_free');
-define('SECULOCO_OPTION_PUBLIC_KEY_FREE', 'seculoco_public_key_free');
-
 /**
  * Allow premium builds to register their own general/encryption constants.
  */
