@@ -1377,6 +1377,9 @@ button.button-expired[disabled]:hover {
     background: #ccc;
     color: #666;
 }
+.seculoco-pro-badge {
+	margin-right: 8px;
+}
 
 .seculoco-pro-status-unavailable {
     background: #f8f9fa;

@@ -53,7 +53,6 @@ class Seculoco_Premium_Constants
         define('SECULOCO_OPTION_RATE_LIMIT_MAX_ATTEMPTS', 'seculoco_rate_limit_max_attempts');
         define('SECULOCO_OPTION_RATE_LIMIT_TIME_WINDOW', 'seculoco_rate_limit_time_window');
         define('SECULOCO_OPTION_UPGRADE_COMPLETED', 'seculoco_upgrade_completed');
-        define('SECULOCO_OPTION_USING_PRO_VERSION', 'seculoco_using_pro_version');
     }
 
     /**

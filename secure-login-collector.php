@@ -48,6 +48,7 @@ if (! defined('SECULOCO_PLUGIN_URL') ) {
 require_once SECULOCO_PLUGIN_DIR . 'includes/class-loader.php';
 Seculoco_Loader::load();
 
+
 // Initialize Freemius.
 if (! function_exists('seculoco_fs') ) {
     // Check if vendor directory exists with Freemius SDK.

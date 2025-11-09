@@ -238,6 +238,15 @@ class Seculoco_Settings_Manager {
 			'seculoco_settings'
 		);
 
+		// Add encryption settings section (for all users now).
+		add_settings_section(
+			'seculoco_encryption_section',
+			__( 'Encryption Settings', 'secure-login-collector' ),
+			array( $this, 'encryption_section_callback' ),
+			'seculoco_settings'
+		);
+
+
 		add_settings_section(
 			'seculoco_expiration_section',
 			__( 'Data Expiration', 'secure-login-collector' ),
@@ -254,14 +263,6 @@ class Seculoco_Settings_Manager {
 
 		// Allow pro version to register its settings.
 		do_action( 'seculoco_register_settings' );
-
-		// Add encryption settings section (for all users now).
-		add_settings_section(
-			'seculoco_encryption_section',
-			__( 'Encryption Settings', 'secure-login-collector' ),
-			array( $this, 'encryption_section_callback' ),
-			'seculoco_settings'
-		);
 
 		// Add plugin management section.
 		add_settings_section(
@@ -386,7 +387,10 @@ class Seculoco_Settings_Manager {
 		echo '<div class="seculoco-card-body">';
 		echo '<p>' . esc_html__( 'Configure automatic deletion of old login data.', 'secure-login-collector' ) . '</p>';
 		if ( ! seculoco_is_premium_active() ) {
-			echo '<p class="description">' . esc_html__( 'Auto-deletion is available in Secure Login Collector Pro.', 'secure-login-collector' ) . '</p>';
+			echo '<p class="description">';
+			echo '<span class="seculoco-badge seculoco-pro-badge seculoco-pro-badge-inline">' . esc_html__( 'PRO ONLY', 'secure-login-collector' ) . '</span>';
+			echo esc_html__( 'Auto-deletion is available in Secure Login Collector Pro.', 'secure-login-collector' );
+			echo '</p>';
 		}
 		// Don't close the card-body div here - let the form-table be inside it.
 	}
@@ -404,7 +408,10 @@ class Seculoco_Settings_Manager {
 		echo '<div class="seculoco-card-body">';
 		echo '<p>' . esc_html__( 'Configure honeypot protection to prevent spam submissions and automated bot attacks.', 'secure-login-collector' ) . '</p>';
 		if ( ! seculoco_has_honeypot_feature() ) {
-			echo '<p class="description">' . esc_html__( 'Honeypot spam protection is available in Secure Login Collector Pro.', 'secure-login-collector' ) . '</p>';
+			echo '<p class="description">';
+			echo '<span class="seculoco-badge seculoco-pro-badge seculoco-pro-badge-inline">' . esc_html__( 'PRO ONLY', 'secure-login-collector' ) . '</span>';
+			echo esc_html__( 'Honeypot spam protection is available in Secure Login Collector Pro.', 'secure-login-collector' );
+			echo '</p>';
 		}
 		// Don't close the card-body div here - let the form-table be inside it.
 	}
@@ -524,10 +531,6 @@ class Seculoco_Settings_Manager {
 					</div>
 				</div>
 			</div>
-			<a href="<?php echo esc_url( $upgrade_url ); ?>" class="button button-primary">
-				<?php echo esc_html__( 'Upgrade to Pro', 'secure-login-collector' ); ?>
-			</a>
-
 		</div>
 		<?php
 		return ob_get_clean();
@@ -633,7 +636,7 @@ class Seculoco_Settings_Manager {
 	public function hide_service_footer_callback() {
 		// Free version default content (informational text)
 		$content  = '<p class="description" style="color: #666;">';
-		$content .= '<span class="seculoco-badge seculoco-pro-badge" style="margin-right: 8px;">' . esc_html__( 'PRO ONLY', 'secure-login-collector' ) . '</span>';
+		$content .= '<span class="seculoco-badge seculoco-pro-badge seculoco-pro-badge-inline">' . esc_html__( 'PRO ONLY', 'secure-login-collector' ) . '</span>';
 		$content .= esc_html__( 'The Pro version allows you to hide the branding footer on the frontend form. Free version users help support the plugin by displaying this footer.', 'secure-login-collector' );
 		$content .= '</p>';
 

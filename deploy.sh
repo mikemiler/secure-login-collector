@@ -41,7 +41,7 @@ echo -e "${BLUE}╚════════════════════�
 echo ""
 
 # Get current version from plugin file
-CURRENT_VERSION=$(grep "^define( 'SECULOCO_VERSION'" "$PLUGIN_FILE" | sed -E "s/.*'([0-9.]+)'.*/\1/")
+CURRENT_VERSION=$(grep "^define('SECULOCO_VERSION'" "$PLUGIN_FILE" | sed -E "s/.*'([0-9.]+)'.*/\1/")
 
 if [ -z "$CURRENT_VERSION" ]; then
     echo -e "${RED}Error: Could not detect current version${NC}"

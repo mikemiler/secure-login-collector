@@ -48,6 +48,7 @@ define('SECULOCO_OPTION_HIDE_SERVICE_FOOTER', 'seculoco_hide_service_footer');
 
 // Uninstall settings.
 define('SECULOCO_OPTION_DELETE_ON_UNINSTALL', 'seculoco_delete_on_uninstall');
+define('SECULOCO_OPTION_USING_PRO_VERSION', 'seculoco_using_pro_version');
 
 // Spam protection.
 define('SECULOCO_OPTION_SPAM_SETTINGS', 'seculoco_spam_protection_settings');
