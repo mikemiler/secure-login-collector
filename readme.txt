@@ -12,55 +12,37 @@ Secure way for agencies to receive client login credentials. Stop asking clients
 
 == Description ==
 
-**Secure Login Collector** helps agencies receive login credentials from clients securely. Stop emailing passwords and use encrypted client-side submission instead.
+**Secure Login Collector** gives agencies and freelancers a safe hand-off point for client credentials. Clients fill in a branded form, everything is encrypted before it leaves their browser, and your team only unlocks it inside WordPress. No more password spreadsheets, chat messages, or liability-inducing emails.
 
-= The Problem It Solves =
+= How a submission flows =
+1. Client opens your credential intake page and fills in the required fields (name, email, service, username, password, notes).
+2. The data is locked on their device before it is sent anywhere [browser-based Web Crypto + RSA-2048 key exchange + AES-256-GCM payloads].
+3. The encrypted package lands in your dedicated database table together with metadata for auditing [custom table `wp_seculoco_data` + JSON metadata + timestamp/IP capture].
+4. Your team gets notified, signs in to WordPress, and decrypts items inside the admin dashboard [capability checks + nonce validation].
+5. Entries expire automatically based on your retention rule, so there is no forgotten password stash [WP-Cron cleanup + partial redaction].
 
-Asking clients to email passwords is:
-- **Insecure** - Emails sent in plain text can be intercepted
-- **Unprofessional** - Shows poor security practices
-- **Risky** - Creates liability if data is compromised
-- **Messy** - Hard to organize and track
+= Free version features (included) =
+- **Client-side sealing** – credentials are encrypted before they leave the browser, so email or transport leaks cannot expose them [Web Crypto API + RSA-2048 public key + AES-256-GCM payload + PBKDF2 key wrapping].
+- **WordPress-only decryption** – only logged-in admins with the proper capability can unlock submissions inside the dashboard, keeping everything in one place [role/capability checks + seculoco_decrypt AJAX endpoint].
+- **Submission inbox & search** – view, sort, and filter all requests with name, service, timestamps, and notes, then copy credentials when you need them [WP_List_Table UI + custom MySQL queries + column sorting].
+- **Retention & cleanup controls** – choose how long data stays accessible and let the plugin redact expired payloads automatically [daily `seculoco_cleanup_cron` + `retention_until` tracking].
+- **Instant notifications** – each submission triggers an email so projects keep moving without checking the dashboard every hour [wp_mail alerts + templated subjects].
+- **Spam and bot defense** – invisible honeypot fields, nonce verification, and IP-aware hooks block automated dumps without annoying clients [rotating honeypot generator + wp_verify_nonce + pluggable rate-limit hook].
+- **Accessible client experience** – responsive form, password visibility toggle, optional help text, and field-level validation keep clients confident while still being secure [vanilla JS validation + ARIA labels + CSS utility classes].
 
-This plugin provides GDPR conform military-grade encryption, automatic data expiration, and password manager integration.
+= Pro version extras (via Secure Login Collector Pro) =
+- **Zero-knowledge encryption** – the server never holds the unwrapped private key; only a registered passkey or hardware token can unlock it, so even a web host breach cannot read stored data [FIDO2/WebAuthn + passkey-wrapped RSA private key + ultra-secure mode toggle].
+- **Passkey-first approvals** – require Touch ID, Windows Hello, YubiKey, or password-manager passkeys before every decrypt/export event [navigator.credentials WebAuthn ceremony + AJAX attestations].
+- **Advanced abuse protection** – add minimum form time, rate limiting, and adjustable honeypot rules to stop scripted attacks without affecting real users [time-on-page tracking + transient-based rate limiter + honeypot timers].
+- **Bulk decrypt & export** – decrypt multiple entries at once and export directly to Bitwarden, 1Password, LastPass, Dashlane, CSV, or JSON for team password vaults [batch AES-GCM unwrap + format-specific mappers + admin-bulk-export tooling].
+- **White-label mode** – remove Secure Login Collector branding from the client form and emails so the experience is 100% your agency [frontend footer filter + settings toggle].
+- **Team-ready audit trail** – keep passkey reset warnings, device metadata, and activity logs so you know exactly which hardware unlocked which secret [passkey registry + device info storage + admin notices].
 
-= How the Free Version Works =
+= Freemius & privacy =
+This plugin bundles the Freemius SDK for licensing, secure payments, and (optional) telemetry. Nothing is shared until you explicitly opt in. When you do, only environment details (site URL, WP/PHP version, plugin version) plus contact email/locale are sent to Freemius so upgrades and receipts work. Client submissions, encrypted payloads, and decrypted credentials never leave your hosting environment.
 
-The free version uses **server-trusted encryption** suitable for most agencies:
-
-**For Clients:**
-1. Client visits your secure form page
-2. Enters login credentials
-3. Data is encrypted in their browser using RSA-2048 before transmission
-4. Encrypted data sent to your WordPress database
-5. Client receives confirmation
-
-**For Your Agency:**
-1. Receive email notification
-2. Log into WordPress admin
-3. View encrypted entries
-4. Click decrypt (requires WordPress admin login)
-5. Copy credentials to password manager
-6. Data auto-deletes after set period
-
-**Key Features:**
-- **Email Notifications**: Get notified of new submissions
-- **Client-Side Encryption**: RSA-2048 + AES-256 + WordPress salts encryption 
-- **Decryption**: Any WordPress administrator can decrypt with admin login for team access
-- **Anti-Spam**: Built-in spam protection with dynamic honeypot field
-- **No Client Account**: Simple form submission without registration
-- **Automatic Deletion**: Configurable retention periods (7-30 days recommended)
-
-
-= Pro Version - Zero-Knowledge Encryption (Separate Plugin) =
-
-- **Passkey authentication**: E.g. fingerprint, face ID, password manager with passkey support, etc.
-- **True zero-knowledge**: Server cannot decrypt even with full database and webspace access
-- **Advanced spam protection** with rate limiting and time-based validation
-- **White-label option**: Remove plugin branding from submission forms
-- **Bulk Password Manager Export**: Bitwarden, 1Password, LastPass, and more
-- **White-Label Option**: Remove plugin branding (pro only)
-
+= Disclaimer =
+Security is a shared responsibility. We ship the tools, but you control how and where they are used. Install SSL, keep WordPress updated, limit admin access, and review submissions promptly. We are not liable for any damage, data loss, or regulatory issues that arise from using this plugin—use it at your own risk.
 
 == Installation ==
 

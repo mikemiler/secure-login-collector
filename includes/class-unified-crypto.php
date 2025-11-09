@@ -403,3 +403,7 @@ class Seculoco_Unified_Crypto {
 		);
 	}
 }
+
+if ( ! class_exists( 'Secure_Login_Collector_Unified_Crypto' ) ) {
+	class_alias( 'Seculoco_Unified_Crypto', 'Secure_Login_Collector_Unified_Crypto' );
+}
