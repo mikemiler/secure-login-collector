@@ -54,13 +54,21 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
     private function register_pro_hooks()
     {
         // Filter: Return pro public key when pro is active.
-        add_filter('seculoco_get_public_key', array( $this, 'filter_public_key' ), 10, 1);
+        add_filter('seculoco_get_public_key', array( $this, 'filter_public_key' ), 10, 2);
+        add_filter('seculoco_public_key_method', array( $this, 'determine_public_key_method' ), 10, 1);
 
         // Action: Intercept private key requests to return pro wrapped key.
         add_action('seculoco_get_wrapped_private_key_request', array( $this, 'action_handle_pro_key_request' ), 10, 2);
 
         // Filter: Determine encryption type for frontend submissions.
         add_filter('seculoco_determine_encryption_type', array( $this, 'filter_determine_encryption_type' ), 10, 2);
+
+        // Surface pro encryption state to shared helpers.
+        add_filter('seculoco_is_entry_pro_encrypted', array( $this, 'filter_is_entry_pro_encrypted' ), 10, 3);
+        add_filter('seculoco_has_passkey_encryption', array( $this, 'has_passkey_encryption' ));
+
+        // Prevent unnecessary password-key initialization when passkeys are active.
+        add_filter('seculoco_should_initialize_standard_keys', array( $this, 'maybe_skip_standard_key_initialization' ));
     }
 
     /**
@@ -70,18 +78,18 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
      * @param  string $public_key Default public key (free version).
      * @return string Pro public key if active, otherwise free key.
      */
-    public function filter_public_key( $public_key )
+    public function filter_public_key( $public_key, $method )
     {
+        if ( 'passkey' !== $method ) {
+            return $public_key;
+        }
+
         // Check if pro license is active.
         if (! $this->is_pro_license_active() ) {
             return $public_key;
         }
 
-        // Check if pro keys are initialized and passkey is registered.
-        $is_pro_active      = get_option(SECULOCO_OPTION_PRO_KEYS_ACTIVE, false);
-        $passkey_registered = get_option(SECULOCO_OPTION_PASSKEY_REGISTERED, false);
-
-        if ($is_pro_active && $passkey_registered ) {
+        if ( $this->is_passkey_ready() ) {
             $pro_key = get_option(SECULOCO_OPTION_PUBLIC_KEY_PRO);
             if (! empty($pro_key) ) {
                 return $pro_key;
@@ -201,6 +209,45 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
         'credential_id'    => $passkey['credential_id'],
         'encryption_type'  => 'aes-rsa-passkey-v2',
         );
+    }
+
+    /**
+     * Whether passkey encryption is active.
+     *
+     * @param bool $active Current state.
+     * @return bool
+     */
+    public function has_passkey_encryption( $active = false ) {
+        if ( $active ) {
+            return true;
+        }
+
+        if ( ! $this->is_pro_license_active() ) {
+            return false;
+        }
+
+        return $this->is_passkey_ready();
+    }
+
+    /**
+     * Identify whether an entry is pro-encrypted.
+     *
+     * @param bool   $is_pro   Current determination.
+     * @param array  $metadata Entry metadata.
+     * @param object $entry    Database row.
+     * @return bool
+     */
+    public function filter_is_entry_pro_encrypted( $is_pro, $metadata, $entry ) {
+        if ( $is_pro ) {
+            return true;
+        }
+
+        if ( ! empty( $metadata['is_pro_encrypted'] ) ) {
+            return true;
+        }
+
+        $package = json_decode( $entry->encrypted_data ?? '', true );
+        return ! empty( $package['isProEncrypted'] );
     }
 
     /**
@@ -389,6 +436,30 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
     }
 
     /**
+     * Skip automatic free-key initialization when passkey mode is active.
+     *
+     * @param bool $should_initialize Current determination.
+     * @return bool
+     */
+    public function maybe_skip_standard_key_initialization( $should_initialize ) {
+        if ( $this->is_passkey_ready() ) {
+            return false;
+        }
+
+        return $should_initialize;
+    }
+
+    /**
+     * Determine if passkey encryption has been provisioned.
+     *
+     * @return bool
+     */
+    private function is_passkey_ready() {
+        return (bool) get_option( SECULOCO_OPTION_PRO_KEYS_ACTIVE, false )
+            && (bool) get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false );
+    }
+
+    /**
      * Check if pro license is active.
      *
      * Uses Freemius SDK to verify license status.
@@ -404,5 +475,21 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
         }
 
         return Seculoco_License_Manager::has_pro_license();
+    }
+
+    /**
+     * Choose the public key method (standard/passkey).
+     *
+     * @param string $method Current method.
+     * @return string
+     */
+    public function determine_public_key_method( $method ) {
+		error_log("is pro" . $this->is_pro_license_active());
+		error_log("is passkey_ready" . $this->is_passkey_ready());
+        if ( $this->is_passkey_ready() && $this->is_pro_license_active() ) {
+            return 'passkey';
+        }
+
+        return $method;
     }
 }

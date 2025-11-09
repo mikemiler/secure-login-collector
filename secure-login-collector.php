@@ -146,6 +146,9 @@ class SecureLoginCollector
         // Initialize components.
         $this->init_components();
 
+		$this->encryption_handler = Seculoco_Encryption_Handler_Factory::get_shared_handler();
+error_log( 'Handler class: ' . get_class( $this->encryption_handler ) );
+
         // Hook into WordPress.
         add_action('init', array( $this, 'init' ));
 
@@ -513,11 +516,16 @@ if(!function_exists('seculoco_init')) {
 
 register_uninstall_hook(__FILE__, 'seculoco_wp_uninstall_cleanup');
 
-// Instantiate plugin after Freemius is loaded.
-if (did_action('seculoco_fs_loaded') ) {
-    // Freemius already loaded, initialize immediately.
-    seculoco_init();
-} else {
-    // Wait for Freemius to load.
-    add_action('seculoco_fs_loaded', 'seculoco_init');
-}
+/**
+ * Boot plugin after WordPress finishes loading all plugins.
+ *
+ * We wait for `plugins_loaded` so the premium loader has already fired and
+ * registered any __premium_only classes before the factory wiring runs.
+ */
+add_action(
+    'plugins_loaded',
+    function () {
+        seculoco_init();
+    },
+    20
+);

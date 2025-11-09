@@ -58,6 +58,7 @@ class Seculoco_Loader
         'includes/class-encryption-handler-v2.php',
         'includes/class-encryption-handler-factory.php',
         'includes/class-database-manager.php',
+        'includes/class-seculoco-list-table.php',
         'includes/class-admin-interface.php',
         'includes/class-frontend-handler.php',
         'includes/class-spam-protection.php',

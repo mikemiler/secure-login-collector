@@ -755,6 +755,122 @@ class Seculoco_Rate_Limiter
 }
 
 /**
+ * Premium Honeypot implementation (hooks into free stubs).
+ */
+class Seculoco_Spam_Protection_Honeypot_Premium {
+
+    const FIELD_NAME_TRANSIENT = 'seculoco_honeypot_field_name';
+    const CLASS_NAME_TRANSIENT = 'seculoco_honeypot_class_name';
+    const TRANSIENT_TTL        = DAY_IN_SECONDS;
+
+    public function __construct() {
+        add_filter( 'seculoco_has_honeypot_feature', '__return_true' );
+        add_filter( 'seculoco_is_honeypot_enabled', array( $this, 'is_enabled' ) );
+        add_filter( 'seculoco_honeypot_html', array( $this, 'render_field' ) );
+        add_filter( 'seculoco_honeypot_validate', array( $this, 'validate_submission' ), 10, 2 );
+    }
+
+    private function get_settings() {
+        $defaults = array(
+            'enabled'             => true,
+            'min_time_threshold'  => 2,
+            'log_blocked_attempts'=> true,
+        );
+
+        $settings = get_option( SECULOCO_OPTION_SPAM_SETTINGS, array() );
+        return wp_parse_args( $settings, $defaults );
+    }
+
+    public function is_enabled( $enabled ) {
+        $settings = $this->get_settings();
+        return ! empty( $settings['enabled'] );
+    }
+
+    private function get_field_name() {
+        $field_name = get_transient( self::FIELD_NAME_TRANSIENT );
+        if ( false === $field_name ) {
+            $field_name = 'field_' . wp_generate_password( 12, false, false );
+            set_transient( self::FIELD_NAME_TRANSIENT, $field_name, self::TRANSIENT_TTL );
+        }
+        return $field_name;
+    }
+
+    private function get_class_name() {
+        $class_name = get_transient( self::CLASS_NAME_TRANSIENT );
+        if ( false === $class_name ) {
+            $pool       = array( 'form-control', 'input-field', 'text-input', 'user-field', 'field-wrapper' );
+            $class_name = $pool[ array_rand( $pool ) ];
+            set_transient( self::CLASS_NAME_TRANSIENT, $class_name, self::TRANSIENT_TTL );
+        }
+        return $class_name;
+    }
+
+    public function render_field( $html ) {
+        $settings = $this->get_settings();
+        if ( empty( $settings['enabled'] ) ) {
+            return '';
+        }
+
+        $field = $this->get_field_name();
+        $class = $this->get_class_name();
+
+        $styles = 'position:absolute!important;left:-9999px!important;width:1px!important;height:1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;';
+
+        $html  = '<div class="' . esc_attr( $class ) . '" style="' . esc_attr( $styles ) . '">';
+        $html .= '<label for="' . esc_attr( $field ) . '">' . esc_html__( 'Website', 'secure-login-collector' ) . '</label>';
+        $html .= '<input type="text" id="' . esc_attr( $field ) . '" name="' . esc_attr( $field ) . '" value="" autocomplete="off" tabindex="-1" />';
+        $html .= '</div>';
+
+        return $html;
+    }
+
+    public function validate_submission( $result, $post_data ) {
+        if ( $result instanceof WP_Error ) {
+            return $result;
+        }
+
+        $settings = $this->get_settings();
+        if ( empty( $settings['enabled'] ) ) {
+            return true;
+        }
+
+        $field_name = $this->get_field_name();
+        if ( ! array_key_exists( $field_name, $post_data ) ) {
+            $this->log_blocked_submission( 'honeypot_missing', $post_data );
+            return new WP_Error( 'validation_failed', __( 'Form submission failed validation. Please try again.', 'secure-login-collector' ) );
+        }
+
+        if ( '' !== $post_data[ $field_name ] ) {
+            $this->log_blocked_submission( 'honeypot_filled', $post_data );
+            return new WP_Error( 'validation_failed', __( 'Form submission failed validation. Please try again.', 'secure-login-collector' ) );
+        }
+
+        return true;
+    }
+
+    private function log_blocked_submission( $reason, $post_data ) {
+        $settings = $this->get_settings();
+        if ( empty( $settings['log_blocked_attempts'] ) ) {
+            return;
+        }
+
+        $log = get_option( SECULOCO_OPTION_HONEYPOT_LOG, array() );
+        $log[] = array(
+            'time'   => time(),
+            'reason' => $reason,
+            'ip'     => isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '',
+        );
+
+        if ( count( $log ) > 100 ) {
+            $log = array_slice( $log, -100 );
+        }
+
+        update_option( SECULOCO_OPTION_HONEYPOT_LOG, $log );
+    }
+}
+new Seculoco_Spam_Protection_Honeypot_Premium();
+
+/**
  * Class Seculoco_Spam_Protection_Premium
  *
  * Premium Spam Protection Class

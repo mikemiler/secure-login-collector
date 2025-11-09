@@ -31,6 +31,12 @@ class Seculoco_Frontend_Handler_Pro
         // Add pro flag to frontend JS config.
         add_filter('seculoco_frontend_js_config', array( $this, 'add_pro_js_config' ));
 
+        // Ensure frontend recognizes passkey readiness.
+        add_filter('seculoco_has_encryption_keys', array( $this, 'has_encryption_keys' ));
+
+        // Surface passkey availability for filters relying on seculoco_has_passkey_encryption().
+        add_filter('seculoco_has_passkey_encryption', array( $this, 'has_passkey_encryption' ));
+
     }
 
     /**
@@ -43,6 +49,36 @@ class Seculoco_Frontend_Handler_Pro
     {
         $config['is_pro'] = true;
         return $config;
+    }
+
+    /**
+     * Ensure encryption is considered ready when passkey mode is active.
+     *
+     * @param bool $has_keys Existing determination.
+     * @return bool
+     */
+    public function has_encryption_keys( $has_keys )
+    {
+        if ( $has_keys ) {
+            return true;
+        }
+
+        return $this->has_passkey_encryption();
+    }
+
+    /**
+     * Whether passkey encryption is available.
+     *
+     * @param bool $active Existing determination.
+     * @return bool
+     */
+    public function has_passkey_encryption( $active = false )
+    {
+        if ( $active ) {
+            return true;
+        }
+
+        return (bool) get_option( SECULOCO_OPTION_PRO_KEYS_ACTIVE, false ) && (bool) get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false );
     }
 
 }

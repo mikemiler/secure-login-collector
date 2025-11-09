@@ -52,6 +52,123 @@ class Seculoco_Admin_Interface_Premium extends Seculoco_Admin_Interface {
 
 		// Add password manager export options to bulk actions (PRO feature).
 		add_filter( 'seculoco_bulk_actions', array( $this, 'add_password_manager_exports' ) );
+
+		// Extend admin localization/config.
+		add_filter( 'seculoco_admin_strings', array( $this, 'extend_admin_strings' ) );
+		add_filter( 'seculoco_admin_js_config', array( $this, 'extend_admin_config' ) );
+		add_filter( 'seculoco_admin_encryption_info', array( $this, 'extend_encryption_info' ), 10, 3 );
+
+		// Surface pro metadata within list tables and worker routines.
+		add_filter( 'seculoco_is_entry_undecryptable', array( $this, 'flag_passkey_undecryptable' ), 10, 2 );
+		add_filter( 'seculoco_encryption_method_info', array( $this, 'override_encryption_method_info' ), 10, 2 );
+		add_filter( 'seculoco_encryption_status', array( $this, 'extend_encryption_status' ), 10, 2 );
+	}
+
+	/**
+	 * Merge passkey-specific admin strings.
+	 *
+	 * @param array $strings Existing strings.
+	 * @return array
+	 */
+	public function extend_admin_strings( $strings ) {
+		$strings['requesting_passkey']            = __( 'Requesting passkey...', 'secure-login-collector' );
+		$strings['passkey_setup_failed']          = __( 'Passkey authentication setup failed: ', 'secure-login-collector' );
+		$strings['network_error_passkey']         = __( 'Network error occurred during passkey setup.', 'secure-login-collector' );
+		$strings['pro_no_passkey_continue']       = __( 'Pro version detected but no passkey registered. Continue with traditional decryption?', 'secure-login-collector' );
+		$strings['authenticate_with_passkey']     = __( 'Authenticate with passkey...', 'secure-login-collector' );
+		$strings['webauthn_not_supported']        = __( 'WebAuthn/Passkeys are not supported in this browser.', 'secure-login-collector' );
+		$strings['verifying_passkey']             = __( 'Verifying passkey and decrypting...', 'secure-login-collector' );
+		$strings['data_decrypted_passkey']        = __( 'Data decrypted with passkey', 'secure-login-collector' );
+		$strings['passkey_decryption_failed']     = __( 'Passkey decryption failed: ', 'secure-login-collector' );
+		$strings['network_error_passkey_decrypt'] = __( 'Network error occurred during passkey decryption.', 'secure-login-collector' );
+		$strings['passkey_auth_failed']           = __( 'Passkey authentication failed:', 'secure-login-collector' );
+
+		return $strings;
+	}
+
+	/**
+	 * Inject passkey flags into admin JS config.
+	 *
+	 * @param array $config Existing config.
+	 * @return array
+	 */
+	public function extend_admin_config( $config ) {
+		$config['passkeyRegistered'] = (bool) get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false );
+		return $config;
+	}
+
+	/**
+	 * Add passkey metadata to encryption info AJAX response.
+	 *
+	 * @param array $info             Default info.
+	 * @param array $encrypted_package Stored package.
+	 * @param object $entry            DB row.
+	 * @return array
+	 */
+	public function extend_encryption_info( $info, $encrypted_package, $entry ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
+		$info['isProEncrypted'] = ! empty( $encrypted_package['isProEncrypted'] );
+		$info['credentialId']   = $encrypted_package['credentialId'] ?? null;
+		return $info;
+	}
+
+	/**
+	 * Mark entries as undecryptable when their passkey credential is missing.
+	 *
+	 * @param bool   $state Current state.
+	 * @param object $item  List table row.
+	 * @return bool
+	 */
+	public function flag_passkey_undecryptable( $state, $item ) {
+		if ( $state ) {
+			return true;
+		}
+
+		$encrypted_data = json_decode( $item->encrypted_data ?? '', true );
+		if ( ! is_array( $encrypted_data ) || empty( $encrypted_data['credentialId'] ) || empty( $encrypted_data['isProEncrypted'] ) ) {
+			return false;
+		}
+
+		$credential_id = $encrypted_data['credentialId'];
+		$passkey_data  = get_option( 'passkey_credential_' . $credential_id, false );
+
+		return false === $passkey_data;
+	}
+
+	/**
+	 * Override encryption method labels for passkey-protected entries.
+	 *
+	 * @param array  $info  Default info.
+	 * @param string $type  Encryption type.
+	 * @return array
+	 */
+	public function override_encryption_method_info( $info, $type ) {
+		if ( in_array( $type, array( 'aes-rsa-passkey-v2', 'rsa_passkey_protected' ), true ) ) {
+			return array(
+				'name'        => __( 'Passkey Protected', 'secure-login-collector' ),
+				'class'       => 'encryption-ultra-secure',
+				'description' => __( 'AES-256-GCM + RSA with passkey authentication required for decryption.', 'secure-login-collector' ),
+			);
+		}
+
+		return $info;
+	}
+
+	/**
+	 * Include passkey status in encryption status array.
+	 *
+	 * @param array $status  Current status.
+	 * @param Secure_Login_Collector_Unified_Crypto $unified Crypto handler.
+	 * @return array
+	 */
+	public function extend_encryption_status( $status, $unified ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
+		$status['passkey'] = array(
+			'has_public_key'  => ! empty( get_option( SECULOCO_OPTION_PUBLIC_KEY_PRO ) ),
+			'has_wrapped_key' => ! empty( get_option( SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PRO ) ),
+			'active'          => (bool) get_option( SECULOCO_OPTION_PRO_KEYS_ACTIVE, false ),
+			'registered'      => (bool) get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false ),
+		);
+
+		return $status;
 	}
 
 	/**

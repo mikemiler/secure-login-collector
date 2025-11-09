@@ -3,9 +3,9 @@
 /**
  * Free Encryption Handler - Base Implementation
  *
- * Implements RSA-2048 + AES-256-CBC encryption for free version.
+ * Implements RSA-2048 + AES-256-CBC encryption for the free version.
  * WordPress salts used for key derivation and encryption.
- * Pro version extends this class to add passkey-wrapping capabilities.
+ * Pro version extends this class via hooks to add advanced capabilities.
  *
  * @package SecureLoginCollector
  */
@@ -96,10 +96,13 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 	 * @return Secure_Login_Collector_Unified_Crypto Unified crypto instance.
 	 */
 	protected function get_unified_crypto() {
-		if ( ! class_exists( 'Secure_Login_Collector_Unified_Crypto' ) ) {
+		$class = apply_filters( 'seculoco_unified_crypto_class', 'Secure_Login_Collector_Unified_Crypto' );
+
+		if ( 'Secure_Login_Collector_Unified_Crypto' === $class && ! class_exists( $class ) ) {
 			require_once SECULOCO_PLUGIN_DIR . 'includes/class-unified-crypto.php';
 		}
-		return new Secure_Login_Collector_Unified_Crypto();
+
+		return new $class();
 	}
 
 	/**
@@ -243,52 +246,54 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 	/**
 	 * Handle AJAX request for public key.
 	 *
-	 * Returns passkey public key if available, otherwise standard key.
-	 * Frontend does NOT know which type it received - keeps passkey status private.
-	 *
 	 * EXTENSION POINT: Pro version can filter 'seculoco_get_public_key' to return
-	 * passkey key instead of standard key when passkey is active.
+	 * an alternative key when advanced encryption is active.
 	 */
 	public function handle_get_public_key() {
 		$unified = $this->get_unified_crypto();
+		$method  = apply_filters( 'seculoco_public_key_method', 'standard' );
+		error_log("method: " .$method);
+		$last_error = '';
+		$public_key = '';
 
-		// Check if passkey is active first.
-		$is_passkey_active = $this->is_passkey_active();
+		if ( 'standard' === $method ) {
+			$public_key = $unified->get_public_key( 'standard' );
 
-		// Determine which method to use.
-		$method = $is_passkey_active ? 'passkey' : 'standard';
+			if ( is_wp_error( $public_key ) ) {
+				$last_error = $public_key->get_error_message();
+				$public_key = '';
 
-		// Get public key for the active method.
-		$public_key = $unified->get_public_key( $method );
+				$should_initialize = apply_filters( 'seculoco_should_initialize_standard_keys', true );
 
-		// If standard key doesn't exist, try to initialize.
-		if ( is_wp_error( $public_key ) && 'standard' === $method ) {
-			if ( current_user_can( 'manage_options' ) ) {
-				$result = $this->initialize_free_keys();
-				if ( ! is_wp_error( $result ) ) {
-					$public_key = $unified->get_public_key( 'standard' );
+				if ( $should_initialize && current_user_can( 'manage_options' ) ) {
+					$result = $this->initialize_free_keys();
+					if ( ! is_wp_error( $result ) ) {
+						$public_key = $unified->get_public_key( 'standard' );
+					}
+
+					if ( is_wp_error( $public_key ) ) {
+						$last_error = $public_key->get_error_message();
+						$public_key = '';
+					}
 				}
 			}
-		}
-
-		// Check for error.
-		if ( is_wp_error( $public_key ) ) {
-			wp_send_json_error( 'Failed to get encryption key: ' . $public_key->get_error_message() );
-			return;
 		}
 
 		/**
 		 * Filter the public key to use for encryption.
 		 *
-		 * Pro version can hook into this filter to return passkey key when available.
+		 * Pro version can hook into this filter to return the appropriate key when available.
 		 *
 		 * @since 1.0.0
-		 * @param string $public_key The public key (standard or passkey).
+		 * @param string $public_key The public key (standard or alternative).
+		 * @param string $method     Active encryption method identifier.
 		 */
-		$public_key = apply_filters( 'seculoco_get_public_key', $public_key );
+
+		$public_key = apply_filters( 'seculoco_get_public_key', $public_key, $method );
 
 		if ( empty( $public_key ) ) {
-			wp_send_json_error( 'No encryption key available' );
+			$message = $last_error ? $last_error : __( 'No encryption key available.', 'secure-login-collector' );
+			wp_send_json_error( $message );
 			return;
 		}
 
@@ -298,7 +303,6 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 				'public_key' => $public_key,
 				'algorithm'  => 'RSA-OAEP',
 				'key_size'   => 2048,
-				// NO 'type' field - keep passkey status private.
 			)
 		);
 	}
@@ -309,15 +313,15 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 	 * Returns wrapped private key data for client-side unwrapping.
 	 *
 	 * SECURITY NOTE: Server returns wrapped (encrypted) private key to browser.
-	 * Client-side decryption using password or passkey is required.
+	 * Client-side decryption using the administrator's password is required.
 	 * This is acceptable because:
 	 * 1. Only admins with manage_options capability can access
 	 * 2. Nonce verification is required
 	 * 3. Connection must be over HTTPS
-	 * 4. Unwrapping happens client-side (server never sees passwords/passkeys)
+	 * 4. Unwrapping happens client-side (server never sees passwords)
 	 *
 	 * EXTENSION POINT: Pro version can hook into 'seculoco_get_wrapped_private_key_request'
-	 * action to intercept passkey key requests and handle them with passkey authentication.
+	 * action to intercept requests and handle advanced authentication flows.
 	 * If pro handler sends JSON response (wp_send_json_*), this method exits early.
 	 */
 	public function handle_get_wrapped_private_key() {
@@ -474,23 +478,15 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 	}
 
 	/**
-	 * Get the public key.
-	 *
-	 * Returns passkey public key if active, otherwise standard key.
-	 * Initializes standard keys if they don't exist (admin only).
+	 * Get the public key (standard encryption).
 	 *
 	 * @return string|WP_Error Public key or error.
 	 */
 	public function get_public_key() {
 		$unified = $this->get_unified_crypto();
+		$public_key = $unified->get_public_key( 'standard' );
 
-		// Check which method is active.
-		$method = $this->is_passkey_active() ? 'passkey' : 'standard';
-
-		$public_key = $unified->get_public_key( $method );
-
-		// If standard key doesn't exist, try to initialize.
-		if ( is_wp_error( $public_key ) && 'standard' === $method ) {
+		if ( is_wp_error( $public_key ) ) {
 			if ( current_user_can( 'manage_options' ) ) {
 				$result = $this->initialize_free_keys();
 				if ( ! is_wp_error( $result ) ) {
@@ -504,25 +500,6 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 	}
 
 	/**
-	 * Check if passkey encryption is active.
-	 *
-	 * @return bool True if passkey is registered and active.
-	 */
-	protected function is_passkey_active() {
-		return (bool) get_option( SECULOCO_OPTION_PASSKEY_ACTIVE, false ) &&
-			   (bool) get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false );
-	}
-
-	/**
-	 * Check if PRO encryption is active.
-	 *
-	 * @return bool True if PRO keys are active.
-	 */
-	public static function is_pro_active() {
-		return (bool) get_option( SECULOCO_OPTION_PRO_KEYS_ACTIVE, false );
-	}
-
-	/**
 	 * Get system status for encryption (pro status added by premium class).
 	 *
 	 * @return array Status information.
@@ -533,18 +510,14 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 		}
 		$unified = new Secure_Login_Collector_Unified_Crypto();
 
-		return array(
+		$status = array(
 			'standard' => array(
 				'has_public_key'  => $unified->has_keys( 'standard' ),
 				'has_wrapped_key' => ! empty( get_option( SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_STANDARD ) ),
 				'active'          => (bool) get_option( SECULOCO_OPTION_PASSWORD_ACTIVE, false ),
 			),
-			'passkey'  => array(
-				'has_public_key'  => $unified->has_keys( 'passkey' ),
-				'has_wrapped_key' => ! empty( get_option( SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PASSKEY ) ),
-				'active'          => (bool) get_option( SECULOCO_OPTION_PASSKEY_ACTIVE, false ),
-				'registered'      => (bool) get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false ),
-			),
 		);
+
+		return apply_filters( 'seculoco_encryption_status', $status, $unified );
 	}
 }

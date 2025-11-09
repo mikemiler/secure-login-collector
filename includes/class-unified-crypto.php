@@ -1,24 +1,10 @@
 <?php
-// phpcs:ignoreFile WordPress.Files.FileName.InvalidClassFileName -- Modern class naming convention.
 /**
- * Unified Cryptography Module
+ * Unified Cryptography Module (Free)
  *
- * Provides a single, consistent interface for RSA key generation, key wrapping,
- * and key storage with support for both password-based (standard) and passkey-based
- * key protection methods.
- *
- * Architecture:
- * - Single source of truth for all cryptographic operations
- * - Supports two wrapping methods: password (PBKDF2) and passkey (PBKDF2 from credential)
- * - Uses AES-256-GCM for key wrapping (authenticated encryption)
- * - Stores wrapped keys separately by method (standard vs passkey)
- *
- * Security Features:
- * - RSA-2048 keypair generation with SHA-256
- * - PBKDF2 key derivation (100,000 iterations)
- * - AES-256-GCM authenticated encryption
- * - Random salts (32 bytes) and IVs (12 bytes)
- * - Client-side unwrapping only (server never sees unwrapped keys)
+ * Provides RSA key generation plus password-based key wrapping for the free build.
+ * Premium editions override the class via the `seculoco_unified_crypto_class` filter
+ * to add passkey wrapping and other advanced crypto features.
  *
  * @package SecureLoginCollector
  */
@@ -27,44 +13,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-/**
- * Unified Crypto Handler
- *
- * Handles RSA key generation, key wrapping with password or passkey,
- * and secure storage of wrapped private keys.
- */
 class Secure_Login_Collector_Unified_Crypto {
 
-	/**
-	 * PBKDF2 iteration count for key derivation.
-	 */
 	const PBKDF2_ITERATIONS = 100000;
-
-	/**
-	 * Salt length in bytes.
-	 */
-	const SALT_LENGTH = 32;
-
-	/**
-	 * IV length for AES-GCM (96 bits / 12 bytes recommended).
-	 */
-	const IV_LENGTH = 12;
-
-	/**
-	 * Wrapping key length (256 bits / 32 bytes for AES-256).
-	 */
-	const WRAPPING_KEY_LENGTH = 32;
+	const SALT_LENGTH       = 32;
+	const IV_LENGTH         = 12;
+	const WRAPPING_KEY_LEN  = 32;
 
 	/**
 	 * Generate RSA-2048 keypair.
 	 *
-	 * Creates a new RSA keypair with 2048-bit key size using SHA-256 digest.
-	 * Returns both public and private keys in PEM format.
-	 *
-	 * @return array|WP_Error Array with 'public' and 'private' keys (PEM format), or WP_Error on failure.
+	 * @return array|WP_Error
 	 */
 	public function generate_keypair() {
-		// Check OpenSSL availability.
 		if ( ! function_exists( 'openssl_pkey_new' ) ) {
 			return new WP_Error(
 				'openssl_missing',
@@ -72,15 +33,13 @@ class Secure_Login_Collector_Unified_Crypto {
 			);
 		}
 
-		// Configure RSA keypair generation.
-		$config = array(
+		$config  = array(
 			'digest_alg'       => 'sha256',
 			'private_key_bits' => 2048,
 			'private_key_type' => OPENSSL_KEYTYPE_RSA,
 		);
-
-		// Generate keypair.
 		$keypair = openssl_pkey_new( $config );
+
 		if ( false === $keypair ) {
 			return new WP_Error(
 				'keypair_generation_failed',
@@ -88,18 +47,16 @@ class Secure_Login_Collector_Unified_Crypto {
 			);
 		}
 
-		// Extract private key (PEM format).
-		$private_key_export = openssl_pkey_export( $keypair, $private_key );
-		if ( false === $private_key_export ) {
+		$exported = openssl_pkey_export( $keypair, $private_key );
+		if ( false === $exported ) {
 			return new WP_Error(
 				'private_key_export_failed',
 				__( 'Failed to export private key.', 'secure-login-collector' )
 			);
 		}
 
-		// Extract public key (PEM format).
-		$key_details = openssl_pkey_get_details( $keypair );
-		if ( false === $key_details || ! isset( $key_details['key'] ) ) {
+		$details = openssl_pkey_get_details( $keypair );
+		if ( ! $details || empty( $details['key'] ) ) {
 			return new WP_Error(
 				'public_key_export_failed',
 				__( 'Failed to export public key.', 'secure-login-collector' )
@@ -107,100 +64,80 @@ class Secure_Login_Collector_Unified_Crypto {
 		}
 
 		return array(
-			'public'  => $key_details['key'],
+			'public'  => $details['key'],
 			'private' => $private_key,
 		);
 	}
 
 	/**
-	 * Wrap private key with password or passkey-derived key.
+	 * Wrap private key with password-derived key.
 	 *
-	 * Wraps (encrypts) the RSA private key using AES-256-GCM with a key derived
-	 * from either a password or passkey credential ID using PBKDF2.
-	 *
-	 * @param string $private_key  The RSA private key in PEM format.
-	 * @param string $method       Wrapping method: 'password' or 'passkey'.
-	 * @param string $key_material The password string or passkey credential ID (base64).
-	 *
-	 * @return array|WP_Error Array with wrapped data structure, or WP_Error on failure.
+	 * @param string $private_key  RSA private key.
+	 * @param string $method       Wrapping method (only 'password' supported).
+	 * @param string $password     Password used for key derivation.
+	 * @return array|WP_Error
 	 */
-	public function wrap_private_key( $private_key, $method, $key_material ) {
-		// Validate inputs.
-		if ( empty( $private_key ) || empty( $key_material ) ) {
-			return new WP_Error(
-				'invalid_input',
-				__( 'Private key and key material are required for wrapping.', 'secure-login-collector' )
-			);
-		}
-
-		if ( ! in_array( $method, array( 'password', 'passkey' ), true ) ) {
+	public function wrap_private_key( $private_key, $method, $password ) {
+		if ( 'password' !== $method ) {
 			return new WP_Error(
 				'invalid_method',
-				__( 'Wrapping method must be "password" or "passkey".', 'secure-login-collector' )
+				__( 'Only password-based key wrapping is available in the free version.', 'secure-login-collector' )
 			);
 		}
 
-		// Generate random salt.
+		if ( empty( $private_key ) || empty( $password ) ) {
+			return new WP_Error(
+				'invalid_input',
+				__( 'Private key and password are required for wrapping.', 'secure-login-collector' )
+			);
+		}
+
 		try {
 			$salt = random_bytes( self::SALT_LENGTH );
+			$iv   = random_bytes( self::IV_LENGTH );
 		} catch ( Exception $e ) {
 			return new WP_Error(
 				'random_bytes_failed',
-				__( 'Failed to generate random salt.', 'secure-login-collector' )
+				__( 'Failed to generate cryptographic salt/IV.', 'secure-login-collector' )
 			);
 		}
 
-		// Derive wrapping key using PBKDF2.
-		$wrapping_key = hash_pbkdf2(
+		$key = hash_pbkdf2(
 			'sha256',
-			$key_material,
+			$password,
 			$salt,
 			self::PBKDF2_ITERATIONS,
-			self::WRAPPING_KEY_LENGTH,
-			true // Raw binary output.
+			self::WRAPPING_KEY_LEN,
+			true
 		);
 
-		if ( false === $wrapping_key ) {
+		if ( false === $key ) {
 			return new WP_Error(
 				'key_derivation_failed',
 				__( 'Failed to derive wrapping key with PBKDF2.', 'secure-login-collector' )
 			);
 		}
 
-		// Generate random IV for AES-GCM.
-		try {
-			$iv = random_bytes( self::IV_LENGTH );
-		} catch ( Exception $e ) {
-			return new WP_Error(
-				'random_bytes_failed',
-				__( 'Failed to generate random IV.', 'secure-login-collector' )
-			);
-		}
-
-		// Encrypt private key with AES-256-GCM.
-		$tag            = '';
-		$encrypted_data = openssl_encrypt(
+		$tag     = '';
+		$cipher  = openssl_encrypt(
 			$private_key,
 			'aes-256-gcm',
-			$wrapping_key,
+			$key,
 			OPENSSL_RAW_DATA,
 			$iv,
-			$tag,
-			'', // Additional authenticated data (empty).
-			16  // Tag length (128 bits).
+			$tag
 		);
 
-		if ( false === $encrypted_data ) {
+		if ( false === $cipher ) {
 			return new WP_Error(
 				'encryption_failed',
 				__( 'Failed to encrypt private key with AES-256-GCM.', 'secure-login-collector' )
 			);
 		}
 
-		// Return wrapped data structure.
 		return array(
-			'method'         => $method,
-			'encrypted_data' => base64_encode( $encrypted_data ),
+			'method'         => 'password',
+			'encrypted_data' => base64_encode( $cipher ),
 			'iv'             => base64_encode( $iv ),
 			'salt'           => base64_encode( $salt ),
 			'tag'            => base64_encode( $tag ),
@@ -212,232 +149,91 @@ class Secure_Login_Collector_Unified_Crypto {
 	}
 
 	/**
-	 * Unwrap private key with password or passkey-derived key.
+	 * Unwrap private key (helper for reference/JS parity).
 	 *
-	 * NOTE: This method is designed for CLIENT-SIDE use only.
-	 * The server should NEVER call this method directly with user passwords or passkeys.
-	 * This is provided as a reference implementation for JavaScript client-side decryption.
-	 *
-	 * @param array  $wrapped_data Data structure from wrap_private_key().
-	 * @param string $method       Wrapping method: 'password' or 'passkey'.
-	 * @param string $key_material The password string or passkey credential ID (base64).
-	 *
-	 * @return string|WP_Error Unwrapped private key in PEM format, or WP_Error on failure.
+	 * @param array  $wrapped_data Wrapped payload.
+	 * @param string $method       Method (password only).
+	 * @param string $password     Password used during wrapping.
+	 * @return string|WP_Error
 	 */
-	public function unwrap_private_key( $wrapped_data, $method, $key_material ) {
-		// Validate inputs.
-		if ( ! is_array( $wrapped_data ) || empty( $key_material ) ) {
+	public function unwrap_private_key( $wrapped_data, $method, $password ) {
+		if ( 'password' !== $method ) {
+			return new WP_Error(
+				'invalid_method',
+				__( 'Only password-based key wrapping is available in the free version.', 'secure-login-collector' )
+			);
+		}
+
+		if ( ! is_array( $wrapped_data ) || empty( $password ) ) {
 			return new WP_Error(
 				'invalid_input',
-				__( 'Wrapped data and key material are required for unwrapping.', 'secure-login-collector' )
+				__( 'Wrapped data and password are required for unwrapping.', 'secure-login-collector' )
 			);
 		}
 
-		// Validate method matches.
-		if ( ! isset( $wrapped_data['method'] ) || $wrapped_data['method'] !== $method ) {
-			return new WP_Error(
-				'method_mismatch',
-				__( 'Wrapping method does not match wrapped data.', 'secure-login-collector' )
-			);
-		}
+		$encrypted = base64_decode( $wrapped_data['encrypted_data'] ?? '' );
+		$iv        = base64_decode( $wrapped_data['iv'] ?? '' );
+		$salt      = base64_decode( $wrapped_data['salt'] ?? '' );
+		$tag       = base64_decode( $wrapped_data['tag'] ?? '' );
 
-		// Extract wrapped data components.
-		$encrypted_data = base64_decode( $wrapped_data['encrypted_data'] );
-		$iv             = base64_decode( $wrapped_data['iv'] );
-		$salt           = base64_decode( $wrapped_data['salt'] );
-		$tag            = base64_decode( $wrapped_data['tag'] );
-
-		if ( false === $encrypted_data || false === $iv || false === $salt || false === $tag ) {
+		if ( false === $encrypted || false === $iv || false === $salt || false === $tag ) {
 			return new WP_Error(
 				'invalid_wrapped_data',
 				__( 'Wrapped data is corrupted or invalid.', 'secure-login-collector' )
 			);
 		}
 
-		// Derive wrapping key using PBKDF2 (same as wrapping).
-		$wrapping_key = hash_pbkdf2(
+		$key = hash_pbkdf2(
 			'sha256',
-			$key_material,
+			$password,
 			$salt,
 			self::PBKDF2_ITERATIONS,
-			self::WRAPPING_KEY_LENGTH,
+			self::WRAPPING_KEY_LEN,
 			true
 		);
 
-		if ( false === $wrapping_key ) {
+		if ( false === $key ) {
 			return new WP_Error(
 				'key_derivation_failed',
 				__( 'Failed to derive wrapping key for unwrapping.', 'secure-login-collector' )
 			);
 		}
 
-		// Decrypt private key with AES-256-GCM.
-		$decrypted_key = openssl_decrypt(
-			$encrypted_data,
+		$private_key = openssl_decrypt(
+			$encrypted,
 			'aes-256-gcm',
-			$wrapping_key,
+			$key,
 			OPENSSL_RAW_DATA,
 			$iv,
 			$tag
 		);
 
-		if ( false === $decrypted_key ) {
+		if ( false === $private_key ) {
 			return new WP_Error(
 				'decryption_failed',
 				__( 'Failed to decrypt private key. Incorrect password or corrupted data.', 'secure-login-collector' )
 			);
 		}
 
-		return $decrypted_key;
+		return $private_key;
 	}
 
 	/**
-	 * Derive wrapping key from password using PBKDF2.
+	 * Store wrapped key + public key for the standard method.
 	 *
-	 * This is a helper method that can be called from JavaScript equivalent
-	 * for client-side key derivation. Server-side use should be avoided.
-	 *
-	 * @param string $password User password.
-	 * @param string $salt     Salt (base64 encoded).
-	 *
-	 * @return string|WP_Error Derived key (base64 encoded), or WP_Error on failure.
-	 */
-	public function derive_wrapping_key_password( $password, $salt ) {
-		if ( empty( $password ) || empty( $salt ) ) {
-			return new WP_Error(
-				'invalid_input',
-				__( 'Password and salt are required for key derivation.', 'secure-login-collector' )
-			);
-		}
-
-		$salt_bytes = base64_decode( $salt );
-		if ( false === $salt_bytes ) {
-			return new WP_Error(
-				'invalid_salt',
-				__( 'Invalid salt format. Must be base64 encoded.', 'secure-login-collector' )
-			);
-		}
-
-		$derived_key = hash_pbkdf2(
-			'sha256',
-			$password,
-			$salt_bytes,
-			self::PBKDF2_ITERATIONS,
-			self::WRAPPING_KEY_LENGTH,
-			true
-		);
-
-		if ( false === $derived_key ) {
-			return new WP_Error(
-				'key_derivation_failed',
-				__( 'Failed to derive key from password.', 'secure-login-collector' )
-			);
-		}
-
-		return base64_encode( $derived_key );
-	}
-
-	/**
-	 * Derive wrapping key from passkey credential ID using PBKDF2.
-	 *
-	 * This is a helper method that can be called from JavaScript equivalent
-	 * for client-side key derivation. Server-side use should be avoided.
-	 *
-	 * @param string $credential_id Passkey credential ID (base64 encoded).
-	 * @param string $salt          Salt (base64 encoded).
-	 *
-	 * @return string|WP_Error Derived key (base64 encoded), or WP_Error on failure.
-	 */
-	public function derive_wrapping_key_passkey( $credential_id, $salt ) {
-		if ( empty( $credential_id ) || empty( $salt ) ) {
-			return new WP_Error(
-				'invalid_input',
-				__( 'Credential ID and salt are required for key derivation.', 'secure-login-collector' )
-			);
-		}
-
-		$credential_bytes = base64_decode( $credential_id );
-		$salt_bytes       = base64_decode( $salt );
-
-		if ( false === $credential_bytes || false === $salt_bytes ) {
-			return new WP_Error(
-				'invalid_input_format',
-				__( 'Credential ID and salt must be base64 encoded.', 'secure-login-collector' )
-			);
-		}
-
-		$derived_key = hash_pbkdf2(
-			'sha256',
-			$credential_bytes,
-			$salt_bytes,
-			self::PBKDF2_ITERATIONS,
-			self::WRAPPING_KEY_LENGTH,
-			true
-		);
-
-		if ( false === $derived_key ) {
-			return new WP_Error(
-				'key_derivation_failed',
-				__( 'Failed to derive key from passkey credential.', 'secure-login-collector' )
-			);
-		}
-
-		return base64_encode( $derived_key );
-	}
-
-	/**
-	 * Get public key for specified method.
-	 *
-	 * Returns the public key for either 'standard' (password-wrapped) or 'passkey' method.
-	 *
-	 * @param string $method Method: 'standard' or 'passkey'.
-	 *
-	 * @return string|WP_Error Public key in PEM format, or WP_Error if not found.
-	 */
-	public function get_public_key( $method ) {
-		if ( ! in_array( $method, array( 'standard', 'passkey' ), true ) ) {
-			return new WP_Error(
-				'invalid_method',
-				__( 'Method must be "standard" or "passkey".', 'secure-login-collector' )
-			);
-		}
-
-		$option_name = SECULOCO_OPTION_PUBLIC_KEY_PREFIX . $method;
-		$public_key  = get_option( $option_name );
-
-		if ( empty( $public_key ) ) {
-			return new WP_Error(
-				'public_key_not_found',
-				/* translators: %s: method name (standard or passkey) */
-				sprintf( __( 'Public key not found for method: %s', 'secure-login-collector' ), $method )
-			);
-		}
-
-		return $public_key;
-	}
-
-	/**
-	 * Store wrapped private key and public key.
-	 *
-	 * Saves the wrapped private key data and corresponding public key to WordPress options.
-	 * Each method (standard/passkey) has separate storage.
-	 *
-	 * @param string $method       Method: 'standard' or 'passkey'.
-	 * @param array  $wrapped_data Wrapped private key data from wrap_private_key().
-	 * @param string $public_key   Public key in PEM format.
-	 *
-	 * @return bool|WP_Error True on success, WP_Error on failure.
+	 * @param string $method       Method identifier (standard only).
+	 * @param array  $wrapped_data Wrapped key data.
+	 * @param string $public_key   Public key.
+	 * @return bool|WP_Error
 	 */
 	public function store_wrapped_key( $method, $wrapped_data, $public_key ) {
-		// Validate method.
-		if ( ! in_array( $method, array( 'standard', 'passkey' ), true ) ) {
+		if ( 'standard' !== $method ) {
 			return new WP_Error(
 				'invalid_method',
-				__( 'Method must be "standard" or "passkey".', 'secure-login-collector' )
+				__( 'Only the standard encryption method is available in the free version.', 'secure-login-collector' )
 			);
 		}
 
-		// Validate wrapped data.
 		if ( ! is_array( $wrapped_data ) || empty( $public_key ) ) {
 			return new WP_Error(
 				'invalid_data',
@@ -445,92 +241,104 @@ class Secure_Login_Collector_Unified_Crypto {
 			);
 		}
 
-		// Store wrapped private key.
-		$wrapped_key_option = SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PREFIX . $method;
-		$updated_wrapped    = update_option( $wrapped_key_option, $wrapped_data );
+		$wrapped_key_option = SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_STANDARD;
+		$public_key_option  = SECULOCO_OPTION_PUBLIC_KEY_STANDARD;
 
-		// Store public key.
-		$public_key_option = SECULOCO_OPTION_PUBLIC_KEY_PREFIX . $method;
-		$updated_public    = update_option( $public_key_option, $public_key );
+		$wrapped_updated = update_option( $wrapped_key_option, $wrapped_data );
+		$public_updated  = update_option( $public_key_option, $public_key );
 
-		if ( false === $updated_wrapped || false === $updated_public ) {
+		if ( false === $wrapped_updated || false === $public_updated ) {
 			return new WP_Error(
 				'storage_failed',
-				__( 'Failed to store wrapped key or public key in database.', 'secure-login-collector' )
+				__( 'Failed to store wrapped/private keys in the database.', 'secure-login-collector' )
 			);
 		}
 
-		// Log the operation.
 		$this->log_key_operation( 'key_stored', $method );
 
 		return true;
 	}
 
 	/**
-	 * Get wrapped private key data.
+	 * Retrieve public key for the standard method.
 	 *
-	 * Retrieves the wrapped private key data structure for the specified method.
-	 *
-	 * @param string $method Method: 'standard' or 'passkey'.
-	 *
-	 * @return array|WP_Error Wrapped key data array, or WP_Error if not found.
+	 * @param string $method Method identifier.
+	 * @return string|WP_Error
 	 */
-	public function get_wrapped_key( $method ) {
-		if ( ! in_array( $method, array( 'standard', 'passkey' ), true ) ) {
+	public function get_public_key( $method ) {
+		if ( 'standard' !== $method ) {
 			return new WP_Error(
 				'invalid_method',
-				__( 'Method must be "standard" or "passkey".', 'secure-login-collector' )
+				__( 'Only the standard encryption method is available in the free version.', 'secure-login-collector' )
 			);
 		}
 
-		$option_name  = SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PREFIX . $method;
-		$wrapped_data = get_option( $option_name );
-
-		if ( empty( $wrapped_data ) ) {
+		$public_key = get_option( SECULOCO_OPTION_PUBLIC_KEY_STANDARD );
+		if ( empty( $public_key ) ) {
 			return new WP_Error(
-				'wrapped_key_not_found',
-				/* translators: %s: method name (standard or passkey) */
-				sprintf( __( 'Wrapped private key not found for method: %s', 'secure-login-collector' ), $method )
+				'public_key_not_found',
+				__( 'Public key not found.', 'secure-login-collector' )
 			);
 		}
 
-		return $wrapped_data;
+		return $public_key;
 	}
 
 	/**
-	 * Check if keys exist for a method.
+	 * Retrieve wrapped key for the standard method.
 	 *
-	 * @param string $method Method: 'standard' or 'passkey'.
+	 * @param string $method Method identifier.
+	 * @return array|WP_Error
+	 */
+	public function get_wrapped_key( $method ) {
+		if ( 'standard' !== $method ) {
+			return new WP_Error(
+				'invalid_method',
+				__( 'Only the standard encryption method is available in the free version.', 'secure-login-collector' )
+			);
+		}
+
+		$data = get_option( SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_STANDARD );
+		if ( empty( $data ) ) {
+			return new WP_Error(
+				'wrapped_key_not_found',
+				__( 'Wrapped private key not found.', 'secure-login-collector' )
+			);
+		}
+
+		return $data;
+	}
+
+	/**
+	 * Check if keys exist for the standard method.
 	 *
-	 * @return bool True if both public and wrapped private keys exist.
+	 * @param string $method Method identifier.
+	 * @return bool
 	 */
 	public function has_keys( $method ) {
-		if ( ! in_array( $method, array( 'standard', 'passkey' ), true ) ) {
+		if ( 'standard' !== $method ) {
 			return false;
 		}
 
-		$public_key   = get_option( SECULOCO_OPTION_PUBLIC_KEY_PREFIX . $method );
-		$wrapped_key  = get_option( SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PREFIX . $method );
+		$public_key  = get_option( SECULOCO_OPTION_PUBLIC_KEY_STANDARD );
+		$wrapped_key = get_option( SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_STANDARD );
 
 		return ! empty( $public_key ) && ! empty( $wrapped_key );
 	}
 
 	/**
-	 * Delete keys for a method.
+	 * Delete keys for the standard method.
 	 *
-	 * Removes both public and wrapped private keys for the specified method.
-	 *
-	 * @param string $method Method: 'standard' or 'passkey'.
-	 *
-	 * @return bool True on success.
+	 * @param string $method Method identifier.
+	 * @return bool
 	 */
 	public function delete_keys( $method ) {
-		if ( ! in_array( $method, array( 'standard', 'passkey' ), true ) ) {
+		if ( 'standard' !== $method ) {
 			return false;
 		}
 
-		delete_option( SECULOCO_OPTION_PUBLIC_KEY_PREFIX . $method );
-		delete_option( SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PREFIX . $method );
+		delete_option( SECULOCO_OPTION_PUBLIC_KEY_STANDARD );
+		delete_option( SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_STANDARD );
 
 		$this->log_key_operation( 'keys_deleted', $method );
 
@@ -538,17 +346,14 @@ class Secure_Login_Collector_Unified_Crypto {
 	}
 
 	/**
-	 * Log key operations for audit trail.
+	 * Record key operations for auditing.
 	 *
-	 * Records cryptographic operations in an audit log for security monitoring.
-	 *
-	 * @param string $operation Operation type (e.g., 'key_stored', 'keys_deleted').
-	 * @param string $method    Method: 'standard' or 'passkey'.
+	 * @param string $operation Operation label.
+	 * @param string $method    Method identifier.
 	 */
 	private function log_key_operation( $operation, $method ) {
 		$log = get_option( SECULOCO_OPTION_UNIFIED_CRYPTO_LOG, array() );
 
-		// Keep only last 100 operations.
 		if ( count( $log ) > 100 ) {
 			$log = array_slice( $log, -100 );
 		}
@@ -565,13 +370,10 @@ class Secure_Login_Collector_Unified_Crypto {
 	}
 
 	/**
-	 * Get cryptographic operation log.
+	 * Retrieve recent key operations.
 	 *
-	 * Returns the audit log of all cryptographic operations.
-	 *
-	 * @param int $limit Maximum number of log entries to return (default: 50).
-	 *
-	 * @return array Array of log entries.
+	 * @param int $limit Number of entries to return.
+	 * @return array
 	 */
 	public function get_operation_log( $limit = 50 ) {
 		$log = get_option( SECULOCO_OPTION_UNIFIED_CRYPTO_LOG, array() );
@@ -580,25 +382,19 @@ class Secure_Login_Collector_Unified_Crypto {
 			$log = array_slice( $log, -$limit );
 		}
 
-		return array_reverse( $log ); // Most recent first.
+		return array_reverse( $log );
 	}
 
 	/**
-	 * Get system status for unified crypto.
+	 * Get current crypto status.
 	 *
-	 * Returns status information about available keys and methods.
-	 *
-	 * @return array Status information.
+	 * @return array
 	 */
 	public function get_status() {
 		return array(
 			'standard' => array(
-				'has_public_key'  => ! empty( get_option( SECULOCO_OPTION_PUBLIC_KEY_STANDARD ) ),
+				'has_public_key'  => $this->has_keys( 'standard' ),
 				'has_wrapped_key' => ! empty( get_option( SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_STANDARD ) ),
-			),
-			'passkey'  => array(
-				'has_public_key'  => ! empty( get_option( SECULOCO_OPTION_PUBLIC_KEY_PASSKEY ) ),
-				'has_wrapped_key' => ! empty( get_option( SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PASSKEY ) ),
 			),
 			'openssl'  => array(
 				'available' => function_exists( 'openssl_pkey_new' ),

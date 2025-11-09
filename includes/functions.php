@@ -70,22 +70,14 @@ if (! function_exists('seculoco_has_passkey_encryption') ) {
      */
     function seculoco_has_passkey_encryption()
     {
-
-        // Early return if we don't have passkey files
-        if(! class_exists('Seculoco_Passkey_Manager')) {
-            return false;
-        }
-        
-        $active     = (bool) get_option(SECULOCO_OPTION_PASSKEY_ACTIVE, false);
-        $registered = (bool) get_option(SECULOCO_OPTION_PASSKEY_REGISTERED, false);
-
-        if ($active && $registered ) {
-            return true;
-        }
-
-        // Back-compat: older builds stored a more generic "pro keys active" flag.
-        $pro_active = (bool) get_option(SECULOCO_OPTION_PRO_KEYS_ACTIVE, false);
-        return $pro_active && $registered;
+        /**
+         * Filter: seculoco_has_passkey_encryption
+         *
+         * Premium builds can hook into this filter to report passkey availability.
+         *
+         * @param bool $active Whether passkey encryption is active (defaults to false).
+         */
+        return (bool) apply_filters( 'seculoco_has_passkey_encryption', false );
     }
 }
 
@@ -157,12 +149,14 @@ if ( ! function_exists( 'seculoco_is_auto_delete_enabled' ) ) {
 
 if ( ! function_exists( 'seculoco_has_honeypot_feature' ) ) {
     /**
-     * Whether the honeypot feature is available (Premium only).
+     * Whether the honeypot feature is available.
+     *
+     * Free builds default to false; premium re-enables via filters.
      *
      * @return bool
      */
     function seculoco_has_honeypot_feature() {
-        return seculoco_is_premium_active();
+        return (bool) apply_filters( 'seculoco_has_honeypot_feature', false );
     }
 }
 
@@ -177,10 +171,6 @@ if ( ! function_exists( 'seculoco_is_honeypot_enabled' ) ) {
             return false;
         }
 
-        if ( ! defined( 'SECULOCO_OPTION_HONEYPOT_ENABLED' ) ) {
-            return false;
-        }
-
-        return (bool) get_option( SECULOCO_OPTION_HONEYPOT_ENABLED, true );
+        return (bool) apply_filters( 'seculoco_is_honeypot_enabled', false );
     }
 }

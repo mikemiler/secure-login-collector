@@ -208,7 +208,7 @@ class Seculoco_List_Table extends WP_List_Table
     public function column_encryption( $item )
     {
         $metadata        = json_decode($item->metadata, true);
-        $encryption_type = isset($metadata['encryption_type']) ? $metadata['encryption_type'] : 'rsa';
+        $encryption_type = isset($metadata['encryption_type']) ? $metadata['encryption_type'] : 'aes-rsa-password-v3';
         $encryption_info = $this->get_encryption_method_info($encryption_type);
 
         return sprintf(
@@ -245,23 +245,11 @@ class Seculoco_List_Table extends WP_List_Table
         $timestamp_suffix = isset($metadata['key_timestamp_suffix']) ? $metadata['key_timestamp_suffix'] : '';
         $is_expired       = isset($item->is_expired) && 1 === $item->is_expired;
 
-        // Check if entry is undecryptable (passkey-encrypted but passkey was deleted).
-        // Use database flag as primary indicator (more reliable than checking options).
-        $is_undecryptable = false;
+        // Use database flag to determine undecryptable state (e.g., password reset) and allow extensions to override.
+        $is_undecryptable = isset($item->undecryptable) && 1 === (int) $item->undecryptable;
 
-        if (isset($item->undecryptable) && 1 === (int) $item->undecryptable ) {
-            $is_undecryptable = true;
-        } else {
-            // Fallback: Check encrypted_data for legacy entries not yet marked.
-            $encrypted_data = json_decode($item->encrypted_data, true);
-            if (is_array($encrypted_data) && ! empty($encrypted_data['credentialId']) && $encrypted_data['isProEncrypted'] ) {
-                // Entry was encrypted with a passkey. Check if that passkey still exists.
-                $credential_id = $encrypted_data['credentialId'];
-                $passkey_data  = get_option('passkey_credential_' . $credential_id, false);
-                if (! $passkey_data ) {
-                    $is_undecryptable = true;
-                }
-            }
+        if (! $is_undecryptable ) {
+            $is_undecryptable = (bool) apply_filters('seculoco_is_entry_undecryptable', false, $item);
         }
 
         $actions = array();
@@ -300,12 +288,6 @@ class Seculoco_List_Table extends WP_List_Table
                 '<button type="button" class="button button-secondary extend-btn" data-id="%s" title="%s"><span class="dashicons dashicons-calendar-alt"></span></button>',
                 $item->id,
                 esc_attr__('Extend retention period', 'secure-login-collector')
-            );
-        } elseif (seculoco_is_premium_active()) {
-            $actions[] = sprintf(
-                '<button type="button" class="button button-secondary extend-btn" title="%s" style="opacity: 0.7" disabled><span class="dashicons dashicons-calendar-alt"></span></button>',
-                $item->id,
-                esc_attr__('Cannot extend retention period', 'secure-login-collector')
             );
         }
 
@@ -349,27 +331,21 @@ class Seculoco_List_Table extends WP_List_Table
      */
     private function get_encryption_method_info( $encryption_type )
     {
-        switch ( $encryption_type ) {
-        case 'aes-rsa-v2':
-            return array(
-                    'name'        => __('Password Protected', 'secure-login-collector'),
-                    'class'       => 'encryption-rsa',
-                    'description' => __('AES-256-GCM encryption with RSA key protection.', 'secure-login-collector'),
-            );
-        case 'aes-rsa-passkey-v2':
-            return array(
-                    'name'        => __('Passkey Protected', 'secure-login-collector'),
-                    'class'       => 'encryption-ultra-secure',
-                    'description' => __('AES-256-GCM + RSA with passkey authentication required for decryption.', 'secure-login-collector'),
-            );
-            
-        default:
-            return array(
-                    'name'        => __('Unknown', 'secure-login-collector'),
-                    'class'       => 'encryption-rsa',
-                    'description' => __('Somehow encrypted', 'secure-login-collector'),
-            );
-        }
+        $info = array(
+            'name'        => __('Secure', 'secure-login-collector'),
+            'class'       => 'encryption-rsa',
+            'description' => __('AES-256-GCM encryption with RSA key protection.', 'secure-login-collector'),
+        );
+
+        /**
+         * Filter: seculoco_encryption_method_info
+         *
+         * Allows premium builds to adjust the label/class/description per encryption type.
+         *
+         * @param array  $info             Default info for password-based encryption.
+         * @param string $encryption_type  Type stored in metadata.
+         */
+        return apply_filters('seculoco_encryption_method_info', $info, $encryption_type);
     }
 
     /**

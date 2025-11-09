@@ -136,10 +136,8 @@ class Seculoco_Frontend_Handler {
 			// - wp_ajax_seculoco_get_public_key
 			// - wp_ajax_nopriv_seculoco_get_public_key
 
-			// No need to send passkey info to frontend - clients don't have passkeys.
-
-			// Allow pro version to modify JS config.
-			$localize_data = apply_filters( 'seculoco_frontend_js_config', $localize_data );
+		// Allow pro version to modify JS config.
+		$localize_data = apply_filters( 'seculoco_frontend_js_config', $localize_data );
 
 			// Localize script with data.
 			wp_localize_script( 'secure-login-frontend', 'seculocoAjax', $localize_data );
@@ -478,8 +476,8 @@ class Seculoco_Frontend_Handler {
 
 		// Extract encryption metadata.
 		$is_pro_encrypted     = isset( $encryption_metadata['is_pro_encrypted'] ) ? (bool) $encryption_metadata['is_pro_encrypted'] : false;
-		$server_credential_id = isset( $encryption_metadata['credential_id'] ) ? $encryption_metadata['credential_id'] : null;
 		$encryption_type      = isset( $encryption_metadata['encryption_type'] ) ? $encryption_metadata['encryption_type'] : 'aes-rsa-password-v3';
+		$server_credential_id = isset( $encryption_metadata['credential_id'] ) ? sanitize_text_field( $encryption_metadata['credential_id'] ) : null;
 
 		// Create encrypted package for storage.
 		$encrypted_package = array(
@@ -488,7 +486,7 @@ class Seculoco_Frontend_Handler {
 			'iv'              => $this->sanitize_encrypted_field( $submission['iv'], 'iv' ),
 			'salt'            => $this->sanitize_encrypted_field( $submission['salt'], 'salt' ),
 			'isProEncrypted'  => $is_pro_encrypted, // Server determines this.
-			'credentialId'    => $server_credential_id, // Server's passkey credential ID.
+			'credentialId'    => $server_credential_id,
 			'version'         => 2, // Mark as v2 format.
 		);
 
@@ -496,6 +494,9 @@ class Seculoco_Frontend_Handler {
 		$metadata['encryption_type']    = $encryption_type;
 		$metadata['encryption_version'] = 2;
 		$metadata['is_pro_encrypted']   = $is_pro_encrypted;
+		if ( $server_credential_id ) {
+			$metadata['credential_id'] = $server_credential_id;
+		}
 
 		// Prepare data for database insertion.
 		$user_agent = '';
@@ -581,7 +582,15 @@ class Seculoco_Frontend_Handler {
 	 * @return bool
 	 */
 	private function has_encryption_keys() {
-		return $this->has_password_keys() || $this->has_passkey_keys();
+		$has_keys = $this->has_password_keys();
+		/**
+		 * Filter: seculoco_has_encryption_keys
+		 *
+		 * Allows premium builds to declare alternate encryption readiness.
+		 *
+		 * @param bool $has_keys Whether usable encryption keys exist.
+		 */
+		return (bool) apply_filters( 'seculoco_has_encryption_keys', $has_keys );
 	}
 
 	/**
@@ -595,18 +604,5 @@ class Seculoco_Frontend_Handler {
 		}
 
 		return (bool) get_option( SECULOCO_OPTION_PASSWORD_ENCRYPTION_ACTIVE, false );
-	}
-
-	/**
-	 * Determine if passkey-based encryption is configured.
-	 *
-	 * @return bool
-	 */
-	private function has_passkey_keys() {
-		if ( function_exists( 'seculoco_has_passkey_encryption' ) ) {
-			return seculoco_has_passkey_encryption();
-		}
-
-		return (bool) ( get_option( SECULOCO_OPTION_PRO_KEYS_ACTIVE, false ) && get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false ) );
 	}
 }

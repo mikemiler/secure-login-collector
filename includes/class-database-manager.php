@@ -517,9 +517,7 @@ class Seculoco_Database_Manager {
 	/**
 	 * Mark login data entries as undecryptable after master password reset.
 	 *
-	 * Handles both FREE-tier (RSA-encrypted) and PRO-tier (passkey-protected) encrypted data.
-	 * After master password reset, all encrypted data becomes undecryptable since the
-	 * decryption keys are lost.
+	 * Handles marking encrypted entries as undecryptable once key material is reset.
 	 *
 	 * @param string $tier Encryption tier to mark: 'all' (default), 'free', or 'pro'.
 	 * @return int Number of entries marked as undecryptable.
@@ -547,8 +545,9 @@ class Seculoco_Database_Manager {
 		foreach ( $entries as $entry ) {
 			$metadata = json_decode( $entry->metadata, true );
 
-			// Determine encryption tier of this entry.
-			$is_pro_encrypted = isset( $metadata['is_pro_encrypted'] ) && $metadata['is_pro_encrypted'];
+			// Determine encryption tier of this entry (allow extensions to override).
+			$is_pro_encrypted = ! empty( $metadata['is_pro_encrypted'] );
+			$is_pro_encrypted = (bool) apply_filters( 'seculoco_is_entry_pro_encrypted', $is_pro_encrypted, $metadata, $entry );
 
 			// Determine if this entry should be marked based on tier filter.
 			$should_mark = false;
@@ -560,7 +559,7 @@ class Seculoco_Database_Manager {
 				// Mark only FREE-tier RSA-encrypted entries.
 				$should_mark = ! $is_pro_encrypted;
 			} elseif ( 'pro' === $tier ) {
-				// Mark only PRO-tier passkey-protected entries.
+				// Allow extensions to restrict marking to custom tiers.
 				$should_mark = $is_pro_encrypted;
 			}
 

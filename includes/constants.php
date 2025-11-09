@@ -29,6 +29,24 @@ define('SECULOCO_OPTION_DB_VERSION', 'seculoco_db_version');
 define('SECULOCO_OPTION_PASSWORD_ENCRYPTION_ACTIVE', 'seculoco_password_encryption_active');
 define('SECULOCO_OPTION_PASSWORD_ACTIVE', 'seculoco_password_active');
 define('SECULOCO_OPTION_PASSKEY_ACTIVE', 'seculoco_passkey_active');
+if (! defined('SECULOCO_OPTION_PASSKEY_REGISTERED') ) {
+    define('SECULOCO_OPTION_PASSKEY_REGISTERED', 'seculoco_passkey_registered');
+}
+if (! defined('SECULOCO_OPTION_PASSKEY_REGISTERED_AT') ) {
+    define('SECULOCO_OPTION_PASSKEY_REGISTERED_AT', 'seculoco_passkey_registered_at');
+}
+if (! defined('SECULOCO_OPTION_PASSKEY_CREDENTIAL_ID') ) {
+    define('SECULOCO_OPTION_PASSKEY_CREDENTIAL_ID', 'seculoco_passkey_credential_id');
+}
+if (! defined('SECULOCO_OPTION_PASSKEY_AAGUID_HASH') ) {
+    define('SECULOCO_OPTION_PASSKEY_AAGUID_HASH', 'seculoco_passkey_aaguid_hash');
+}
+if (! defined('SECULOCO_OPTION_GLOBAL_PASSKEY') ) {
+    define('SECULOCO_OPTION_GLOBAL_PASSKEY', 'seculoco_global_passkey');
+}
+if (! defined('SECULOCO_OPTION_PRO_KEYS_ACTIVE') ) {
+    define('SECULOCO_OPTION_PRO_KEYS_ACTIVE', 'seculoco_pro_keys_active');
+}
 
 // Notifications.
 define('SECULOCO_OPTION_ENABLE_NOTIFICATIONS', 'seculoco_enable_notifications');
