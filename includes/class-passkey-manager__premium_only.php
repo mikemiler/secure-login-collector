@@ -758,14 +758,22 @@ class Seculoco_Passkey_Manager {
 		/** @var Seculoco_Encryption_Handler_V2_Premium $premium_handler */
 		$premium_handler = $encryption_handler;
 
-		// Step 2: Ensure free keys exist first.
-		$free_result = $premium_handler->initialize_free_keys();
-		if ( is_wp_error( $free_result ) ) {
-			wp_send_json_error(
-				sprintf(
-					__( 'Failed to initialize free keys: %s', 'secure-login-collector' ),
-					$free_result->get_error_message()
-				)
+		// Step 2: Only touch password-based keys when they already exist.
+		if ( $this->has_standard_password_keys() ) {
+			$free_result = $premium_handler->initialize_free_keys();
+			if ( is_wp_error( $free_result ) ) {
+				wp_send_json_error(
+					sprintf(
+						__( 'Failed to initialize free keys: %s', 'secure-login-collector' ),
+						$free_result->get_error_message()
+					)
+				);
+			}
+		} else {
+			$free_result = array(
+				'status'  => 'skipped',
+				'type'    => 'standard',
+				'message' => __( 'Password-based keys skipped because passkey mode does not require them.', 'secure-login-collector' ),
 			);
 		}
 
@@ -865,5 +873,17 @@ class Seculoco_Passkey_Manager {
 				'key' => base64_encode( $key ),
 			)
 		);
+	}
+
+	/**
+	 * Determine whether password-based (standard) encryption keys already exist.
+	 *
+	 * @return bool
+	 */
+	private function has_standard_password_keys() {
+		$public_key_standard  = get_option( SECULOCO_OPTION_PUBLIC_KEY_STANDARD );
+		$wrapped_key_standard = get_option( SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_STANDARD );
+
+		return ! empty( $public_key_standard ) && ! empty( $wrapped_key_standard );
 	}
 }
