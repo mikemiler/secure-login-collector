@@ -31,6 +31,13 @@ class Seculoco_Database_Manager {
 	private $table_name;
 
 	/**
+	 * Tracks whether we've already verified (or created) the table this request.
+	 *
+	 * @var bool
+	 */
+	private $table_verified = false;
+
+	/**
 	 * Constructor - initializes database manager.
 	 *
 	 * @param string $table_name Database table name.
@@ -78,6 +85,29 @@ class Seculoco_Database_Manager {
 		dbDelta( $sql );
 	}
 
+	/**
+	 * Ensure the table exists, attempting to (re)create it if necessary.
+	 *
+	 * @return void
+	 */
+	private function ensure_table_ready() {
+		if ( $this->table_verified ) {
+			return;
+		}
+
+		global $wpdb;
+
+		$table_like = $wpdb->esc_like( $this->table_name );
+		$existing   = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_like ) );
+
+		if ( $existing !== $this->table_name ) {
+			$this->create_table();
+			$existing = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_like ) );
+		}
+
+		$this->table_verified = ( $existing === $this->table_name );
+	}
+
 
 	/**
 	 * Schedule cleanup cron job.
@@ -116,6 +146,7 @@ class Seculoco_Database_Manager {
 	 */
 	public function cleanup_old_data() {
 		global $wpdb;
+		$this->ensure_table_ready();
 
 		if ( ! seculoco_is_auto_delete_enabled() ) {
 			return 0;
@@ -148,6 +179,7 @@ class Seculoco_Database_Manager {
 	 */
 	public function get_all_entries() {
 		global $wpdb;
+		$this->ensure_table_ready();
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		return $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM %i ORDER BY created_at DESC', $this->table_name ) );
 	}
@@ -160,6 +192,7 @@ class Seculoco_Database_Manager {
 	 */
 	public function get_entry( $id ) {
 		global $wpdb;
+		$this->ensure_table_ready();
 		// Note: Table names cannot be prepared in WordPress, but this is safe as table name is controlled.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		return $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM %i WHERE id = %d', $this->table_name, $id ) );
@@ -173,6 +206,7 @@ class Seculoco_Database_Manager {
 	 */
 	public function insert_entry( $data ) {
 		global $wpdb;
+		$this->ensure_table_ready();
 
 		$retention_until = null;
 		$expiration_days = seculoco_get_expiration_days();
@@ -208,6 +242,7 @@ class Seculoco_Database_Manager {
 	 */
 	public function update_entry_metadata( $id, $metadata ) {
 		global $wpdb;
+		$this->ensure_table_ready();
 
 		return $wpdb->update(
 			$this->table_name,
@@ -226,6 +261,7 @@ class Seculoco_Database_Manager {
 	 */
 	public function delete_entry( $id ) {
 		global $wpdb;
+		$this->ensure_table_ready();
 		return $wpdb->delete( $this->table_name, array( 'id' => $id ), array( '%d' ) );
 	}
 
@@ -237,6 +273,7 @@ class Seculoco_Database_Manager {
 	 */
 	public function extend_retention( $id ) {
 		global $wpdb;
+		$this->ensure_table_ready();
 
 		if ( ! seculoco_is_auto_delete_enabled() ) {
 			return false;
@@ -323,6 +360,7 @@ class Seculoco_Database_Manager {
 	 */
 	public function get_expired_entries_count() {
 		global $wpdb;
+		$this->ensure_table_ready();
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		return (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE is_expired = 1', $this->table_name ) );
 	}
@@ -337,6 +375,7 @@ class Seculoco_Database_Manager {
 	 */
 	public function delete_expired_entries() {
 		global $wpdb;
+		$this->ensure_table_ready();
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is escaped in constructor via esc_sql().
 		$affected_rows = $wpdb->query( $wpdb->prepare( 'DELETE FROM %i WHERE is_expired = 1', $this->table_name ) );
 		return false !== $affected_rows ? (int) $affected_rows : 0;
@@ -402,6 +441,7 @@ class Seculoco_Database_Manager {
 	 */
 	public function get_entries_for_list_table( $search = '', $orderby = 'created_at', $order = 'desc', $per_page = 20, $offset = 0 ) {
 		global $wpdb;
+		$this->ensure_table_ready();
 
 		$where_conditions = array();
 		$search_params    = array();
@@ -484,6 +524,7 @@ class Seculoco_Database_Manager {
 	 */
 	public function get_total_entries( $search = '' ) {
 		global $wpdb;
+		$this->ensure_table_ready();
 
 		$where_conditions = array();
 		$search_params    = array();
@@ -524,6 +565,7 @@ class Seculoco_Database_Manager {
 	 */
 	public function mark_login_data_as_undecryptable( $tier = 'all' ) {
 		global $wpdb;
+		$this->ensure_table_ready();
 
 		// Validate tier parameter.
 		$valid_tiers = array( 'all', 'free', 'pro' );
@@ -594,6 +636,7 @@ class Seculoco_Database_Manager {
 	 */
 	public function is_login_data_undecryptable( $login_id ) {
 		global $wpdb;
+		$this->ensure_table_ready();
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is escaped in constructor via esc_sql().
 		$result = $wpdb->get_var(
@@ -614,6 +657,7 @@ class Seculoco_Database_Manager {
 	 */
 	public function get_undecryptable_entries( $user_id = null ) {
 		global $wpdb;
+		$this->ensure_table_ready();
 
 		if ( $user_id ) {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is escaped in constructor via esc_sql().
@@ -640,6 +684,7 @@ class Seculoco_Database_Manager {
 	 */
 	public function get_undecryptable_entries_count( $user_id = null ) {
 		global $wpdb;
+		$this->ensure_table_ready();
 
 		if ( $user_id ) {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is escaped in constructor via esc_sql().

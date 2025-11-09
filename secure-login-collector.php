@@ -148,9 +148,6 @@ class SecureLoginCollector
 
 		$this->encryption_handler = Seculoco_Encryption_Handler_Factory::get_shared_handler();
 
-        // Hook into WordPress.
-        add_action('init', array( $this, 'init' ));
-
         // Plugin activation/deactivation hooks.
         register_activation_hook(__FILE__, array( $this, 'activate' ));
         register_deactivation_hook(__FILE__, array( $this, 'deactivate' ));
@@ -201,14 +198,6 @@ class SecureLoginCollector
         } else {
             $this->encryption_ready = $this->has_password_keys() || $this->has_passkey_keys();
         }
-    }
-
-    /**
-     * Initialize the plugin.
-     */
-    public function init()
-    {
-        // Components handle their own initialization.
     }
 
     /**
