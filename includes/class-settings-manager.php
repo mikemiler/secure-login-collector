@@ -168,14 +168,16 @@ class Seculoco_Settings_Manager {
 				'sanitize_callback' => array( $this, 'sanitize_boolean' ),
 			)
 		);
-		register_setting(
-			'seculoco_settings',
-			SECULOCO_OPTION_EXPIRATION_DAYS,
-			array(
-				'type'              => 'integer',
-				'sanitize_callback' => 'absint',
-			)
-		);
+		if ( seculoco_is_premium_active() ) {
+			register_setting(
+				'seculoco_settings',
+				SECULOCO_OPTION_EXPIRATION_DAYS,
+				array(
+					'type'              => 'integer',
+					'sanitize_callback' => 'absint',
+				)
+			);
+		}
 		register_setting(
 			'seculoco_settings',
 			SECULOCO_OPTION_FRONTEND_FORM_TEXT,
@@ -210,15 +212,17 @@ class Seculoco_Settings_Manager {
 			)
 		);
 
-		// Spam Protection settings.
-		register_setting(
-			'seculoco_settings',
-			SECULOCO_OPTION_HONEYPOT_ENABLED,
-			array(
-				'type'              => 'boolean',
-				'sanitize_callback' => array( $this, 'sanitize_boolean' ),
-			)
-		);
+		// Spam Protection settings (Premium).
+		if ( seculoco_is_premium_active() ) {
+			register_setting(
+				'seculoco_settings',
+				SECULOCO_OPTION_HONEYPOT_ENABLED,
+				array(
+					'type'              => 'boolean',
+					'sanitize_callback' => array( $this, 'sanitize_boolean' ),
+				)
+			);
+		}
 
 		add_settings_section(
 			'seculoco_notification_section',
@@ -315,21 +319,25 @@ class Seculoco_Settings_Manager {
 			'seculoco_frontend_section'
 		);
 
-		add_settings_field(
-			SECULOCO_OPTION_EXPIRATION_DAYS,
-			__( 'Auto-Delete After (Days)', 'secure-login-collector' ),
-			array( $this, 'expiration_days_callback' ),
-			'seculoco_settings',
-			'seculoco_expiration_section'
-		);
+		if ( seculoco_is_premium_active() ) {
+			add_settings_field(
+				SECULOCO_OPTION_EXPIRATION_DAYS,
+				__( 'Auto-Delete After (Days)', 'secure-login-collector' ),
+				array( $this, 'expiration_days_callback' ),
+				'seculoco_settings',
+				'seculoco_expiration_section'
+			);
+		}
 
-		add_settings_field(
-			SECULOCO_OPTION_HONEYPOT_ENABLED,
-			__( 'Enable Honeypot Protection', 'secure-login-collector' ),
-			array( $this, 'honeypot_enabled_callback' ),
-			'seculoco_settings',
-			'seculoco_spam_protection_section'
-		);
+		if ( seculoco_is_premium_active() ) {
+			add_settings_field(
+				SECULOCO_OPTION_HONEYPOT_ENABLED,
+				__( 'Enable Honeypot Protection', 'secure-login-collector' ),
+				array( $this, 'honeypot_enabled_callback' ),
+				'seculoco_settings',
+				'seculoco_spam_protection_section'
+			);
+		}
 
 		// Allow pro version to add additional spam protection settings fields.
 		do_action( 'seculoco_spam_protection_settings_fields' );
@@ -377,6 +385,9 @@ class Seculoco_Settings_Manager {
 		echo '</div>';
 		echo '<div class="seculoco-card-body">';
 		echo '<p>' . esc_html__( 'Configure automatic deletion of old login data.', 'secure-login-collector' ) . '</p>';
+		if ( ! seculoco_is_premium_active() ) {
+			echo '<p class="description">' . esc_html__( 'Auto-deletion is available in Secure Login Collector Pro.', 'secure-login-collector' ) . '</p>';
+		}
 		// Don't close the card-body div here - let the form-table be inside it.
 	}
 
@@ -392,6 +403,9 @@ class Seculoco_Settings_Manager {
 		echo '</div>';
 		echo '<div class="seculoco-card-body">';
 		echo '<p>' . esc_html__( 'Configure honeypot protection to prevent spam submissions and automated bot attacks.', 'secure-login-collector' ) . '</p>';
+		if ( ! seculoco_has_honeypot_feature() ) {
+			echo '<p class="description">' . esc_html__( 'Honeypot spam protection is available in Secure Login Collector Pro.', 'secure-login-collector' ) . '</p>';
+		}
 		// Don't close the card-body div here - let the form-table be inside it.
 	}
 

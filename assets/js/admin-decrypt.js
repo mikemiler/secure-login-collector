@@ -37,11 +37,8 @@
             this.keyCacheTimeout = 60000; // 60 seconds
             this.keyCacheTimer = null;
 
-            // Zero-knowledge: DEK cache and timer
-            this.cachedDEK = null;
-            this.dekCacheTimeout = 60000; // 60 seconds
-            this.dekCacheTimer = null;
-            this.dekInactivityTimer = null;
+            // Track whether the current private key was derived from a master password
+            this.lastKeyWasPassword = false;
 
             // Extension Registry - PRO features register here
             this.extensions = {
@@ -190,13 +187,13 @@
                 // Start/reset per-entry auto-clear countdown
                 this.resetEntryTimer(entryId);
 
-                // Reset key cache timer (keeps privateKey for a short window)
-                this.resetKeyCacheTimer();
-
-                // Reset DEK inactivity timer on successful decryption
-                if (this.cachedDEK) {
-                    this.resetDEKInactivityTimer();
+                if (this.lastKeyWasPassword) {
+                    this.clearDEKCache();
+                } else {
+                    this.resetKeyCacheTimer();
                 }
+
+                this.lastKeyWasPassword = false;
 
             } catch (error) {
                 console.error('Decryption failed:', error);
@@ -235,6 +232,7 @@
 
             // If PRO extension registered, use it
             if (this.extensions.keyProvider && typeof this.extensions.keyProvider.getKey === 'function') {
+                this.lastKeyWasPassword = false;
                 return await this.extensions.keyProvider.getKey(entryId);
             }
 
@@ -259,11 +257,6 @@
 
             if (!response.success) {
                 throw new Error('Failed to get private key');
-            }
-
-            // Check if we have cached DEK for this session
-            if (this.cachedDEK) {
-                return this.cachedDEK;
             }
 
             // Prompt for master password
@@ -302,10 +295,7 @@
             // Unwrap DEK with master password
             const dek = await this.unwrapDEKWithPassword(wrappedDEK, masterPassword, salt, iv, pbkdf2Iterations);
 
-            // Cache DEK in memory (not localStorage!)
-            this.cachedDEK = dek;
-            this.startDEKCacheTimer();
-
+            this.lastKeyWasPassword = true;
             return dek;
         }
 
@@ -992,12 +982,6 @@
                                         </button>
                                     </div>
                                 </div>
-                                <div class="seculoco-field-group">
-                                    <label>
-                                        <input type="checkbox" id="seculoco-remember-password" />
-                                        Remember for this session (60 seconds)
-                                    </label>
-                                </div>
                                 <div class="seculoco-error-message" id="seculoco-password-error" style="display: none;"></div>
                             </div>
                             <div class="seculoco-modal-footer">
@@ -1072,54 +1056,11 @@
         }
 
         /**
-         * Zero-knowledge: Start DEK cache timer
-         */
-        startDEKCacheTimer() {
-            // Clear existing timers
-            this.clearDEKCacheTimers();
-
-            // Main cache timer (60 seconds)
-            this.dekCacheTimer = setTimeout(() => {
-                this.clearDEKCache();
-            }, this.dekCacheTimeout);
-
-            // Inactivity timer (60 seconds)
-            this.resetDEKInactivityTimer();
-        }
-
-        /**
-         * Zero-knowledge: Reset DEK inactivity timer
-         */
-        resetDEKInactivityTimer() {
-            if (this.dekInactivityTimer) {
-                clearTimeout(this.dekInactivityTimer);
-            }
-
-            this.dekInactivityTimer = setTimeout(() => {
-                this.clearDEKCache();
-            }, 60000); // 60 seconds of inactivity
-        }
-
-        /**
-         * Zero-knowledge: Clear DEK cache timers
-         */
-        clearDEKCacheTimers() {
-            if (this.dekCacheTimer) {
-                clearTimeout(this.dekCacheTimer);
-                this.dekCacheTimer = null;
-            }
-            if (this.dekInactivityTimer) {
-                clearTimeout(this.dekInactivityTimer);
-                this.dekInactivityTimer = null;
-            }
-        }
-
-        /**
-         * Zero-knowledge: Clear DEK from memory
+         * Clear password-derived private keys from memory immediately.
          */
         clearDEKCache() {
-            this.cachedDEK = null;
-            this.clearDEKCacheTimers();
+            this.privateKey = null;
+            this.lastKeyWasPassword = false;
         }
 
         /**

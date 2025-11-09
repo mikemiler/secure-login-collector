@@ -298,14 +298,14 @@ class Seculoco_List_Table extends WP_List_Table
         }
 
         // Extend button (only for non-expired entries if expiration is enabled) with icon.
-        $expiration_days = get_option(SECULOCO_OPTION_EXPIRATION_DAYS, 30);
+        $expiration_days = seculoco_get_expiration_days();
         if ($expiration_days > 0 && ! $is_expired && !$is_undecryptable ) {
             $actions[] = sprintf(
                 '<button type="button" class="button button-secondary extend-btn" data-id="%s" title="%s"><span class="dashicons dashicons-calendar-alt"></span></button>',
                 $item->id,
                 esc_attr__('Extend retention period', 'secure-login-collector')
             );
-        } else {
+        } elseif (seculoco_is_premium_active()) {
             $actions[] = sprintf(
                 '<button type="button" class="button button-secondary extend-btn" title="%s" style="opacity: 0.7" disabled><span class="dashicons dashicons-calendar-alt"></span></button>',
                 $item->id,
@@ -994,7 +994,7 @@ class Seculoco_Admin_Interface
         $row                    = $this->database_manager->get_entry($extend_id);
         $is_expired             = isset($row->is_expired) ? $row->is_expired : 0;
         $new_expiration_display = $this->database_manager->calculate_expiration($row->retention_until, $is_expired);
-        $expiration_days        = get_option(SECULOCO_OPTION_EXPIRATION_DAYS, 30);
+        $expiration_days        = seculoco_get_expiration_days();
         wp_send_json_success(
             array(
             /* translators: 1: Number of days the retention period was extended. */

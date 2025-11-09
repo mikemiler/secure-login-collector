@@ -235,7 +235,7 @@ class Seculoco_Frontend_Handler {
 				// Check text type selection.
 				$text_type       = get_option( SECULOCO_OPTION_FRONTEND_TEXT_TYPE, 'default' );
 				$custom_text     = get_option( SECULOCO_OPTION_FRONTEND_FORM_TEXT, '' );
-				$expiration_days = get_option( SECULOCO_OPTION_EXPIRATION_DAYS, 30 );
+				$expiration_days = seculoco_get_expiration_days();
 
 				if ( 'custom' === $text_type && ! empty( $custom_text ) ) :
 					// Handle placeholder replacement for custom text.
@@ -290,7 +290,9 @@ class Seculoco_Frontend_Handler {
 				do_action( 'seculoco_before_form_render' );
 
 				// Generate honeypot field HTML (invisible to humans, catches bots).
-				echo $this->spam_protection->generate_honeypot_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in method.
+				if ( seculoco_is_honeypot_enabled() ) {
+					echo $this->spam_protection->generate_honeypot_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in method.
+				}
 				?>
 
 				<div class="seculoco-form-group">
@@ -409,11 +411,13 @@ class Seculoco_Frontend_Handler {
 		}
 
 		// Validate spam protection (bot detection via timing and hidden fields).
-		$spam_result = $this->spam_protection->validate_submission( $_POST );
-		if ( is_wp_error( $spam_result ) ) {
-			// Log silently but return generic error (don't reveal spam protection mechanism).
-			wp_send_json_error( $spam_result->get_error_message() );
-			return;
+		if ( seculoco_is_honeypot_enabled() ) {
+			$spam_result = $this->spam_protection->validate_submission( $_POST );
+			if ( is_wp_error( $spam_result ) ) {
+				// Log silently but return generic error (don't reveal spam protection mechanism).
+				wp_send_json_error( $spam_result->get_error_message() );
+				return;
+			}
 		}
 
 		// Validate required fields.

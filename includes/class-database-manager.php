@@ -85,6 +85,11 @@ class Seculoco_Database_Manager {
 	 * @return void
 	 */
 	public function schedule_cleanup() {
+		if ( ! seculoco_is_auto_delete_enabled() ) {
+			$this->clear_scheduled_cleanup();
+			return;
+		}
+
 		if ( ! wp_next_scheduled( 'seculoco_cleanup_cron' ) ) {
 			wp_schedule_event( time(), 'daily', 'seculoco_cleanup_cron' );
 		}
@@ -112,10 +117,7 @@ class Seculoco_Database_Manager {
 	public function cleanup_old_data() {
 		global $wpdb;
 
-		// Check if auto-deletion is enabled.
-		$expiration_days = get_option( SECULOCO_OPTION_EXPIRATION_DAYS, 30 );
-		if ( $expiration_days <= 0 ) {
-			// Auto-deletion is disabled, don't delete anything.
+		if ( ! seculoco_is_auto_delete_enabled() ) {
 			return 0;
 		}
 
@@ -173,7 +175,7 @@ class Seculoco_Database_Manager {
 		global $wpdb;
 
 		$retention_until = null;
-		$expiration_days = get_option( SECULOCO_OPTION_EXPIRATION_DAYS, 30 );
+		$expiration_days = seculoco_get_expiration_days();
 
 		if ( $expiration_days > 0 ) {
 			$retention_until = gmdate( 'Y-m-d H:i:s', strtotime( "+{$expiration_days} days" ) );
@@ -236,11 +238,11 @@ class Seculoco_Database_Manager {
 	public function extend_retention( $id ) {
 		global $wpdb;
 
-		$expiration_days = get_option( SECULOCO_OPTION_EXPIRATION_DAYS, 30 );
-		if ( $expiration_days <= 0 ) {
-			return false; // Auto-deletion is disabled.
+		if ( ! seculoco_is_auto_delete_enabled() ) {
+			return false;
 		}
 
+		$expiration_days    = seculoco_get_expiration_days();
 		$new_retention_until = gmdate( 'Y-m-d H:i:s', strtotime( "+{$expiration_days} days" ) );
 
 		return $wpdb->update(

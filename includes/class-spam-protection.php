@@ -26,6 +26,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Seculoco_Spam_Protection {
 
 	/**
+	 * Whether the honeypot feature is available (Premium).
+	 *
+	 * @var bool
+	 */
+	private $feature_available = false;
+
+	/**
 	 * Transient key prefix for honeypot field name.
 	 *
 	 * @since 1.0.0
@@ -71,8 +78,12 @@ class Seculoco_Spam_Protection {
 	 * @since 1.0.0
 	 */
 	public function __construct() {
-		// Initialize settings if not exists.
-		$this->initialize_settings();
+		$this->feature_available = seculoco_has_honeypot_feature();
+
+		if ( $this->feature_available ) {
+			// Initialize settings if not exists.
+			$this->initialize_settings();
+		}
 	}
 
 	/**
@@ -82,6 +93,10 @@ class Seculoco_Spam_Protection {
 	 * @return void
 	 */
 	private function initialize_settings() {
+		if ( ! $this->feature_available ) {
+			return;
+		}
+
 		$settings = get_option( self::SETTINGS_KEY );
 
 		if ( false === $settings ) {
@@ -177,6 +192,10 @@ class Seculoco_Spam_Protection {
 	 * @return string HTML for honeypot field.
 	 */
 	public function generate_honeypot_html() {
+		if ( ! $this->feature_available || ! seculoco_is_honeypot_enabled() ) {
+			return '';
+		}
+
 		$settings = get_option( self::SETTINGS_KEY );
 
 		// Check if honeypot is enabled.
@@ -213,6 +232,10 @@ class Seculoco_Spam_Protection {
 	 * @return true|WP_Error True on success, WP_Error on validation failure.
 	 */
 	public function validate_submission( $post_data ) {
+		if ( ! $this->feature_available || ! seculoco_is_honeypot_enabled() ) {
+			return true;
+		}
+
 		$settings = get_option( self::SETTINGS_KEY );
 
 		// Check if honeypot is enabled.
@@ -256,6 +279,10 @@ class Seculoco_Spam_Protection {
 	 * @return int Minimum time threshold in seconds.
 	 */
 	public function get_minimum_time_threshold() {
+		if ( ! $this->feature_available ) {
+			return self::DEFAULT_MIN_TIME;
+		}
+
 		$settings = get_option( self::SETTINGS_KEY );
 
 		if ( isset( $settings['min_time_threshold'] ) && is_numeric( $settings['min_time_threshold'] ) ) {
@@ -273,6 +300,10 @@ class Seculoco_Spam_Protection {
 	 * @return bool True on success, false on failure.
 	 */
 	public function update_settings( $new_settings ) {
+		if ( ! $this->feature_available ) {
+			return false;
+		}
+
 		$current_settings = get_option( self::SETTINGS_KEY );
 
 		$updated_settings = wp_parse_args( $new_settings, $current_settings );
@@ -300,6 +331,14 @@ class Seculoco_Spam_Protection {
 	 * @return array Current settings.
 	 */
 	public function get_settings() {
+		if ( ! $this->feature_available ) {
+			return array(
+				'enabled'              => false,
+				'min_time_threshold'   => self::DEFAULT_MIN_TIME,
+				'log_blocked_attempts' => false,
+			);
+		}
+
 		return get_option( self::SETTINGS_KEY );
 	}
 
@@ -316,6 +355,10 @@ class Seculoco_Spam_Protection {
 	 * @return void
 	 */
 	private function log_blocked_submission( $reason, $post_data, $elapsed_time = null ) {
+		if ( ! $this->feature_available || ! seculoco_is_honeypot_enabled() ) {
+			return;
+		}
+
 		$settings = get_option( self::SETTINGS_KEY );
 
 		// Check if logging is enabled.
@@ -365,6 +408,10 @@ class Seculoco_Spam_Protection {
 	 * @return array Log entries.
 	 */
 	public function get_blocked_log( $limit = 50 ) {
+		if ( ! $this->feature_available ) {
+			return array();
+		}
+
 		$log = get_option( SECULOCO_OPTION_HONEYPOT_LOG, array() );
 
 		if ( $limit > 0 && count( $log ) > $limit ) {
@@ -382,6 +429,10 @@ class Seculoco_Spam_Protection {
 	 * @return bool True on success, false on failure.
 	 */
 	public function clear_blocked_log() {
+		if ( ! $this->feature_available ) {
+			return true;
+		}
+
 		return delete_option( SECULOCO_OPTION_HONEYPOT_LOG );
 	}
 
@@ -392,6 +443,16 @@ class Seculoco_Spam_Protection {
 	 * @return array Statistics including total blocks, reasons breakdown, etc.
 	 */
 	public function get_statistics() {
+		if ( ! $this->feature_available ) {
+			return array(
+				'total_blocked' => 0,
+				'reasons'       => array(),
+				'last_24h'      => 0,
+				'last_7d'       => 0,
+				'unique_ips'    => array(),
+			);
+		}
+
 		$log = get_option( SECULOCO_OPTION_HONEYPOT_LOG, array() );
 
 		$stats = array(

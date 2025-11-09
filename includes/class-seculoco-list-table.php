@@ -294,14 +294,14 @@ class Seculoco_List_Table extends WP_List_Table
         }
 
         // Extend button (only for non-expired entries if expiration is enabled) with icon.
-        $expiration_days = get_option(SECULOCO_OPTION_EXPIRATION_DAYS, 30);
+        $expiration_days = seculoco_get_expiration_days();
         if ($expiration_days > 0 && ! $is_expired && ! $is_undecryptable ) {
             $actions[] = sprintf(
                 '<button type="button" class="button button-secondary extend-btn" data-id="%s" title="%s"><span class="dashicons dashicons-calendar-alt"></span></button>',
                 $item->id,
                 esc_attr__('Extend retention period', 'secure-login-collector')
             );
-        } else {
+        } elseif (seculoco_is_premium_active()) {
             $actions[] = sprintf(
                 '<button type="button" class="button button-secondary extend-btn" title="%s" style="opacity: 0.7" disabled><span class="dashicons dashicons-calendar-alt"></span></button>',
                 $item->id,
