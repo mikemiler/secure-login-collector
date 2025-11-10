@@ -4,7 +4,7 @@ Tags: login, password, credential management, password collection, data security
 Requires at least: 6.2
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.0.2
+Stable tag: 2.0.3
 License: GPL v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -85,9 +85,9 @@ Bitwarden, 1Password, LastPass, Dashlane, KeePass, Chrome, Firefox, Safari, and 
 
 == Changelog ==
 
-= 2.0.1 =
+= 2.0.3 =
 * Remove branding from frontend
-* Code cleanup
+* Code quality improvements
 
 = 2.0.0 =
 * Refactoring for launch at wordpres.org
