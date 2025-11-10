@@ -1,10 +1,11 @@
 <?php
+// phpcs:disable WordPress.Files.FileName.InvalidClassFileName,WordPress.Files.FileName.NotHyphenatedLowercase
 /**
+ * Premium Settings Manager.
+ *
+ * Extends the free version with pro features via hooks.
+ *
  * @fs_premium_only
- *
- * Premium Settings Manager
- * Extends free version with pro features via hooks
- *
  * @package SecureLoginCollector
  */
 
@@ -12,6 +13,7 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
+// phpcs:enable WordPress.Files.FileName.InvalidClassFileName,WordPress.Files.FileName.NotHyphenatedLowercase
 
 /**
  * Class Seculoco_Settings_Manager_Pro

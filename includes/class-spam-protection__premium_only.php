@@ -1,4 +1,5 @@
 <?php
+// phpcs:disable WordPress.Files.FileName.InvalidClassFileName,WordPress.Files.FileName.NotHyphenatedLowercase
 /**
  * Premium Spam Protection
  *
@@ -728,6 +729,7 @@ class Seculoco_Rate_Limiter {
 	}
 }
 
+/* phpcs:disable Universal.Files.OneObjectStructurePerFile.MultipleFound */
 /**
  * Premium Honeypot implementation (hooks into free stubs).
  */
@@ -737,6 +739,9 @@ class Seculoco_Spam_Protection_Honeypot_Premium {
 	const CLASS_NAME_TRANSIENT = 'seculoco_honeypot_class_name';
 	const TRANSIENT_TTL        = DAY_IN_SECONDS;
 
+	/**
+	 * Hook premium honeypot functionality into the free filters.
+	 */
 	public function __construct() {
 		add_filter( 'seculoco_has_honeypot_feature', '__return_true' );
 		add_filter( 'seculoco_is_honeypot_enabled', array( $this, 'is_enabled' ) );
@@ -744,6 +749,11 @@ class Seculoco_Spam_Protection_Honeypot_Premium {
 		add_filter( 'seculoco_honeypot_validate', array( $this, 'validate_submission' ), 10, 2 );
 	}
 
+	/**
+	 * Retrieve current honeypot settings.
+	 *
+	 * @return array
+	 */
 	private function get_settings() {
 		$defaults = array(
 			'enabled'              => true,
@@ -755,11 +765,24 @@ class Seculoco_Spam_Protection_Honeypot_Premium {
 		return wp_parse_args( $settings, $defaults );
 	}
 
+	/**
+	 * Determine whether honeypot checks are enabled.
+	 *
+	 * @param  bool $enabled Default enabled flag passed by the filter.
+	 * @return bool
+	 */
 	public function is_enabled( $enabled ) {
+		unset( $enabled );
+
 		$settings = $this->get_settings();
 		return ! empty( $settings['enabled'] );
 	}
 
+	/**
+	 * Retrieve the generated honeypot field name.
+	 *
+	 * @return string
+	 */
 	private function get_field_name() {
 		$field_name = get_transient( self::FIELD_NAME_TRANSIENT );
 		if ( false === $field_name ) {
@@ -769,6 +792,11 @@ class Seculoco_Spam_Protection_Honeypot_Premium {
 		return $field_name;
 	}
 
+	/**
+	 * Retrieve the generated honeypot wrapper class.
+	 *
+	 * @return string
+	 */
 	private function get_class_name() {
 		$class_name = get_transient( self::CLASS_NAME_TRANSIENT );
 		if ( false === $class_name ) {
@@ -779,6 +807,12 @@ class Seculoco_Spam_Protection_Honeypot_Premium {
 		return $class_name;
 	}
 
+	/**
+	 * Render the honeypot markup.
+	 *
+	 * @param  string $html Default HTML passed by the filter.
+	 * @return string
+	 */
 	public function render_field( $html ) {
 		$settings = $this->get_settings();
 		if ( empty( $settings['enabled'] ) ) {
@@ -798,6 +832,13 @@ class Seculoco_Spam_Protection_Honeypot_Premium {
 		return $html;
 	}
 
+	/**
+	 * Validate honeypot submission payload.
+	 *
+	 * @param  true|WP_Error $result    Current validation result.
+	 * @param  array         $post_data Submitted data.
+	 * @return true|WP_Error
+	 */
 	public function validate_submission( $result, $post_data ) {
 		if ( $result instanceof WP_Error ) {
 			return $result;
@@ -822,7 +863,16 @@ class Seculoco_Spam_Protection_Honeypot_Premium {
 		return true;
 	}
 
+	/**
+	 * Log blocked honeypot attempts.
+	 *
+	 * @param string $reason    Reason for the block.
+	 * @param array  $post_data Submitted payload (unused, logged for parity).
+	 * @return void
+	 */
 	private function log_blocked_submission( $reason, $post_data ) {
+		unset( $post_data );
+
 		$settings = $this->get_settings();
 		if ( empty( $settings['log_blocked_attempts'] ) ) {
 			return;
@@ -1021,3 +1071,6 @@ class Seculoco_Spam_Protection_Premium {
 		return SecureLoginCollector::get_client_ip();
 	}
 }
+
+/* phpcs:enable Universal.Files.OneObjectStructurePerFile.MultipleFound */
+// phpcs:enable WordPress.Files.FileName.InvalidClassFileName,WordPress.Files.FileName.NotHyphenatedLowercase

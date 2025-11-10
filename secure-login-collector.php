@@ -1,4 +1,5 @@
 <?php
+// phpcs:disable WordPress.Files.FileName.InvalidClassFileName
 /**
  * Plugin Name: Secure Login Collector
  * Plugin URI: https://wp-mike.com
@@ -15,6 +16,7 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
+// phpcs:enable WordPress.Files.FileName.InvalidClassFileName
 
 // ============================================
 // GUARD 1: Prevent dual loading
@@ -129,6 +131,13 @@ class SecureLoginCollector {
 	private $spam_protection_premium;
 
 	/**
+	 * Shared plugin instance reference.
+	 *
+	 * @var SecureLoginCollector|null
+	 */
+	private static $instance = null;
+
+	/**
 	 * Flag indicating whether any encryption keys are ready (password or passkey).
 	 *
 	 * @var bool
@@ -154,6 +163,19 @@ class SecureLoginCollector {
 		// Add upgrade notices.
 		add_action( 'admin_notices', array( $this, 'show_upgrade_notices' ) );
 		add_action( 'admin_notices', array( $this, 'maybe_show_encryption_notice' ), 5 );
+	}
+
+	/**
+	 * Retrieve the shared plugin instance.
+	 *
+	 * @return SecureLoginCollector
+	 */
+	public static function instance() {
+		if ( null === self::$instance ) {
+			self::$instance = new self();
+		}
+
+		return self::$instance;
 	}
 
 	/**
@@ -339,26 +361,6 @@ class SecureLoginCollector {
 	}
 }
 
-/**
- * Initialize the plugin
- *
- * This function instantiates the main plugin class after Freemius has loaded.
- * It ensures proper initialization order and prevents race conditions.
- *
- * @return SecureLoginCollector The plugin instance
- */
-if ( ! function_exists( 'seculoco_init' ) ) {
-	function seculoco_init() {
-		static $instance = null;
-
-		if ( null === $instance ) {
-			$instance = new SecureLoginCollector();
-		}
-
-		return $instance;
-	}
-}
-
 register_uninstall_hook( __FILE__, 'seculoco_wp_uninstall_cleanup' );
 
 /**
@@ -370,7 +372,7 @@ register_uninstall_hook( __FILE__, 'seculoco_wp_uninstall_cleanup' );
 add_action(
 	'plugins_loaded',
 	function () {
-		seculoco_init();
+		SecureLoginCollector::instance();
 	},
 	20
 );

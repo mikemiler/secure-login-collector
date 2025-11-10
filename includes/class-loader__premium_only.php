@@ -1,4 +1,5 @@
 <?php
+// phpcs:disable WordPress.Files.FileName.NotHyphenatedLowercase
 /**
  * Premium loader for Secure Login Collector.
  *
@@ -93,3 +94,5 @@ function seculoco_load_premium_dependencies() {
 		new Seculoco_Passkey_Manager();
 	}
 }
+
+// phpcs:enable WordPress.Files.FileName.NotHyphenatedLowercase

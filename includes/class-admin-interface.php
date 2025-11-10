@@ -1,4 +1,5 @@
 <?php
+// phpcs:disable WordPress.Files.FileName.InvalidClassFileName
 /**
  * Admin Interface Class
  *
@@ -14,6 +15,7 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
+// phpcs:enable WordPress.Files.FileName.InvalidClassFileName
 
 /**
  * Class Seculoco_Admin_Interface
@@ -181,15 +183,15 @@ class Seculoco_Admin_Interface {
 
 		$ajax_data['strings'] = apply_filters( 'seculoco_admin_strings', $ajax_data['strings'] );
 
-		// Primary localization: seculocoAjax (standard variable name)
+		// Primary localization: seculocoAjax (standard variable name).
 		wp_localize_script( 'secure-login-admin-js', 'seculocoAjax', $ajax_data );
 
-		// Backward compatibility: Also provide as seculocoAdmin during transition period
-		// Both variables contain identical data to support legacy premium scripts
+		// Backward compatibility: Also provide as seculocoAdmin during transition period.
+		// Both variables contain identical data to support legacy premium scripts.
 		wp_localize_script( 'secure-login-admin-js', 'seculocoAdmin', $ajax_data );
 
-		// CRITICAL: Also localize for the decrypt script (needed for AJAX calls in admin-decrypt.js)
-		// Provide both variable names for maximum compatibility
+		// CRITICAL: Also localize for the decrypt script (needed for AJAX calls in admin-decrypt.js).
+		// Provide both variable names for maximum compatibility.
 		wp_localize_script( 'seculoco-admin-decrypt', 'seculocoAjax', $ajax_data );
 		wp_localize_script( 'seculoco-admin-decrypt', 'seculocoAdmin', $ajax_data );
 

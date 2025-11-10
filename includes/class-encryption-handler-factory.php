@@ -1,4 +1,5 @@
 <?php
+// phpcs:disable WordPress.Files.FileName.InvalidClassFileName
 /**
  * Encryption Handler Factory
  *
@@ -12,6 +13,7 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
+// phpcs:enable WordPress.Files.FileName.InvalidClassFileName
 
 /**
  * Factory responsible for returning encryption handler instances.

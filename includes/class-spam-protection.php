@@ -1,4 +1,5 @@
 <?php
+// phpcs:disable WordPress.Files.FileName.InvalidClassFileName
 /**
  * Free Spam Protection Placeholder
  *
@@ -12,6 +13,7 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
+// phpcs:enable WordPress.Files.FileName.InvalidClassFileName
 
 /**
  * Minimal spam protection scaffold for the free plugin.

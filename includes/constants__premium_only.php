@@ -1,4 +1,5 @@
 <?php
+// phpcs:disable WordPress.Files.FileName.InvalidClassFileName,WordPress.Files.FileName.NotHyphenatedLowercase
 /**
  * Premium-only option constants.
  *
@@ -86,23 +87,14 @@ class Seculoco_Premium_Constants {
 			define( $name, $value );
 		}
 	}
-}
 
-add_action( 'seculoco_register_premium_constants', array( 'Seculoco_Premium_Constants', 'register' ), 5 );
-add_action( 'seculoco_before_uninstall_cleanup', array( 'Seculoco_Premium_Constants', 'register' ), 5 );
-
-if ( did_action( 'seculoco_register_premium_constants' ) ) {
-	Seculoco_Premium_Constants::register();
-}
-
-/**
- * Ensure Pro-specific options are removed alongside the base plugin options.
- *
- * @param array $option_names Free plugin option identifiers slated for deletion.
- *
- * @return array
- */
-function seculoco_premium_extend_uninstall_options( $option_names ) {
+	/**
+	 * Ensure premium options are removed during uninstall.
+	 *
+	 * @param array $option_names Base option identifiers slated for deletion.
+	 * @return array
+	 */
+	public static function extend_uninstall_options( $option_names ) {
 		$premium_only_options = array(
 			defined( 'SECULOCO_OPTION_RATE_LIMIT_ENABLED' ) ? SECULOCO_OPTION_RATE_LIMIT_ENABLED : null,
 			defined( 'SECULOCO_OPTION_RATE_LIMIT_MAX_ATTEMPTS' ) ? SECULOCO_OPTION_RATE_LIMIT_MAX_ATTEMPTS : null,
@@ -119,6 +111,16 @@ function seculoco_premium_extend_uninstall_options( $option_names ) {
 				)
 			)
 		);
+	}
 }
 
-add_filter( 'seculoco_uninstall_option_names', 'seculoco_premium_extend_uninstall_options' );
+add_action( 'seculoco_register_premium_constants', array( 'Seculoco_Premium_Constants', 'register' ), 5 );
+add_action( 'seculoco_before_uninstall_cleanup', array( 'Seculoco_Premium_Constants', 'register' ), 5 );
+
+if ( did_action( 'seculoco_register_premium_constants' ) ) {
+	Seculoco_Premium_Constants::register();
+}
+
+add_filter( 'seculoco_uninstall_option_names', array( 'Seculoco_Premium_Constants', 'extend_uninstall_options' ) );
+
+// phpcs:enable WordPress.Files.FileName.InvalidClassFileName,WordPress.Files.FileName.NotHyphenatedLowercase

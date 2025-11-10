@@ -1,4 +1,5 @@
 <?php
+// phpcs:disable WordPress.Files.FileName.InvalidClassFileName
 /**
  * Unified Cryptography Module (Free)
  *
@@ -13,6 +14,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+// phpcs:enable WordPress.Files.FileName.InvalidClassFileName
+
+/**
+ * Provides helpers for wrapping and unwrapping encryption keys.
+ */
 class Seculoco_Unified_Crypto {
 
 	const PBKDF2_ITERATIONS = 100000;
@@ -137,10 +143,10 @@ class Seculoco_Unified_Crypto {
 
 		return array(
 			'method'         => 'password',
-			'encrypted_data' => base64_encode( $cipher ),
-			'iv'             => base64_encode( $iv ),
-			'salt'           => base64_encode( $salt ),
-			'tag'            => base64_encode( $tag ),
+			'encrypted_data' => base64_encode( $cipher ), // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Binary payload must be serialized safely for transport.
+			'iv'             => base64_encode( $iv ), // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Binary payload must be serialized safely for transport.
+			'salt'           => base64_encode( $salt ), // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Binary payload must be serialized safely for transport.
+			'tag'            => base64_encode( $tag ), // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Binary payload must be serialized safely for transport.
 			'algorithm'      => 'AES-256-GCM',
 			'kdf'            => 'PBKDF2',
 			'kdf_iterations' => self::PBKDF2_ITERATIONS,
@@ -171,10 +177,10 @@ class Seculoco_Unified_Crypto {
 			);
 		}
 
-		$encrypted = base64_decode( $wrapped_data['encrypted_data'] ?? '' );
-		$iv        = base64_decode( $wrapped_data['iv'] ?? '' );
-		$salt      = base64_decode( $wrapped_data['salt'] ?? '' );
-		$tag       = base64_decode( $wrapped_data['tag'] ?? '' );
+		$encrypted = base64_decode( $wrapped_data['encrypted_data'] ?? '' ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- Decoding previously stored binary payload.
+		$iv        = base64_decode( $wrapped_data['iv'] ?? '' ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- Decoding previously stored binary payload.
+		$salt      = base64_decode( $wrapped_data['salt'] ?? '' ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- Decoding previously stored binary payload.
+		$tag       = base64_decode( $wrapped_data['tag'] ?? '' ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- Decoding previously stored binary payload.
 
 		if ( false === $encrypted || false === $iv || false === $salt || false === $tag ) {
 			return new WP_Error(
