@@ -41,7 +41,7 @@ echo -e "${BLUE}╚════════════════════�
 echo ""
 
 # Get current version from plugin file
-CURRENT_VERSION=$(grep "^define('SECULOCO_VERSION'" "$PLUGIN_FILE" | sed -E "s/.*'([0-9.]+)'.*/\1/")
+CURRENT_VERSION=$(grep "^define( 'SECULOCO_VERSION'" "$PLUGIN_FILE" | sed -E "s/.*'([0-9.]+)'.*/\1/")
 
 if [ -z "$CURRENT_VERSION" ]; then
     echo -e "${RED}Error: Could not detect current version${NC}"
@@ -96,7 +96,7 @@ sed -i '' "s/^\( \* Version: \).*/\1${NEW_VERSION}/" "$PLUGIN_FILE"
 echo -e "${GREEN}✓ Updated plugin header${NC}"
 
 # Update PHP constant (define( 'SECULOCO_VERSION', 'X.Y.Z' );)
-sed -i '' "s/^define('SECULOCO_VERSION', '[0-9.]*');/define('SECULOCO_VERSION', '${NEW_VERSION}');/" "$PLUGIN_FILE"
+sed -i '' "s/^define( 'SECULOCO_VERSION', '[0-9.]*' );/define( 'SECULOCO_VERSION', '${NEW_VERSION}' );/" "$PLUGIN_FILE"
 echo -e "${GREEN}✓ Updated PHP constant${NC}"
 
 # Update readme.txt (Stable tag: X.Y.Z)

@@ -33,7 +33,6 @@ Secure way for agencies to receive client login credentials. Stop asking clients
 - **Spam and bot defense** – invisible honeypot fields, nonce verification, rate limiting, and IP-aware hooks block automated dumps without annoying clients.
 - **Retention & cleanup controls** – choose how long data stays accessible and let the plugin redact expired payloads automatically.
 - **Bulk decrypt & export** – decrypt multiple entries at once and export directly to Bitwarden, 1Password, LastPass, Dashlane, CSV, or JSON for team password vaults.
-- **White-label mode** – remove Secure Login Collector branding from the client form and emails so the experience is 100% your agency.
 
 = Freemius & privacy =
 This plugin bundles the Freemius SDK for licensing, secure payments, and (optional) telemetry. Nothing is shared until you explicitly opt in. When you do, only environment details (site URL, WP/PHP version, plugin version) plus contact email/locale are sent to Freemius so upgrades and receipts work. Client submissions, encrypted payloads, and decrypted credentials never leave your hosting environment.
