@@ -4,817 +4,817 @@
  */
 
 /* ==========================================================================
-   Base Variables and Reusable Classes
-   ========================================================================== */
+	Base Variables and Reusable Classes
+	========================================================================== */
 
 :root {
-    --seculoco-primary: #2271b1;
-    --seculoco-primary-hover: #135e96;
-    --seculoco-success: #00a32a;
-    --seculoco-warning: #dba617;
-    --seculoco-danger: #d63638;
-    --seculoco-danger-hover: #b32d2e;
-    --seculoco-info: #2196f3;
-    --seculoco-border: #c3c4c7;
-    --seculoco-border-light: #e0e0e0;
-    --seculoco-bg-light: #f6f7f7;
-    --seculoco-bg-white: #ffffff;
-    --seculoco-text-primary: #1d2327;
-    --seculoco-text-secondary: #50575e;
-    --seculoco-text-muted: #8c8f94;
-    --seculoco-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
-    --seculoco-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
-    --seculoco-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.1);
-    --seculoco-radius-sm: 4px;
-    --seculoco-radius-md: 8px;
-    --seculoco-radius-lg: 12px;
+	--seculoco-primary: #2271b1;
+	--seculoco-primary-hover: #135e96;
+	--seculoco-success: #00a32a;
+	--seculoco-warning: #dba617;
+	--seculoco-danger: #d63638;
+	--seculoco-danger-hover: #b32d2e;
+	--seculoco-info: #2196f3;
+	--seculoco-border: #c3c4c7;
+	--seculoco-border-light: #e0e0e0;
+	--seculoco-bg-light: #f6f7f7;
+	--seculoco-bg-white: #ffffff;
+	--seculoco-text-primary: #1d2327;
+	--seculoco-text-secondary: #50575e;
+	--seculoco-text-muted: #8c8f94;
+	--seculoco-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+	--seculoco-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
+	--seculoco-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.1);
+	--seculoco-radius-sm: 4px;
+	--seculoco-radius-md: 8px;
+	--seculoco-radius-lg: 12px;
 }
 
 /* ==========================================================================
-   Card Components
-   ========================================================================== */
+	Card Components
+	========================================================================== */
 
 .seculoco-card {
-    background: var(--seculoco-bg-white);
-    border: 1px solid var(--seculoco-border-light);
-    border-radius: var(--seculoco-radius-md);
-    box-shadow: var(--seculoco-shadow-sm);
-    padding: 24px;
-    margin-bottom: 24px;
-    transition: box-shadow 0.2s ease;
+	background: var(--seculoco-bg-white);
+	border: 1px solid var(--seculoco-border-light);
+	border-radius: var(--seculoco-radius-md);
+	box-shadow: var(--seculoco-shadow-sm);
+	padding: 24px;
+	margin-bottom: 24px;
+	transition: box-shadow 0.2s ease;
 }
 
 .seculoco-card:hover {
-    box-shadow: var(--seculoco-shadow-md);
+	box-shadow: var(--seculoco-shadow-md);
 }
 
 .seculoco-card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid var(--seculoco-border-light);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 20px;
+	padding-bottom: 16px;
+	border-bottom: 1px solid var(--seculoco-border-light);
 }
 
 .seculoco-card-title {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--seculoco-text-primary);
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+	font-size: 18px;
+	font-weight: 600;
+	color: var(--seculoco-text-primary);
+	margin: 0;
+	display: flex;
+	align-items: center;
+	gap: 8px;
 }
 
 .seculoco-card-title-icon {
-    font-size: 24px;
-    line-height: 1;
+	font-size: 24px;
+	line-height: 1;
 }
 
 .seculoco-card-body {
-    color: var(--seculoco-text-secondary);
-    line-height: 1.6;
+	color: var(--seculoco-text-secondary);
+	line-height: 1.6;
 }
 
 .seculoco-card-footer {
-    margin-top: 20px;
-    padding-top: 16px;
-    border-top: 1px solid var(--seculoco-border-light);
+	margin-top: 20px;
+	padding-top: 16px;
+	border-top: 1px solid var(--seculoco-border-light);
 }
 
 /* ==========================================================================
-   Alert/Notice Components
-   ========================================================================== */
+	Alert/Notice Components
+	========================================================================== */
 
 .seculoco-alert {
-    padding: 16px 20px;
-    border-radius: var(--seculoco-radius-sm);
-    margin-bottom: 20px;
-    border-left: 4px solid;
-    background: var(--seculoco-bg-white);
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    animation: slideIn 0.3s ease;
+	padding: 16px 20px;
+	border-radius: var(--seculoco-radius-sm);
+	margin-bottom: 20px;
+	border-left: 4px solid;
+	background: var(--seculoco-bg-white);
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	animation: slideIn 0.3s ease;
 }
 
 @keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+	from {
+		opacity: 0;
+		transform: translateY(-10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
 
 .seculoco-alert-icon {
-    font-size: 20px;
-    line-height: 1;
-    flex-shrink: 0;
-    margin-top: 2px;
+	font-size: 20px;
+	line-height: 1;
+	flex-shrink: 0;
+	margin-top: 2px;
 }
 
 .seculoco-alert-content {
-    flex: 1;
+	flex: 1;
 }
 
 .seculoco-alert-title {
-    font-weight: 600;
-    margin-bottom: 4px;
-    color: var(--seculoco-text-primary);
+	font-weight: 600;
+	margin-bottom: 4px;
+	color: var(--seculoco-text-primary);
 }
 
 .seculoco-alert-message {
-    color: var(--seculoco-text-secondary);
-    line-height: 1.5;
+	color: var(--seculoco-text-secondary);
+	line-height: 1.5;
 }
 
 .seculoco-alert-message ul {
-    margin: 8px 0 0 20px;
-    list-style: disc;
+	margin: 8px 0 0 20px;
+	list-style: disc;
 }
 
 /* Alert Variants */
 .seculoco-alert-danger {
-    border-left-color: var(--seculoco-danger);
-    background: #fef2f2;
+	border-left-color: var(--seculoco-danger);
+	background: #fef2f2;
 }
 
 .seculoco-alert-danger .seculoco-alert-icon {
-    color: var(--seculoco-danger);
+	color: var(--seculoco-danger);
 }
 
 .seculoco-alert-warning {
-    border-left-color: var(--seculoco-warning);
-    background: #fffdf0;
+	border-left-color: var(--seculoco-warning);
+	background: #fffdf0;
 }
 
 .seculoco-alert-warning .seculoco-alert-icon {
-    color: var(--seculoco-warning);
+	color: var(--seculoco-warning);
 }
 
 .seculoco-alert-info {
-    border-left-color: var(--seculoco-info);
-    background: #f0f9ff;
+	border-left-color: var(--seculoco-info);
+	background: #f0f9ff;
 }
 
 .seculoco-alert-info .seculoco-alert-icon {
-    color: var(--seculoco-info);
+	color: var(--seculoco-info);
 }
 
 .seculoco-alert-success {
-    border-left-color: var(--seculoco-success);
-    background: #f0fdf4;
+	border-left-color: var(--seculoco-success);
+	background: #f0fdf4;
 }
 
 .seculoco-alert-success .seculoco-alert-icon {
-    color: var(--seculoco-success);
+	color: var(--seculoco-success);
 }
 
 /* ==========================================================================
-   Button Styles
-   ========================================================================== */
+	Button Styles
+	========================================================================== */
 
 .seculoco-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 20px;
-    font-size: 14px;
-    font-weight: 500;
-    border-radius: var(--seculoco-radius-sm);
-    border: 1px solid transparent;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-decoration: none;
-    line-height: 1.4;
-    white-space: nowrap;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 20px;
+	font-size: 14px;
+	font-weight: 500;
+	border-radius: var(--seculoco-radius-sm);
+	border: 1px solid transparent;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	text-decoration: none;
+	line-height: 1.4;
+	white-space: nowrap;
 }
 
 .seculoco-btn:focus {
-    outline: 2px solid var(--seculoco-primary);
-    outline-offset: 2px;
+	outline: 2px solid var(--seculoco-primary);
+	outline-offset: 2px;
 }
 
 .seculoco-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+	opacity: 0.5;
+	cursor: not-allowed;
 }
 
 /* Button Variants */
 .seculoco-btn-primary {
-    background: var(--seculoco-primary);
-    color: white;
-    border-color: var(--seculoco-primary);
+	background: var(--seculoco-primary);
+	color: white;
+	border-color: var(--seculoco-primary);
 }
 
 .seculoco-btn-primary:hover:not(:disabled) {
-    background: var(--seculoco-primary-hover);
-    border-color: var(--seculoco-primary-hover);
-    color: white;
+	background: var(--seculoco-primary-hover);
+	border-color: var(--seculoco-primary-hover);
+	color: white;
 }
 
 .seculoco-btn-danger {
-    background: var(--seculoco-danger);
-    color: white;
-    border-color: var(--seculoco-danger);
+	background: var(--seculoco-danger);
+	color: white;
+	border-color: var(--seculoco-danger);
 }
 
 .seculoco-btn-danger:hover:not(:disabled) {
-    background: var(--seculoco-danger-hover);
-    border-color: var(--seculoco-danger-hover);
-    color: white;
+	background: var(--seculoco-danger-hover);
+	border-color: var(--seculoco-danger-hover);
+	color: white;
 }
 
 .seculoco-btn-secondary {
-    background: var(--seculoco-bg-white);
-    color: var(--seculoco-text-primary);
-    border-color: var(--seculoco-border);
+	background: var(--seculoco-bg-white);
+	color: var(--seculoco-text-primary);
+	border-color: var(--seculoco-border);
 }
 
 .seculoco-btn-secondary:hover:not(:disabled) {
-    background: var(--seculoco-bg-light);
-    border-color: var(--seculoco-text-secondary);
+	background: var(--seculoco-bg-light);
+	border-color: var(--seculoco-text-secondary);
 }
 
 .seculoco-btn-success {
-    background: var(--seculoco-success);
-    color: white;
-    border-color: var(--seculoco-success);
+	background: var(--seculoco-success);
+	color: white;
+	border-color: var(--seculoco-success);
 }
 
 .seculoco-btn-success:hover:not(:disabled) {
-    background: #008a20;
-    border-color: #008a20;
-    color: white;
+	background: #008a20;
+	border-color: #008a20;
+	color: white;
 }
 
 /* Button Sizes */
 .seculoco-btn-sm {
-    padding: 6px 12px;
-    font-size: 13px;
+	padding: 6px 12px;
+	font-size: 13px;
 }
 
 .seculoco-btn-lg {
-    padding: 12px 28px;
-    font-size: 16px;
+	padding: 12px 28px;
+	font-size: 16px;
 }
 
 /* ==========================================================================
-   Badge Component
-   ========================================================================== */
+	Badge Component
+	========================================================================== */
 
 .seculoco-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 4px 10px;
-    font-size: 12px;
-    font-weight: 500;
-    border-radius: 12px;
-    line-height: 1;
-    white-space: nowrap;
+	display: inline-flex;
+	align-items: center;
+	padding: 4px 10px;
+	font-size: 12px;
+	font-weight: 500;
+	border-radius: 12px;
+	line-height: 1;
+	white-space: nowrap;
 }
 
 .seculoco-badge-success {
-    background: #dcfce7;
-    color: #166534;
+	background: #dcfce7;
+	color: #166534;
 }
 
 .seculoco-badge-danger {
-    background: #fee2e2;
-    color: #991b1b;
+	background: #fee2e2;
+	color: #991b1b;
 }
 
 .seculoco-badge-warning {
-    background: #fef3c7;
-    color: #92400e;
+	background: #fef3c7;
+	color: #92400e;
 }
 
 .seculoco-badge-info {
-    background: #dbeafe;
-    color: #1e40af;
+	background: #dbeafe;
+	color: #1e40af;
 }
 
 .seculoco-badge-pro {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    font-weight: 600;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	color: white;
+	font-weight: 600;
 }
 
 /* ==========================================================================
-   Status Indicators
-   ========================================================================== */
+	Status Indicators
+	========================================================================== */
 
 .seculoco-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
 }
 
 .seculoco-status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    display: inline-block;
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	display: inline-block;
 }
 
 .seculoco-status-dot-active {
-    background: var(--seculoco-success);
-    box-shadow: 0 0 0 3px rgba(0, 163, 42, 0.2);
-    animation: pulse 2s infinite;
+	background: var(--seculoco-success);
+	box-shadow: 0 0 0 3px rgba(0, 163, 42, 0.2);
+	animation: pulse 2s infinite;
 }
 
 .seculoco-status-dot-inactive {
-    background: var(--seculoco-text-muted);
+	background: var(--seculoco-text-muted);
 }
 
 .seculoco-status-dot-warning {
-    background: var(--seculoco-warning);
-    box-shadow: 0 0 0 3px rgba(219, 166, 23, 0.2);
+	background: var(--seculoco-warning);
+	box-shadow: 0 0 0 3px rgba(219, 166, 23, 0.2);
 }
 
 @keyframes pulse {
-    0% {
-        box-shadow: 0 0 0 3px rgba(0, 163, 42, 0.2);
-    }
-    50% {
-        box-shadow: 0 0 0 6px rgba(0, 163, 42, 0);
-    }
-    100% {
-        box-shadow: 0 0 0 3px rgba(0, 163, 42, 0.2);
-    }
+	0% {
+		box-shadow: 0 0 0 3px rgba(0, 163, 42, 0.2);
+	}
+	50% {
+		box-shadow: 0 0 0 6px rgba(0, 163, 42, 0);
+	}
+	100% {
+		box-shadow: 0 0 0 3px rgba(0, 163, 42, 0.2);
+	}
 }
 
 /* ==========================================================================
-   Password Prompt Modal Styles
-   ========================================================================== */
+	Password Prompt Modal Styles
+	========================================================================== */
 
 .seculoco-password-prompt-modal {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 999999;
-    background: white;
-    padding: 30px;
-    border-radius: var(--seculoco-radius-md);
-    box-shadow: var(--seculoco-shadow-lg);
-    min-width: 400px;
-    max-width: 500px;
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	z-index: 999999;
+	background: white;
+	padding: 30px;
+	border-radius: var(--seculoco-radius-md);
+	box-shadow: var(--seculoco-shadow-lg);
+	min-width: 400px;
+	max-width: 500px;
 }
 
 .seculoco-password-prompt-backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 999998;
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.5);
+	z-index: 999998;
 }
 
 .seculoco-password-prompt-title {
-    margin: 0 0 20px 0;
-    color: var(--seculoco-text-primary);
-    font-size: 18px;
-    font-weight: 600;
+	margin: 0 0 20px 0;
+	color: var(--seculoco-text-primary);
+	font-size: 18px;
+	font-weight: 600;
 }
 
 .seculoco-password-prompt-description {
-    margin-bottom: 20px;
-    color: var(--seculoco-text-secondary);
-    font-size: 14px;
-    line-height: 1.5;
+	margin-bottom: 20px;
+	color: var(--seculoco-text-secondary);
+	font-size: 14px;
+	line-height: 1.5;
 }
 
 .seculoco-password-input-wrapper {
-    position: relative;
-    margin-bottom: 15px;
+	position: relative;
+	margin-bottom: 15px;
 }
 
 .seculoco-password-input {
-    width: 100%;
-    padding: 10px 45px 10px 12px;
-    border: 1px solid var(--seculoco-border);
-    border-radius: var(--seculoco-radius-sm);
-    font-size: 14px;
-    transition: border-color 0.2s ease;
+	width: 100%;
+	padding: 10px 45px 10px 12px;
+	border: 1px solid var(--seculoco-border);
+	border-radius: var(--seculoco-radius-sm);
+	font-size: 14px;
+	transition: border-color 0.2s ease;
 }
 
 .seculoco-password-input:focus {
-    outline: none;
-    border-color: var(--seculoco-primary);
-    box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.1);
+	outline: none;
+	border-color: var(--seculoco-primary);
+	box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.1);
 }
 
 .seculoco-password-toggle-btn {
-    position: absolute;
-    right: 8px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 18px;
-    color: var(--seculoco-text-muted);
-    padding: 5px;
-    line-height: 1;
-    transition: color 0.2s ease;
+	position: absolute;
+	right: 8px;
+	top: 50%;
+	transform: translateY(-50%);
+	background: none;
+	border: none;
+	cursor: pointer;
+	font-size: 18px;
+	color: var(--seculoco-text-muted);
+	padding: 5px;
+	line-height: 1;
+	transition: color 0.2s ease;
 }
 
 .seculoco-password-toggle-btn:hover {
-    color: var(--seculoco-text-primary);
+	color: var(--seculoco-text-primary);
 }
 
 .seculoco-password-prompt-checkbox {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 20px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 20px;
 }
 
 .seculoco-password-prompt-checkbox input[type="checkbox"] {
-    margin: 0;
+	margin: 0;
 }
 
 .seculoco-password-prompt-checkbox label {
-    margin: 0;
-    font-size: 14px;
-    color: var(--seculoco-text-secondary);
-    cursor: pointer;
+	margin: 0;
+	font-size: 14px;
+	color: var(--seculoco-text-secondary);
+	cursor: pointer;
 }
 
 .seculoco-password-prompt-buttons {
-    display: flex;
-    gap: 10px;
-    justify-content: flex-end;
+	display: flex;
+	gap: 10px;
+	justify-content: flex-end;
 }
 
 .seculoco-password-prompt-decrypt-btn {
-    background: var(--seculoco-primary);
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: var(--seculoco-radius-sm);
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
+	background: var(--seculoco-primary);
+	color: white;
+	border: none;
+	padding: 10px 20px;
+	border-radius: var(--seculoco-radius-sm);
+	font-size: 14px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.2s ease;
 }
 
 .seculoco-password-prompt-decrypt-btn:hover:not(:disabled) {
-    background: var(--seculoco-primary-hover);
+	background: var(--seculoco-primary-hover);
 }
 
 .seculoco-password-prompt-decrypt-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+	opacity: 0.5;
+	cursor: not-allowed;
 }
 
 .seculoco-password-prompt-cancel-btn {
-    background: var(--seculoco-bg-white);
-    color: var(--seculoco-text-primary);
-    border: 1px solid var(--seculoco-border);
-    padding: 10px 20px;
-    border-radius: var(--seculoco-radius-sm);
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
+	background: var(--seculoco-bg-white);
+	color: var(--seculoco-text-primary);
+	border: 1px solid var(--seculoco-border);
+	padding: 10px 20px;
+	border-radius: var(--seculoco-radius-sm);
+	font-size: 14px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.2s ease;
 }
 
 .seculoco-password-prompt-cancel-btn:hover {
-    background: var(--seculoco-bg-light);
-    border-color: var(--seculoco-text-secondary);
+	background: var(--seculoco-bg-light);
+	border-color: var(--seculoco-text-secondary);
 }
 
 .seculoco-password-prompt-error {
-    color: var(--seculoco-danger);
-    font-size: 13px;
-    margin-top: 8px;
+	color: var(--seculoco-danger);
+	font-size: 13px;
+	margin-top: 8px;
 }
 
 /* ==========================================================================
-   Passkey Specific Styles
-   ========================================================================== */
+	Passkey Specific Styles
+	========================================================================== */
 
 .seculoco-passkey-container {
-    max-width: 800px;
+	max-width: 800px;
 }
 
 .seculoco-passkey-status {
-    /*background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 20px;*/
-    border-radius: var(--seculoco-radius-md);
-    margin-bottom: 24px;
-    box-shadow: var(--seculoco-shadow-md);
+	/*background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	color: white;
+	padding: 20px;*/
+	border-radius: var(--seculoco-radius-md);
+	margin-bottom: 24px;
+	box-shadow: var(--seculoco-shadow-md);
 }
 
 .seculoco-passkey-status-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 12px;
 }
 
 .seculoco-passkey-status-title {
-    font-size: 16px;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+	font-size: 16px;
+	font-weight: 600;
+	display: flex;
+	align-items: center;
+	gap: 8px;
 }
 
 .seculoco-passkey-status-details {
-    font-size: 13px;
-    opacity: 0.95;
-    line-height: 1.5;
+	font-size: 13px;
+	opacity: 0.95;
+	line-height: 1.5;
 }
 
 .seculoco-passkey-status-details strong {
-    font-weight: 600;
+	font-weight: 600;
 }
 
 .seculoco-passkey-benefits {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 16px;
-    margin-top: 20px;
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+	gap: 16px;
+	margin-top: 20px;
 }
 
 .seculoco-passkey-benefit {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 12px;
-    background: var(--seculoco-bg-white);
-    border: 1px solid var(--seculoco-border-light);
-    border-radius: var(--seculoco-radius-sm);
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	padding: 12px;
+	background: var(--seculoco-bg-white);
+	border: 1px solid var(--seculoco-border-light);
+	border-radius: var(--seculoco-radius-sm);
 }
 
 .seculoco-passkey-benefit-icon {
-    color: var(--seculoco-success);
-    font-size: 20px;
-    flex-shrink: 0;
-    margin-top: 2px;
+	color: var(--seculoco-success);
+	font-size: 20px;
+	flex-shrink: 0;
+	margin-top: 2px;
 }
 
 .seculoco-passkey-benefit-text {
-    flex: 1;
-    line-height: 1.4;
+	flex: 1;
+	line-height: 1.4;
 }
 
 .seculoco-passkey-benefit-title {
-    font-weight: 600;
-    color: var(--seculoco-text-primary);
-    margin-bottom: 4px;
+	font-weight: 600;
+	color: var(--seculoco-text-primary);
+	margin-bottom: 4px;
 }
 
 .seculoco-passkey-benefit-desc {
-    font-size: 13px;
-    color: var(--seculoco-text-secondary);
+	font-size: 13px;
+	color: var(--seculoco-text-secondary);
 }
 
 /* ==========================================================================
-   Table Enhancements
-   ========================================================================== */
+	Table Enhancements
+	========================================================================== */
 
 .seculoco-table-container {
-    background: var(--seculoco-bg-white);
-    border: 1px solid var(--seculoco-border-light);
-    border-radius: var(--seculoco-radius-md);
-    overflow: hidden;
-    box-shadow: var(--seculoco-shadow-sm);
+	background: var(--seculoco-bg-white);
+	border: 1px solid var(--seculoco-border-light);
+	border-radius: var(--seculoco-radius-md);
+	overflow: hidden;
+	box-shadow: var(--seculoco-shadow-sm);
 }
 
 .seculoco-table-header {
-    padding: 16px 20px;
-    background: var(--seculoco-bg-light);
-    border-bottom: 1px solid var(--seculoco-border-light);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+	padding: 16px 20px;
+	background: var(--seculoco-bg-light);
+	border-bottom: 1px solid var(--seculoco-border-light);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
 }
 
 .wp-list-table.seculoco-modern {
-    border: none;
-    box-shadow: none;
+	border: none;
+	box-shadow: none;
 }
 
 .wp-list-table.seculoco-modern thead {
-    background: var(--seculoco-bg-light);
+	background: var(--seculoco-bg-light);
 }
 
 .wp-list-table.seculoco-modern th {
-    font-weight: 600;
-    color: var(--seculoco-text-primary);
-    border-bottom: 2px solid var(--seculoco-border);
+	font-weight: 600;
+	color: var(--seculoco-text-primary);
+	border-bottom: 2px solid var(--seculoco-border);
 }
 
 .wp-list-table.seculoco-modern tbody tr:hover {
-    background: #f9fafb;
+	background: #f9fafb;
 }
 
 .wp-list-table.seculoco-modern tbody td {
-    vertical-align: middle;
+	vertical-align: middle;
 }
 
 /* Table Column Widths and Styles */
 .wp-list-table .column-actions {
-    width: 250px;
-    white-space: nowrap;
+	width: 250px;
+	white-space: nowrap;
 }
 
 .wp-list-table td.column-actions {
-    padding: 8px 10px;
+	padding: 8px 10px;
 }
 
 .wp-list-table .column-actions .button {
-    padding: 3px 8px;
-    margin: 0 2px;
-    height: auto;
-    min-height: 28px;
+	padding: 3px 8px;
+	margin: 0 2px;
+	height: auto;
+	min-height: 28px;
 }
 
 .wp-list-table .button {
-    margin-right: 5px;
-    margin-bottom: 2px;
-    padding: 3px 8px;
-    height: auto;
-    min-height: 28px;
-    transition: all 0.2s ease;
+	margin-right: 5px;
+	margin-bottom: 2px;
+	padding: 3px 8px;
+	height: auto;
+	min-height: 28px;
+	transition: all 0.2s ease;
 }
 
 .wp-list-table .button:last-child {
-    margin-right: 0;
+	margin-right: 0;
 }
 
 .wp-list-table td:last-child {
-    white-space: nowrap;
+	white-space: nowrap;
 }
 
 /* ==========================================================================
-   Form Enhancements
-   ========================================================================== */
+	Form Enhancements
+	========================================================================== */
 
 .seculoco-form-group {
-    margin-bottom: 20px;
+	margin-bottom: 20px;
 }
 
 .seculoco-form-label {
-    display: block;
-    font-weight: 500;
-    color: var(--seculoco-text-primary);
-    margin-bottom: 8px;
+	display: block;
+	font-weight: 500;
+	color: var(--seculoco-text-primary);
+	margin-bottom: 8px;
 }
 
 .seculoco-form-input {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1px solid var(--seculoco-border);
-    border-radius: var(--seculoco-radius-sm);
-    font-size: 14px;
-    transition: border-color 0.2s ease;
+	width: 100%;
+	padding: 10px 12px;
+	border: 1px solid var(--seculoco-border);
+	border-radius: var(--seculoco-radius-sm);
+	font-size: 14px;
+	transition: border-color 0.2s ease;
 }
 
 .seculoco-form-input:focus {
-    outline: none;
-    border-color: var(--seculoco-primary);
-    box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.1);
+	outline: none;
+	border-color: var(--seculoco-primary);
+	box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.1);
 }
 
 .seculoco-form-help {
-    margin-top: 6px;
-    font-size: 13px;
-    color: var(--seculoco-text-muted);
+	margin-top: 6px;
+	font-size: 13px;
+	color: var(--seculoco-text-muted);
 }
 
 /* ==========================================================================
-   Loading States
-   ========================================================================== */
+	Loading States
+	========================================================================== */
 
 .seculoco-loading {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
 }
 
 .seculoco-spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid var(--seculoco-border-light);
-    border-top-color: var(--seculoco-primary);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
+	width: 16px;
+	height: 16px;
+	border: 2px solid var(--seculoco-border-light);
+	border-top-color: var(--seculoco-primary);
+	border-radius: 50%;
+	animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
+	to {
+		transform: rotate(360deg);
+	}
 }
 
 /* Spin class for dashicons */
 .dashicons.spin {
-    animation: spin 1s linear infinite;
-    display: inline-block;
+	animation: spin 1s linear infinite;
+	display: inline-block;
 }
 
 button .dashicons {
-    padding-top: 3px;
+	padding-top: 3px;
 }
 
 /* ==========================================================================
-   Responsive Adjustments
-   ========================================================================== */
+	Responsive Adjustments
+	========================================================================== */
 
 @media (max-width: 782px) {
-    .seculoco-card {
-        padding: 16px;
-    }
-    
-    .seculoco-passkey-benefits {
-        grid-template-columns: 1fr;
-    }
-    
-    .seculoco-btn {
-        width: 100%;
-        justify-content: center;
-    }
+	.seculoco-card {
+		padding: 16px;
+	}
+
+	.seculoco-passkey-benefits {
+		grid-template-columns: 1fr;
+	}
+
+	.seculoco-btn {
+		width: 100%;
+		justify-content: center;
+	}
 }
 
 /* ==========================================================================
-   WordPress Admin Integration
-   ========================================================================== */
+	WordPress Admin Integration
+	========================================================================== */
 
 .wrap.seculoco-admin-wrap {
-    max-width: 1440px;
+	max-width: 1440px;
 }
 
 .wrap.seculoco-admin-wrap h1 {
-    font-size: 24px;
-    font-weight: 600;
-    color: var(--seculoco-text-primary);
-    margin-bottom: 24px;
+	font-size: 24px;
+	font-weight: 600;
+	color: var(--seculoco-text-primary);
+	margin-bottom: 24px;
 }
 
 .wrap.seculoco-admin-wrap .page-title-action {
-    background: var(--seculoco-primary);
-    color: white;
-    border: none;
-    padding: 6px 16px;
-    border-radius: var(--seculoco-radius-sm);
-    text-decoration: none;
-    font-weight: 500;
-    transition: background 0.2s ease;
+	background: var(--seculoco-primary);
+	color: white;
+	border: none;
+	padding: 6px 16px;
+	border-radius: var(--seculoco-radius-sm);
+	text-decoration: none;
+	font-weight: 500;
+	transition: background 0.2s ease;
 }
 
 .wrap.seculoco-admin-wrap .page-title-action:hover {
-    background: var(--seculoco-primary-hover);
-    color: white;
+	background: var(--seculoco-primary-hover);
+	color: white;
 }
 
 /* Override WordPress default notice styles within our containers */
 .seculoco-card .notice,
 .seculoco-passkey-container .notice {
-    box-shadow: none;
-    margin: 16px 0;
+	box-shadow: none;
+	margin: 16px 0;
 }
 
 /* ==========================================================================
-   Settings Page Specific
-   ========================================================================== */
+	Settings Page Specific
+	========================================================================== */
 
 /* Settings form sections */
 .seculoco-settings-form h2 {
-    display: none; /* Hide default WP section titles as we use cards */
+	display: none; /* Hide default WP section titles as we use cards */
 }
 
 .seculoco-settings-form .form-table {
-    margin-top: 0;
+	margin-top: 0;
 }
 
 .seculoco-settings-form .seculoco-card + h2 {
-    margin-top: 0;
+	margin-top: 0;
 }
 
 /* Ensure cards wrap settings properly */
 .seculoco-card + .form-table {
-    background: var(--seculoco-bg-white);
-    padding: 20px;
-    border: 1px solid var(--seculoco-border-light);
-    border-radius: 0 0 var(--seculoco-radius-md) var(--seculoco-radius-md);
-    margin-top: -1px;
-    box-shadow: var(--seculoco-shadow-sm);
+	background: var(--seculoco-bg-white);
+	padding: 20px;
+	border: 1px solid var(--seculoco-border-light);
+	border-radius: 0 0 var(--seculoco-radius-md) var(--seculoco-radius-md);
+	margin-top: -1px;
+	box-shadow: var(--seculoco-shadow-sm);
 }
 
 /* Settings section spacing */
 .seculoco-settings-sections {
-    margin-top: 24px;
+	margin-top: 24px;
 }
 
 /* Make form fields look better */
@@ -823,10 +823,10 @@ button .dashicons {
 .seculoco-settings-form input[type="number"],
 .seculoco-settings-form textarea,
 .seculoco-settings-form select {
-    border: 1px solid var(--seculoco-border);
-    border-radius: var(--seculoco-radius-sm);
-    padding: 8px 12px;
-    transition: border-color 0.2s ease;
+	border: 1px solid var(--seculoco-border);
+	border-radius: var(--seculoco-radius-sm);
+	padding: 8px 12px;
+	transition: border-color 0.2s ease;
 }
 
 .seculoco-settings-form input[type="text"]:focus,
@@ -834,1269 +834,1269 @@ button .dashicons {
 .seculoco-settings-form input[type="number"]:focus,
 .seculoco-settings-form textarea:focus,
 .seculoco-settings-form select:focus {
-    border-color: var(--seculoco-primary);
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.1);
+	border-color: var(--seculoco-primary);
+	outline: none;
+	box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.1);
 }
 
 /* Checkbox and radio styling */
 .seculoco-settings-form input[type="checkbox"],
 .seculoco-settings-form input[type="radio"] {
-    margin-right: 8px;
+	margin-right: 8px;
 }
 
 /* Submit button styling */
 .seculoco-settings-form .submit {
-    padding: 20px 0;
-    margin: 0;
-    border-top: 1px solid var(--seculoco-border-light);
-    
+	padding: 20px 0;
+	margin: 0;
+	border-top: 1px solid var(--seculoco-border-light);
+
 }
 
 .seculoco-settings-form .submit .button-primary {
-    background: var(--seculoco-primary);
-    border: none;
-    padding: 10px 24px;
-    font-size: 14px;
-    font-weight: 500;
-    border-radius: var(--seculoco-radius-sm);
-    box-shadow: var(--seculoco-shadow-sm);
-    transition: all 0.2s ease;
+	background: var(--seculoco-primary);
+	border: none;
+	padding: 10px 24px;
+	font-size: 14px;
+	font-weight: 500;
+	border-radius: var(--seculoco-radius-sm);
+	box-shadow: var(--seculoco-shadow-sm);
+	transition: all 0.2s ease;
 }
 
 .seculoco-settings-form .submit .button-primary:hover {
-    background: var(--seculoco-primary-hover);
-    box-shadow: var(--seculoco-shadow-md);
-    transform: translateY(-1px);
+	background: var(--seculoco-primary-hover);
+	box-shadow: var(--seculoco-shadow-md);
+	transform: translateY(-1px);
 }
 
 /* ==========================================================================
-   Decrypted Data Display
-   ========================================================================== */
+	Decrypted Data Display
+	========================================================================== */
 
 .decrypted-content {
-    padding: 25px;
-    background: linear-gradient(135deg, var(--seculoco-bg-white) 0%, var(--seculoco-bg-light) 100%);
-    border: 1px solid var(--seculoco-border-light);
-    border-radius: var(--seculoco-radius-lg);
-    margin: 15px;
-    box-shadow: var(--seculoco-shadow-md);
+	padding: 25px;
+	background: linear-gradient(135deg, var(--seculoco-bg-white) 0%, var(--seculoco-bg-light) 100%);
+	border: 1px solid var(--seculoco-border-light);
+	border-radius: var(--seculoco-radius-lg);
+	margin: 15px;
+	box-shadow: var(--seculoco-shadow-md);
 }
 
 .decrypted-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 2px solid var(--seculoco-border-light);
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 20px;
+	padding-bottom: 15px;
+	border-bottom: 2px solid var(--seculoco-border-light);
 }
 
 .decrypted-header strong {
-    font-size: 16px;
-    color: var(--seculoco-text-primary);
-    font-weight: 600;
+	font-size: 16px;
+	color: var(--seculoco-text-primary);
+	font-weight: 600;
 }
 
 .auto-clear-warning {
-    color: #996800;
-    background: #fff8e5;
-    padding: 6px 12px;
-    border-radius: var(--seculoco-radius-sm);
-    font-size: 12px;
-    font-weight: 500;
-    border: 1px solid #f0e4c3;
+	color: #996800;
+	background: #fff8e5;
+	padding: 6px 12px;
+	border-radius: var(--seculoco-radius-sm);
+	font-size: 12px;
+	font-weight: 500;
+	border: 1px solid #f0e4c3;
 }
 
 /* Field Groups for Decrypted Data */
 .field-group {
-    margin-bottom: 20px;
-    padding: 16px 20px;
-    background: var(--seculoco-bg-white);
-    border: 1px solid var(--seculoco-border-light);
-    border-radius: var(--seculoco-radius-md);
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    transition: all 0.2s ease;
+	margin-bottom: 20px;
+	padding: 16px 20px;
+	background: var(--seculoco-bg-white);
+	border: 1px solid var(--seculoco-border-light);
+	border-radius: var(--seculoco-radius-md);
+	display: flex;
+	align-items: center;
+	gap: 20px;
+	transition: all 0.2s ease;
 }
 
 .field-group:hover {
-    border-color: var(--seculoco-border);
-    box-shadow: var(--seculoco-shadow-sm);
+	border-color: var(--seculoco-border);
+	box-shadow: var(--seculoco-shadow-sm);
 }
 
 .field-group:last-child {
-    margin-bottom: 0;
+	margin-bottom: 0;
 }
 
 .field-group label {
-    font-weight: 600;
-    color: var(--seculoco-text-primary);
-    min-width: 150px;
-    margin: 0;
-    font-size: 14px;
+	font-weight: 600;
+	color: var(--seculoco-text-primary);
+	min-width: 150px;
+	margin: 0;
+	font-size: 14px;
 }
 
 .field-value {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+	flex: 1;
+	display: flex;
+	align-items: center;
+	gap: 10px;
 }
 
 .field-value input[type="text"],
 .field-value input[type="password"] {
-    flex: 1;
-    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Courier New', monospace;
-    font-size: 14px;
-    padding: 10px 14px;
-    border: 1px solid var(--seculoco-border);
-    border-radius: var(--seculoco-radius-sm);
-    background: var(--seculoco-bg-light);
-    color: var(--seculoco-text-primary);
-    transition: all 0.2s ease;
+	flex: 1;
+	font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Courier New', monospace;
+	font-size: 14px;
+	padding: 10px 14px;
+	border: 1px solid var(--seculoco-border);
+	border-radius: var(--seculoco-radius-sm);
+	background: var(--seculoco-bg-light);
+	color: var(--seculoco-text-primary);
+	transition: all 0.2s ease;
 }
 
 .field-value input[type="text"]:focus,
 .field-value input[type="password"]:focus {
-    outline: none;
-    border-color: var(--seculoco-primary);
-    background: var(--seculoco-bg-white);
-    box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.08);
+	outline: none;
+	border-color: var(--seculoco-primary);
+	background: var(--seculoco-bg-white);
+	box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.08);
 }
 
 .field-value textarea {
-    flex: 1;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, sans-serif;
-    font-size: 14px;
-    padding: 10px 14px;
-    border: 1px solid var(--seculoco-border);
-    border-radius: var(--seculoco-radius-sm);
-    background: var(--seculoco-bg-light);
-    color: var(--seculoco-text-primary);
-    min-height: 80px;
-    resize: vertical;
-    transition: all 0.2s ease;
+	flex: 1;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, sans-serif;
+	font-size: 14px;
+	padding: 10px 14px;
+	border: 1px solid var(--seculoco-border);
+	border-radius: var(--seculoco-radius-sm);
+	background: var(--seculoco-bg-light);
+	color: var(--seculoco-text-primary);
+	min-height: 80px;
+	resize: vertical;
+	transition: all 0.2s ease;
 }
 
 .field-value textarea:focus {
-    outline: none;
-    border-color: var(--seculoco-primary);
-    background: var(--seculoco-bg-white);
-    box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.08);
+	outline: none;
+	border-color: var(--seculoco-primary);
+	background: var(--seculoco-bg-white);
+	box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.08);
 }
 
 .field-value .button,
 .field-value button {
-    padding: 8px 16px;
-    height: 40px;
-    border-radius: var(--seculoco-radius-sm);
-    font-weight: 500;
-    transition: all 0.2s ease;
-    cursor: pointer;
+	padding: 8px 16px;
+	height: 40px;
+	border-radius: var(--seculoco-radius-sm);
+	font-weight: 500;
+	transition: all 0.2s ease;
+	cursor: pointer;
 }
 
 .field-value .copy-btn {
-    background: var(--seculoco-primary);
-    color: white;
-    border: none;
-    min-width: 70px;
+	background: var(--seculoco-primary);
+	color: white;
+	border: none;
+	min-width: 70px;
 }
 
 .field-value .copy-btn:hover {
-    background: var(--seculoco-primary-hover);
-    transform: translateY(-1px);
-    box-shadow: var(--seculoco-shadow-sm);
+	background: var(--seculoco-primary-hover);
+	transform: translateY(-1px);
+	box-shadow: var(--seculoco-shadow-sm);
 }
 
 .field-value .toggle-password-btn {
-    background: var(--seculoco-bg-light);
-    color: var(--seculoco-text-primary);
-    border: 1px solid var(--seculoco-border);
-    min-width: 70px;
+	background: var(--seculoco-bg-light);
+	color: var(--seculoco-text-primary);
+	border: 1px solid var(--seculoco-border);
+	min-width: 70px;
 }
 
 .field-value .toggle-password-btn:hover {
-    background: #e8e8e9;
-    border-color: var(--seculoco-text-muted);
+	background: #e8e8e9;
+	border-color: var(--seculoco-text-muted);
 }
 
 .password-field {
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-    letter-spacing: 2px;
+	font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+	letter-spacing: 2px;
 }
 
 /* ==========================================================================
-   Encryption Method Badges
-   ========================================================================== */
+	Encryption Method Badges
+	========================================================================== */
 
 .encryption-method {
-    display: inline-block;
-    padding: 4px 8px;
-    border-radius: var(--seculoco-radius-sm);
-    font-size: 12px;
-    font-weight: 600;
-    text-align: center;
-    min-width: 120px;
-    cursor: help;
-    transition: all 0.2s ease;
+	display: inline-block;
+	padding: 4px 8px;
+	border-radius: var(--seculoco-radius-sm);
+	font-size: 12px;
+	font-weight: 600;
+	text-align: center;
+	min-width: 120px;
+	cursor: help;
+	transition: all 0.2s ease;
 }
 
 .encryption-ultra-secure {
-    background: linear-gradient(135deg, #1a551c, #45a049);
-    color: white;
-    box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
+	background: linear-gradient(135deg, #1a551c, #45a049);
+	color: white;
+	box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
 }
 
 .encryption-rsa {
-    background: linear-gradient(135deg, var(--seculoco-primary), var(--seculoco-primary-hover));
-    color: white;
-    box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3);
+	background: linear-gradient(135deg, var(--seculoco-primary), var(--seculoco-primary-hover));
+	color: white;
+	box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3);
 }
 
 .encryption-inactive {
-    background: linear-gradient(135deg, #9e9e9e, #757575);
-    color: white;
-    box-shadow: 0 2px 4px rgba(158, 158, 158, 0.3);
-    opacity: 0.7;
+	background: linear-gradient(135deg, #9e9e9e, #757575);
+	color: white;
+	box-shadow: 0 2px 4px rgba(158, 158, 158, 0.3);
+	opacity: 0.7;
 }
 
 .encryption-method:hover {
-    transform: translateY(-1px);
-    box-shadow: var(--seculoco-shadow-md);
+	transform: translateY(-1px);
+	box-shadow: var(--seculoco-shadow-md);
 }
 
 /* ==========================================================================
-   Delete Button Styles
-   ========================================================================== */
+	Delete Button Styles
+	========================================================================== */
 
 .delete-btn {
-    border-color: var(--seculoco-danger) !important;
-    color: var(--seculoco-danger) !important;
-    transition: all 0.2s ease;
+	border-color: var(--seculoco-danger) !important;
+	color: var(--seculoco-danger) !important;
+	transition: all 0.2s ease;
 }
 
 .delete-btn:hover {
-    border-color: var(--seculoco-danger-hover) !important;
-    color: var(--seculoco-danger-hover) !important;
-    background: rgba(214, 54, 56, 0.05);
+	border-color: var(--seculoco-danger-hover) !important;
+	color: var(--seculoco-danger-hover) !important;
+	background: rgba(214, 54, 56, 0.05);
 }
 
 .delete-btn:focus {
-    box-shadow: 0 0 0 3px rgba(214, 54, 56, 0.2) !important;
+	box-shadow: 0 0 0 3px rgba(214, 54, 56, 0.2) !important;
 }
 
 /* ==========================================================================
-   Editable Fields
-   ========================================================================== */
+	Editable Fields
+	========================================================================== */
 
 .editable-field {
-    cursor: pointer;
-    padding: 2px 4px;
-    border-radius: var(--seculoco-radius-sm);
-    transition: background-color 0.2s ease;
+	cursor: pointer;
+	padding: 2px 4px;
+	border-radius: var(--seculoco-radius-sm);
+	transition: background-color 0.2s ease;
 }
 
 .editable-field:hover {
-    background-color: var(--seculoco-bg-light);
+	background-color: var(--seculoco-bg-light);
 }
 
 /* ==========================================================================
-   Formatted Data Display
-   ========================================================================== */
+	Formatted Data Display
+	========================================================================== */
 
 .formatted-data {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 .formatted-data .data-field {
-    margin-bottom: 15px;
-    padding: 10px;
-    background: var(--seculoco-bg-light);
-    border: 1px solid var(--seculoco-border-light);
-    border-radius: var(--seculoco-radius-sm);
+	margin-bottom: 15px;
+	padding: 10px;
+	background: var(--seculoco-bg-light);
+	border: 1px solid var(--seculoco-border-light);
+	border-radius: var(--seculoco-radius-sm);
 }
 
 .formatted-data .data-field:last-child {
-    margin-bottom: 0;
+	margin-bottom: 0;
 }
 
 .formatted-data .data-field strong {
-    display: block;
-    margin-bottom: 5px;
-    color: var(--seculoco-text-primary);
-    font-size: 14px;
+	display: block;
+	margin-bottom: 5px;
+	color: var(--seculoco-text-primary);
+	font-size: 14px;
 }
 
 .formatted-data .field-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+	display: flex;
+	align-items: center;
+	gap: 10px;
 }
 
 .formatted-data .copy-field-btn {
-    padding: 4px 8px;
-    font-size: 12px;
-    background: var(--seculoco-primary);
-    color: white;
-    border: none;
-    border-radius: var(--seculoco-radius-sm);
-    cursor: pointer;
-    transition: all 0.2s ease;
+	padding: 4px 8px;
+	font-size: 12px;
+	background: var(--seculoco-primary);
+	color: white;
+	border: none;
+	border-radius: var(--seculoco-radius-sm);
+	cursor: pointer;
+	transition: all 0.2s ease;
 }
 
 .formatted-data .copy-field-btn:hover {
-    background: var(--seculoco-primary-hover);
-    transform: translateY(-1px);
+	background: var(--seculoco-primary-hover);
+	transform: translateY(-1px);
 }
 
 /* ==========================================================================
-   Password Manager Export Notifications
-   ========================================================================== */
+	Password Manager Export Notifications
+	========================================================================== */
 
 .seculoco-notification {
-    position: fixed;
-    top: 50px;
-    right: 30px;
-    z-index: 999999;
-    min-width: 300px;
-    max-width: 500px;
-    padding: 16px 20px;
-    background: white;
-    border-left: 4px solid;
-    border-radius: var(--seculoco-radius-sm);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    font-size: 14px;
-    line-height: 1.5;
-    animation: slideInRight 0.3s ease-out;
+	position: fixed;
+	top: 50px;
+	right: 30px;
+	z-index: 999999;
+	min-width: 300px;
+	max-width: 500px;
+	padding: 16px 20px;
+	background: white;
+	border-left: 4px solid;
+	border-radius: var(--seculoco-radius-sm);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	font-size: 14px;
+	line-height: 1.5;
+	animation: slideInRight 0.3s ease-out;
 }
 
 @keyframes slideInRight {
-    from {
-        opacity: 0;
-        transform: translateX(100px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
+	from {
+		opacity: 0;
+		transform: translateX(100px);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
 }
 
 .seculoco-notification-success {
-    border-left-color: var(--seculoco-success);
-    background: #f0f9ff;
-    color: #006600;
+	border-left-color: var(--seculoco-success);
+	background: #f0f9ff;
+	color: #006600;
 }
 
 .seculoco-notification-error {
-    border-left-color: var(--seculoco-danger);
-    background: #fff5f5;
-    color: #991111;
+	border-left-color: var(--seculoco-danger);
+	background: #fff5f5;
+	color: #991111;
 }
 
 .seculoco-notification-info {
-    border-left-color: var(--seculoco-info);
-    background: #f0f7ff;
-    color: #004499;
+	border-left-color: var(--seculoco-info);
+	background: #f0f7ff;
+	color: #004499;
 }
 
 .seculoco-notification-warning {
-    border-left-color: var(--seculoco-warning);
-    background: #fffbf0;
-    color: #996600;
+	border-left-color: var(--seculoco-warning);
+	background: #fffbf0;
+	color: #996600;
 }
 
 /* Export button enhancement */
 .export-to-password-manager {
-    margin-right: 5px;
+	margin-right: 5px;
 }
 
 .export-to-password-manager .dashicons {
-    vertical-align: middle;
-    margin-right: 3px;
+	vertical-align: middle;
+	margin-right: 3px;
 }
 
 .export-to-password-manager.spin .dashicons {
-    animation: spin 1s linear infinite;
+	animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
 }
 
 /* ==========================================================================
-   Undecryptable Entry Indicators
-   ========================================================================== */
+	Undecryptable Entry Indicators
+	========================================================================== */
 
 .undecryptable-badge {
-    display: inline-flex !important;
-    align-items: center;
-    gap: 4px;
-    background: var(--seculoco-danger) !important;
-    color: white !important;
-    padding: 4px 8px !important;
-    border-radius: var(--seculoco-radius-sm) !important;
-    font-size: 11px !important;
-    font-weight: 600 !important;
-    line-height: 1.2 !important;
-    margin-right: 5px !important;
-    vertical-align: middle !important;
-    white-space: nowrap !important;
-    cursor: help !important;
-    transition: background 0.2s ease !important;
+	display: inline-flex !important;
+	align-items: center;
+	gap: 4px;
+	background: var(--seculoco-danger) !important;
+	color: white !important;
+	padding: 4px 8px !important;
+	border-radius: var(--seculoco-radius-sm) !important;
+	font-size: 11px !important;
+	font-weight: 600 !important;
+	line-height: 1.2 !important;
+	margin-right: 5px !important;
+	vertical-align: middle !important;
+	white-space: nowrap !important;
+	cursor: help !important;
+	transition: background 0.2s ease !important;
 }
 
 .undecryptable-badge:hover {
-    background: var(--seculoco-danger-hover) !important;
+	background: var(--seculoco-danger-hover) !important;
 }
 
 /* Undecryptable decrypt button styling */
 button.decrypt-btn-v2[data-undecryptable="true"] {
-    opacity: 0.5 !important;
-    cursor: not-allowed !important;
-    background: #f6f7f7 !important;
+	opacity: 0.5 !important;
+	cursor: not-allowed !important;
+	background: #f6f7f7 !important;
 }
 
 button.decrypt-btn-v2[data-undecryptable="true"]:hover {
-    background: #f6f7f7 !important;
-    transform: none !important;
+	background: #f6f7f7 !important;
+	transform: none !important;
 }
 
 button.decrypt-btn-v2[data-undecryptable="true"] .dashicons-lock {
-    color: var(--seculoco-danger) !important;
+	color: var(--seculoco-danger) !important;
 }
 
 /* Expired entry button styling */
 button.button-expired[disabled] {
-    opacity: 0.5 !important;
-    cursor: not-allowed !important;
-    background: #f6f7f7 !important;
+	opacity: 0.5 !important;
+	cursor: not-allowed !important;
+	background: #f6f7f7 !important;
 }
 
 button.button-expired[disabled]:hover {
-    background: #f6f7f7 !important;
-    transform: none !important;
+	background: #f6f7f7 !important;
+	transform: none !important;
 }
 
 /* ==========================================================================
-   Settings Page Additional Classes
-   ========================================================================== */
+	Settings Page Additional Classes
+	========================================================================== */
 
 .seculoco-card-margin-top {
-    margin-top: 20px;
+	margin-top: 20px;
 }
 
 .seculoco-encryption-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
-    margin-bottom: 20px;
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+	gap: 20px;
+	margin-bottom: 20px;
 }
 
 .seculoco-encryption-status-card {
-    background: white;
-    border: 1px solid #c3c4c7;
-    border-radius: 4px;
-    padding: 15px;
-    margin-bottom: 15px;
+	background: white;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	padding: 15px;
+	margin-bottom: 15px;
 }
 
 .seculoco-encryption-status-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
 }
 
 .seculoco-encryption-status-title {
-    font-size: 14px;
+	font-size: 14px;
 }
 
 .seculoco-encryption-status-subtitle {
-    margin: 5px 0 0;
-    color: #666;
-    font-size: 12px;
+	margin: 5px 0 0;
+	color: #666;
+	font-size: 12px;
 }
 
 .seculoco-encryption-status-label {
-    text-align: right;
+	text-align: right;
 }
 
 .seculoco-encryption-badge-active {
-    background: #d4edda;
-    color: #155724;
-    padding: 4px 12px;
-    border-radius: 3px;
-    font-size: 12px;
-    font-weight: 600;
+	background: #d4edda;
+	color: #155724;
+	padding: 4px 12px;
+	border-radius: 3px;
+	font-size: 12px;
+	font-weight: 600;
 }
 
 .seculoco-encryption-badge-inactive {
-    background: #f8d7da;
-    color: #721c24;
-    padding: 4px 12px;
-    border-radius: 3px;
-    font-size: 12px;
-    font-weight: 600;
+	background: #f8d7da;
+	color: #721c24;
+	padding: 4px 12px;
+	border-radius: 3px;
+	font-size: 12px;
+	font-weight: 600;
 }
 
 .seculoco-encryption-badge-not-init {
-    background: #fff3cd;
-    color: #856404;
-    padding: 4px 12px;
-    border-radius: 3px;
-    font-size: 12px;
-    font-weight: 600;
+	background: #fff3cd;
+	color: #856404;
+	padding: 4px 12px;
+	border-radius: 3px;
+	font-size: 12px;
+	font-weight: 600;
 }
 
 .seculoco-encryption-hint {
-    margin: 5px 0 0;
-    font-size: 11px;
-    color: #666;
+	margin: 5px 0 0;
+	font-size: 11px;
+	color: #666;
 }
 
 .seculoco-pro-upgrade-card {
-    border-color: #ccc;
-    opacity: 0.7;
-    margin-bottom: 15px;
+	border-color: #ccc;
+	opacity: 0.7;
+	margin-bottom: 15px;
 }
 
 .seculoco-pro-upgrade-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 10px;
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	margin-bottom: 10px;
 }
 
 .seculoco-pro-badge {
-    background: #ccc;
-    color: #666;
+	background: #ccc;
+	color: #666;
 }
 .seculoco-pro-badge {
 	margin-right: 8px;
 }
 
 .seculoco-pro-status-unavailable {
-    background: #f8f9fa;
-    color: #6c757d;
-    padding: 2px 8px;
-    border-radius: 3px;
-    font-size: 11px;
-    font-weight: 600;
+	background: #f8f9fa;
+	color: #6c757d;
+	padding: 2px 8px;
+	border-radius: 3px;
+	font-size: 11px;
+	font-weight: 600;
 }
 
 /* ==========================================================================
-   JavaScript Utility Classes (for dynamic styling)
-   ========================================================================== */
+	JavaScript Utility Classes (for dynamic styling)
+	========================================================================== */
 
 .seculoco-copy-btn-success {
-    background: #28a745 !important;
+	background: #28a745 !important;
 }
 
 .seculoco-copy-to-clipboard {
-    position: fixed !important;
-    opacity: 0 !important;
+	position: fixed !important;
+	opacity: 0 !important;
 }
 
 .seculoco-countdown-warning {
-    color: #d63638 !important;
+	color: #d63638 !important;
 }
 
 .seculoco-countdown-normal {
-    color: #996800 !important;
+	color: #996800 !important;
 }
 
 .seculoco-progress-bar-width-5 {
-    width: 5% !important;
+	width: 5% !important;
 }
 
 .seculoco-progress-bar-width-100 {
-    width: 100% !important;
+	width: 100% !important;
 }
 
 /* ==========================================================================
-   Export Form Modal
-   ========================================================================== */
+	Export Form Modal
+	========================================================================== */
 
 .seculoco-export-form-modal {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 999999;
-    background: white;
-    padding: 30px;
-    border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    min-width: 500px;
-    max-width: 600px;
-    max-height: 90vh;
-    overflow-y: auto;
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	z-index: 999999;
+	background: white;
+	padding: 30px;
+	border-radius: 8px;
+	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+	min-width: 500px;
+	max-width: 600px;
+	max-height: 90vh;
+	overflow-y: auto;
 }
 
 .seculoco-export-form-title {
-    margin: 0 0 20px 0;
-    color: #333;
+	margin: 0 0 20px 0;
+	color: #333;
 }
 
 .seculoco-export-form-warning {
-    background: #fff3cd;
-    border-left: 4px solid #ffc107;
-    padding: 15px;
-    margin-bottom: 20px;
-    border-radius: 4px;
+	background: #fff3cd;
+	border-left: 4px solid #ffc107;
+	padding: 15px;
+	margin-bottom: 20px;
+	border-radius: 4px;
 }
 
 .seculoco-export-form-warning-title {
-    color: #856404;
+	color: #856404;
 }
 
 .seculoco-export-form-warning-text {
-    margin: 8px 0 0 0;
-    color: #856404;
-    font-size: 13px;
+	margin: 8px 0 0 0;
+	color: #856404;
+	font-size: 13px;
 }
 
 .seculoco-export-form-label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
+	display: block;
+	margin-bottom: 5px;
+	font-weight: bold;
 }
 
 .seculoco-export-form-url-container {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 5px;
+	display: flex;
+	gap: 8px;
+	margin-bottom: 5px;
 }
 
 .seculoco-export-form-url-input {
-    flex: 1;
-    padding: 8px;
-    border: 1px solid #2271b1;
-    border-radius: 4px;
-    background: #f0f7ff;
+	flex: 1;
+	padding: 8px;
+	border: 1px solid #2271b1;
+	border-radius: 4px;
+	background: #f0f7ff;
 }
 
 .seculoco-export-form-url-copy-btn {
-    padding: 8px 16px;
+	padding: 8px 16px;
 }
 
 .seculoco-export-form-url-reminder {
-    display: block;
-    margin: 0 0 15px 0;
-    color: #d63638;
-    font-weight: 500;
+	display: block;
+	margin: 0 0 15px 0;
+	color: #d63638;
+	font-weight: 500;
 }
 
 .seculoco-export-form-input {
-    width: 100%;
-    padding: 8px;
-    margin-bottom: 15px;
-    border: 1px solid #8c8f94;
-    border-radius: 4px;
+	width: 100%;
+	padding: 8px;
+	margin-bottom: 15px;
+	border: 1px solid #8c8f94;
+	border-radius: 4px;
 }
 
 .seculoco-export-form-password-container {
-    position: relative;
-    margin-bottom: 15px;
+	position: relative;
+	margin-bottom: 15px;
 }
 
 .seculoco-export-form-password-input {
-    width: 100%;
-    padding: 8px 40px 8px 8px;
-    border: 1px solid #8c8f94;
-    border-radius: 4px;
+	width: 100%;
+	padding: 8px 40px 8px 8px;
+	border: 1px solid #8c8f94;
+	border-radius: 4px;
 }
 
 .seculoco-export-form-password-toggle {
-    position: absolute;
-    right: 8px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 18px;
+	position: absolute;
+	right: 8px;
+	top: 50%;
+	transform: translateY(-50%);
+	background: none;
+	border: none;
+	cursor: pointer;
+	font-size: 18px;
 }
 
 .seculoco-export-form-notes {
-    width: 100%;
-    padding: 8px;
-    margin-bottom: 15px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    background: #fffbf0;
-    min-height: 80px;
-    color: #666;
+	width: 100%;
+	padding: 8px;
+	margin-bottom: 15px;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	background: #fffbf0;
+	min-height: 80px;
+	color: #666;
 }
 
 .seculoco-export-form-info {
-    background: #f0f6fc;
-    border-left: 3px solid #0969da;
-    padding: 12px;
-    margin-bottom: 20px;
-    border-radius: 4px;
+	background: #f0f6fc;
+	border-left: 3px solid #0969da;
+	padding: 12px;
+	margin-bottom: 20px;
+	border-radius: 4px;
 }
 
 .seculoco-export-form-buttons {
-    display: flex;
-    gap: 10px;
-    justify-content: flex-end;
+	display: flex;
+	gap: 10px;
+	justify-content: flex-end;
 }
 
 .seculoco-export-form-backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 999998;
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.5);
+	z-index: 999998;
 }
 
 /* ==========================================================================
-   Bulk Export Error Modal
-   ========================================================================== */
+	Bulk Export Error Modal
+	========================================================================== */
 
 .seculoco-error-modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    z-index: 999999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: rgba(0, 0, 0, 0.8);
+	z-index: 999999;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 }
 
 .seculoco-error-modal-content {
-    background: white;
-    padding: 30px;
-    border-radius: 8px;
-    max-width: 600px;
-    text-align: left;
+	background: white;
+	padding: 30px;
+	border-radius: 8px;
+	max-width: 600px;
+	text-align: left;
 }
 
 .seculoco-error-modal-title {
-    margin: 0 0 20px 0;
-    color: #dc3232;
+	margin: 0 0 20px 0;
+	color: #dc3232;
 }
 
 .seculoco-error-modal-warning-box {
-    background: #fff3cd;
-    border: 1px solid #ffc107;
-    border-radius: 4px;
-    padding: 15px;
-    margin-bottom: 20px;
+	background: #fff3cd;
+	border: 1px solid #ffc107;
+	border-radius: 4px;
+	padding: 15px;
+	margin-bottom: 20px;
 }
 
 .seculoco-error-modal-warning-text {
-    margin: 0;
-    white-space: pre-line;
+	margin: 0;
+	white-space: pre-line;
 }
 
 .seculoco-error-modal-instructions {
-    background: #f0f6fc;
-    border-radius: 4px;
-    padding: 15px;
-    margin-bottom: 20px;
+	background: #f0f6fc;
+	border-radius: 4px;
+	padding: 15px;
+	margin-bottom: 20px;
 }
 
 .seculoco-error-modal-instructions-list {
-    margin: 10px 0 0 20px;
-    padding: 0;
+	margin: 10px 0 0 20px;
+	padding: 0;
 }
 
 .seculoco-error-modal-button-container {
-    text-align: center;
+	text-align: center;
 }
 
 .seculoco-error-modal-close-btn {
-    font-size: 16px;
-    padding: 10px 20px;
+	font-size: 16px;
+	padding: 10px 20px;
 }
 
 .undecryptable-highlight {
-    background-color: #ffebee !important;
-    border-left: 4px solid #dc3232 !important;
-    animation: pulse-red 2s ease-in-out 3;
+	background-color: #ffebee !important;
+	border-left: 4px solid #dc3232 !important;
+	animation: pulse-red 2s ease-in-out 3;
 }
 
 @keyframes pulse-red {
-    0%,
-    100% {
-        background-color: #ffebee;
-    }
-    50% {
-        background-color: #ffcdd2;
-    }
+	0%,
+	100% {
+		background-color: #ffebee;
+	}
+	50% {
+		background-color: #ffcdd2;
+	}
 }
 
 /* ==========================================================================
-   Hidden Element Utility
-   ========================================================================== */
+	Hidden Element Utility
+	========================================================================== */
 
 .seculoco-hidden {
-    display: none !important;
+	display: none !important;
 }
 
 /* ==========================================================================
-   Passkey Manager Specific Styles
-   ========================================================================== */
+	Passkey Manager Specific Styles
+	========================================================================== */
 
 /* Device info box - clean blue box with left border */
 .seculoco-device-info-box {
-    background: #f0f6fc;
-    border-left: 3px solid #0969da;
-    padding: 10px;
-    margin: 10px 0;
-    border-radius: 4px;
-    color: #333;
+	background: #f0f6fc;
+	border-left: 3px solid #0969da;
+	padding: 10px;
+	margin: 10px 0;
+	border-radius: 4px;
+	color: #333;
 }
 
 /* Device info icon */
 .seculoco-device-info-icon {
-    font-size: 18px;
-    margin-right: 8px;
+	font-size: 18px;
+	margin-right: 8px;
 }
 
 /* Browser text under device info */
 .seculoco-device-info-browser {
-    font-size: 12px;
-    color: #666;
-    margin-left: 26px;
+	font-size: 12px;
+	color: #666;
+	margin-left: 26px;
 }
 
 /* Tip box with blue border */
 .seculoco-passkey-tip-box {
-    margin-top: 15px;
-    padding: 12px;
-    border-left: 4px solid #2271b1;
-    background: #f0f6fc;
+	margin-top: 15px;
+	padding: 12px;
+	border-left: 4px solid #2271b1;
+	background: #f0f6fc;
 }
 
 /* Tip box title */
 .seculoco-passkey-tip-title {
-    font-weight: 600;
-    display: block;
-    margin-bottom: 4px;
+	font-weight: 600;
+	display: block;
+	margin-bottom: 4px;
 }
 
 /* Tip box text */
 .seculoco-passkey-tip-text {
-    font-size: 13px;
+	font-size: 13px;
 }
 
 /* Passkey registration form container */
 .seculoco-passkey-form-container {
-    margin: 20px 0;
+	margin: 20px 0;
 }
 
 /* Form group with margin */
 .seculoco-passkey-form-group {
-    margin-bottom: 15px;
+	margin-bottom: 15px;
 }
 
 /* Radio button group */
 .seculoco-passkey-radio-group {
-    margin-top: 8px;
+	margin-top: 8px;
 }
 
 /* Radio button labels */
 .seculoco-passkey-radio-label {
-    display: block;
-    margin-bottom: 12px;
+	display: block;
+	margin-bottom: 12px;
 }
 
 /* Help text under radio buttons */
 .seculoco-passkey-radio-help {
-    display: block;
-    margin-left: 20px;
-    margin-top: 4px;
+	display: block;
+	margin-left: 20px;
+	margin-top: 4px;
 }
 
 /* Utility class for 20px top margin */
 .seculoco-margin-top-20 {
-    margin-top: 20px;
+	margin-top: 20px;
 }
 
 /* Utility class for 8px top margin */
 .seculoco-margin-top-8 {
-    margin-top: 8px;
+	margin-top: 8px;
 }
 
 /* Inline spinner styling */
 .seculoco-spinner-inline {
-    float: none;
-    margin-left: 10px;
+	float: none;
+	margin-left: 10px;
 }
 /* ==========================================================================
-   Password Setup Modal
-   ========================================================================== */
+	Password Setup Modal
+	========================================================================== */
 
 .seculoco-password-modal-backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
-    z-index: 999998;
-    animation: fadeIn 0.2s ease;
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.7);
+	z-index: 999998;
+	animation: fadeIn 0.2s ease;
 }
 
 .seculoco-password-modal {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 999999;
-    background: white;
-    border-radius: var(--seculoco-radius-md);
-    box-shadow: var(--seculoco-shadow-lg);
-    min-width: 500px;
-    max-width: 600px;
-    animation: slideInDown 0.3s ease;
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	z-index: 999999;
+	background: white;
+	border-radius: var(--seculoco-radius-md);
+	box-shadow: var(--seculoco-shadow-lg);
+	min-width: 500px;
+	max-width: 600px;
+	animation: slideInDown 0.3s ease;
 }
 
 @keyframes slideInDown {
-    from {
-        opacity: 0;
-        transform: translate(-50%, -60%);
-    }
-    to {
-        opacity: 1;
-        transform: translate(-50%, -50%);
-    }
+	from {
+		opacity: 0;
+		transform: translate(-50%, -60%);
+	}
+	to {
+		opacity: 1;
+		transform: translate(-50%, -50%);
+	}
 }
 
 .seculoco-password-modal-header {
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--seculoco-border-light);
+	padding: 20px 24px;
+	border-bottom: 1px solid var(--seculoco-border-light);
 }
 
 .seculoco-password-modal-header h2 {
-    margin: 0;
-    font-size: 20px;
-    font-weight: 600;
-    color: var(--seculoco-text-primary);
+	margin: 0;
+	font-size: 20px;
+	font-weight: 600;
+	color: var(--seculoco-text-primary);
 }
 
 .seculoco-password-modal-body {
-    padding: 24px;
-    max-height: 70vh;
-    overflow-y: auto;
+	padding: 24px;
+	max-height: 70vh;
+	overflow-y: auto;
 }
 
 .seculoco-password-modal-footer {
-    padding: 16px 24px;
-    border-top: 1px solid var(--seculoco-border-light);
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
+	padding: 16px 24px;
+	border-top: 1px solid var(--seculoco-border-light);
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
 }
 
 .seculoco-password-form-group {
-    margin-bottom: 20px;
+	margin-bottom: 20px;
 }
 
 .seculoco-password-label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 500;
-    color: var(--seculoco-text-primary);
+	display: block;
+	margin-bottom: 8px;
+	font-weight: 500;
+	color: var(--seculoco-text-primary);
 }
 
 .seculoco-password-input-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
+	position: relative;
+	display: flex;
+	align-items: center;
 }
 
 .seculoco-password-input {
-    width: 100%;
-    padding: 10px 40px 10px 12px;
-    border: 1px solid var(--seculoco-border);
-    border-radius: var(--seculoco-radius-sm);
-    font-size: 14px;
-    transition: border-color 0.2s ease;
+	width: 100%;
+	padding: 10px 40px 10px 12px;
+	border: 1px solid var(--seculoco-border);
+	border-radius: var(--seculoco-radius-sm);
+	font-size: 14px;
+	transition: border-color 0.2s ease;
 }
 
 .seculoco-password-input:focus {
-    outline: none;
-    border-color: var(--seculoco-primary);
-    box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.1);
+	outline: none;
+	border-color: var(--seculoco-primary);
+	box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.1);
 }
 
 .seculoco-password-toggle {
-    position: absolute;
-    right: 8px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 4px;
-    color: var(--seculoco-text-muted);
-    transition: color 0.2s ease;
+	position: absolute;
+	right: 8px;
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: 4px;
+	color: var(--seculoco-text-muted);
+	transition: color 0.2s ease;
 }
 
 .seculoco-password-toggle:hover {
-    color: var(--seculoco-text-primary);
+	color: var(--seculoco-text-primary);
 }
 
 .seculoco-password-toggle .dashicons {
-    width: 20px;
-    height: 20px;
-    font-size: 20px;
+	width: 20px;
+	height: 20px;
+	font-size: 20px;
 }
 
 /* Password Strength Meter */
 .seculoco-password-strength-meter {
-    width: 100%;
-    height: 4px;
-    background: var(--seculoco-bg-light);
-    border-radius: 2px;
-    margin-top: 8px;
-    overflow: hidden;
+	width: 100%;
+	height: 4px;
+	background: var(--seculoco-bg-light);
+	border-radius: 2px;
+	margin-top: 8px;
+	overflow: hidden;
 }
 
 .seculoco-password-strength-bar {
-    height: 100%;
-    width: 0%;
-    transition: width 0.3s ease, background-color 0.3s ease;
-    border-radius: 2px;
+	height: 100%;
+	width: 0%;
+	transition: width 0.3s ease, background-color 0.3s ease;
+	border-radius: 2px;
 }
 
 .seculoco-password-strength-bar.seculoco-strength-weak {
-    width: 25%;
-    background: var(--seculoco-danger);
+	width: 25%;
+	background: var(--seculoco-danger);
 }
 
 .seculoco-password-strength-bar.seculoco-strength-fair {
-    width: 50%;
-    background: var(--seculoco-warning);
+	width: 50%;
+	background: var(--seculoco-warning);
 }
 
 .seculoco-password-strength-bar.seculoco-strength-good {
-    width: 75%;
-    background: #2196f3;
+	width: 75%;
+	background: #2196f3;
 }
 
 .seculoco-password-strength-bar.seculoco-strength-strong {
-    width: 100%;
-    background: var(--seculoco-success);
+	width: 100%;
+	background: var(--seculoco-success);
 }
 
 .seculoco-password-strength-text {
-    margin-top: 6px;
-    font-size: 12px;
-    font-weight: 500;
+	margin-top: 6px;
+	font-size: 12px;
+	font-weight: 500;
 }
 
 .seculoco-password-strength-text.seculoco-strength-weak {
-    color: var(--seculoco-danger);
+	color: var(--seculoco-danger);
 }
 
 .seculoco-password-strength-text.seculoco-strength-fair {
-    color: var(--seculoco-warning);
+	color: var(--seculoco-warning);
 }
 
 .seculoco-password-strength-text.seculoco-strength-good {
-    color: #2196f3;
+	color: #2196f3;
 }
 
 .seculoco-password-strength-text.seculoco-strength-strong {
-    color: var(--seculoco-success);
+	color: var(--seculoco-success);
 }
 
 /* Password Match Indicator */
 .seculoco-password-match-indicator {
-    margin-top: 8px;
-    font-size: 13px;
-    font-weight: 500;
-    min-height: 20px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+	margin-top: 8px;
+	font-size: 13px;
+	font-weight: 500;
+	min-height: 20px;
+	display: flex;
+	align-items: center;
+	gap: 6px;
 }
 
 .seculoco-password-match-indicator.seculoco-match-success {
-    color: var(--seculoco-success);
+	color: var(--seculoco-success);
 }
 
 .seculoco-password-match-indicator.seculoco-match-error {
-    color: var(--seculoco-danger);
+	color: var(--seculoco-danger);
 }
 
 /* Password Error */
 .seculoco-password-error {
-    margin-top: 16px;
-    padding: 12px;
-    background: #fee2e2;
-    border-left: 4px solid var(--seculoco-danger);
-    border-radius: var(--seculoco-radius-sm);
-    color: #991b1b;
-    font-size: 13px;
-    display: none;
+	margin-top: 16px;
+	padding: 12px;
+	background: #fee2e2;
+	border-left: 4px solid var(--seculoco-danger);
+	border-radius: var(--seculoco-radius-sm);
+	color: #991b1b;
+	font-size: 13px;
+	display: none;
 }
 
 .seculoco-password-error.seculoco-password-error-visible {
-    display: block;
+	display: block;
 }
 
 /* Button Styles */
 .button-danger {
-    background: var(--seculoco-danger);
-    color: white;
-    border-color: var(--seculoco-danger);
+	background: var(--seculoco-danger);
+	color: white;
+	border-color: var(--seculoco-danger);
 }
 
 .button-danger:hover {
-    background: var(--seculoco-danger-hover);
-    border-color: var(--seculoco-danger-hover);
-    color: white;
+	background: var(--seculoco-danger-hover);
+	border-color: var(--seculoco-danger-hover);
+	color: white;
 }
 
 .button-danger:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+	opacity: 0.5;
+	cursor: not-allowed;
 }
 
 /* Password Setup/Reset Buttons */
 .seculoco-password-setup-btn,
 .seculoco-password-reset-btn {
-    margin-top: 10px;
+	margin-top: 10px;
 }
 
 /* Responsive */
 @media (max-width: 782px) {
-    .seculoco-password-modal {
-        min-width: 90%;
-        max-width: 90%;
-    }
+	.seculoco-password-modal {
+		min-width: 90%;
+		max-width: 90%;
+	}
 }
 .seculoco-modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 100000;
-    background: rgba(18, 24, 38, 0.65);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 100000;
+	background: rgba(18, 24, 38, 0.65);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 20px;
 }
 
 .seculoco-modal-container {
-    background: #fff;
-    border-radius: 10px;
-    box-shadow: 0 18px 40px rgba(10, 16, 34, 0.25);
-    width: 480px;
-    max-width: 100%;
-    animation: seculoco-modal-fade 0.2s ease-out;
+	background: #fff;
+	border-radius: 10px;
+	box-shadow: 0 18px 40px rgba(10, 16, 34, 0.25);
+	width: 480px;
+	max-width: 100%;
+	animation: seculoco-modal-fade 0.2s ease-out;
 }
 
 @keyframes seculoco-modal-fade {
-    from {
-        transform: translateY(10px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
+	from {
+		transform: translateY(10px);
+		opacity: 0;
+	}
+	to {
+		transform: translateY(0);
+		opacity: 1;
+	}
 }
 
 .seculoco-modal-header {
-    padding: 24px 24px 12px;
-    border-bottom: 1px solid #ececec;
+	padding: 24px 24px 12px;
+	border-bottom: 1px solid #ececec;
 }
 
 .seculoco-modal-header h2 {
-    margin: 0;
-    font-size: 20px;
-    color: #111;
+	margin: 0;
+	font-size: 20px;
+	color: #111;
 }
 
 .seculoco-modal-header p {
-    margin: 6px 0 0;
-    color: #5f6b7c;
+	margin: 6px 0 0;
+	color: #5f6b7c;
 }
 
 .seculoco-modal-content {
-    padding: 24px;
+	padding: 24px;
 }
 
 .seculoco-field-group {
-    margin-bottom: 16px;
+	margin-bottom: 16px;
 }
 
 .seculoco-field-group label {
-    display: block;
-    font-weight: 600;
-    margin-bottom: 8px;
-    color: #111;
+	display: block;
+	font-weight: 600;
+	margin-bottom: 8px;
+	color: #111;
 }
 
 .seculoco-password-input-group {
-    display: flex;
-    align-items: center;
-    border: 1px solid #c3c4c7;
-    border-radius: 6px;
-    overflow: hidden;
-    background: #fff;
+	display: flex;
+	align-items: center;
+	border: 1px solid #c3c4c7;
+	border-radius: 6px;
+	overflow: hidden;
+	background: #fff;
 }
 
 .seculoco-password-input-group input {
-    border: none;
-    flex: 1;
-    padding: 10px 12px;
-    font-size: 14px;
+	border: none;
+	flex: 1;
+	padding: 10px 12px;
+	font-size: 14px;
 }
 
 .seculoco-password-input-group input:focus {
-    outline: none;
-    box-shadow: none;
+	outline: none;
+	box-shadow: none;
 }
 
 .seculoco-toggle-password-btn {
-    border: none;
-    background: transparent;
-    padding: 8px 12px;
-    cursor: pointer;
-    color: #50575e;
+	border: none;
+	background: transparent;
+	padding: 8px 12px;
+	cursor: pointer;
+	color: #50575e;
 }
 
 .seculoco-toggle-password-btn:hover {
-    background: rgba(17, 121, 239, 0.08);
-    color: #111;
+	background: rgba(17, 121, 239, 0.08);
+	color: #111;
 }
 
 .seculoco-error-message {
-    display: none;
-    color: #d63638;
-    background: rgba(214, 54, 56, 0.1);
-    border-radius: 4px;
-    padding: 8px 10px;
-    font-size: 13px;
+	display: none;
+	color: #d63638;
+	background: rgba(214, 54, 56, 0.1);
+	border-radius: 4px;
+	padding: 8px 10px;
+	font-size: 13px;
 }
 
 .seculoco-modal-footer {
-    padding: 16px 24px 24px;
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    border-top: 1px solid #ececec;
+	padding: 16px 24px 24px;
+	display: flex;
+	justify-content: flex-end;
+	gap: 12px;
+	border-top: 1px solid #ececec;
 }
 
 .seculoco-modal-footer .button {
-    min-width: 110px;
+	min-width: 110px;
 }

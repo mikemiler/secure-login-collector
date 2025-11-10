@@ -118,8 +118,8 @@ class Seculoco_Unified_Crypto {
 			);
 		}
 
-		$tag     = '';
-		$cipher  = openssl_encrypt(
+		$tag    = '';
+		$cipher = openssl_encrypt(
 			$private_key,
 			'aes-256-gcm',
 			$key,
