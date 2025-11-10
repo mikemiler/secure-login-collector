@@ -408,14 +408,24 @@ class Seculoco_Database_Manager {
 		$subject = sprintf( __( '[%s] New Secure Login Data Received', 'secure-login-collector' ), $site_name );
 
 		// translators: %1$s is sender email, %2$s is sender name, %3$s is submission time, %4$s is admin URL, %5$s is site name, %6$s is site URL.
-		$message = sprintf(
-			__( "Hello,\n\nNew secure login data has been submitted to your website.\n\nSender Email: %1\$s\nSender Name: %2\$s\nSubmitted: %3\$s\n\nTo view and decrypt the login data, please visit:\n%4\$s\n\nThis is an automated notification from %5\$s\nWebsite: %6\$s", 'secure-login-collector' ),
-			$sender_email,
-			! empty( $sender_name ) ? $sender_name : __( 'Not provided', 'secure-login-collector' ),
-			current_time( 'Y-m-d H:i:s' ),
-			$admin_url,
-			$site_name,
-			$site_url
+		$message_template = __(
+			"Hello,\n\nNew secure login data has been submitted to your website.\n\nSender Email: %1\$s\nSender Name: %2\$s\nSubmitted: %3\$s\n\nTo view and decrypt the login data, please visit:\n%4\$s\n\nThis is an automated notification from %5\$s\nWebsite: %6\$s",
+			'secure-login-collector'
+		);
+
+		// Ensure line breaks render correctly in plain-text email clients.
+		$message = str_replace(
+			"\n",
+			"\r\n",
+			sprintf(
+				$message_template,
+				$sender_email,
+				! empty( $sender_name ) ? $sender_name : __( 'Not provided', 'secure-login-collector' ),
+				current_time( 'Y-m-d H:i:s' ),
+				$admin_url,
+				$site_name,
+				$site_url
+			)
 		);
 
 		$parsed_url = wp_parse_url( $site_url );

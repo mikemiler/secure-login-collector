@@ -1,5 +1,5 @@
 === Secure Login Collector ===
-Contributors: Mike.Miler
+Contributors: mikemiler
 Tags: login, password, credential management, password collection, data security
 Requires at least: 6.2
 Tested up to: 6.8
@@ -84,6 +84,10 @@ Bitwarden, 1Password, LastPass, Dashlane, KeePass, Chrome, Firefox, Safari, and 
 4. Settings page
 
 == Changelog ==
+
+= 2.0.1 =
+* Remove branding from frontend
+* Code cleanup
 
 = 2.0.0 =
 * Refactoring for launch at wordpres.org

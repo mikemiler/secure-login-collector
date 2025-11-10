@@ -155,9 +155,6 @@ class SecureLoginCollector
         // Add upgrade notices.
         add_action('admin_notices', array( $this, 'show_upgrade_notices' ));
         add_action('admin_notices', array( $this, 'maybe_show_encryption_notice' ), 5);
-
-        // Handle free plugin deletion (Pro version only).
-        add_action('admin_post_seculoco_delete_free_plugin', array( $this, 'handle_delete_free_plugin' ));
     }
 
     /**
@@ -240,9 +237,6 @@ class SecureLoginCollector
         // Check if we just upgraded from free version.
         $upgrade_success = get_transient('seculoco_migration_success');
         if ($upgrade_success ) {
-            // Check if free plugin still exists.
-            $free_plugin_exists = $this->free_plugin_directory_exists();
-
             ?>
             <div class="notice notice-success is-dismissible">
                 <p>
@@ -252,56 +246,12 @@ class SecureLoginCollector
             <?php esc_html_e('The free version has been deactivated automatically.', 'secure-login-collector'); ?>
             <?php esc_html_e('All your data and settings are preserved.', 'secure-login-collector'); ?>
                 </p>
-            <?php if ($free_plugin_exists ) : ?>
-                    <p>
-                        <strong><?php esc_html_e('Clean up:', 'secure-login-collector'); ?></strong>
-                <?php esc_html_e('The free version plugin is no longer needed.', 'secure-login-collector'); ?>
-                    </p>
-                    <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="margin-top: 10px;" onsubmit="return confirm('<?php echo esc_js(__('Are you sure you want to delete the free version plugin? The Pro version will continue working normally.', 'secure-login-collector')); ?>');">
-                <?php wp_nonce_field('seculoco_delete_free_plugin', 'seculoco_delete_nonce'); ?>
-                        <input type="hidden" name="action" value="seculoco_delete_free_plugin">
-                        <button type="submit" class="button button-primary">
-                <?php esc_html_e('Delete Free Plugin', 'secure-login-collector'); ?>
-                        </button>
-                        <span style="margin-left: 10px; color: #666;">
-                <?php esc_html_e('(Recommended - keeps your plugins list clean)', 'secure-login-collector'); ?>
-                        </span>
-                    </form>
-            <?php endif; ?>
+                <p>
+            <?php esc_html_e('You can safely delete the free version from the Plugins page when convenient.', 'secure-login-collector'); ?>
+                </p>
             </div>
             <?php
             delete_transient('seculoco_migration_success');
-        }
-
-        // Check if free plugin was just deleted.
-        $delete_success = get_transient('seculoco_free_deleted');
-        if ($delete_success ) {
-            ?>
-            <div class="notice notice-success is-dismissible">
-                <p>
-                    <strong><?php esc_html_e('Free plugin deleted successfully!', 'secure-login-collector'); ?></strong>
-                </p>
-                <p><?php esc_html_e('Your Pro version continues working normally with all data intact.', 'secure-login-collector'); ?></p>
-            </div>
-            <?php
-            delete_transient('seculoco_free_deleted');
-        }
-
-        // Check if deletion failed.
-        $delete_error = get_transient('seculoco_free_delete_error');
-        if ($delete_error ) {
-            ?>
-            <div class="notice notice-error is-dismissible">
-                <p>
-                    <strong><?php esc_html_e('Could not delete free plugin:', 'secure-login-collector'); ?></strong>
-                </p>
-                <p><?php echo esc_html($delete_error); ?></p>
-                <p>
-                    <em><?php esc_html_e('You can manually delete it from the Plugins page if desired.', 'secure-login-collector'); ?></em>
-                </p>
-            </div>
-            <?php
-            delete_transient('seculoco_free_delete_error');
         }
     }
 
@@ -369,89 +319,6 @@ class SecureLoginCollector
         }
 
         return (bool) ( get_option(SECULOCO_OPTION_PRO_KEYS_ACTIVE, false) && get_option(SECULOCO_OPTION_PASSKEY_REGISTERED, false) );
-    }
-
-    /**
-     * Check if free plugin directory exists.
-     *
-     * @return bool True if free plugin directory exists.
-     */
-    private function free_plugin_directory_exists()
-    {
-        $free_paths = array(
-        WP_PLUGIN_DIR . '/secure-login-collector',
-        WP_PLUGIN_DIR . '/secure-login-collector-free',
-        );
-
-        foreach ( $free_paths as $path ) {
-            if (is_dir($path) && $path !== SECULOCO_PLUGIN_DIR ) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Handle free plugin deletion request.
-     * This is Pro version only functionality.
-     */
-    public function handle_delete_free_plugin()
-    {
-        // Security checks.
-        if (! current_user_can('delete_plugins') ) {
-            wp_die(esc_html__('You do not have permission to delete plugins.', 'secure-login-collector'));
-        }
-
-        // Verify nonce.
-        if (! isset($_POST['seculoco_delete_nonce']) || ! wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['seculoco_delete_nonce'])), 'seculoco_delete_free_plugin') ) {
-            wp_die(esc_html__('Security check failed.', 'secure-login-collector'));
-        }
-
-        // Find and delete free plugin directory.
-        $free_paths = array(
-        WP_PLUGIN_DIR . '/secure-login-collector',
-        WP_PLUGIN_DIR . '/secure-login-collector-free',
-        );
-
-        $deleted = false;
-        foreach ( $free_paths as $free_path ) {
-            // Make sure we're not deleting the Pro version!
-            if ($free_path === SECULOCO_PLUGIN_DIR ) {
-                continue;
-            }
-
-            if (is_dir($free_path) ) {
-                // Use WordPress filesystem API for safe deletion.
-                include_once ABSPATH . 'wp-admin/includes/file.php';
-
-                global $wp_filesystem;
-                if (! WP_Filesystem() ) {
-                    set_transient('seculoco_free_delete_error', __('Could not initialize WordPress filesystem.', 'secure-login-collector'), 60);
-                    wp_safe_redirect(admin_url('plugins.php'));
-                    exit;
-                }
-
-                // Delete the directory.
-                $result = $wp_filesystem->delete($free_path, true);
-
-                if ($result ) {
-                    $deleted = true;
-                    set_transient('seculoco_free_deleted', true, 60);
-                } else {
-                    set_transient('seculoco_free_delete_error', __('File system error during deletion.', 'secure-login-collector'), 60);
-                }
-                break;
-            }
-        }
-
-        if (! $deleted ) {
-            set_transient('seculoco_free_delete_error', __('Free plugin directory not found.', 'secure-login-collector'), 60);
-        }
-
-        // Redirect back to plugins page.
-        wp_safe_redirect(admin_url('plugins.php'));
-        exit;
     }
 
     /**

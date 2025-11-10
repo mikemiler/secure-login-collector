@@ -282,16 +282,6 @@ class Seculoco_Settings_Manager {
 			'seculoco_frontend_section'
 		);
 
-		if ( ! seculoco_is_premium_active() ) {
-			add_settings_field(
-				'seculoco_hide_service_footer_placeholder',
-				__( 'Hide Branding Footer', 'secure-login-collector' ),
-				array( $this, 'render_service_footer_pro_placeholder' ),
-				'seculoco_settings',
-				'seculoco_frontend_section'
-			);
-		}
-
 		/**
 		 * Allow premium/pro builds to register additional settings fields.
 		 */
@@ -580,16 +570,6 @@ class Seculoco_Settings_Manager {
 		echo '</fieldset>';
 
 		echo '<p class="description">' . esc_html__( 'Choose whether to use the default security information text or your custom text below.', 'secure-login-collector' ) . '</p>';
-	}
-
-	/**
-	 * Display Pro-only placeholder for the branding footer setting.
-	 */
-	public function render_service_footer_pro_placeholder() {
-		echo '<p class="description" style="color: #666;">';
-		echo '<span class="seculoco-badge seculoco-pro-badge seculoco-pro-badge-inline">' . esc_html__( 'PRO ONLY', 'secure-login-collector' ) . '</span>';
-		echo esc_html__( 'Upgrade to Secure Login Collector Pro to hide the branding footer on the frontend form.', 'secure-login-collector' );
-		echo '</p>';
 	}
 
 	/**

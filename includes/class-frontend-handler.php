@@ -326,25 +326,7 @@ class Seculoco_Frontend_Handler {
 				<div class="seculoco-form-group">
 					<button type="submit" class="seculoco-submit-btn"><?php echo esc_html( $atts['button_text'] ); ?></button>
 				</div>
-
-				<?php
-				/**
-				 * Show service footer based on filter hook.
-				 * Free version: Always returns true (footer always shown)
-				 * Pro version: Can hook in to check setting and return false to hide
-				 *
-				 * @param bool $show_footer Whether to show the service footer. Default true.
-				 */
-				$show_footer = apply_filters( 'seculoco_show_service_footer', true );
-
-				if ( $show_footer ) :
-					?>
-					<div style="font-size: 14px; text-align: center;">
-						Service provided by <a href="https://wordpress.org/plugins/secure-login-collector" target="_blank"> Secure Login Collector</a>
-					</div>
-				<?php endif; ?>
-
-			</form>
+				</form>
 		</div>
 		<?php
 		return ob_get_clean();
