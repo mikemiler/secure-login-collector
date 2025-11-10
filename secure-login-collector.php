@@ -3,7 +3,7 @@
  * Plugin Name: Secure Login Collector
  * Plugin URI: https://wp-mike.com
  * Description: Securely collects and stores encrypted login credentials from clients via frontend form with email notifications.
- * Version: 2.0.0
+ * Version: 2.0.1
  * Author: Mike Miler
  * License: GPL v2 or later
  * Text Domain: secure-login-collector
@@ -34,7 +34,7 @@ if (defined('SECULOCO_VERSION') ) {
     return; // Stop execution.
 }
 
-define('SECULOCO_VERSION', '2.0.0');
+define('SECULOCO_VERSION', '2.0.1');
 
 // Define plugin constants with guards.
 if (! defined('SECULOCO_PLUGIN_DIR') ) {
