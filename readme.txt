@@ -77,11 +77,12 @@ Free users manually delete entries when a project wraps. Pro users set retention
 Bitwarden, 1Password, LastPass, Dashlane, KeePass, Chrome, Firefox, Safari, and CSV.
 
 == Screenshots ==
-
-1. Client submission form
-2. Admin dashboard with encrypted entries
-3. Decryption view with copy buttons
-4. Settings page
+1. The frontend form where your client enters their sensitive login data
+2. Encryption of the login data in the client’s browser before it is sent
+3. Confirmation message that the login data was securely transmitted
+4. All submitted login data listed in your WordPress backend
+5. To view the login data, you must decrypt it with your previously set master password
+6. Decrypted login data displayed in your dashboard
 
 == Changelog ==
 
@@ -112,11 +113,3 @@ No client submissions, passwords, or encrypted payloads ever leave your server. 
 
 Freemius Terms: https://freemius.com/terms/  
 Freemius Privacy: https://freemius.com/privacy/
-
-== Screenshots ==
-1. The frontend form where your client enters their sensitive login data
-2. Encryption of the login data in the client’s browser before it is sent
-3. Confirmation message that the login data was securely transmitted
-4. All submitted login data listed in your WordPress backend
-5. To view the login data, you must decrypt it with your previously set master password
-6. Decrypted login data displayed in your dashboard

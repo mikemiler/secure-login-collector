@@ -1,22 +1,18 @@
-# German translation for Secure Login Collector
-# Copyright (C) 2025 Secure Login Collector
-# This file is distributed under the GPL v2 or later.
 msgid ""
 msgstr ""
 "Project-Id-Version: Secure Login Collector 2.5.2\n"
-"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/secure-login-"
-"collector\n"
-"POT-Creation-Date: 2025-11-09T14:28:40+00:00\n"
-"PO-Revision-Date: 2025-11-17 08:56+0000\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/secure-login-collector\n"
 "Last-Translator: \n"
 "Language-Team: Deutsch\n"
-"Language: de_DE\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2025-11-09T14:28:40+00:00\n"
+"PO-Revision-Date: 2025-11-17 08:56+0000\n"
+"Language: de_DE\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Loco https://localise.biz/\n"
-"X-Loco-Version: 2.8.0; wp-6.8.3; php-8.2.27"
+"X-Loco-Version: 2.8.0; wp-6.8.3; php-8.2.27\n"
 
 #. Plugin Name of the plugin
 #: secure-login-collector.php
@@ -30,9 +26,7 @@ msgstr "https://wp-mike.com"
 
 #. Description of the plugin
 #: secure-login-collector.php
-msgid ""
-"Securely collects and stores encrypted login credentials from clients via "
-"frontend form with email notifications."
+msgid "Securely collects and stores encrypted login credentials from clients via frontend form with email notifications."
 msgstr "Sammelt und speichert verschlüsselte Login-Daten von Kunden sicher über ein Frontend-Formular mit E-Mail-Benachrichtigungen."
 
 #. Author of the plugin
@@ -84,13 +78,8 @@ msgid "Decrypt data"
 msgstr "Daten entschlüsseln"
 
 #: includes/class-admin-interface.php:174
-msgid ""
-"This entry was created before automatic key reconstruction was available. "
-"Please enter the encryption key manually:"
-msgstr ""
-"Dieser Eintrag wurde erstellt, bevor die automatische Schlüssel-"
-"Rekonstruktion verfügbar war. Bitte gib den Verschlüsselungsschlüssel "
-"manuell ein:"
+msgid "This entry was created before automatic key reconstruction was available. Please enter the encryption key manually:"
+msgstr "Dieser Eintrag wurde erstellt, bevor die automatische Schlüssel-Rekonstruktion verfügbar war. Bitte gib den Verschlüsselungsschlüssel manuell ein:"
 
 #: includes/class-admin-interface.php:175
 msgid "Decrypting..."
@@ -114,9 +103,7 @@ msgstr "Fehler bei der Verarbeitung der Entschlüsselung:"
 
 #: includes/class-admin-interface.php:180
 msgid "Are you sure you want to extend the retention period for this entry?"
-msgstr "Bist du sicher, dass du die Aufbewahrungsfrist für diesen Eintrag verlängern möchtest?"
-"Bist du sicher, dass du den Aufbewahrungszeitraum für diesen Eintrag "
-"verlängern möchtest?"
+msgstr "Bist du sicher, dass du die Aufbewahrungsfrist für diesen Eintrag verlängern möchtest?Bist du sicher, dass du den Aufbewahrungszeitraum für diesen Eintrag verlängern möchtest?"
 
 #: includes/class-admin-interface.php:181
 msgid "Extending..."
@@ -128,8 +115,7 @@ msgstr "Aufbewahrungszeitraum erfolgreich verlängert."
 
 #: includes/class-admin-interface.php:219
 msgid "No decrypted data available. Please decrypt the data first."
-msgstr "Keine entschlüsselten Daten verfügbar. Bitte entschlüssele zuerst die Daten."
-"Keine entschlüsselten Daten verfügbar. Bitte entschlüssle die Daten zuerst."
+msgstr "Keine entschlüsselten Daten verfügbar. Bitte entschlüssele zuerst die Daten.Keine entschlüsselten Daten verfügbar. Bitte entschlüssle die Daten zuerst."
 
 #: includes/class-admin-interface.php:222
 msgid "Network error occurred while saving data."
@@ -251,12 +237,8 @@ msgid "Network error occurred during passkey setup."
 msgstr "Netzwerkfehler bei der Passkey-Einrichtung aufgetreten."
 
 #: includes/class-admin-interface__premium_only.php:77
-msgid ""
-"Pro version detected but no passkey registered. Continue with traditional "
-"decryption?"
-msgstr ""
-"Pro-Version erkannt, aber kein Passkey registriert. Mit traditioneller "
-"Entschlüsselung fortfahren?"
+msgid "Pro version detected but no passkey registered. Continue with traditional decryption?"
+msgstr "Pro-Version erkannt, aber kein Passkey registriert. Mit traditioneller Entschlüsselung fortfahren?"
 
 #: includes/class-admin-interface__premium_only.php:78
 msgid "Authenticate with passkey..."
@@ -292,9 +274,7 @@ msgstr "Passkey-geschützt"
 
 #: includes/class-admin-interface__premium_only.php:149
 msgid "AES-256-GCM + RSA with passkey authentication required for decryption."
-msgstr "AES-256-GCM + RSA mit Passkey-Authentifizierung erforderlich für Entschlüsselung."
-"AES-256-GCM + RSA mit Passkey-Authentifizierung für Entschlüsselung "
-"erforderlich."
+msgstr "AES-256-GCM + RSA mit Passkey-Authentifizierung erforderlich für Entschlüsselung.AES-256-GCM + RSA mit Passkey-Authentifizierung für Entschlüsselung erforderlich."
 
 #: includes/class-admin-interface__premium_only.php:244
 msgid "Export to Bitwarden"
@@ -343,13 +323,8 @@ msgstr "Keine Einträge für Export ausgewählt."
 #. translators: %1$d: number of entries selected, %2$s: password manager name.
 #: includes/class-admin-interface__premium_only.php:316
 #, php-format
-msgid ""
-"You have selected %1$d entries for bulk export. All selected entries will be "
-"decrypted using your passkey and then exported to %2$s format."
-msgstr ""
-"Du hast %1$d Einträge für den Massenexport ausgewählt. Alle ausgewählten "
-"Einträge werden mit deinem Passkey entschlüsselt und dann in das %2$s-Format "
-"exportiert."
+msgid "You have selected %1$d entries for bulk export. All selected entries will be decrypted using your passkey and then exported to %2$s format."
+msgstr "Du hast %1$d Einträge für den Massenexport ausgewählt. Alle ausgewählten Einträge werden mit deinem Passkey entschlüsselt und dann in das %2$s-Format exportiert."
 
 #: includes/class-admin-interface__premium_only.php:325
 msgid "Missing passkey signature."
@@ -366,12 +341,8 @@ msgid "Successfully decrypted %d entries. Generating CSV..."
 msgstr "Erfolgreich %d Einträge entschlüsselt. CSV wird generiert..."
 
 #: includes/class-admin-interface__premium_only.php:388
-msgid ""
-"Bulk decryption failed for some entries. Only successfully decrypted entries "
-"were exported."
-msgstr ""
-"Massenentschlüsselung für einige Einträge fehlgeschlagen. Nur erfolgreich "
-"entschlüsselte Einträge wurden exportiert."
+msgid "Bulk decryption failed for some entries. Only successfully decrypted entries were exported."
+msgstr "Massenentschlüsselung für einige Einträge fehlgeschlagen. Nur erfolgreich entschlüsselte Einträge wurden exportiert."
 
 #: includes/class-admin-interface__premium_only.php:390
 msgid "Bulk decryption failed for all entries."
@@ -419,24 +390,10 @@ msgstr "Passkey erfolgreich registriert."
 
 #: includes/class-admin-interface__premium_only.php:710
 #, php-format
-msgid ""
-"Cannot export: %d selected item is undecryptable. This item was encrypted "
-"with a deleted passkey and cannot be recovered. Please deselect the item "
-"marked as \"Undecryptable\" and try again."
-msgid_plural ""
-"Cannot export: %d selected items are undecryptable. These items were "
-"encrypted with a deleted passkey and cannot be recovered. Please deselect "
-"the items marked as \"Undecryptable\" and try again."
-msgstr[0] ""
-"Export nicht möglich: %d ausgewählter Eintrag ist nicht entschlüsselbar. "
-"Dieser Eintrag wurde mit einem gelöschten Passkey verschlüsselt und kann "
-"nicht wiederhergestellt werden. Bitte deaktiviere den als \"Nicht "
-"entschlüsselbar\" markierten Eintrag und versuche es erneut."
-msgstr[1] ""
-"Export nicht möglich: %d ausgewählte Einträge sind nicht entschlüsselbar. "
-"Diese Einträge wurden mit einem gelöschten Passkey verschlüsselt und können "
-"nicht wiederhergestellt werden. Bitte deaktiviere die als \"Nicht "
-"entschlüsselbar\" markierten Einträge und versuche es erneut."
+msgid "Cannot export: %d selected item is undecryptable. This item was encrypted with a deleted passkey and cannot be recovered. Please deselect the item marked as \"Undecryptable\" and try again."
+msgid_plural "Cannot export: %d selected items are undecryptable. These items were encrypted with a deleted passkey and cannot be recovered. Please deselect the items marked as \"Undecryptable\" and try again."
+msgstr[0] "Export nicht möglich: %d ausgewählter Eintrag ist nicht entschlüsselbar. Dieser Eintrag wurde mit einem gelöschten Passkey verschlüsselt und kann nicht wiederhergestellt werden. Bitte deaktiviere den als \"Nicht entschlüsselbar\" markierten Eintrag und versuche es erneut."
+msgstr[1] "Export nicht möglich: %d ausgewählte Einträge sind nicht entschlüsselbar. Diese Einträge wurden mit einem gelöschten Passkey verschlüsselt und können nicht wiederhergestellt werden. Bitte deaktiviere die als \"Nicht entschlüsselbar\" markierten Einträge und versuche es erneut."
 
 #: includes/class-database-manager.php:291
 msgid "Expired (data purged)"
@@ -504,12 +461,8 @@ msgid "No encryption key available."
 msgstr "Keine Verschlüsselungsmethode verfügbar"
 
 #: includes/class-frontend-handler.php:117
-msgid ""
-"Please fill in all required fields (Email Address, Name, Login URL, "
-"Username/Email, and Password)."
-msgstr ""
-"Bitte fülle alle Pflichtfelder aus (E-Mail-Adresse, Name, Login-URL, "
-"Benutzername/E-Mail und Passwort)."
+msgid "Please fill in all required fields (Email Address, Name, Login URL, Username/Email, and Password)."
+msgstr "Bitte fülle alle Pflichtfelder aus (E-Mail-Adresse, Name, Login-URL, Benutzername/E-Mail und Passwort)."
 
 #: includes/class-frontend-handler.php:118
 msgid "Submitting..."
@@ -522,8 +475,7 @@ msgstr "Sicher absenden"
 
 #: includes/class-frontend-handler.php:120
 msgid "Login data saved securely! Thank you for your submission."
-msgstr "Login-Daten sicher gespeichert! Vielen Dank für deine Übermittlung."
-"Login-Daten wurden sicher gespeichert! Vielen Dank für deine Übermittlung."
+msgstr "Login-Daten sicher gespeichert! Vielen Dank für deine Übermittlung.Login-Daten wurden sicher gespeichert! Vielen Dank für deine Übermittlung."
 
 #: includes/class-frontend-handler.php:121
 msgid "Error saving data: "
@@ -555,29 +507,19 @@ msgstr "Keine Verschlüsselungsmethode verfügbar"
 
 #: includes/class-frontend-handler.php:129
 msgid "RSA public key not available. Please contact administrator."
-msgstr "RSA-Schlüssel nicht verfügbar. Bitte kontaktiere den Administrator."
-"RSA-öffentlicher Schlüssel nicht verfügbar. Bitte kontaktiere den "
-"Administrator."
+msgstr "RSA-Schlüssel nicht verfügbar. Bitte kontaktiere den Administrator.RSA-öffentlicher Schlüssel nicht verfügbar. Bitte kontaktiere den Administrator."
 
 #: includes/class-frontend-handler.php:130
 msgid "Encryption failed. Please try again or contact administrator."
-msgstr "Verschlüsselung fehlgeschlagen. Bitte versuche es erneut oder kontaktiere den Administrator."
-"Verschlüsselung fehlgeschlagen. Bitte versuche es erneut oder kontaktiere "
-"den Administrator."
+msgstr "Verschlüsselung fehlgeschlagen. Bitte versuche es erneut oder kontaktiere den Administrator.Verschlüsselung fehlgeschlagen. Bitte versuche es erneut oder kontaktiere den Administrator."
 
 #: includes/class-frontend-handler.php:165
 msgid "Encryption Not Configured"
 msgstr "Verschlüsselung fehlgeschlagen"
 
 #: includes/class-frontend-handler.php:169
-msgid ""
-"<strong>Administrator Notice:</strong> The master password has not been set "
-"up yet. The form cannot accept submissions until encryption is properly "
-"configured."
-msgstr ""
-"<strong>Administratorhinweis:</strong> Das Master-Passwort wurde noch nicht "
-"eingerichtet. Das Formular kann keine Einsendungen annehmen, bis die "
-"Verschlüsselung korrekt konfiguriert ist."
+msgid "<strong>Administrator Notice:</strong> The master password has not been set up yet. The form cannot accept submissions until encryption is properly configured."
+msgstr "<strong>Administratorhinweis:</strong> Das Master-Passwort wurde noch nicht eingerichtet. Das Formular kann keine Einsendungen annehmen, bis die Verschlüsselung korrekt konfiguriert ist."
 
 #: includes/class-frontend-handler.php:186
 msgid "Form Temporarily Unavailable"
@@ -592,12 +534,8 @@ msgid "Finish encryption setup first"
 msgstr "Ungültiges Verschlüsselungsformat."
 
 #: includes/class-frontend-handler.php:212
-msgid ""
-"Set up encryption in the settings before embedding the secure login form. "
-"Only admins see this alert."
-msgstr ""
-"Richte die Verschlüsselung in den Einstellungen ein, bevor du das sichere "
-"Login-Formular einbindest. Nur Administratoren sehen diese Meldung."
+msgid "Set up encryption in the settings before embedding the secure login form. Only admins see this alert."
+msgstr "Richte die Verschlüsselung in den Einstellungen ein, bevor du das sichere Login-Formular einbindest. Nur Administratoren sehen diese Meldung."
 
 #: includes/class-frontend-handler.php:222
 msgid "Secure login form coming soon."
@@ -624,15 +562,8 @@ msgstr "Was mit deinen Daten geschieht:"
 
 #: includes/class-frontend-handler.php:268
 #: includes/class-settings-manager.php:541
-msgid ""
-"Your login details are sealed on your device before they travel to us. Only "
-"our team can unlock them with an extra security key, and our zero-knowledge "
-"integration guarantees the highest possible protection for your data."
-msgstr ""
-"Deine Login-Daten werden auf deinem Gerät versiegelt, bevor sie zu uns "
-"gelangen. Nur unser Team kann sie mit einem zusätzlichen Sicherheitsschlüssel "
-"entsperren, und unsere Zero-Knowledge-Integration garantiert den "
-"höchstmöglichen Schutz für deine Daten."
+msgid "Your login details are sealed on your device before they travel to us. Only our team can unlock them with an extra security key, and our zero-knowledge integration guarantees the highest possible protection for your data."
+msgstr "Deine Login-Daten werden auf deinem Gerät versiegelt, bevor sie zu uns gelangen. Nur unser Team kann sie mit einem zusätzlichen Sicherheitsschlüssel entsperren, und unsere Zero-Knowledge-Integration garantiert den höchstmöglichen Schutz für deine Daten."
 
 #: includes/class-frontend-handler.php:288
 msgid "Your Name:"
@@ -660,9 +591,7 @@ msgstr "https://beispiel.de/login oder Dienstname"
 
 #: includes/class-frontend-handler.php:300
 msgid "Enter the login URL or service name where these credentials are used."
-msgstr "Gib die Login-URL oder den Dienstnamen ein, wo diese Anmeldedaten verwendet werden."
-"Gib die Login-URL oder den Dienstnamen ein, wo diese Anmeldedaten verwendet "
-"werden."
+msgstr "Gib die Login-URL oder den Dienstnamen ein, wo diese Anmeldedaten verwendet werden.Gib die Login-URL oder den Dienstnamen ein, wo diese Anmeldedaten verwendet werden."
 
 #: includes/class-frontend-handler.php:304
 msgid "Username/Email:"
@@ -674,9 +603,7 @@ msgstr "Benutzername oder E-Mail für Login"
 
 #: includes/class-frontend-handler.php:306
 msgid "The username or email address used to log into this service."
-msgstr "Der Benutzername oder die E-Mail-Adresse für die Anmeldung bei diesem Dienst."
-"Der Benutzername oder die E-Mail-Adresse, die für die Anmeldung bei diesem "
-"Dienst verwendet wird."
+msgstr "Der Benutzername oder die E-Mail-Adresse für die Anmeldung bei diesem Dienst.Der Benutzername oder die E-Mail-Adresse, die für die Anmeldung bei diesem Dienst verwendet wird."
 
 #: includes/class-frontend-handler.php:310
 msgid "Password:"
@@ -699,18 +626,12 @@ msgid "Additional Notes:"
 msgstr "Zusätzliche Notizen:"
 
 #: includes/class-frontend-handler.php:322
-msgid ""
-"Any additional information, security questions, backup codes, etc. (optional)"
-msgstr ""
-"Zusätzliche Informationen, Sicherheitsfragen, Backup-Codes usw. (optional)"
+msgid "Any additional information, security questions, backup codes, etc. (optional)"
+msgstr "Zusätzliche Informationen, Sicherheitsfragen, Backup-Codes usw. (optional)"
 
 #: includes/class-frontend-handler.php:323
-msgid ""
-"Optional: Any additional information like security questions, backup codes, "
-"or special instructions."
-msgstr ""
-"Optional: Zusätzliche Informationen wie Sicherheitsfragen, Backup-Codes oder "
-"spezielle Anweisungen."
+msgid "Optional: Any additional information like security questions, backup codes, or special instructions."
+msgstr "Optional: Zusätzliche Informationen wie Sicherheitsfragen, Backup-Codes oder spezielle Anweisungen."
 
 #: includes/class-frontend-handler.php:391
 msgid "Missing submission data."
@@ -738,8 +659,7 @@ msgstr "Daten konnten nicht in der Datenbank gespeichert werden."
 
 #: includes/class-frontend-handler.php:528
 msgid "Login data saved securely with enhanced encryption."
-msgstr "Login-Daten sicher mit erweiterter Verschlüsselung gespeichert."
-"Login-Daten wurden mit verbesserter Verschlüsselung sicher gespeichert."
+msgstr "Login-Daten sicher mit erweiterter Verschlüsselung gespeichert.Login-Daten wurden mit verbesserter Verschlüsselung sicher gespeichert."
 
 #: includes/class-frontend-handler.php:543
 #, php-format
@@ -762,23 +682,12 @@ msgid "Encrypted field %s is not valid base64 data."
 msgstr "Verschlüsseltes Feld %s enthält keine gültigen base64-Daten."
 
 #: includes/class-passkey-manager__premium_only.php:120
-msgid ""
-"WARNING: Resetting this passkey will make ALL existing encrypted data "
-"permanently inaccessible! This action CANNOT be undone. There is NO recovery "
-"method. Are you absolutely sure you want to proceed?"
-msgstr ""
-"WARNUNG: Das Zurücksetzen dieses Passkeys macht ALLE vorhandenen "
-"verschlüsselten Daten dauerhaft unzugänglich! Diese Aktion kann NICHT "
-"rückgängig gemacht werden. Es gibt KEINE Wiederherstellungsmöglichkeit. Bist "
-"du dir absolut sicher, dass du fortfahren möchtest?"
+msgid "WARNING: Resetting this passkey will make ALL existing encrypted data permanently inaccessible! This action CANNOT be undone. There is NO recovery method. Are you absolutely sure you want to proceed?"
+msgstr "WARNUNG: Das Zurücksetzen dieses Passkeys macht ALLE vorhandenen verschlüsselten Daten dauerhaft unzugänglich! Diese Aktion kann NICHT rückgängig gemacht werden. Es gibt KEINE Wiederherstellungsmöglichkeit. Bist du dir absolut sicher, dass du fortfahren möchtest?"
 
 #: includes/class-passkey-manager__premium_only.php:121
-msgid ""
-"Are you sure you want to reset this passkey?\\n\\nYou can register a new "
-"passkey afterward."
-msgstr ""
-"Bist du sicher, dass du diesen Passkey zurücksetzen möchtest?\\n\\nDu kannst "
-"danach einen neuen Passkey registrieren."
+msgid "Are you sure you want to reset this passkey?\\n\\nYou can register a new passkey afterward."
+msgstr "Bist du sicher, dass du diesen Passkey zurücksetzen möchtest?\\n\\nDu kannst danach einen neuen Passkey registrieren."
 
 #: includes/class-passkey-manager__premium_only.php:122
 msgid "Resetting..."
@@ -826,23 +735,16 @@ msgid "Passkey registered successfully!"
 msgstr "Passkey erfolgreich registriert!"
 
 #: includes/class-passkey-manager__premium_only.php:133
-msgid ""
-"Passkeys require HTTPS (or http://localhost / 127.0.0.1 while developing). "
-"Please enable SSL before registering."
-msgstr ""
-"Passkeys erfordern HTTPS (oder http://localhost / 127.0.0.1 während der "
-"Entwicklung). Bitte aktiviere SSL, bevor du mit der Registrierung beginnst."
+msgid "Passkeys require HTTPS (or http://localhost / 127.0.0.1 while developing). Please enable SSL before registering."
+msgstr "Passkeys erfordern HTTPS (oder http://localhost / 127.0.0.1 während der Entwicklung). Bitte aktiviere SSL, bevor du mit der Registrierung beginnst."
 
 #: includes/class-passkey-manager__premium_only.php:160
 msgid "HTTPS Required"
 msgstr "HTTPS erforderlich"
 
 #: includes/class-passkey-manager__premium_only.php:161
-msgid ""
-"WebAuthn requires HTTPS. Please enable SSL on your site to use passkeys."
-msgstr ""
-"WebAuthn erfordert HTTPS. Bitte aktiviere SSL auf deiner Website, um "
-"Passkeys zu verwenden."
+msgid "WebAuthn requires HTTPS. Please enable SSL on your site to use passkeys."
+msgstr "WebAuthn erfordert HTTPS. Bitte aktiviere SSL auf deiner Website, um Passkeys zu verwenden."
 
 #: includes/class-passkey-manager__premium_only.php:173
 msgid "Passkey Registered"
@@ -880,12 +782,8 @@ msgid "CRITICAL WARNING: Data Loss Risk"
 msgstr "KRITISCHE WARNUNG: Datenverlustrisiko"
 
 #: includes/class-passkey-manager__premium_only.php:239
-msgid ""
-"Deleting this passkey will permanently prevent decryption of all existing "
-"login data encrypted with this passkey."
-msgstr ""
-"Das Löschen dieses Passkeys verhindert dauerhaft die Entschlüsselung aller "
-"vorhandenen Login-Daten, die mit diesem Passkey verschlüsselt wurden."
+msgid "Deleting this passkey will permanently prevent decryption of all existing login data encrypted with this passkey."
+msgstr "Das Löschen dieses Passkeys verhindert dauerhaft die Entschlüsselung aller vorhandenen Login-Daten, die mit diesem Passkey verschlüsselt wurden."
 
 #: includes/class-passkey-manager__premium_only.php:241
 #: includes/class-settings-manager.php:441
@@ -893,12 +791,8 @@ msgid "This action CANNOT be undone. There is NO recovery method."
 msgstr "Diese Aktion kann NICHT rückgängig gemacht werden. Es gibt KEINE Wiederherstellungsmethode."
 
 #: includes/class-passkey-manager__premium_only.php:251
-msgid ""
-"Register a passkey using your device biometrics or a password manager for "
-"ultra-secure encryption."
-msgstr ""
-"Registriere einen Passkey mit den biometrischen Daten deines Geräts oder "
-"einem Passwortmanager für ultrasichere Verschlüsselung."
+msgid "Register a passkey using your device biometrics or a password manager for ultra-secure encryption."
+msgstr "Registriere einen Passkey mit den biometrischen Daten deines Geräts oder einem Passwortmanager für ultrasichere Verschlüsselung."
 
 #: includes/class-passkey-manager__premium_only.php:256
 msgid "Choose Your Passkey Method:"
@@ -925,14 +819,8 @@ msgid "Tip:"
 msgstr "Tipp:"
 
 #: includes/class-passkey-manager__premium_only.php:278
-msgid ""
-"If you select \"Device/Platform Biometrics\" and your password manager popup "
-"appears, simply click away from it or press Escape. Your device's biometric "
-"prompt will appear next."
-msgstr ""
-"Wenn du \"Geräte-/Plattform-Biometrie\" auswählst und das Popup deines "
-"Passwortmanagers erscheint, klicke es einfach weg oder drücke Escape. Das "
-"biometrische Prompt deines Geräts wird anschließend angezeigt."
+msgid "If you select \"Device/Platform Biometrics\" and your password manager popup appears, simply click away from it or press Escape. Your device's biometric prompt will appear next."
+msgstr "Wenn du \"Geräte-/Plattform-Biometrie\" auswählst und das Popup deines Passwortmanagers erscheint, klicke es einfach weg oder drücke Escape. Das biometrische Prompt deines Geräts wird anschließend angezeigt."
 
 #: includes/class-passkey-manager__premium_only.php:290
 #: secure-login-collector.php:346
@@ -943,12 +831,8 @@ msgstr "Passkey registrieren"
 #: includes/class-passkey-manager__premium_only.php:375
 #: includes/class-passkey-manager__premium_only.php:444
 #: includes/class-passkey-manager__premium_only.php:724
-msgid ""
-"Passkey registration requires HTTPS or running the site from localhost/127.0."
-"0.1."
-msgstr ""
-"Die Passkey-Registrierung erfordert HTTPS oder den Betrieb der Website über "
-"localhost/127.0.0.1."
+msgid "Passkey registration requires HTTPS or running the site from localhost/127.0.0.1."
+msgstr "Die Passkey-Registrierung erfordert HTTPS oder den Betrieb der Website über localhost/127.0.0.1."
 
 #: includes/class-passkey-manager__premium_only.php:371
 #: includes/class-passkey-manager__premium_only.php:440
@@ -983,10 +867,8 @@ msgstr "Ursprungsüberprüfung fehlgeschlagen. Erwartet: %1$s, erhalten: %2$s"
 
 #: includes/class-passkey-manager__premium_only.php:507
 #, php-format
-msgid ""
-"Invalid WebAuthn operation type. Expected: webauthn.create, Received: %s"
-msgstr ""
-"Ungültiger WebAuthn-Operationstyp. Erwartet: webauthn.create, erhalten: %s"
+msgid "Invalid WebAuthn operation type. Expected: webauthn.create, Received: %s"
+msgstr "Ungültiger WebAuthn-Operationstyp. Erwartet: webauthn.create, erhalten: %s"
 
 #: includes/class-passkey-manager__premium_only.php:532
 msgid "Challenge verification failed"
@@ -997,12 +879,8 @@ msgid "Invalid attestation object format"
 msgstr "Ungültiges Verschlüsselungsformat."
 
 #: includes/class-passkey-manager__premium_only.php:554
-msgid ""
-"A passkey is already registered. Please delete it first to register a new "
-"one."
-msgstr ""
-"Es ist bereits ein Passkey registriert. Bitte lösche ihn zuerst, um einen "
-"neuen zu registrieren."
+msgid "A passkey is already registered. Please delete it first to register a new one."
+msgstr "Es ist bereits ein Passkey registriert. Bitte lösche ihn zuerst, um einen neuen zu registrieren."
 
 #: includes/class-passkey-manager__premium_only.php:611
 msgid "Passkey registered successfully"
@@ -1137,7 +1015,8 @@ msgstr "AES-256-GCM-Verschlüsselung mit RSA-Schlüsselschutz."
 #: includes/class-seculoco-list-table.php:458
 #: includes/class-settings-manager.php:743
 #: includes/class-settings-manager.php:806
-#: includes/class-settings-manager.php:834 secure-login-collector.php:419
+#: includes/class-settings-manager.php:834
+#: secure-login-collector.php:419
 msgid "Security check failed."
 msgstr "Sicherheitsprüfung fehlgeschlagen."
 
@@ -1229,13 +1108,8 @@ msgid "Warning: Data Loss"
 msgstr "Warnung:"
 
 #: includes/class-settings-manager.php:103
-msgid ""
-"Deleting this password will permanently prevent decryption of all existing "
-"login data encrypted with this password. Are you sure you want to continue?"
-msgstr ""
-"Das Löschen dieses Passworts verhindert dauerhaft die Entschlüsselung aller "
-"vorhandenen Login-Daten, die mit diesem Passwort verschlüsselt wurden. Bist "
-"du sicher, dass du fortfahren möchtest?"
+msgid "Deleting this password will permanently prevent decryption of all existing login data encrypted with this password. Are you sure you want to continue?"
+msgstr "Das Löschen dieses Passworts verhindert dauerhaft die Entschlüsselung aller vorhandenen Login-Daten, die mit diesem Passwort verschlüsselt wurden. Bist du sicher, dass du fortfahren möchtest?"
 
 #: includes/class-settings-manager.php:106
 msgid "Weak password - consider using a stronger one"
@@ -1321,8 +1195,7 @@ msgstr "Branding-Footer verbergen"
 
 #: includes/class-settings-manager.php:314
 msgid "Configure email notifications for new login data submissions."
-msgstr "Konfiguriere E-Mail-Benachrichtigungen für neue Login-Daten-Übermittlungen."
-"E-Mail-Benachrichtigungen für neue Login-Datenübermittlungen konfigurieren."
+msgstr "Konfiguriere E-Mail-Benachrichtigungen für neue Login-Daten-Übermittlungen.E-Mail-Benachrichtigungen für neue Login-Datenübermittlungen konfigurieren."
 
 #: includes/class-settings-manager.php:325
 msgid "Frontend Form Settings"
@@ -1352,12 +1225,8 @@ msgid "Auto-deletion is available in Secure Login Collector Pro."
 msgstr "Secure Login Collector Pro"
 
 #: includes/class-settings-manager.php:365
-msgid ""
-"Configure honeypot protection to prevent spam submissions and automated bot "
-"attacks."
-msgstr ""
-"Konfiguriere den Honeypot-Schutz, um Spam-Einsendungen und automatisierte "
-"Bot-Angriffe zu verhindern."
+msgid "Configure honeypot protection to prevent spam submissions and automated bot attacks."
+msgstr "Konfiguriere den Honeypot-Schutz, um Spam-Einsendungen und automatisierte Bot-Angriffe zu verhindern."
 
 #: includes/class-settings-manager.php:369
 msgid "Honeypot spam protection is available in Secure Login Collector Pro."
@@ -1390,12 +1259,8 @@ msgid "Create a master password to enable encryption."
 msgstr "Erstelle ein Master-Passwort, um Verschlüsselung zu aktivieren."
 
 #: includes/class-settings-manager.php:440
-msgid ""
-"Deleting this password will permanently prevent decryption of all existing "
-"login data encrypted with this password."
-msgstr ""
-"Das Löschen dieses Passworts verhindert dauerhaft die Entschlüsselung aller "
-"vorhandenen Login-Daten, die mit diesem Passwort verschlüsselt wurden."
+msgid "Deleting this password will permanently prevent decryption of all existing login data encrypted with this password."
+msgstr "Das Löschen dieses Passworts verhindert dauerhaft die Entschlüsselung aller vorhandenen Login-Daten, die mit diesem Passwort verschlüsselt wurden."
 
 #: includes/class-settings-manager.php:483
 msgid "Passkey-Protected"
@@ -1410,35 +1275,20 @@ msgid "Advanced Security Features"
 msgstr "Erweiterte Sicherheitsfunktionen"
 
 #: includes/class-settings-manager.php:507
-msgid ""
-"Advanced security settings including passkey authentication for enhanced "
-"protection."
-msgstr ""
-"Erweiterte Sicherheitseinstellungen einschließlich Passkey-Authentifizierung "
-"für zusätzlichen Schutz."
+msgid "Advanced security settings including passkey authentication for enhanced protection."
+msgstr "Erweiterte Sicherheitseinstellungen einschließlich Passkey-Authentifizierung für zusätzlichen Schutz."
 
 #: includes/class-settings-manager.php:522
 msgid "Send email notifications when new login data is received"
-msgstr "E-Mail-Benachrichtigungen senden, wenn neue Login-Daten empfangen werden"
-"E-Mail-Benachrichtigungen senden, wenn neue Login-Daten empfangen werden"
+msgstr "E-Mail-Benachrichtigungen senden, wenn neue Login-Daten empfangen werdenE-Mail-Benachrichtigungen senden, wenn neue Login-Daten empfangen werden"
 
 #: includes/class-settings-manager.php:531
 msgid "Email address to receive notifications. Defaults to site admin email."
-msgstr "E-Mail-Adresse für Benachrichtigungen. Standard ist die Admin-E-Mail der Website."
-"E-Mail-Adresse für Benachrichtigungen. Standard ist die Administrator-E-Mail."
+msgstr "E-Mail-Adresse für Benachrichtigungen. Standard ist die Admin-E-Mail der Website.E-Mail-Adresse für Benachrichtigungen. Standard ist die Administrator-E-Mail."
 
 #: includes/class-settings-manager.php:561
-msgid ""
-"Custom text to display above the login form. Basic HTML allowed (p, strong, "
-"em, br, a). This field is automatically populated with the default text when "
-"no custom text is provided. Use {EXPIRATION_TEXT} placeholder to insert the "
-"data retention days."
-msgstr ""
-"Benutzerdefinierter Text, der über dem Login-Formular angezeigt wird. "
-"Einfaches HTML erlaubt (p, strong, em, br, a). Dieses Feld wird automatisch "
-"mit dem Standardtext gefüllt, wenn kein eigener Text angegeben wird. "
-"Verwende den Platzhalter {EXPIRATION_TEXT}, um die Aufbewahrungstage "
-"anzuzeigen."
+msgid "Custom text to display above the login form. Basic HTML allowed (p, strong, em, br, a). This field is automatically populated with the default text when no custom text is provided. Use {EXPIRATION_TEXT} placeholder to insert the data retention days."
+msgstr "Benutzerdefinierter Text, der über dem Login-Formular angezeigt wird. Einfaches HTML erlaubt (p, strong, em, br, a). Dieses Feld wird automatisch mit dem Standardtext gefüllt, wenn kein eigener Text angegeben wird. Verwende den Platzhalter {EXPIRATION_TEXT}, um die Aufbewahrungstage anzuzeigen."
 
 #: includes/class-settings-manager.php:573
 msgid "Default (Automatic encryption & expiration details)"
@@ -1449,20 +1299,12 @@ msgid "Custom Text (Use the text below)"
 msgstr "Benutzerdefinierter Text (Text unten verwenden)"
 
 #: includes/class-settings-manager.php:582
-msgid ""
-"Choose whether to use the default security information text or your custom "
-"text below."
-msgstr ""
-"Wähle, ob der Standard-Sicherheitsinformationstext oder dein "
-"benutzerdefinierter Text unten verwendet werden soll."
+msgid "Choose whether to use the default security information text or your custom text below."
+msgstr "Wähle, ob der Standard-Sicherheitsinformationstext oder dein benutzerdefinierter Text unten verwendet werden soll."
 
 #: includes/class-settings-manager.php:591
-msgid ""
-"Upgrade to Secure Login Collector Pro to hide the branding footer on the "
-"frontend form."
-msgstr ""
-"Wechsle zu Secure Login Collector Pro, um den Branding-Fußbereich im "
-"Frontend-Formular auszublenden."
+msgid "Upgrade to Secure Login Collector Pro to hide the branding footer on the frontend form."
+msgstr "Wechsle zu Secure Login Collector Pro, um den Branding-Fußbereich im Frontend-Formular auszublenden."
 
 #: includes/class-settings-manager.php:606
 msgid "Configure how the plugin handles data when it is uninstalled."
@@ -1473,28 +1315,16 @@ msgid "Completely remove all plugin data when uninstalling"
 msgstr "Alle Plugin-Daten vollständig entfernen bei Deinstallation"
 
 #: includes/class-settings-manager.php:617
-msgid ""
-"When checked, all login data, encryption keys, settings, and database tables "
-"will be permanently deleted when the plugin is uninstalled. This action "
-"cannot be undone."
-msgstr ""
-"Wenn aktiviert, werden alle Login-Daten, Verschlüsselungsschlüssel, "
-"Einstellungen und Datenbanktabellen beim Deinstallieren des Plugins "
-"dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden."
+msgid "When checked, all login data, encryption keys, settings, and database tables will be permanently deleted when the plugin is uninstalled. This action cannot be undone."
+msgstr "Wenn aktiviert, werden alle Login-Daten, Verschlüsselungsschlüssel, Einstellungen und Datenbanktabellen beim Deinstallieren des Plugins dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden."
 
 #: includes/class-settings-manager.php:619
 msgid "Warning:"
 msgstr "Warnung:"
 
 #: includes/class-settings-manager.php:619
-msgid ""
-"If you enable this option, all encrypted login data will be permanently lost "
-"when you uninstall the plugin. Make sure to export any important data before "
-"uninstalling."
-msgstr ""
-"Wenn du diese Option aktivierst, gehen alle verschlüsselten Login-Daten beim "
-"Deinstallieren des Plugins dauerhaft verloren. Exportiere alle wichtigen "
-"Daten, bevor du deinstallierst."
+msgid "If you enable this option, all encrypted login data will be permanently lost when you uninstall the plugin. Make sure to export any important data before uninstalling."
+msgstr "Wenn du diese Option aktivierst, gehen alle verschlüsselten Login-Daten beim Deinstallieren des Plugins dauerhaft verloren. Exportiere alle wichtigen Daten, bevor du deinstallierst."
 
 #: includes/class-settings-manager.php:629
 msgid "Secure Login Collector Settings"
@@ -1509,11 +1339,8 @@ msgid "Required"
 msgstr "Erforderliche Schritte:"
 
 #: includes/class-settings-manager.php:641
-msgid ""
-"Use this shortcode to display the secure login form on any page or post:"
-msgstr ""
-"Verwende diesen Shortcode, um das sichere Login-Formular auf einer "
-"beliebigen Seite oder einem Beitrag anzuzeigen:"
+msgid "Use this shortcode to display the secure login form on any page or post:"
+msgstr "Verwende diesen Shortcode, um das sichere Login-Formular auf einer beliebigen Seite oder einem Beitrag anzuzeigen:"
 
 #: includes/class-settings-manager.php:646
 msgid "Copied!"
@@ -1525,12 +1352,8 @@ msgid "Copy Shortcode"
 msgstr "Shortcode kopieren"
 
 #: includes/class-settings-manager.php:651
-msgid ""
-"Simply paste this shortcode into any page or post where you want clients to "
-"submit their login credentials."
-msgstr ""
-"Füge diesen Shortcode einfach in eine beliebige Seite oder einen Beitrag ein,"
-" wo Kunden ihre Anmeldedaten übermitteln sollen."
+msgid "Simply paste this shortcode into any page or post where you want clients to submit their login credentials."
+msgstr "Füge diesen Shortcode einfach in eine beliebige Seite oder einen Beitrag ein, wo Kunden ihre Anmeldedaten übermitteln sollen."
 
 #: includes/class-settings-manager.php:753
 msgid "Password is required."
@@ -1573,11 +1396,8 @@ msgid "Hide branding footer on frontend form"
 msgstr "Branding-Footer im Frontend-Formular verbergen"
 
 #: includes/class-settings-manager__premium_only.php:212
-msgid ""
-"When enabled, the branding footer will be hidden from the frontend form."
-msgstr ""
-"Wenn aktiviert, wird der Branding-Fußbereich im Frontend-Formular "
-"ausgeblendet."
+msgid "When enabled, the branding footer will be hidden from the frontend form."
+msgstr "Wenn aktiviert, wird der Branding-Fußbereich im Frontend-Formular ausgeblendet."
 
 #: includes/class-settings-manager__premium_only.php:223
 msgid "Auto-Delete After (Days)"
@@ -1588,53 +1408,32 @@ msgid "seconds"
 msgstr "Sekunden"
 
 #: includes/class-settings-manager__premium_only.php:240
-msgid ""
-"Minimum time required before form can be submitted. Helps detect instant bot "
-"submissions."
-msgstr ""
-"Minimale Zeit, bevor das Formular gesendet werden kann. Hilft dabei, "
-"sofortige Bot-Einsendungen zu erkennen."
+msgid "Minimum time required before form can be submitted. Helps detect instant bot submissions."
+msgstr "Minimale Zeit, bevor das Formular gesendet werden kann. Hilft dabei, sofortige Bot-Einsendungen zu erkennen."
 
 #: includes/class-settings-manager__premium_only.php:252
 msgid "Add hidden field to detect automated bot submissions"
 msgstr "Verstecktes Feld hinzufügen, um automatisierte Bot-Übermittlungen zu erkennen"
 
 #: includes/class-settings-manager__premium_only.php:254
-msgid ""
-"The honeypot technique adds a hidden field that bots typically complete but "
-"humans never see. Any submission that fills it is automatically rejected."
-msgstr ""
-"Die Honeypot-Technik fügt ein verstecktes Feld hinzu, das Bots typischerweise "
-"ausfüllen, Menschen jedoch nie sehen. Jede Einsendung, die es ausfüllt, wird "
-"automatisch abgelehnt."
+msgid "The honeypot technique adds a hidden field that bots typically complete but humans never see. Any submission that fills it is automatically rejected."
+msgstr "Die Honeypot-Technik fügt ein verstecktes Feld hinzu, das Bots typischerweise ausfüllen, Menschen jedoch nie sehen. Jede Einsendung, die es ausfüllt, wird automatisch abgelehnt."
 
 #: includes/class-settings-manager__premium_only.php:265
 msgid "Enable rate limiting for form submissions"
 msgstr "Ratenbegrenzung für Formular-Übermittlungen aktivieren"
 
 #: includes/class-settings-manager__premium_only.php:267
-msgid ""
-"Prevent spam by limiting the number of form submissions from the same IP "
-"address within a time window."
-msgstr ""
-"Verhindere Spam, indem du die Anzahl der Formulareinsendungen von derselben "
-"IP-Adresse innerhalb eines Zeitfensters begrenzt."
+msgid "Prevent spam by limiting the number of form submissions from the same IP address within a time window."
+msgstr "Verhindere Spam, indem du die Anzahl der Formulareinsendungen von derselben IP-Adresse innerhalb eines Zeitfensters begrenzt."
 
 #: includes/class-settings-manager__premium_only.php:279
-msgid ""
-"Number of days after which login data will be automatically deleted. Set to "
-"0 to disable automatic deletion."
-msgstr ""
-"Anzahl der Tage, nach denen Login-Daten automatisch gelöscht werden. Auf 0 "
-"setzen, um die automatische Löschung zu deaktivieren."
+msgid "Number of days after which login data will be automatically deleted. Set to 0 to disable automatic deletion."
+msgstr "Anzahl der Tage, nach denen Login-Daten automatisch gelöscht werden. Auf 0 setzen, um die automatische Löschung zu deaktivieren."
 
 #: includes/class-settings-manager__premium_only.php:291
-msgid ""
-"Maximum number of form submissions allowed from the same IP address within "
-"the time window (1-100). Default: 10"
-msgstr ""
-"Maximale Anzahl der Formulareinsendungen von derselben IP-Adresse innerhalb "
-"des Zeitfensters (1-100). Standard: 10"
+msgid "Maximum number of form submissions allowed from the same IP address within the time window (1-100). Default: 10"
+msgstr "Maximale Anzahl der Formulareinsendungen von derselben IP-Adresse innerhalb des Zeitfensters (1-100). Standard: 10"
 
 #: includes/class-settings-manager__premium_only.php:301
 msgid "1 minute"
@@ -1697,11 +1496,8 @@ msgid "Ultra-secure RSA keys need to be initialized with your passkey."
 msgstr "Ultra-sichere RSA-Schlüssel müssen mit deinem Passkey initialisiert werden."
 
 #: includes/class-settings-manager__premium_only.php:391
-msgid ""
-"To enable ultra-secure encryption, register a passkey in the Pro settings."
-msgstr ""
-"Um ultrasichere Verschlüsselung zu aktivieren, registriere einen Passkey in "
-"den Pro-Einstellungen."
+msgid "To enable ultra-secure encryption, register a passkey in the Pro settings."
+msgstr "Um ultrasichere Verschlüsselung zu aktivieren, registriere einen Passkey in den Pro-Einstellungen."
 
 #: includes/class-settings-manager__premium_only.php:393
 msgid "Ultra-secure RSA keys are active and ready for use."
@@ -1771,7 +1567,8 @@ msgstr "Export des öffentlichen Schlüssels fehlgeschlagen:"
 msgid "Failed to export public key."
 msgstr "Export des öffentlichen Schlüssels fehlgeschlagen:"
 
-#: includes/class-unified-crypto.php:84 includes/class-unified-crypto.php:163
+#: includes/class-unified-crypto.php:84
+#: includes/class-unified-crypto.php:163
 msgid "Only password-based key wrapping is available in the free version."
 msgstr "Nur passwort-basiertes Key-Wrapping ist in der kostenlosen Version verfügbar."
 
@@ -1807,7 +1604,8 @@ msgstr "Fehler beim Ableiten des Wrapping-Schlüssels für Unwrapping."
 msgid "Failed to decrypt private key. Incorrect password or corrupted data."
 msgstr "Fehler beim Entschlüsseln des privaten Schlüssels. Falsches Passwort oder beschädigte Daten."
 
-#: includes/class-unified-crypto.php:233 includes/class-unified-crypto.php:272
+#: includes/class-unified-crypto.php:233
+#: includes/class-unified-crypto.php:272
 #: includes/class-unified-crypto.php:297
 msgid "Only the standard encryption method is available in the free version."
 msgstr "Nur die Standard-Verschlüsselungsmethode ist in der kostenlosen Version verfügbar."
@@ -1842,33 +1640,18 @@ msgstr "Pro-Version aktiviert! Passkey-Verschlüsselung ist jetzt verfügbar."
 
 #: includes/freemius-hooks.php:26
 #, php-format
-msgid ""
-"Hey %1$s! Please help us improve %2$s by sharing some basic WordPress "
-"environment info. This helps us ensure compatibility and provide better "
-"support."
-msgstr ""
-"Hallo %1$s! Bitte hilf uns, %2$s zu verbessern, indem du einige grundlegende "
-"WordPress-Umgebungsinformationen teilst. Dies hilft uns, Kompatibilität "
-"sicherzustellen und besseren Support zu bieten."
+msgid "Hey %1$s! Please help us improve %2$s by sharing some basic WordPress environment info. This helps us ensure compatibility and provide better support."
+msgstr "Hallo %1$s! Bitte hilf uns, %2$s zu verbessern, indem du einige grundlegende WordPress-Umgebungsinformationen teilst. Dies hilft uns, Kompatibilität sicherzustellen und besseren Support zu bieten."
 
 #: includes/freemius-hooks.php:46
-msgid ""
-"Hey there! Want to try the Pro version of Secure Login Collector? Start your "
-"14-day free trial and experience passkey-derived encryption!"
-msgstr ""
-"Hallo! Möchtest du die Pro-Version von Secure Login Collector ausprobieren? "
-"Starte deine 14-tägige kostenlose Testversion und erlebe die Passkey-"
-"abgeleitete Verschlüsselung!"
+msgid "Hey there! Want to try the Pro version of Secure Login Collector? Start your 14-day free trial and experience passkey-derived encryption!"
+msgstr "Hallo! Möchtest du die Pro-Version von Secure Login Collector ausprobieren? Starte deine 14-tägige kostenlose Testversion und erlebe die Passkey-abgeleitete Verschlüsselung!"
 
 #. translators: %s: upgrade link
 #: includes/freemius-hooks.php:73
 #, php-format
-msgid ""
-"You have a passkey registered but need the Pro version to use passkey "
-"encryption. %s"
-msgstr ""
-"Du hast einen Passkey registriert, benötigst aber die Pro-Version, um die "
-"Passkey-Verschlüsselung zu verwenden. %s"
+msgid "You have a passkey registered but need the Pro version to use passkey encryption. %s"
+msgstr "Du hast einen Passkey registriert, benötigst aber die Pro-Version, um die Passkey-Verschlüsselung zu verwenden. %s"
 
 #: includes/freemius-hooks.php:74
 msgid "Upgrade Now"
@@ -1911,12 +1694,8 @@ msgid "The free version plugin is no longer needed."
 msgstr "Das Plugin der kostenlosen Version wird nicht mehr benötigt."
 
 #: secure-login-collector.php:271
-msgid ""
-"Are you sure you want to delete the free version plugin? The Pro version "
-"will continue working normally."
-msgstr ""
-"Bist du sicher, dass du das Plugin der kostenlosen Version löschen "
-"möchtest? Die Pro-Version funktioniert weiterhin normal."
+msgid "Are you sure you want to delete the free version plugin? The Pro version will continue working normally."
+msgstr "Bist du sicher, dass du das Plugin der kostenlosen Version löschen möchtest? Die Pro-Version funktioniert weiterhin normal."
 
 #: secure-login-collector.php:275
 msgid "Delete Free Plugin"
@@ -1932,7 +1711,7 @@ msgstr "Passkey erfolgreich registriert!"
 
 #: secure-login-collector.php:295
 msgid "Your Pro version continues working normally with all data intact."
-msgstr "Deine Pro-Version funktioniert weiterhin normal mit allen Daten intakt."
+msgstr "Deine Pro-Version läuft weiterhin normal und alle Daten bleiben erhalten."
 
 #: secure-login-collector.php:307
 msgid "Could not delete free plugin:"
@@ -1944,19 +1723,15 @@ msgstr "Du kannst es bei Bedarf manuell von der Plugins-Seite löschen."
 
 #: secure-login-collector.php:337
 msgid "Encryption setup required:"
-msgstr "Kontoeinrichtung erforderlich"
+msgstr "Verschlüsselungseinrichtung erforderlich:"
 
 #: secure-login-collector.php:338
-msgid ""
-"Finish configuring your password or passkey encryption before collecting "
-"client credentials."
-msgstr ""
-"Schließe die Konfiguration deiner Passwort- oder Passkey-Verschlüsselung ab, "
-"bevor du Zugangsdaten von Kunden sammelst."
+msgid "Finish configuring your password or passkey encryption before collecting client credentials."
+msgstr "Schließe die Konfiguration deiner Passwort- oder Passkey-Verschlüsselung ab, bevor du Zugangsdaten von Kunden sammelst."
 
 #: secure-login-collector.php:342
 msgid "Setup Password Encryption"
-msgstr "Passkey-Verschlüsselung testen"
+msgstr "Passwortverschlüsselung einrichten"
 
 #: secure-login-collector.php:414
 msgid "You do not have permission to delete plugins."
@@ -1968,8 +1743,8 @@ msgstr "Konnte WordPress-Dateisystem nicht initialisieren."
 
 #: secure-login-collector.php:453
 msgid "File system error during deletion."
-msgstr "Netzwerkfehler bei der Entschlüsselung aufgetreten."
+msgstr "Dateisystemfehler beim Löschen."
 
 #: secure-login-collector.php:460
 msgid "Free plugin directory not found."
-msgstr "Eintrag nicht gefunden."
+msgstr "Verzeichnis des kostenlosen Plugins nicht gefunden."
