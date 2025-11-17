@@ -112,3 +112,11 @@ No client submissions, passwords, or encrypted payloads ever leave your server. 
 
 Freemius Terms: https://freemius.com/terms/  
 Freemius Privacy: https://freemius.com/privacy/
+
+== Screenshots ==
+1. The frontend form where your client enters their sensitive login data
+2. Encryption of the login data in the client’s browser before it is sent
+3. Confirmation message that the login data was securely transmitted
+4. All submitted login data listed in your WordPress backend
+5. To view the login data, you must decrypt it with your previously set master password
+6. Decrypted login data displayed in your dashboard
