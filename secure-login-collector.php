@@ -2,6 +2,7 @@
 // phpcs:disable WordPress.Files.FileName.InvalidClassFileName
 /**
  * Plugin Name: Secure Login Collector
+ * Text Domain: secure-login-collector
  * Plugin URI: https://wp-mike.com
  * Description: Securely collects and stores encrypted login credentials from clients via frontend form with email notifications.
  * Version: 2.0.3

@@ -43,9 +43,10 @@ Security is a shared responsibility. We ship the tools, but you control how and 
 == Installation ==
 
 1. Install and activate the plugin
-2. Go to Login Data → Settings to configure notifications (and retention if you're on Pro)
-3. Create a page and add shortcode: `[secure_login_form]`
-4. Share the page link with clients
+2. Go to Login Data → Settings to configure notifications
+3. Register your master password for decryption of login data
+4. Create a page and add shortcode: `[seculoco_form]`
+5. Share the page link with clients
 
 For the Pro version (separate plugin available from Freemius), register your passkey device after installation.
 
@@ -83,6 +84,9 @@ Bitwarden, 1Password, LastPass, Dashlane, KeePass, Chrome, Firefox, Safari, and 
 4. Settings page
 
 == Changelog ==
+
+= 2.0.4 =
+* Fix translations
 
 = 2.0.3 =
 * Remove branding from frontend

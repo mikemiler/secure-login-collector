@@ -22,11 +22,25 @@ class Seculoco_Loader {
 	 * @return void
 	 */
 	public static function load() {
+		self::load_textdomain();
 		self::load_core_files();
 		self::load_free_classes();
 		self::load_integrations();
 		self::include_file( 'includes/class-loader__premium_only.php' );
 		self::fire_pro_loader_hook();
+	}
+
+	/**
+	 * Load plugin text domain for translations.
+	 *
+	 * @return void
+	 */
+	private static function load_textdomain() {
+		load_plugin_textdomain(
+			'secure-login-collector',
+			false,
+			dirname( plugin_basename( SECULOCO_PLUGIN_DIR . 'secure-login-collector.php' ) ) . '/languages/'
+		);
 	}
 
 	/**
