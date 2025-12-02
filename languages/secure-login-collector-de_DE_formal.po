@@ -383,7 +383,7 @@ msgstr "Erforderliche Daten fehlen."
 
 #: includes/class-admin-interface__premium_only.php:434
 msgid "Passkey not found or mismatch."
-msgstr "Passkey nicht registriert."
+msgstr "Passkey nicht gefunden oder stimmt nicht überein."
 
 #: includes/class-admin-interface__premium_only.php:443
 msgid "Invalid client data format."
@@ -789,15 +789,15 @@ msgstr "Testen..."
 #: includes/class-passkey-manager__premium_only.php:128
 #: includes/class-passkey-manager__premium_only.php:245
 msgid "Reset Passkey"
-msgstr "Passkey registrieren"
+msgstr "Passkey löschen"
 
 #: includes/class-passkey-manager__premium_only.php:124
 msgid "Passkey reset successfully!"
-msgstr "Passkey erfolgreich registriert!"
+msgstr "Passkey erfolgreich gelöscht!"
 
 #: includes/class-passkey-manager__premium_only.php:125
 msgid "Failed to reset passkey:"
-msgstr "Schlüsselgenerierung fehlgeschlagen:"
+msgstr "Passkey-Löschung fehlgeschlagen:"
 
 #: includes/class-passkey-manager__premium_only.php:126
 #: includes/class-settings-manager.php:104
@@ -848,7 +848,7 @@ msgstr ""
 
 #: includes/class-passkey-manager__premium_only.php:173
 msgid "Passkey Registered"
-msgstr "Passkey nicht registriert."
+msgstr "Passkey registriert."
 
 #: includes/class-passkey-manager__premium_only.php:177
 msgid "Name:"
@@ -1018,7 +1018,7 @@ msgstr "Anmeldedaten fehlen."
 
 #: includes/class-passkey-manager__premium_only.php:637
 msgid "Passkey not found or mismatch"
-msgstr "Passkey nicht registriert."
+msgstr "Passkey nicht gefunden oder stimmt nicht überein."
 
 #: includes/class-passkey-manager__premium_only.php:665
 #: includes/class-passkey-manager__premium_only.php:754
@@ -1043,7 +1043,7 @@ msgstr "Pro-Lizenz erforderlich, um Pro-Verschlüsselung zu initialisieren."
 
 #: includes/class-passkey-manager__premium_only.php:735
 msgid "A passkey is already registered."
-msgstr "Passkey nicht registriert."
+msgstr "Ein Passkey ist bereits registriert."
 
 #: includes/class-passkey-manager__premium_only.php:767
 #, php-format
@@ -1201,7 +1201,7 @@ msgstr "Passkey-Verschlüsselung testen"
 
 #: includes/class-settings-manager.php:96
 msgid "Passwords do not match."
-msgstr "Passkey nicht registriert."
+msgstr "Passwörter stimmen nicht überein."
 
 #: includes/class-settings-manager.php:97
 #: includes/class-settings-manager.php:761
@@ -1211,24 +1211,24 @@ msgstr "Passwort muss mindestens 8 Zeichen lang sein."
 #: includes/class-settings-manager.php:98
 #: includes/class-settings-manager.php:783
 msgid "Password-based encryption setup successfully!"
-msgstr "Passkey erfolgreich registriert!"
+msgstr "Passwort-basierte Verschlüsselung erfolgreich eingerichtet!"
 
 #: includes/class-settings-manager.php:99
 #: includes/class-settings-manager.php:819
 msgid "Password-based encryption reset successfully!"
-msgstr "Passkey erfolgreich registriert!"
+msgstr "Passwort-basierte Verschlüsselung erfolgreich zurückgesetzt!"
 
 #: includes/class-settings-manager.php:100
 msgid "Failed to setup password encryption."
-msgstr "Aufbewahrung konnte nicht verlängert werden."
+msgstr "Passwort-Verschlüsselung konnte nicht eingerichtet werden."
 
 #: includes/class-settings-manager.php:101
 msgid "Failed to reset password encryption."
-msgstr "Aufbewahrung konnte nicht verlängert werden."
+msgstr "Passwort-Verschlüsselung konnte nicht zurückgesetzt werden."
 
 #: includes/class-settings-manager.php:102
 msgid "Warning: Data Loss"
-msgstr "Warnung:"
+msgstr "Warnung: Datenverlust"
 
 #: includes/class-settings-manager.php:103
 msgid ""
@@ -1687,7 +1687,7 @@ msgstr "BENÖTIGT INITIALISIERUNG"
 
 #: includes/class-settings-manager__premium_only.php:357
 msgid "Passkey registered but keys not initialized"
-msgstr "Passkey erfolgreich registriert!"
+msgstr "Passkey registriert, aber Schlüssel nicht initialisiert"
 
 #: includes/class-settings-manager__premium_only.php:362
 msgid "Register passkey to enable"
@@ -1929,11 +1929,11 @@ msgstr "(Empfohlen - hält Ihre Plugin-Liste sauber)"
 
 #: secure-login-collector.php:293
 msgid "Free plugin deleted successfully!"
-msgstr "Passkey erfolgreich registriert!"
+msgstr "Kostenloses Plugin erfolgreich gelöscht!"
 
 #: secure-login-collector.php:295
 msgid "Your Pro version continues working normally with all data intact."
-msgstr "Deine Pro-Version funktioniert weiterhin normal mit allen Daten intakt."
+msgstr "Ihre Pro-Version funktioniert weiterhin normal mit allen Daten intakt."
 
 #: secure-login-collector.php:307
 msgid "Could not delete free plugin:"
