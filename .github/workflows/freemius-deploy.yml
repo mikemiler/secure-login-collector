@@ -46,6 +46,7 @@ jobs:
             --exclude='deploy' \
             --exclude='deploy.sh' \
             --exclude='docs' \
+            --exclude='scripts' \
             ./ "$BUILD_DIR/secure-login-collector/"
 
           # Create ZIP file in workflow root (not in plugin structure)
