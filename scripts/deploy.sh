@@ -19,14 +19,18 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# File paths (we're in plugin directory now!)
+# Get script directory and change to plugin root
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PLUGIN_DIR="$(dirname "$SCRIPT_DIR")"
+cd "$PLUGIN_DIR"
+
+# File paths (relative to plugin directory)
 PLUGIN_FILE="secure-login-collector.php"
 README_FILE="readme.txt"
 
 # Check if files exist
 if [ ! -f "$PLUGIN_FILE" ]; then
-    echo -e "${RED}Error: Plugin file not found${NC}"
-    echo "Make sure you're running this script from the plugin directory."
+    echo -e "${RED}Error: Plugin file not found: $PLUGIN_DIR/$PLUGIN_FILE${NC}"
     exit 1
 fi
 
@@ -80,6 +84,25 @@ fi
 echo ""
 echo -e "${GREEN}New version: ${NEW_VERSION}${NC}"
 echo ""
+
+# Check if changelog entry exists for the new version
+echo -e "${BLUE}Checking changelog...${NC}"
+if grep -q "^= ${NEW_VERSION} =$" "$README_FILE"; then
+    echo -e "${GREEN}✓ Changelog entry found for version ${NEW_VERSION}${NC}"
+else
+    echo -e "${YELLOW}⚠ WARNING: No changelog entry found for version ${NEW_VERSION}${NC}"
+    echo ""
+    echo -e "Expected entry in readme.txt:"
+    echo -e "  ${BLUE}= ${NEW_VERSION} =${NC}"
+    echo -e "  ${BLUE}* Your changes here${NC}"
+    echo ""
+    read -p "Continue without changelog entry? (y/N): " CHANGELOG_CONFIRM
+    if [[ ! "$CHANGELOG_CONFIRM" =~ ^[Yy]$ ]]; then
+        echo -e "${YELLOW}Deployment cancelled. Please add a changelog entry first.${NC}"
+        exit 0
+    fi
+    echo ""
+fi
 
 # Confirm before proceeding
 read -p "Continue with deployment? (y/N): " CONFIRM
