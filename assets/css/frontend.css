@@ -90,6 +90,12 @@
 	min-height: 120px;
 }
 
+.seculoco-form textarea#credentials_data {
+	min-height: 200px;
+	font-family: monospace;
+	line-height: 1.6;
+}
+
 /* Password field with toggle button - scoped under main container */
 .seculoco-form .seculoco-password-field-wrapper {
 	position: relative;

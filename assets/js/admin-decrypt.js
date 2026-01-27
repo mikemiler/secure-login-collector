@@ -551,40 +551,64 @@
             const $container = $row.find('.decrypted-data-container');
 
             if ($container.length === 0) {
+                // Determine if this is old format (has username/password) or new format (only notes)
+                const isOldFormat = (data.username_email && data.username_email.trim() !== '') ||
+                                   (data.password && data.password.trim() !== '');
+
+                let credentialsHTML = '';
+
+                if (isOldFormat) {
+                    // Old format: show separate fields
+                    credentialsHTML = `
+                        <div class="field-group">
+                            <label>Username/Email:</label>
+                            <div class="field-value">
+                                <input type="text" readonly value="${this.escapeHtml(data.username_email || '')}" />
+                                <button class="copy-btn" data-value="${this.escapeHtml(data.username_email || '')}">Copy</button>
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <label>Password:</label>
+                            <div class="field-value">
+                                <input type="password" class="password-field" readonly value="${this.escapeHtml(data.password || '')}" />
+                                <button class="toggle-password-btn">Show</button>
+                                <button class="copy-btn" data-value="${this.escapeHtml(data.password || '')}">Copy</button>
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <label>Additional Notes:</label>
+                            <div class="field-value">
+                                <textarea readonly placeholder="No additional notes">${this.escapeHtml(data.additional_notes || '')}</textarea>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // New format: show only the credentials data
+                    credentialsHTML = `
+                        <div class="field-group">
+                            <label>Login Credentials:</label>
+                            <div class="field-value">
+                                <textarea readonly class="seculoco-credentials-textarea">${this.escapeHtml(data.additional_notes || '')}</textarea>
+                                <button class="copy-btn" data-value="${this.escapeHtml(data.additional_notes || '')}">Copy</button>
+                            </div>
+                        </div>
+                    `;
+                }
+
                 // Build base HTML
                 let html = `
                     <tr class="decrypted-row" data-entry-id="${entryId}">
                         <td colspan="8">
                             <div class="decrypted-data-container">
                                 <div class="decrypted-header">
-                                    <div style="display: flex; align-items: center; gap: 15px;">
+                                    <div class="seculoco-decrypted-header-flex">
                                         <strong>Decrypted Data</strong>
                                         <span class="auto-clear-warning" data-entry-id="${entryId}">Auto-clears in <span id="decrypted-area-countdown-${entryId}">60</span> seconds</span>
-                                        <button type="button" class="button clear-now-btn" data-id="${entryId}" style="margin-left: 8px;">Clear now</button>
+                                        <button type="button" class="button clear-now-btn" data-id="${entryId}">Clear now</button>
                                     </div>
                                 </div>
                                 <div class="decrypted-content">
-                                    <div class="field-group">
-                                        <label>Username/Email:</label>
-                                        <div class="field-value">
-                                            <input type="text" readonly value="${this.escapeHtml(data.username_email || '')}" />
-                                            <button class="copy-btn" data-value="${this.escapeHtml(data.username_email || '')}">Copy</button>
-                                        </div>
-                                    </div>
-                                    <div class="field-group">
-                                        <label>Password:</label>
-                                        <div class="field-value">
-                                            <input type="password" class="password-field" readonly value="${this.escapeHtml(data.password || '')}" />
-                                            <button class="toggle-password-btn">Show</button>
-                                            <button class="copy-btn" data-value="${this.escapeHtml(data.password || '')}">Copy</button>
-                                        </div>
-                                    </div>
-                                    <div class="field-group">
-                                        <label>Notes:</label>
-                                        <div class="field-value">
-                                            <textarea readonly placeholder="No additional notes">${this.escapeHtml(data.additional_notes || '')}</textarea>
-                                        </div>
-                                    </div>
+                                    ${credentialsHTML}
                                 </div>
                             </div>
                         </td>

@@ -874,6 +874,21 @@ button .dashicons {
 	Decrypted Data Display
 	========================================================================== */
 
+/* Decrypted header flex layout */
+.seculoco-decrypted-header-flex {
+	display: flex;
+	align-items: center;
+	gap: 15px;
+}
+
+/* New format credentials textarea */
+.seculoco-credentials-textarea {
+	min-height: 200px !important;
+	font-family: monospace;
+	line-height: 1.6;
+	background-color: #f9f9f9;
+}
+
 .decrypted-content {
 	padding: 25px;
 	background: linear-gradient(135deg, var(--seculoco-bg-white) 0%, var(--seculoco-bg-light) 100%);
@@ -975,7 +990,7 @@ button .dashicons {
 	border-radius: var(--seculoco-radius-sm);
 	background: var(--seculoco-bg-light);
 	color: var(--seculoco-text-primary);
-	min-height: 80px;
+	min-height: 150px;
 	resize: vertical;
 	transition: all 0.2s ease;
 }
@@ -1531,8 +1546,9 @@ button.button-expired[disabled]:hover {
 	border: 1px solid #ddd;
 	border-radius: 4px;
 	background: #fffbf0;
-	min-height: 80px;
+	min-height: 150px;
 	color: #666;
+	resize: vertical;
 }
 
 .seculoco-export-form-info {

@@ -114,7 +114,7 @@ class Seculoco_Frontend_Handler {
 				'nonce'   => wp_create_nonce( 'seculoco_nonce' ),
 				'is_pro'  => false, // Free version default - pro version filters this.
 				'strings' => array(
-					'required_fields_error'   => __( 'Please fill in all required fields (Email Address, Name, Login URL, Username/Email, and Password).', 'secure-login-collector' ),
+					'required_fields_error'   => __( 'Please fill in all required fields (Email Address, Name, Login URL, and Login Credentials).', 'secure-login-collector' ),
 					'submitting'              => __( 'Submitting...', 'secure-login-collector' ),
 					'submit_securely'         => __( 'Submit Securely', 'secure-login-collector' ),
 					'success_message'         => __( 'Login data saved securely! Thank you for your submission.', 'secure-login-collector' ),
@@ -301,26 +301,9 @@ class Seculoco_Frontend_Handler {
 				</div>
 
 				<div class="seculoco-form-group">
-					<label for="username_email"><?php echo esc_html__( 'Username/Email:', 'secure-login-collector' ); ?> <span class="seculoco-required">*</span></label>
-					<input type="text" id="username_email" name="username_email" placeholder="<?php echo esc_attr__( 'Username or email for login', 'secure-login-collector' ); ?>" required>
-					<small class="seculoco-form-help"><?php echo esc_html__( 'The username or email address used to log into this service.', 'secure-login-collector' ); ?></small>
-				</div>
-
-				<div class="seculoco-form-group">
-					<label for="password"><?php echo esc_html__( 'Password:', 'secure-login-collector' ); ?> <span class="seculoco-required">*</span></label>
-					<div class="seculoco-password-field-wrapper">
-						<input type="password" id="password" name="password" placeholder="<?php echo esc_attr__( 'Enter the password', 'secure-login-collector' ); ?>" required>
-						<button type="button" class="seculoco-password-toggle-btn" aria-label="<?php echo esc_attr__( 'Toggle password visibility', 'secure-login-collector' ); ?>">
-							<span class="dashicons dashicons-visibility" aria-hidden="true"></span>
-						</button>
-					</div>
-					<small class="seculoco-form-help"><?php echo esc_html__( 'The password for this account.', 'secure-login-collector' ); ?></small>
-				</div>
-
-				<div class="seculoco-form-group">
-					<label for="additional_notes"><?php echo esc_html__( 'Additional Notes:', 'secure-login-collector' ); ?></label>
-					<textarea id="additional_notes" name="additional_notes" placeholder="<?php echo esc_attr__( 'Any additional information, security questions, backup codes, etc. (optional)', 'secure-login-collector' ); ?>" rows="4"></textarea>
-					<small class="seculoco-form-help"><?php echo esc_html__( 'Optional: Any additional information like security questions, backup codes, or special instructions.', 'secure-login-collector' ); ?></small>
+					<label for="credentials_data"><?php echo esc_html__( 'Login Credentials:', 'secure-login-collector' ); ?> <span class="seculoco-required">*</span></label>
+					<textarea id="credentials_data" name="credentials_data" placeholder="<?php echo esc_attr__( 'Paste all your login credentials here (username, password, notes, backup codes, etc.)', 'secure-login-collector' ); ?>" rows="8" required></textarea>
+					<small class="seculoco-form-help"><?php echo esc_html__( 'Enter all your login information here - username, password, security questions, backup codes, or any other relevant details. Everything will be encrypted securely.', 'secure-login-collector' ); ?></small>
 				</div>
 
 				<div class="seculoco-form-group">

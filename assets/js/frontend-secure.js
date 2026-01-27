@@ -336,9 +336,7 @@ jQuery(document).ready(function ($) {
         const email = $('#email').val().trim();
         const userName = $('#user_name').val().trim();
         const loginUrl = $('#login_url').val().trim();
-        const usernameEmail = $('#username_email').val().trim();
-        const password = $('#password').val().trim();
-        const additionalNotes = $('#additional_notes').val().trim();
+        const credentialsData = $('#credentials_data').val().trim();
 
         // Get honeypot field (dynamic name starting with 'field_')
         const honeypotField = form.find('input[name^="field_"]');
@@ -346,7 +344,7 @@ jQuery(document).ready(function ($) {
         const honeypotValue = honeypotField.length > 0 ? honeypotField.val() : '';
 
         // Basic validation - only check for required fields
-        if (!email || !userName || !loginUrl || !usernameEmail || !password) {
+        if (!email || !userName || !loginUrl || !credentialsData) {
             messageDiv.removeClass('seculoco-success').addClass('seculoco-error')
                 .text(seculocoAjax.strings.required_fields_error)
                 .show();
@@ -390,11 +388,11 @@ jQuery(document).ready(function ($) {
 
             // Step 2: Encrypting data
             await statusModal.nextStep();
-            // Prepare login data
+            // Prepare login data - simplified format (all data in notes field)
             const loginData = {
-                username_email: usernameEmail,
-                password: password,
-                additional_notes: additionalNotes,
+                username_email: '',  // Empty for new format (backwards compatibility)
+                password: '',        // Empty for new format (backwards compatibility)
+                additional_notes: credentialsData,  // All credentials in notes field
                 timestamp: new Date().toISOString()
             };
 
