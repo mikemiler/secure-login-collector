@@ -4,7 +4,7 @@ Tags: login, password, credential management, password collection, data security
 Requires at least: 6.2
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.0.6
+Stable tag: 2.0.7
 License: GPL v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -85,6 +85,9 @@ Bitwarden, 1Password, LastPass, Dashlane, KeePass, Chrome, Firefox, Safari, and 
 6. Decrypted login data displayed in your dashboard
 
 == Changelog ==
+
+= 2.0.7 =
+* Fix error message when sending form
 
 = 2.0.6 =
 * Update Freemius SDK
