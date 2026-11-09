@@ -1,0 +1,40 @@
+# Files and folders that never ship in a release package.
+# Single source of truth for .github/workflows/freemius-deploy.yml and the
+# build scripts in scripts/ (rsync --exclude-from=.distignore).
+#
+# Leading slash = only at the plugin root. Without it the pattern matches at
+# any depth. Premium/free separation is NOT done here: Freemius strips
+# *__premium_only* files itself, so they must stay in the package.
+
+# Version control and CI
+.git
+.gitignore
+/.github
+/.distignore
+
+# Tooling and editor state
+.claude
+.claude-flow
+.swarm
+.vscode
+.DS_Store
+*.log
+*.po~
+
+# Development folders and files at the plugin root
+/scripts
+/docs
+/tests
+/build
+/conf
+/deploy
+/deploy.sh
+/node_modules
+/phpunit.xml
+/composer.json
+/composer.lock
+/package.json
+/package-lock.json
+/.editorconfig
+/.phpcs.xml
+/CLAUDE.md

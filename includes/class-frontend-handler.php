@@ -27,6 +27,26 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Seculoco_Frontend_Handler {
 
 	/**
+	 * Maximum length of the raw submission JSON in bytes.
+	 */
+	const MAX_SUBMISSION_LENGTH = 300000;
+
+	/**
+	 * Maximum base64 length of the encrypted payload (256 KB).
+	 */
+	const MAX_ENCRYPTED_DATA_LENGTH = 262144;
+
+	/**
+	 * Maximum length of the name and email fields.
+	 */
+	const MAX_METADATA_LENGTH = 255;
+
+	/**
+	 * Maximum length of the login URL / service name field.
+	 */
+	const MAX_LOGIN_URL_LENGTH = 2048;
+
+	/**
 	 * Database table name.
 	 *
 	 * @var string
@@ -286,25 +306,27 @@ class Seculoco_Frontend_Handler {
 
 				<div class="seculoco-form-group">
 					<label for="user_name"><?php echo esc_html__( 'Your Name:', 'secure-login-collector' ); ?> <span class="seculoco-required">*</span></label>
-					<input type="text" id="user_name" name="user_name" placeholder="<?php echo esc_attr__( 'Your full name', 'secure-login-collector' ); ?>" required>
+					<input type="text" id="user_name" name="user_name" maxlength="255" placeholder="<?php echo esc_attr__( 'Your full name', 'secure-login-collector' ); ?>" required>
 				</div>
 
 				<div class="seculoco-form-group">
 					<label for="email"><?php echo esc_html__( 'Your Email Address:', 'secure-login-collector' ); ?> <span class="seculoco-required">*</span></label>
-					<input type="email" id="email" name="email" placeholder="<?php echo esc_attr__( 'your@email.com', 'secure-login-collector' ); ?>" required>
+					<input type="email" id="email" name="email" maxlength="255" placeholder="<?php echo esc_attr__( 'your@email.com', 'secure-login-collector' ); ?>" required>
 				</div>
 
 				<div class="seculoco-form-group">
 					<label for="login_url"><?php echo esc_html__( 'Login URL / Service Name:', 'secure-login-collector' ); ?> <span class="seculoco-required">*</span></label>
-					<input type="text" id="login_url" name="login_url" placeholder="<?php echo esc_attr__( 'https://example.com/login or service name', 'secure-login-collector' ); ?>" required>
+					<input type="text" id="login_url" name="login_url" maxlength="2048" placeholder="<?php echo esc_attr__( 'https://example.com/login or service name', 'secure-login-collector' ); ?>" required>
 					<small class="seculoco-form-help"><?php echo esc_html__( 'Enter the login URL or service name where these credentials are used.', 'secure-login-collector' ); ?></small>
 				</div>
 
 				<div class="seculoco-form-group">
 					<label for="credentials_data"><?php echo esc_html__( 'Login Credentials:', 'secure-login-collector' ); ?> <span class="seculoco-required">*</span></label>
 					<textarea id="credentials_data" name="credentials_data" placeholder="<?php echo esc_attr__( 'Paste all your login credentials here (username, password, notes, backup codes, etc.)', 'secure-login-collector' ); ?>" rows="8" required></textarea>
-					<small class="seculoco-form-help"><?php echo esc_html__( 'Enter all your login information here - username, password, security questions, backup codes, or any other relevant details. Everything will be encrypted securely.', 'secure-login-collector' ); ?></small>
+					<small class="seculoco-form-help"><?php echo esc_html__( 'Enter all your login information here: username, password, security questions, backup codes or any other relevant details. Everything is encrypted securely.', 'secure-login-collector' ); ?></small>
 				</div>
+
+				<div id="seculoco-form-message" class="seculoco-form-message" role="alert"></div>
 
 				<div class="seculoco-form-group">
 					<button type="submit" class="seculoco-submit-btn"><?php echo esc_html( $atts['button_text'] ); ?></button>
@@ -349,17 +371,22 @@ class Seculoco_Frontend_Handler {
 			return;
 		}
 
-		// Get submission data and sanitize before JSON decode.
-		$submission_json = isset( $_POST['submission'] ) ? sanitize_textarea_field( wp_unslash( $_POST['submission'] ) ) : '';
+		// Decode the JSON envelope as-is; every field is validated and sanitized individually below.
+		$submission_json = isset( $_POST['submission'] ) ? wp_unslash( $_POST['submission'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 
-		if ( empty( $submission_json ) ) {
+		if ( ! is_string( $submission_json ) || '' === $submission_json ) {
 			wp_send_json_error( __( 'Missing submission data.', 'secure-login-collector' ) );
+			return;
+		}
+
+		if ( strlen( $submission_json ) > self::MAX_SUBMISSION_LENGTH ) {
+			wp_send_json_error( __( 'Submission is too large.', 'secure-login-collector' ) );
 			return;
 		}
 
 		// Parse submission data.
 		$submission = json_decode( $submission_json, true );
-		if ( JSON_ERROR_NONE !== json_last_error() ) {
+		if ( ! is_array( $submission ) ) {
 			wp_send_json_error( __( 'Invalid submission format.', 'secure-login-collector' ) );
 			return;
 		}
@@ -384,22 +411,35 @@ class Seculoco_Frontend_Handler {
 			}
 		}
 
-		// Validate metadata.
-		$metadata          = $submission['metadata'];
-		$required_metadata = array( 'email', 'name', 'login_url' );
-		foreach ( $required_metadata as $field ) {
-			if ( ! isset( $metadata[ $field ] ) || empty( $metadata[ $field ] ) ) {
+		// Validate metadata. Field => array( label, maximum length ).
+		$metadata          = is_array( $submission['metadata'] ) ? $submission['metadata'] : array();
+		$required_metadata = array(
+			'email'     => array( __( 'Email Address', 'secure-login-collector' ), self::MAX_METADATA_LENGTH ),
+			'name'      => array( __( 'Name', 'secure-login-collector' ), self::MAX_METADATA_LENGTH ),
+			'login_url' => array( __( 'Login URL', 'secure-login-collector' ), self::MAX_LOGIN_URL_LENGTH ),
+		);
+		foreach ( $required_metadata as $field => $rule ) {
+			if ( ! isset( $metadata[ $field ] ) || ! is_string( $metadata[ $field ] ) || '' === trim( $metadata[ $field ] ) ) {
 				// translators: %s is the name of the missing metadata field.
 				wp_send_json_error( sprintf( __( 'Missing required metadata: %s', 'secure-login-collector' ), $field ) );
 				return;
 			}
+
+			if ( mb_strlen( $metadata[ $field ] ) > $rule[1] ) {
+				// translators: 1: field label, 2: maximum number of characters.
+				wp_send_json_error( sprintf( __( '%1$s is too long (maximum %2$d characters).', 'secure-login-collector' ), $rule[0], $rule[1] ) );
+				return;
+			}
 		}
 
-		// Sanitize metadata.
-		$metadata['email']      = sanitize_email( $metadata['email'] );
-		$metadata['name']       = sanitize_text_field( $metadata['name'] );
-		$metadata['login_url']  = esc_url_raw( $metadata['login_url'] );
-		$metadata['created_at'] = isset( $metadata['created_at'] ) ? sanitize_text_field( $metadata['created_at'] ) : current_time( 'c' );
+		// Rebuild metadata from known fields only. The login URL field also accepts a plain service name.
+		$login_url = trim( $metadata['login_url'] );
+		$metadata  = array(
+			'email'      => sanitize_email( $metadata['email'] ),
+			'name'       => sanitize_text_field( $metadata['name'] ),
+			'login_url'  => preg_match( '#^https?://#i', $login_url ) ? esc_url_raw( $login_url ) : sanitize_text_field( $login_url ),
+			'created_at' => isset( $metadata['created_at'] ) && is_string( $metadata['created_at'] ) ? substr( sanitize_text_field( $metadata['created_at'] ), 0, 40 ) : current_time( 'c' ),
+		);
 
 		/**
 		 * AUTO-DETECT ENCRYPTION TYPE SERVER-SIDE.
@@ -437,10 +477,10 @@ class Seculoco_Frontend_Handler {
 
 		// Create encrypted package for storage.
 		$encrypted_package = array(
-			'encryptedData'   => $this->sanitize_encrypted_field( $submission['encryptedData'], 'encryptedData' ),
-			'rsaEncryptedKey' => $this->sanitize_encrypted_field( $submission['rsaEncryptedKey'], 'rsaEncryptedKey' ), // Store as-is from client.
-			'iv'              => $this->sanitize_encrypted_field( $submission['iv'], 'iv' ),
-			'salt'            => $this->sanitize_encrypted_field( $submission['salt'], 'salt' ),
+			'encryptedData'   => $this->sanitize_encrypted_field( $submission['encryptedData'], 'encryptedData', 0, self::MAX_ENCRYPTED_DATA_LENGTH ),
+			'rsaEncryptedKey' => $this->sanitize_encrypted_field( $submission['rsaEncryptedKey'], 'rsaEncryptedKey', 256 ), // RSA-2048 ciphertext.
+			'iv'              => $this->sanitize_encrypted_field( $submission['iv'], 'iv', 12 ), // AES-GCM IV.
+			'salt'            => $this->sanitize_encrypted_field( $submission['salt'], 'salt', 32 ), // Random salt from frontend-secure.js.
 			'isProEncrypted'  => $is_pro_encrypted, // Server determines this.
 			'credentialId'    => $server_credential_id,
 			'version'         => 2, // Mark as v2 format.
@@ -499,18 +539,27 @@ class Seculoco_Frontend_Handler {
 	 * Accepts URL-safe alphabet characters, strips whitespace, fixes padding,
 	 * and rejects unexpected characters before persisting values.
 	 *
-	 * @param string $value Raw field value from the submission payload.
-	 * @param string $field Field name for error messages.
+	 * @param string $value          Raw field value from the submission payload.
+	 * @param string $field          Field name for error messages.
+	 * @param int    $expected_bytes Exact decoded length in bytes, 0 to skip the check.
+	 * @param int    $max_length     Maximum base64 length, 0 to skip the check.
 	 * @return string Normalised base64 string.
 	 */
-	private function sanitize_encrypted_field( $value, $field ) {
+	private function sanitize_encrypted_field( $value, $field, $expected_bytes = 0, $max_length = 0 ) {
 		if ( ! is_string( $value ) ) {
+			// translators: %s is the name of the encrypted field.
 			wp_send_json_error( sprintf( __( 'Invalid encrypted field: %s', 'secure-login-collector' ), $field ) );
 		}
 
 		$trimmed = trim( $value );
 		if ( '' === $trimmed ) {
+			// translators: %s is the name of the encrypted field.
 			wp_send_json_error( sprintf( __( 'Encrypted field %s cannot be empty.', 'secure-login-collector' ), $field ) );
+		}
+
+		if ( $max_length > 0 && strlen( $trimmed ) > $max_length ) {
+			// translators: %s is the name of the encrypted field.
+			wp_send_json_error( sprintf( __( 'Encrypted field %s is too large.', 'secure-login-collector' ), $field ) );
 		}
 
 		$normalized = preg_replace( '/\s+/', '', $trimmed );
@@ -522,11 +571,20 @@ class Seculoco_Frontend_Handler {
 		}
 
 		if ( preg_match( '/[^A-Za-z0-9\/+=]/', $normalized ) ) {
+			// translators: %s is the name of the encrypted field.
 			wp_send_json_error( sprintf( __( 'Encrypted field %s contains invalid characters.', 'secure-login-collector' ), $field ) );
 		}
 
-		if ( false === base64_decode( $normalized, true ) ) {
+		// Decoding validates the client ciphertext; nothing is executed.
+		$decoded = base64_decode( $normalized, true ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode
+		if ( false === $decoded ) {
+			// translators: %s is the name of the encrypted field.
 			wp_send_json_error( sprintf( __( 'Encrypted field %s is not valid base64 data.', 'secure-login-collector' ), $field ) );
+		}
+
+		if ( $expected_bytes > 0 && strlen( $decoded ) !== $expected_bytes ) {
+			// translators: %s is the name of the encrypted field.
+			wp_send_json_error( sprintf( __( 'Encrypted field %s has an invalid length.', 'secure-login-collector' ), $field ) );
 		}
 
 		return $normalized;

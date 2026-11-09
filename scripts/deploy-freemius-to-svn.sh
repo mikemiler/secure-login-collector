@@ -22,6 +22,17 @@ PLUGIN_DIR="$(dirname "$SCRIPT_DIR")"
 # Dev root is 6 levels up from scripts folder (scripts->plugin->plugins->wp-content->public->app->dev-root)
 DEV_ROOT="$(cd "$SCRIPT_DIR/../../../../../.." && pwd)"
 
+# Arguments: [zip-path] [--dry-run]
+DRY_RUN=0
+ZIP_ARG=""
+for arg in "$@"; do
+    case "$arg" in
+        --dry-run) DRY_RUN=1 ;;
+        -*) echo -e "${RED}Unknown option: $arg${NC}"; exit 1 ;;
+        *) ZIP_ARG="$arg" ;;
+    esac
+done
+
 # Configuration
 PLUGIN_SLUG="secure-login-collector"
 SVN_DIR="$DEV_ROOT/svn"
@@ -29,7 +40,7 @@ DOWNLOADS_DIR="$DEV_ROOT/freemius-downloads"
 TEMP_DIR="$DEV_ROOT/temp-deploy"
 
 # Check if ZIP file path is provided
-if [ -z "$1" ]; then
+if [ -z "$ZIP_ARG" ]; then
     echo -e "${YELLOW}No ZIP file specified. Looking in freemius-downloads folder...${NC}"
     echo ""
 
@@ -89,7 +100,7 @@ if [ -z "$1" ]; then
         exit 1
     fi
 else
-    ZIP_FILE="$1"
+    ZIP_FILE="$ZIP_ARG"
 
     # Check if ZIP file exists
     if [ ! -f "$ZIP_FILE" ]; then
@@ -100,31 +111,6 @@ fi
 
 echo -e "${GREEN}ZIP File: $ZIP_FILE${NC}"
 echo ""
-
-# Prompt for WordPress.org username
-echo -e "${YELLOW}Enter your WordPress.org username:${NC}"
-read -r WP_USERNAME
-
-if [ -z "$WP_USERNAME" ]; then
-    echo -e "${RED}Error: Username is required${NC}"
-    exit 1
-fi
-
-# Check if SVN directory exists
-if [ ! -d "$SVN_DIR" ]; then
-    echo -e "${YELLOW}SVN directory not found at: $SVN_DIR${NC}"
-    echo ""
-    echo -e "${YELLOW}Would you like to checkout WordPress.org SVN repository now? (y/n)${NC}"
-    read -r checkout_confirm
-    if [ "$checkout_confirm" = "y" ]; then
-        echo -e "${YELLOW}Checking out SVN repository...${NC}"
-        svn co "https://plugins.svn.wordpress.org/$PLUGIN_SLUG" "$SVN_DIR" --username="$WP_USERNAME"
-        echo -e "${GREEN}✓ SVN repository checked out to: $SVN_DIR${NC}"
-    else
-        echo -e "${RED}SVN directory required. Exiting.${NC}"
-        exit 1
-    fi
-fi
 
 # Clean temp directory
 rm -rf "$TEMP_DIR"
@@ -188,9 +174,71 @@ fi
 echo -e "${GREEN}✓ No premium files found (correct for free version)${NC}"
 
 # Get plugin version
-VERSION=$(grep "Version:" "$PLUGIN_DIR/$PLUGIN_SLUG.php" | head -1 | awk -F: '{print $2}' | tr -d ' ')
+VERSION=$(sed -E -n 's/^[[:space:]]*\*[[:space:]]*Version:[[:space:]]*([^[:space:]]+).*/\1/p' "$PLUGIN_DIR/$PLUGIN_SLUG.php" | head -n1)
+CONSTANT_VERSION=$(sed -E -n "s/^define\( 'SECULOCO_VERSION', '([^']+)' \);.*/\1/p" "$PLUGIN_DIR/$PLUGIN_SLUG.php" | head -n1)
+STABLE_TAG=$(sed -E -n 's/^Stable tag:[[:space:]]*([^[:space:]]+).*/\1/p' "$PLUGIN_DIR/readme.txt" | head -n1)
 echo -e "${GREEN}✓ Plugin Version: $VERSION${NC}"
+
+# Version consistency: header == SECULOCO_VERSION == Stable tag == changelog entry.
+VERSION_ERRORS=0
+if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    echo -e "${RED}✗ Version '$VERSION' is not a plain X.Y.Z version${NC}"; VERSION_ERRORS=1
+fi
+if [ "$CONSTANT_VERSION" != "$VERSION" ]; then
+    echo -e "${RED}✗ SECULOCO_VERSION '$CONSTANT_VERSION' does not match header $VERSION${NC}"; VERSION_ERRORS=1
+fi
+if [ "$STABLE_TAG" != "$VERSION" ]; then
+    echo -e "${RED}✗ readme.txt Stable tag '$STABLE_TAG' does not match header $VERSION${NC}"; VERSION_ERRORS=1
+fi
+if ! grep -q "^= ${VERSION} =$" "$PLUGIN_DIR/readme.txt"; then
+    echo -e "${RED}✗ readme.txt has no changelog entry '= ${VERSION} ='${NC}"; VERSION_ERRORS=1
+fi
+if [ "$VERSION_ERRORS" -ne 0 ]; then
+    echo -e "${RED}Version check failed. Fix the release in git and re-export from Freemius.${NC}"
+    rm -rf "$TEMP_DIR"
+    exit 1
+fi
+echo -e "${GREEN}✓ Header, SECULOCO_VERSION, Stable tag and changelog agree on $VERSION${NC}"
 echo ""
+
+if [ -d "$SVN_DIR/tags/$VERSION" ]; then
+    echo -e "${YELLOW}Note: tags/$VERSION already exists in the local SVN checkout.${NC}"
+fi
+
+if [ "$DRY_RUN" -eq 1 ]; then
+    echo -e "${YELLOW}Files that would be deployed:${NC}"
+    ls -la "$PLUGIN_DIR"
+    echo ""
+    echo -e "${GREEN}Dry run complete: ZIP is valid for version $VERSION. Nothing was changed.${NC}"
+    rm -rf "$TEMP_DIR"
+    exit 0
+fi
+
+# Prompt for WordPress.org username
+echo -e "${YELLOW}Enter your WordPress.org username:${NC}"
+read -r WP_USERNAME
+
+if [ -z "$WP_USERNAME" ]; then
+    echo -e "${RED}Error: Username is required${NC}"
+    exit 1
+fi
+
+# Check if SVN directory exists
+if [ ! -d "$SVN_DIR" ]; then
+    echo -e "${YELLOW}SVN directory not found at: $SVN_DIR${NC}"
+    echo ""
+    echo -e "${YELLOW}Would you like to checkout WordPress.org SVN repository now? (y/n)${NC}"
+    read -r checkout_confirm
+    if [ "$checkout_confirm" = "y" ]; then
+        echo -e "${YELLOW}Checking out SVN repository...${NC}"
+        svn co "https://plugins.svn.wordpress.org/$PLUGIN_SLUG" "$SVN_DIR" --username="$WP_USERNAME"
+        echo -e "${GREEN}✓ SVN repository checked out to: $SVN_DIR${NC}"
+    else
+        echo -e "${RED}SVN directory required. Exiting.${NC}"
+        exit 1
+    fi
+fi
+
 
 # Update SVN repository
 echo -e "${BLUE}Step 3: Updating SVN repository...${NC}"
@@ -251,19 +299,6 @@ find "$SVN_DIR/trunk" -mindepth 1 -maxdepth 1 -not -name '.svn' -exec rm -rf {} 
 
 # Copy new files
 cp -r "$PLUGIN_DIR"/* "$SVN_DIR/trunk/"
-
-# Check and update Stable tag in readme.txt
-if [ -f "$SVN_DIR/trunk/readme.txt" ]; then
-    STABLE_TAG=$(grep "^Stable tag:" "$SVN_DIR/trunk/readme.txt" | awk -F: '{print $2}' | tr -d ' ' || echo "")
-    if [ "$STABLE_TAG" != "$VERSION" ]; then
-        echo -e "${YELLOW}Updating Stable tag in readme.txt from '$STABLE_TAG' to '$VERSION'${NC}"
-        sed -i.bak "s/^Stable tag:.*/Stable tag: $VERSION/" "$SVN_DIR/trunk/readme.txt"
-        rm -f "$SVN_DIR/trunk/readme.txt.bak"
-        echo -e "${GREEN}✓ Stable tag updated${NC}"
-    else
-        echo -e "${GREEN}✓ Stable tag already correct: $VERSION${NC}"
-    fi
-fi
 
 # Add new files and remove deleted files
 cd "$SVN_DIR/trunk"

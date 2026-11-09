@@ -158,9 +158,15 @@
 }
 
 .seculoco-form .seculoco-form-message {
+	display: none;
 	padding: 10px;
 	margin-top: 10px;
 	border-radius: 3px;
+}
+
+.seculoco-form .seculoco-form-message.seculoco-success,
+.seculoco-form .seculoco-form-message.seculoco-error {
+	display: block;
 }
 
 .seculoco-form .seculoco-form-message.seculoco-success {
@@ -348,6 +354,22 @@
 	transition: width 1s ease;
 }
 
+.seculoco-status-modal-overlay .seculoco-status-progress-bar.seculoco-progress-1 {
+	width: 25%;
+}
+
+.seculoco-status-modal-overlay .seculoco-status-progress-bar.seculoco-progress-2 {
+	width: 50%;
+}
+
+.seculoco-status-modal-overlay .seculoco-status-progress-bar.seculoco-progress-3 {
+	width: 75%;
+}
+
+.seculoco-status-modal-overlay .seculoco-status-progress-bar.seculoco-progress-4 {
+	width: 100%;
+}
+
 .seculoco-status-modal-overlay .seculoco-status-close-btn {
 	background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
 	color: #fff;
@@ -359,6 +381,11 @@
 	cursor: pointer;
 	transition: all 0.3s ease;
 	margin-top: 10px;
+	display: none;
+}
+
+.seculoco-status-modal-overlay .seculoco-status-close-btn.seculoco-is-visible {
+	display: inline-block;
 }
 
 .seculoco-status-modal-overlay .seculoco-status-close-btn:hover {

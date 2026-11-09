@@ -12,8 +12,8 @@ Development and deployment scripts for Secure Login Collector plugin.
 
 | Script | Description | Usage |
 |--------|-------------|-------|
-| `deploy.sh` | Main deployment script. Updates version numbers, creates git commit and tag. | `./scripts/deploy.sh` |
-| `deploy-freemius-to-svn.sh` | Deploy a Freemius free ZIP to WordPress.org SVN | `./scripts/deploy-freemius-to-svn.sh [zip-path]` |
+| `deploy.sh` | Release cutter. Guards, bumps all three version references, commits, tags, pushes `main` with the tag. | `./scripts/deploy.sh <X.Y.Z> [--dry-run] [--yes]` |
+| `deploy-freemius-to-svn.sh` | Deploy a Freemius free ZIP to WordPress.org SVN (checks version consistency) | `./scripts/deploy-freemius-to-svn.sh [zip-path] [--dry-run]` |
 
 ### SVN Scripts (WordPress.org)
 
@@ -43,23 +43,41 @@ Development and deployment scripts for Secure Login Collector plugin.
 
 ### Release a New Version
 
-1. Update changelog in `readme.txt`
-2. Run deployment script:
+What ships is defined once in `.distignore` (used by the GitHub workflow and the build scripts).
+
+1. Add the changelog entry `= X.Y.Z =` to `readme.txt`, regenerate translations if strings changed, commit.
+2. Preview the release (changes nothing):
    ```bash
-   ./scripts/deploy.sh
+   ./scripts/deploy.sh 2.1.0 --dry-run
    ```
-3. Push when prompted (triggers GitHub Actions → Freemius)
+3. Cut it:
+   ```bash
+   ./scripts/deploy.sh 2.1.0
+   ```
+   The script refuses to run on a dirty tree, off `main`, behind origin, with an existing tag,
+   a version that is not greater, or without a changelog entry. It bumps the plugin header,
+   `SECULOCO_VERSION` and `Stable tag`, commits `Release version X.Y.Z`, tags `vX.Y.Z` and
+   pushes `main`, then the tag `vX.Y.Z`.
+4. The tag push runs `.github/workflows/freemius-deploy.yml`: it fails if tag, header,
+   `SECULOCO_VERSION`, `Stable tag` and changelog disagree, then uploads the package to
+   Freemius as "pending".
+5. Release the version in the Freemius dashboard.
 
 ### Deploy to WordPress.org
 
 After Freemius processes the release:
 
-1. Download free version from Freemius Dashboard
-2. Place ZIP in `freemius-downloads/` folder (6 levels up from plugin)
-3. Run:
+1. Download the free version from the Freemius Dashboard into `freemius-downloads/` (6 levels up from plugin)
+2. Check it first (changes nothing):
+   ```bash
+   ./scripts/deploy-freemius-to-svn.sh --dry-run
+   ```
+3. Deploy:
    ```bash
    ./scripts/deploy-freemius-to-svn.sh
    ```
+   The script aborts when header, `SECULOCO_VERSION`, `Stable tag` and changelog disagree;
+   it no longer rewrites `Stable tag` silently.
 
 ### Test Free Version Locally
 

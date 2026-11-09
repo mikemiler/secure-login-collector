@@ -42,26 +42,11 @@ mkdir -p "$BUILD_DIR/$PLUGIN_SLUG"
 
 echo -e "${GREEN}Copying plugin files...${NC}"
 
-# Copy files using rsync, excluding premium and development files
-rsync -av \
+# Copy files: .distignore is the single source of truth for dev files.
+# Premium files are stripped here as well, as Freemius does for the free build.
+rsync -a \
+    --exclude-from="$PLUGIN_DIR/.distignore" \
     --exclude='*__premium_only*' \
-    --exclude='.git*' \
-    --exclude='.github/' \
-    --exclude='node_modules/' \
-    --exclude='tests/' \
-    --exclude='docs/' \
-    --exclude='scripts/' \
-    --exclude='build/' \
-    --exclude='.DS_Store' \
-    --exclude='*.log' \
-    --exclude='package*.json' \
-    --exclude='composer.json' \
-    --exclude='composer.lock' \
-    --exclude='phpunit.xml' \
-    --exclude='.editorconfig' \
-    --exclude='.phpcs.xml' \
-    --exclude='README.md' \
-    --exclude='CLAUDE.md' \
     "$PLUGIN_DIR/" "$BUILD_DIR/$PLUGIN_SLUG/"
 
 echo ""
@@ -69,12 +54,7 @@ echo -e "${GREEN}Source: $PLUGIN_DIR${NC}"
 echo -e "${GREEN}Target: $BUILD_DIR/$PLUGIN_SLUG/${NC}"
 
 echo ""
-echo -e "${YELLOW}Excluded files/directories:${NC}"
-echo "  - *__premium_only* (Premium features)"
-echo "  - .git*, .github/ (Version control)"
-echo "  - node_modules/ (Dependencies)"
-echo "  - tests/, docs/ (Development files)"
-echo "  - scripts/, build/ (Build files)"
+echo -e "${YELLOW}Excluded: everything in .distignore plus *__premium_only*${NC}"
 echo ""
 
 # Validate required files exist

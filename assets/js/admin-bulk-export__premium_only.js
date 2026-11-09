@@ -266,10 +266,31 @@ jQuery(document).ready(function ($) {
             let successCount = 0;
             let failedCount = 0;
             let failedEntryIds = [];
+            let skippedEntryIds = [];
+            let standardKey = null; // Password-unwrapped key, reused for all FREE entries in this run
+            let standardKeyError = null; // First master password failure/cancel; no further prompts in this run
 
             if (!base) {
                 throw new Error('Decryption module not available. Please refresh the page.');
             }
+
+            // These CSV formats have no usable notes column and their importers reject rows without
+            // a password, so free-text entries (single credentials field) cannot be exported there.
+            const managerNeedsLegacyFields = ['chrome', 'firefox', 'safari'].indexOf(manager) !== -1;
+
+            const addExportRow = function (entryId, decrypted, name, website) {
+                if (managerNeedsLegacyFields && !base.isLegacyFormat(decrypted)) {
+                    skippedEntryIds.push(entryId);
+                    return;
+                }
+                decryptedEntries.push({
+                    name: name,
+                    website: website,
+                    username: decrypted.username_email || '',
+                    password: decrypted.password || '',
+                    notes: decrypted.additional_notes || ''
+                });
+            };
 
             $('#bulk-progress-text').text('Starting decryption...');
             $('#bulk-progress-bar').addClass('seculoco-progress-bar-width-5').css('width', '');
@@ -290,13 +311,12 @@ jQuery(document).ready(function ($) {
                             return $(this).find('.decrypt-btn[data-id="' + entryId + '"], .decrypt-btn-v2[data-id="' + entryId + '"]').length > 0;
                         });
 
-                        decryptedEntries.push({
-                            name: $row.find('[data-field="name"]').text() || 'Entry ' + entryId,
-                            website: $row.find('[data-field="login_url"]').text() || '',
-                            username: decrypted.username_email || '',
-                            password: decrypted.password || '',
-                            notes: decrypted.additional_notes || ''
-                        });
+                        addExportRow(
+                            entryId,
+                            decrypted,
+                            $row.find('[data-field="name"]').text() || 'Entry ' + entryId,
+                            $row.find('[data-field="login_url"]').text() || ''
+                        );
                         successCount++;
                         $('#bulk-progress-text').text('Entry ' + processed + ' of ' + entryIds.length + ' (cached)');
                         $('#bulk-progress-bar').removeClass('seculoco-progress-bar-width-5 seculoco-progress-bar-width-100').css('width', progressPercent + '%');
@@ -334,16 +354,25 @@ jQuery(document).ready(function ($) {
                         const wrappedKey = keyInfoResp.data.wrapped_key;
                         privateKey = await pro.unwrapKey(wrappedKey, preAuthData.derivedKey);
                     } else {
-                        const privateKeyB64 = keyInfoResp.data.private_key;
-                        const privateKeyPem = atob(privateKeyB64);
-                        privateKey = await base.importRSAPrivateKey(privateKeyPem);
+                        // Password-wrapped key: the server only returns the wrapped key, so unwrap it
+                        // with the master password once and reuse it for the rest of the run.
+                        if (standardKeyError) {
+                            throw standardKeyError;
+                        }
+                        if (!standardKey) {
+                            try {
+                                standardKey = await base.getStandardPrivateKey(entryId);
+                            } catch (keyError) {
+                                standardKeyError = keyError;
+                                throw keyError;
+                            }
+                        }
+                        privateKey = standardKey;
                     }
 
-                    // Decrypt the data
+                    // Decrypt the data. Not cached in base.decryptedData: only the auto-cleared
+                    // single-entry view may keep plaintext in memory.
                     const decrypted = await base.decryptData(encryptedPackage, privateKey);
-
-                    // Store in cache
-                    base.decryptedData.set(entryId, decrypted);
 
                     // Get metadata from table
                     const $row = $('tr').filter(function() {
@@ -358,13 +387,7 @@ jQuery(document).ready(function ($) {
                                    '';
 
                     // Add to results
-                    decryptedEntries.push({
-                        name: name,
-                        website: website,
-                        username: decrypted.username_email || '',
-                        password: decrypted.password || '',
-                        notes: decrypted.additional_notes || ''
-                    });
+                    addExportRow(entryId, decrypted, name, website);
 
                     successCount++;
 
@@ -389,12 +412,23 @@ jQuery(document).ready(function ($) {
                 downloadCSVFile(csvContent, filename);
 
                 // Show success summary
-                let summaryMessage = 'Bulk export completed!\n\n';
-                summaryMessage += 'Successfully decrypted: ' + successCount + ' entries\n';
+                let summaryMessage = (failedCount > 0 || skippedEntryIds.length > 0)
+                    ? 'Bulk export completed with issues.\n\n'
+                    : 'Bulk export completed!\n\n';
+                summaryMessage += 'Exported: ' + decryptedEntries.length + ' entries\n';
                 if (failedCount > 0) {
                     summaryMessage += 'Failed to decrypt: ' + failedCount + ' entries\n';
-                    summaryMessage += 'Failed entry IDs: ' + failedEntryIds.join(', ') + '\n\n';
-                    summaryMessage += 'The CSV file contains only successfully decrypted entries.';
+                    summaryMessage += 'Failed entry IDs: ' + failedEntryIds.join(', ') + '\n';
+                }
+                if (skippedEntryIds.length > 0) {
+                    summaryMessage += 'NOT exported: ' + skippedEntryIds.length + ' entries\n';
+                    summaryMessage += 'Not exported entry IDs: ' + skippedEntryIds.join(', ') + '\n';
+                }
+                if (failedCount > 0 || skippedEntryIds.length > 0) {
+                    summaryMessage += '\nThe CSV file contains only the exported entries.';
+                    if (skippedEntryIds.length > 0) {
+                        summaryMessage += ' ' + skippedFreeTextHint();
+                    }
                 } else {
                     summaryMessage += '\nAll entries were successfully decrypted and exported.';
                 }
@@ -402,6 +436,16 @@ jQuery(document).ready(function ($) {
                 alert(summaryMessage);
                 
 
+            } else if (skippedEntryIds.length > 0) {
+                // Entries were decrypted but none can be represented in this format
+                let skippedMessage = 'Nothing was exported.\n\n';
+                skippedMessage += 'NOT exported: ' + skippedEntryIds.length + ' entries (IDs: ' + skippedEntryIds.join(', ') + ')\n';
+                if (failedCount > 0) {
+                    skippedMessage += 'Failed to decrypt: ' + failedCount + ' entries (IDs: ' + failedEntryIds.join(', ') + ')\n';
+                }
+                skippedMessage += '\n' + skippedFreeTextHint();
+
+                alert(skippedMessage);
             } else {
                 // All entries failed
                 let errorMessage = 'Failed to decrypt any entries.\n\n';
@@ -419,95 +463,66 @@ jQuery(document).ready(function ($) {
         }
     }
 
-    // Authenticate with passkey for bulk decrypt
-    function authenticateWithPasskeyForBulkDecrypt(data, button) {
-        // Check if WebAuthn is supported
+    // Authenticate with passkey for bulk decrypt.
+    // The passkey ceremony and key derivation live in the PRO decrypt plugin
+    // (window.seculocoDecryptPro.authenticateWithPasskey). Only PRF-wrapped (2.1.0+) keys
+    // can be unlocked; older setups get the "outdated setup" error.
+    async function authenticateWithPasskeyForBulkDecrypt(data, button) {
+        function resetButton() {
+            button.prop('disabled', false).html('<span class="dashicons dashicons-shield-alt"></span> Authenticate with Passkey');
+        }
+
         if (!window.PublicKeyCredential) {
             alert(seculocoAjax.strings.webauthn_not_supported);
-            button.prop('disabled', false).html('<span class="dashicons dashicons-shield-alt"></span> Authenticate with Passkey');
+            resetButton();
             return;
         }
 
-        // First, get the passkey challenge and credentials from server
-        $.ajax({
-            url: (typeof secureLoginPasskeyData !== 'undefined' ? secureLoginPasskeyData.ajaxUrl : seculocoAjax.ajaxurl),
-            type: 'POST',
-            data: {
-                action: 'seculoco_passkey_challenge',
-                // This endpoint accepts seculoco_admin_nonce or seculoco_nonce
-                nonce: seculocoAjax.nonce
-            },
-            success: function(challengeResponse) {
-                if (!challengeResponse.success) {
-                    alert('Failed to get passkey challenge: ' + (challengeResponse.data || 'Unknown error'));
-                    button.prop('disabled', false).html('<span class="dashicons dashicons-shield-alt"></span> Authenticate with Passkey');
-                    return;
-                }
-
-                // Convert base64 challenge to ArrayBuffer
-                var challengeData = challengeResponse.data.challenge;
-                var challenge = window.base64ToArrayBuffer(challengeData);
-
-                // Prepare credentials array
-                var allowCredentials = [];
-                if (challengeResponse.data.credentials && challengeResponse.data.credentials.length > 0) {
-                    allowCredentials = challengeResponse.data.credentials.map(function(cred) {
-                        return {
-                            type: 'public-key',
-                            id: window.base64ToArrayBuffer(cred.id)
-                        };
-                    });
-                }
-
-                var getCredentialDefaultArgs = {
-                    publicKey: {
-                        timeout: 60000,
-                        challenge: challenge,
-                        allowCredentials: allowCredentials,
-                        userVerification: "required"
-                    },
-                };
-
-                navigator.credentials.get(getCredentialDefaultArgs)
-                    .then(async (assertion) => {
-                        // After successful passkey authentication, derive key and proceed
-                        try {
-                            button.html('<span class="dashicons dashicons-admin-network spin"></span> Deriving key...');
-                            $('#bulk-progress-info').show();
-                            $('#bulk-progress-text').text('Deriving encryption key from passkey...');
-                            $('#bulk-progress-bar').addClass('seculoco-progress-bar-width-5').css('width', '');
-
-                            if (!window.seculocoDecryptPro) {
-                                throw new Error('Decryption module not available. Please refresh the page.');
-                            }
-
-                            // Derive the unwrapping key from the assertion ONCE using PRO plugin
-                            const derivedKey = await window.seculocoDecryptPro.deriveUnwrappingKey(assertion);
-
-                            // Create preAuthData object to pass to bulk decryption
-                            const preAuthData = { derivedKey: derivedKey };
-
-                            // Proceed with bulk decryption
-                            await proceedWithBulkDecryption(data, preAuthData);
-
-                        } catch (error) {
-                            console.error('Passkey authentication error:', error);
-                            alert('Authentication failed: ' + error.message);
-                            button.prop('disabled', false).html('<span class="dashicons dashicons-shield-alt"></span> Authenticate with Passkey');
-                        }
-                    })
-                    .catch((err) => {
-                        console.error('Bulk passkey authentication failed:', err);
-                        alert(seculocoAjax.strings.passkey_auth_failed + ' ' + err.message);
-                        button.prop('disabled', false).html('<span class="dashicons dashicons-shield-alt"></span> Authenticate with Passkey');
-                    });
-            },
-            error: function(xhr, status, error) {
-                console.error('Failed to get passkey challenge:', error);
-                alert('Failed to get passkey challenge. Please try again.');
-                button.prop('disabled', false).html('<span class="dashicons dashicons-shield-alt"></span> Authenticate with Passkey');
+        try {
+            if (!window.seculocoDecryptPro) {
+                throw new Error('Decryption module not available. Please refresh the page.');
             }
-        });
+
+            // The Pro wrapped key is the same for every PRO entry; fetch it via the first PRO entry.
+            var wrappedKey = null;
+            var lastError = '';
+            for (var i = 0; i < data.entry_ids.length && !wrappedKey; i++) {
+                var keyInfoResp = await $.ajax({
+                    url: seculocoAjax.ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'seculoco_get_wrapped_private_key',
+                        entry_id: data.entry_ids[i],
+                        nonce: seculocoAjax.nonce
+                    }
+                });
+                if (keyInfoResp.success && keyInfoResp.data && keyInfoResp.data.type === 'pro' && keyInfoResp.data.wrapped_key) {
+                    wrappedKey = keyInfoResp.data.wrapped_key;
+                } else if (!keyInfoResp.success && typeof keyInfoResp.data === 'string') {
+                    lastError = keyInfoResp.data;
+                }
+            }
+
+            if (!wrappedKey) {
+                throw new Error(lastError || 'No passkey-protected entry found in the selection.');
+            }
+
+            $('#bulk-progress-info').show();
+            $('#bulk-progress-text').text('Authenticating with passkey...');
+
+            // One passkey ceremony; the derived key unwraps every PRO entry in the run.
+            const derivedKey = await window.seculocoDecryptPro.authenticateWithPasskey(wrappedKey);
+
+            button.html('<span class="dashicons dashicons-admin-network spin"></span> Decrypting...');
+            $('#bulk-progress-text').text('Passkey verified. Decrypting entries...');
+            $('#bulk-progress-bar').addClass('seculoco-progress-bar-width-5');
+
+            await proceedWithBulkDecryption(data, { derivedKey: derivedKey });
+        } catch (error) {
+            console.error('Bulk passkey authentication failed:', error);
+            alert(seculocoAjax.strings.passkey_auth_failed + ' ' + (error && error.message ? error.message : ''));
+            resetButton();
+        }
     }
 
     // Handle traditional bulk export (fallback)
@@ -547,6 +562,11 @@ jQuery(document).ready(function ($) {
         });
     }
 
+    // Explains why free-text entries were left out of a Chrome/Firefox/Safari export
+    function skippedFreeTextHint() {
+        return 'These entries store all login data in a single free-text field. Chrome, Firefox and Safari CSV imports need a separate username and password, so the data would be lost. Export these entries to Bitwarden, 1Password or KeePass instead (their notes field keeps the full text).';
+    }
+
     // Generate CSV content for specific manager
     function generateCSVForManager(manager, data) {
         var csvContent = '';
@@ -555,28 +575,28 @@ jQuery(document).ready(function ($) {
             case 'bitwarden':
                 csvContent = 'folder,favorite,type,name,notes,fields,reprompt,login_uri,login_username,login_password,login_totp\n';
                 data.forEach(function (row) {
-                    csvContent += ',,1,"' + escapeCSV(row.name) + '","' + escapeCSV(row.notes) + '",,0,"' + escapeCSV(row.website) + '","' + escapeCSV(row.username) + '","' + escapeCSV(row.password) + '",\n';
+                    csvContent += ',,1,"' + escapeCSV(row.name) + '","' + escapeCSV(row.notes) + '",,0,"' + escapeCSV(row.website) + '","' + escapeCSV(row.username) + '","' + escapeCSVPassword(row.password) + '",\n';
                 });
                 break;
 
             case '1password':
                 csvContent = 'Title,URL,Username,Password,Notes,Type\n';
                 data.forEach(function (row) {
-                    csvContent += '"' + escapeCSV(row.name) + '","' + escapeCSV(row.website) + '","' + escapeCSV(row.username) + '","' + escapeCSV(row.password) + '","' + escapeCSV(row.notes) + '",Login\n';
+                    csvContent += '"' + escapeCSV(row.name) + '","' + escapeCSV(row.website) + '","' + escapeCSV(row.username) + '","' + escapeCSVPassword(row.password) + '","' + escapeCSV(row.notes) + '",Login\n';
                 });
                 break;
 
             case 'lastpass':
                 csvContent = 'url,username,password,extra,name,grouping,fav\n';
                 data.forEach(function (row) {
-                    csvContent += '"' + escapeCSV(row.website) + '","' + escapeCSV(row.username) + '","' + escapeCSV(row.password) + '","' + escapeCSV(row.notes) + '","' + escapeCSV(row.name) + '",,0\n';
+                    csvContent += '"' + escapeCSV(row.website) + '","' + escapeCSV(row.username) + '","' + escapeCSVPassword(row.password) + '","' + escapeCSV(row.notes) + '","' + escapeCSV(row.name) + '",,0\n';
                 });
                 break;
 
             case 'chrome':
                 csvContent = 'name,url,username,password\n';
                 data.forEach(function (row) {
-                    csvContent += '"' + escapeCSV(row.name) + '","' + escapeCSV(row.website) + '","' + escapeCSV(row.username) + '","' + escapeCSV(row.password) + '"\n';
+                    csvContent += '"' + escapeCSV(row.name) + '","' + escapeCSV(row.website) + '","' + escapeCSV(row.username) + '","' + escapeCSVPassword(row.password) + '"\n';
                 });
                 break;
 
@@ -584,28 +604,28 @@ jQuery(document).ready(function ($) {
                 csvContent = 'url,username,password,httpRealm,formActionOrigin,guid,timeCreated,timeLastUsed,timePasswordChanged\n';
                 data.forEach(function (row) {
                     var timestamp = new Date().getTime();
-                    csvContent += '"' + escapeCSV(row.website) + '","' + escapeCSV(row.username) + '","' + escapeCSV(row.password) + '","","' + escapeCSV(row.website) + '","{' + generateGUID() + '}",' + timestamp + ',' + timestamp + ',' + timestamp + '\n';
+                    csvContent += '"' + escapeCSV(row.website) + '","' + escapeCSV(row.username) + '","' + escapeCSVPassword(row.password) + '","","' + escapeCSV(row.website) + '","{' + generateGUID() + '}",' + timestamp + ',' + timestamp + ',' + timestamp + '\n';
                 });
                 break;
 
             case 'safari':
                 csvContent = 'Title,URL,Username,Password,Notes,OTPAuth\n';
                 data.forEach(function (row) {
-                    csvContent += '"' + escapeCSV(row.name) + '","' + escapeCSV(row.website) + '","' + escapeCSV(row.username) + '","' + escapeCSV(row.password) + '","' + escapeCSV(row.notes) + '",\n';
+                    csvContent += '"' + escapeCSV(row.name) + '","' + escapeCSV(row.website) + '","' + escapeCSV(row.username) + '","' + escapeCSVPassword(row.password) + '","' + escapeCSV(row.notes) + '",\n';
                 });
                 break;
 
             case 'dashlane':
                 csvContent = 'name,url,username,password,note\n';
                 data.forEach(function (row) {
-                    csvContent += '"' + escapeCSV(row.name) + '","' + escapeCSV(row.website) + '","' + escapeCSV(row.username) + '","' + escapeCSV(row.password) + '","' + escapeCSV(row.notes) + '"\n';
+                    csvContent += '"' + escapeCSV(row.name) + '","' + escapeCSV(row.website) + '","' + escapeCSV(row.username) + '","' + escapeCSVPassword(row.password) + '","' + escapeCSV(row.notes) + '"\n';
                 });
                 break;
 
             case 'keepass':
                 csvContent = 'Account,Login Name,Password,Web Site,Comments\n';
                 data.forEach(function (row) {
-                    csvContent += '"' + escapeCSV(row.name) + '","' + escapeCSV(row.username) + '","' + escapeCSV(row.password) + '","' + escapeCSV(row.website) + '","' + escapeCSV(row.notes) + '"\n';
+                    csvContent += '"' + escapeCSV(row.name) + '","' + escapeCSV(row.username) + '","' + escapeCSVPassword(row.password) + '","' + escapeCSV(row.website) + '","' + escapeCSV(row.notes) + '"\n';
                 });
                 break;
         }
@@ -613,8 +633,16 @@ jQuery(document).ready(function ($) {
         return csvContent;
     }
 
-    // Function to escape CSV values
+    // Function to escape CSV values. Cells starting with =, +, -, @, tab or carriage return
+    // are prefixed with a single quote so spreadsheet apps do not run them as formulas
+    // (submitted values are client-controlled).
     function escapeCSV(value) {
+        value = escapeCSVPassword(value);
+        return /^[=+\-@\t\r]/.test(value) ? "'" + value : value;
+    }
+
+    // Password cells only double quotes: a password must import unchanged.
+    function escapeCSVPassword(value) {
         if (typeof value !== 'string') value = '';
         return value.replace(/"/g, '""');
     }

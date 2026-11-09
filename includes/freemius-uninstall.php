@@ -160,6 +160,7 @@ function seculoco_run_uninstall_cleanup() {
 					seculoco_get_constant_value( 'SECULOCO_OPTION_PASSKEY_REGISTERED' ),
 					seculoco_get_constant_value( 'SECULOCO_OPTION_PASSKEY_REGISTERED_AT' ),
 					seculoco_get_constant_value( 'SECULOCO_OPTION_PASSKEY_AAGUID_HASH' ),
+					seculoco_get_constant_value( 'SECULOCO_OPTION_ULTRA_SECURE_MODE' ),
 
 					// Logging - using constants.
 					seculoco_get_constant_value( 'SECULOCO_OPTION_KEY_ACCESS_LOG' ),
@@ -170,15 +171,20 @@ function seculoco_run_uninstall_cleanup() {
 					seculoco_get_constant_value( 'SECULOCO_OPTION_DB_VERSION' ),
 					seculoco_get_constant_value( 'SECULOCO_OPTION_UPGRADE_COMPLETED' ),
 					seculoco_get_constant_value( 'SECULOCO_OPTION_USING_PRO_VERSION' ),
-
-					// Freemius related options (external library - no constants).
-					'fs_accounts',
-					'fs_active_plugins',
-					'fs_api_cache',
-					'fs_debug_mode',
 				)
 			)
 		);
+
+		// Freemius options (fs_accounts, fs_active_plugins, ...) are shared by every
+		// Freemius-based plugin on the site and must never be deleted here. The SDK
+		// removes its own entry for this plugin.
+
+		// Legacy passkey record (2.0.x) stored under the registered credential ID.
+		$credential_id_option  = seculoco_get_constant_value( 'SECULOCO_OPTION_PASSKEY_CREDENTIAL_ID' );
+		$passkey_credential_id = $credential_id_option ? get_option( $credential_id_option, '' ) : '';
+		if ( is_string( $passkey_credential_id ) && '' !== $passkey_credential_id ) {
+			$plugin_options[] = 'passkey_credential_' . $passkey_credential_id;
+		}
 
 		// Delete each option with error handling.
 		$options_deleted = 0;
@@ -187,6 +193,16 @@ function seculoco_run_uninstall_cleanup() {
 				++$options_deleted;
 			}
 		}
+
+		// Pro option constants are missing after a downgrade to the free build, so
+		// also remove every option with this plugin's own prefix.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$options_deleted += (int) $wpdb->query(
+			$wpdb->prepare(
+				"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
+				$wpdb->esc_like( 'seculoco_' ) . '%'
+			)
+		);
 
 		if ( defined( 'WP_DEBUG' ) && WP_DEBUG === true ) {
 			error_log( 'Secure Login Collector: Deleted ' . $options_deleted . ' options.' );
@@ -206,19 +222,26 @@ function seculoco_run_uninstall_cleanup() {
 			if ( delete_user_meta( $user->ID, 'seculoco_wrapped_master_key' ) ) {
 				++$user_meta_deleted;
 			}
+			if ( delete_user_meta( $user->ID, 'seculoco_last_passkey_auth' ) ) {
+				++$user_meta_deleted;
+			}
+
+			// Passkey challenge transients are keyed by user ID (no plugin prefix), so delete exact names only.
+			delete_transient( 'passkey_challenge_' . $user->ID );
+			delete_transient( 'passkey_reg_challenge_' . $user->ID );
 		}
 
 		if ( defined( 'WP_DEBUG' ) && WP_DEBUG === true ) {
 			error_log( 'Secure Login Collector: Deleted ' . $user_meta_deleted . ' user meta entries.' );
 		}
 
-		// 4. Delete any transients that might exist.
+		// 4. Delete the plugin's own transients (bulk export, migration notices, honeypot and rate limit data).
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$transients_result = $wpdb->query(
 			$wpdb->prepare(
 				"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s",
-				'_transient_seculoco_%',
-				'_transient_timeout_seculoco_%'
+				$wpdb->esc_like( '_transient_seculoco_' ) . '%',
+				$wpdb->esc_like( '_transient_timeout_seculoco_' ) . '%'
 			)
 		);
 
@@ -226,14 +249,8 @@ function seculoco_run_uninstall_cleanup() {
 			error_log( 'Secure Login Collector: Failed to delete transients.' );
 		}
 
-		// 5. Clear any scheduled cron jobs.
-		$timestamp = wp_next_scheduled( 'seculoco_cleanup_expired' );
-		if ( $timestamp ) {
-			$unscheduled = wp_unschedule_event( $timestamp, 'seculoco_cleanup_expired' );
-			if ( ! $unscheduled && defined( 'WP_DEBUG' ) && WP_DEBUG === true ) {
-				error_log( 'Secure Login Collector: Failed to unschedule cron job.' );
-			}
-		}
+		// 5. Clear the scheduled cleanup cron job.
+		wp_clear_scheduled_hook( 'seculoco_cleanup_cron' );
 
 		// 6. Clear object cache.
 		wp_cache_flush();

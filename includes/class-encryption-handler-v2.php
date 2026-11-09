@@ -87,7 +87,6 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 		add_action( 'wp_ajax_seculoco_get_public_key', array( $this, 'handle_get_public_key' ) );
 		add_action( 'wp_ajax_nopriv_seculoco_get_public_key', array( $this, 'handle_get_public_key' ) );
 		add_action( 'wp_ajax_seculoco_get_wrapped_private_key', array( $this, 'handle_get_wrapped_private_key' ) );
-		add_action( 'wp_ajax_seculoco_initialize_free_keys', array( $this, 'handle_initialize_free_keys' ) );
 	}
 
 	/**
@@ -108,12 +107,16 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 	/**
 	 * Initialize standard keys (password-based encryption).
 	 *
-	 * @param string $admin_password Optional admin password for key protection.
+	 * Keys are only generated with an admin-provided password. Without a
+	 * password no keys are created, so data is never encrypted to a key
+	 * nobody can unwrap.
+	 *
+	 * @param string $admin_password Admin password for key protection.
 	 * @return array|WP_Error Result of key initialization.
 	 */
 	public function initialize_free_keys( $admin_password = '' ) {
 		$unified = $this->get_unified_crypto();
-		
+
 		// Check if standard keys already exist.
 		if ( $unified->has_keys( 'standard' ) ) {
 			// Ensure status flags stay in sync when keys already exist.
@@ -126,17 +129,15 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 			);
 		}
 
-		// Generate new RSA keypair.
-		$keypair = $unified->generate_keypair();
-		
-		if ( is_wp_error( $keypair ) ) {
-			return $keypair;
+		if ( empty( $admin_password ) ) {
+			return new WP_Error( 'password_required', __( 'A master password is required to set up encryption.', 'secure-login-collector' ) );
 		}
 
-		// Wrap private key with password.
-		if ( empty( $admin_password ) ) {
-			// Use temporary password if not provided.
-			$admin_password = wp_generate_password( 32, true, true );
+		// Generate new RSA keypair.
+		$keypair = $unified->generate_keypair();
+
+		if ( is_wp_error( $keypair ) ) {
+			return $keypair;
 		}
 
 		$wrapped_key = $unified->wrap_private_key(
@@ -188,8 +189,14 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 			return $result;
 		}
 
-		$status  = isset( $result['status'] ) ? $result['status'] : 'unknown';
-		$success = in_array( $status, array( 'success', 'already_initialized' ), true );
+		$status = isset( $result['status'] ) ? $result['status'] : 'unknown';
+
+		// Existing keys are kept and the new password is NOT applied, so do not report success.
+		if ( 'already_initialized' === $status ) {
+			return new WP_Error( 'already_initialized', __( 'Password-based encryption is already configured. Reset it first to set a new master password.', 'secure-login-collector' ) );
+		}
+
+		$success = 'success' === $status;
 
 		if ( $success ) {
 			update_option( SECULOCO_OPTION_PASSWORD_ENCRYPTION_ACTIVE, true );
@@ -258,23 +265,10 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 		if ( 'standard' === $method ) {
 			$public_key = $unified->get_public_key( 'standard' );
 
+			// Never auto-generate keys here: an unconfigured site must fail visibly.
 			if ( is_wp_error( $public_key ) ) {
 				$last_error = $public_key->get_error_message();
 				$public_key = '';
-
-				$should_initialize = apply_filters( 'seculoco_should_initialize_standard_keys', true );
-
-				if ( $should_initialize && current_user_can( 'manage_options' ) ) {
-					$result = $this->initialize_free_keys();
-					if ( ! is_wp_error( $result ) ) {
-						$public_key = $unified->get_public_key( 'standard' );
-					}
-
-					if ( is_wp_error( $public_key ) ) {
-						$last_error = $public_key->get_error_message();
-						$public_key = '';
-					}
-				}
 			}
 		}
 
@@ -392,32 +386,6 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 	}
 
 	/**
-	 * Handle AJAX request to initialize free keys.
-	 */
-	public function handle_initialize_free_keys() {
-		// Check admin permissions.
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( 'Insufficient permissions' );
-			return;
-		}
-
-		// Verify nonce.
-		$nonce = sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) );
-		if ( ! wp_verify_nonce( $nonce, 'seculoco_admin_nonce' ) ) {
-			wp_send_json_error( 'Invalid security token' );
-			return;
-		}
-
-		$result = $this->initialize_free_keys();
-
-		if ( is_wp_error( $result ) ) {
-			wp_send_json_error( $result->get_error_message() );
-		} else {
-			wp_send_json_success( $result );
-		}
-	}
-
-	/**
 	 * Log key access for audit trail.
 	 *
 	 * Marked protected to allow premium class to use it.
@@ -486,12 +454,6 @@ class Seculoco_Encryption_Handler_V2 implements Seculoco_Encryption_Service {
 		$public_key = $unified->get_public_key( 'standard' );
 
 		if ( is_wp_error( $public_key ) ) {
-			if ( current_user_can( 'manage_options' ) ) {
-				$result = $this->initialize_free_keys();
-				if ( ! is_wp_error( $result ) ) {
-					return $unified->get_public_key( 'standard' );
-				}
-			}
 			return new WP_Error( 'no_public_key', 'Public key not initialized' );
 		}
 

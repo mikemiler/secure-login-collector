@@ -262,7 +262,7 @@
 			$('.seculoco-password-error').text('');
 
 			// Validate password length
-			if (password.length < 8) {
+			if (password.length < 12) {
 				this.showError(i18n.passwordTooShort);
 				return;
 			}

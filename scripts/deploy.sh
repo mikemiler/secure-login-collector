@@ -1,188 +1,208 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
-# Deployment Script for Secure Login Collector
+# deploy.sh - cut a Secure Login Collector release.
 #
-# This script:
-# 1. Suggests next version number
-# 2. Updates version in plugin file and readme
-# 3. Creates git commit with auto-generated message
-# 4. Tags the commit with version number
+# Bumps the version in all three places (plugin header, SECULOCO_VERSION,
+# readme "Stable tag"), commits "Release version X.Y.Z", creates the annotated
+# tag vX.Y.Z and pushes main with the tag. The tag push triggers
+# .github/workflows/freemius-deploy.yml, which verifies the versions again,
+# builds the package from .distignore and uploads it to Freemius as "pending".
 #
-# Usage: ./deploy.sh
+# Usage: scripts/deploy.sh                          (asks for the version)
+#        scripts/deploy.sh <X.Y.Z> [--dry-run] [--yes]
+#
+#   --dry-run   validate and show the plan only; changes nothing
+#   --yes       skip the confirmation prompt
+#
+# Guards: clean working tree, on the release branch, not behind origin,
+# valid X.Y.Z, version greater than the current one, tag free locally and on
+# origin, changelog entry "= X.Y.Z =" present in readme.txt.
+#
+# Portability: runs on macOS (bash 3.2, BSD sed). Rewrites go through a temp
+# file instead of in-place sed.
 
-set -e  # Exit on error
+set -eu
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-# Get script directory and change to plugin root
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PLUGIN_DIR="$(dirname "$SCRIPT_DIR")"
-cd "$PLUGIN_DIR"
-
-# File paths (relative to plugin directory)
+RELEASE_BRANCH="main"
 PLUGIN_FILE="secure-login-collector.php"
 README_FILE="readme.txt"
+REPO_SLUG="mikemiler/secure-login-collector"
+VERSION_PATTERN='^[0-9]+\.[0-9]+\.[0-9]+$'
 
-# Check if files exist
-if [ ! -f "$PLUGIN_FILE" ]; then
-    echo -e "${RED}Error: Plugin file not found: $PLUGIN_DIR/$PLUGIN_FILE${NC}"
-    exit 1
-fi
+DRY_RUN=0
+ASSUME_YES=0
+NEW_VERSION=""
 
-if [ ! -d ".git" ]; then
-    echo -e "${RED}Error: Not a git repository${NC}"
-    exit 1
-fi
+usage() {
+	sed -n '11,16p' "$0" | sed 's/^# \{0,1\}//'
+}
 
-echo -e "${BLUE}╔══════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║  Secure Login Collector - Deployment Script    ║${NC}"
-echo -e "${BLUE}╚══════════════════════════════════════════════════╝${NC}"
-echo ""
+die() {
+	echo "Error: $*" >&2
+	exit 1
+}
 
-# Get current version from plugin file
-CURRENT_VERSION=$(grep "^define( 'SECULOCO_VERSION'" "$PLUGIN_FILE" | sed -E "s/.*'([0-9.]+)'.*/\1/")
+while [ "$#" -gt 0 ]; do
+	case "$1" in
+		--dry-run) DRY_RUN=1 ;;
+		--yes|-y) ASSUME_YES=1 ;;
+		-h|--help) usage; exit 0 ;;
+		-*) usage >&2; die "Unknown option: $1" ;;
+		*)
+			[ -z "$NEW_VERSION" ] || die "Unexpected extra argument: $1"
+			NEW_VERSION="$1"
+			;;
+	esac
+	shift
+done
 
-if [ -z "$CURRENT_VERSION" ]; then
-    echo -e "${RED}Error: Could not detect current version${NC}"
-    exit 1
-fi
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$(dirname "$SCRIPT_DIR")"
 
-echo -e "${GREEN}Current version: ${CURRENT_VERSION}${NC}"
-echo ""
+# --- Preconditions ---------------------------------------------------------
 
-# Calculate next minor version
-IFS='.' read -r -a VERSION_PARTS <<< "$CURRENT_VERSION"
-MAJOR="${VERSION_PARTS[0]}"
-MINOR="${VERSION_PARTS[1]}"
-PATCH="${VERSION_PARTS[2]}"
+[ -f "$PLUGIN_FILE" ] && [ -f "$README_FILE" ] || die "Plugin root not found (missing $PLUGIN_FILE or $README_FILE)."
+command -v git >/dev/null 2>&1 || die "git is required."
+command -v php >/dev/null 2>&1 || die "php is required (version comparison)."
+git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "Not inside a git working tree."
 
-# Increment patch version
-NEXT_PATCH=$((PATCH + 1))
-SUGGESTED_VERSION="${MAJOR}.${MINOR}.${NEXT_PATCH}"
+[ -z "$(git status --porcelain)" ] || die "Working tree is not clean. Commit or stash your changes first."
 
-# Ask for new version
-echo -e "${YELLOW}Suggested next version: ${SUGGESTED_VERSION}${NC}"
-echo ""
-read -p "Press Enter to use ${SUGGESTED_VERSION}, or type a different version: " NEW_VERSION
+BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+[ "$BRANCH" = "$RELEASE_BRANCH" ] || die "On branch '$BRANCH', releases are cut from '$RELEASE_BRANCH'."
 
-# Use suggested version if user just pressed Enter
+git fetch --quiet origin "$RELEASE_BRANCH" || die "git fetch origin $RELEASE_BRANCH failed."
+BEHIND="$(git rev-list --count "HEAD..origin/$RELEASE_BRANCH")"
+[ "$BEHIND" -eq 0 ] || die "Local $RELEASE_BRANCH is $BEHIND commit(s) behind origin. Pull first."
+
+read_header_version() {
+	sed -E -n 's/^[[:space:]]*\*[[:space:]]*Version:[[:space:]]*([^[:space:]]+).*/\1/p' "$PLUGIN_FILE" | head -n1
+}
+read_constant_version() {
+	sed -E -n "s/^define\( 'SECULOCO_VERSION', '([^']+)' \);.*/\1/p" "$PLUGIN_FILE" | head -n1
+}
+read_stable_tag() {
+	sed -E -n 's/^Stable tag:[[:space:]]*([^[:space:]]+).*/\1/p' "$README_FILE" | head -n1
+}
+
+CURRENT_VERSION="$(read_header_version)"
+CURRENT_CONSTANT="$(read_constant_version)"
+CURRENT_STABLE="$(read_stable_tag)"
+[ -n "$CURRENT_VERSION" ] || die "Could not read the 'Version:' header from $PLUGIN_FILE."
+[ -n "$CURRENT_CONSTANT" ] || die "Could not read SECULOCO_VERSION from $PLUGIN_FILE."
+[ -n "$CURRENT_STABLE" ] || die "Could not read 'Stable tag:' from $README_FILE."
+
+# --- Resolve the version ----------------------------------------------------
+
 if [ -z "$NEW_VERSION" ]; then
-    NEW_VERSION="$SUGGESTED_VERSION"
+	[ "$ASSUME_YES" -eq 0 ] || die "--yes needs an explicit version."
+	[ -t 0 ] || die "No version given and stdin is not a terminal. Pass the version explicitly."
+	IFS='.' read -r MAJOR MINOR PATCH <<EOF
+$CURRENT_VERSION
+EOF
+	SUGGESTED="${MAJOR}.${MINOR}.$((PATCH + 1))"
+	echo "Current version: $CURRENT_VERSION"
+	printf 'Version to release [%s]: ' "$SUGGESTED"
+	read -r NEW_VERSION || { echo; echo "Aborted. Nothing was changed."; exit 0; }
+	[ -n "$NEW_VERSION" ] || NEW_VERSION="$SUGGESTED"
 fi
 
-# Validate version format
-if ! [[ "$NEW_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-    echo -e "${RED}Error: Invalid version format. Use X.Y.Z (e.g., 1.2.11)${NC}"
-    exit 1
+printf '%s' "$NEW_VERSION" | grep -Eq "$VERSION_PATTERN" || die "Invalid version '$NEW_VERSION'. Expected X.Y.Z, e.g. 2.1.0."
+
+if [ "$(php -r 'echo version_compare($argv[1], $argv[2], ">") ? "1" : "0";' "$NEW_VERSION" "$CURRENT_VERSION")" != "1" ]; then
+	die "New version $NEW_VERSION is not greater than the current version $CURRENT_VERSION."
 fi
 
-echo ""
-echo -e "${GREEN}New version: ${NEW_VERSION}${NC}"
-echo ""
+TAG="v${NEW_VERSION}"
+git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null && die "Tag $TAG already exists locally."
+[ -z "$(git ls-remote --tags origin "refs/tags/${TAG}" 2>/dev/null)" ] || die "Tag $TAG already exists on origin."
 
-# Check if changelog entry exists for the new version
-echo -e "${BLUE}Checking changelog...${NC}"
-if grep -q "^= ${NEW_VERSION} =$" "$README_FILE"; then
-    echo -e "${GREEN}✓ Changelog entry found for version ${NEW_VERSION}${NC}"
-else
-    echo -e "${YELLOW}⚠ WARNING: No changelog entry found for version ${NEW_VERSION}${NC}"
-    echo ""
-    echo -e "Expected entry in readme.txt:"
-    echo -e "  ${BLUE}= ${NEW_VERSION} =${NC}"
-    echo -e "  ${BLUE}* Your changes here${NC}"
-    echo ""
-    read -p "Continue without changelog entry? (y/N): " CHANGELOG_CONFIRM
-    if [[ ! "$CHANGELOG_CONFIRM" =~ ^[Yy]$ ]]; then
-        echo -e "${YELLOW}Deployment cancelled. Please add a changelog entry first.${NC}"
-        exit 0
-    fi
-    echo ""
+grep -q "^= ${NEW_VERSION} =$" "$README_FILE" \
+	|| die "No changelog entry '= ${NEW_VERSION} =' in $README_FILE. Add it (and commit) first."
+
+LAST_TAG="$(git describe --tags --abbrev=0 2>/dev/null || echo "")"
+
+# --- Plan ------------------------------------------------------------------
+
+echo
+echo "Release plan"
+echo "  Branch:            $RELEASE_BRANCH (up to date with origin)"
+echo "  Version header:    $CURRENT_VERSION -> $NEW_VERSION"
+echo "  SECULOCO_VERSION:  $CURRENT_CONSTANT -> $NEW_VERSION"
+echo "  Stable tag:        $CURRENT_STABLE -> $NEW_VERSION"
+echo "  Commit:            Release version $NEW_VERSION"
+echo "  Tag:               $TAG (annotated)"
+echo "  Push:              git push origin $RELEASE_BRANCH, then git push origin $TAG"
+echo "  Then:              GitHub Actions deploys to Freemius (pending)"
+if [ -n "$LAST_TAG" ]; then
+	echo
+	echo "Commits since $LAST_TAG:"
+	git log --oneline "${LAST_TAG}..HEAD"
+fi
+echo
+
+if [ "$DRY_RUN" -eq 1 ]; then
+	echo "Dry run: nothing was changed."
+	exit 0
 fi
 
-# Confirm before proceeding
-read -p "Continue with deployment? (y/N): " CONFIRM
-if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
-    echo -e "${YELLOW}Deployment cancelled.${NC}"
-    exit 0
+if [ "$ASSUME_YES" -eq 0 ]; then
+	printf 'Cut and push release %s? (y/N): ' "$NEW_VERSION"
+	read -r CONFIRM || CONFIRM=""
+	case "$CONFIRM" in
+		y|Y) ;;
+		*) echo "Aborted. Nothing was changed."; exit 0 ;;
+	esac
 fi
 
-echo ""
-echo -e "${BLUE}Step 1: Updating version numbers...${NC}"
+# --- Rewrite versions --------------------------------------------------------
 
-# Update plugin file header (Version: X.Y.Z)
-sed -i '' "s/^\( \* Version: \).*/\1${NEW_VERSION}/" "$PLUGIN_FILE"
-echo -e "${GREEN}✓ Updated plugin header${NC}"
+rewrite() {
+	# $1 = file, $2 = sed expression
+	local tmp
+	tmp="$(mktemp)"
+	sed -E "$2" "$1" > "$tmp"
+	cat "$tmp" > "$1"
+	rm -f "$tmp"
+}
 
-# Update PHP constant (define( 'SECULOCO_VERSION', 'X.Y.Z' );)
-sed -i '' "s/^define( 'SECULOCO_VERSION', '[0-9.]*' );/define( 'SECULOCO_VERSION', '${NEW_VERSION}' );/" "$PLUGIN_FILE"
-echo -e "${GREEN}✓ Updated PHP constant${NC}"
+rewrite "$PLUGIN_FILE" "s/^([[:space:]]*\*[[:space:]]*Version:[[:space:]]*).*/\1${NEW_VERSION}/"
+rewrite "$PLUGIN_FILE" "s/^define\( 'SECULOCO_VERSION', '[^']+' \);/define( 'SECULOCO_VERSION', '${NEW_VERSION}' );/"
+rewrite "$README_FILE" "s/^Stable tag:.*/Stable tag: ${NEW_VERSION}/"
 
-# Update readme.txt (Stable tag: X.Y.Z)
-sed -i '' "s/^Stable tag: .*/Stable tag: ${NEW_VERSION}/" "$README_FILE"
-echo -e "${GREEN}✓ Updated readme.txt${NC}"
+# Verify the rewrite before committing anything.
+if [ "$(read_header_version)" != "$NEW_VERSION" ] \
+	|| [ "$(read_constant_version)" != "$NEW_VERSION" ] \
+	|| [ "$(read_stable_tag)" != "$NEW_VERSION" ]; then
+	git checkout -- "$PLUGIN_FILE" "$README_FILE"
+	die "Version rewrite failed verification. Files were reverted."
+fi
 
-echo ""
-echo -e "${BLUE}Step 2: Generating commit message...${NC}"
-
-# Generate commit message
-COMMIT_MSG="Release version ${NEW_VERSION}"
-
-echo ""
-echo -e "${YELLOW}Commit message:${NC}"
-echo "─────────────────────────────────────────────────"
-echo "$COMMIT_MSG"
-echo "─────────────────────────────────────────────────"
-echo ""
-
-# Stage changes
-echo -e "${BLUE}Step 3: Staging changes...${NC}"
 git add "$PLUGIN_FILE" "$README_FILE"
-echo -e "${GREEN}✓ Changes staged${NC}"
+git commit --quiet -m "Release version ${NEW_VERSION}"
+git tag -a "$TAG" -m "Version ${NEW_VERSION}"
+echo "Committed $(git rev-parse --short HEAD) and tagged $TAG."
 
-# Create commit
-echo ""
-echo -e "${BLUE}Step 4: Creating commit...${NC}"
-git commit -m "$COMMIT_MSG"
-COMMIT_HASH=$(git rev-parse --short HEAD)
-echo -e "${GREEN}✓ Commit created: ${COMMIT_HASH}${NC}"
+push_failed() {
+	echo >&2
+	echo "Error: $1" >&2
+	echo "The release commit and tag $TAG exist locally. Do NOT rerun this script for $NEW_VERSION." >&2
+	echo "Fix the problem, then push manually:" >&2
+	echo "  git push origin $RELEASE_BRANCH" >&2
+	echo "  git push origin $TAG" >&2
+	exit 1
+}
 
-# Create tag
-echo ""
-echo -e "${BLUE}Step 5: Creating tag...${NC}"
-TAG_NAME="v${NEW_VERSION}"
-git tag -a "$TAG_NAME" -m "Version ${NEW_VERSION}"
-echo -e "${GREEN}✓ Tag created: ${TAG_NAME}${NC}"
+# Push the branch first, then only this tag (the tag push triggers the Freemius workflow).
+git push origin "$RELEASE_BRANCH" || push_failed "Pushing $RELEASE_BRANCH failed."
+git push origin "$TAG" || push_failed "Pushing $TAG failed."
 
-# Summary
-echo ""
-echo -e "${BLUE}╔══════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║              Deployment Complete! ✓              ║${NC}"
-echo -e "${BLUE}╚══════════════════════════════════════════════════╝${NC}"
-echo ""
-echo -e "${GREEN}Version:${NC}     ${CURRENT_VERSION} → ${NEW_VERSION}"
-echo -e "${GREEN}Commit:${NC}      ${COMMIT_HASH}"
-echo -e "${GREEN}Tag:${NC}         ${TAG_NAME}"
-echo ""
-
-# Ask to push
-read -p "Push to remote now? (y/N): " PUSH_CONFIRM
-if [[ "$PUSH_CONFIRM" =~ ^[Yy]$ ]]; then
-    echo ""
-    echo -e "${BLUE}Pushing to remote...${NC}"
-    git push && git push --tags
-    echo -e "${GREEN}✓ Pushed to remote${NC}"
-    echo ""
-    echo -e "${YELLOW}GitHub Actions will now auto-deploy to Freemius${NC}"
-else
-    echo ""
-    echo -e "${YELLOW}Skipped push. When ready:${NC}"
-    echo "  ${BLUE}git push && git push --tags${NC}"
+if [ -z "$(git ls-remote --tags origin "refs/tags/${TAG}" 2>/dev/null)" ]; then
+	push_failed "Push finished but $TAG is not on origin."
 fi
 
-echo ""
-echo -e "${GREEN}Happy deploying! 🚀${NC}"
+echo
+echo "Released $NEW_VERSION. Tag $TAG is on origin."
+echo "Watch the Freemius deploy: https://github.com/${REPO_SLUG}/actions"
+echo "Then: release $NEW_VERSION in the Freemius dashboard, download the free ZIP"
+echo "and run scripts/deploy-freemius-to-svn.sh --dry-run before the real SVN deploy."

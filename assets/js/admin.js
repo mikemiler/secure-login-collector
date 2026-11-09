@@ -1284,39 +1284,6 @@ jQuery(document).ready(function($) {
 		});
 	});
 
-	// Handle fix passkey flag button
-	$(document).on('click', '#fix-passkey-flag-btn', function() {
-		var button = $(this);
-		var resultSpan = $('#fix-passkey-flag-result');
-
-		button.prop('disabled', true).html('<span class="dashicons dashicons-admin-tools spin"></span>');
-		resultSpan.html('<span style="color: #666;">Processing...</span>');
-
-		$.ajax({
-			url: ajaxurl,
-			type: 'POST',
-			data: {
-				action: 'seculoco_fix_passkey_flag',
-				nonce: seculocoAjax.nonce
-			},
-			success: function(response) {
-				if (response.success) {
-					resultSpan.html('<span style="color: #4CAF50;">✅ ' + response.data + '</span>');
-					setTimeout(function() {
-						button.closest('.notice').fadeOut();
-					}, 3000);
-				} else {
-					resultSpan.html('<span style="color: #f44336;">❌ Error: ' + response.data + '</span>');
-				}
-			},
-			error: function() {
-				resultSpan.html('<span style="color: #f44336;">❌ Network error occurred</span>');
-			},
-			complete: function() {
-				button.prop('disabled', false).html('<span class="dashicons dashicons-admin-tools"></span> Fix');
-			}
-		});
-	});
 });
 
 // ====================================================================

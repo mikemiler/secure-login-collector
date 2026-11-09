@@ -48,6 +48,10 @@ class Seculoco_Database_Manager {
 
 		// Add cron job for automatic cleanup.
 		add_action( 'seculoco_cleanup_cron', array( $this, 'cleanup_old_data' ) );
+
+		// Keep the cron schedule in sync with the retention setting. Updates do not
+		// run the activation hook, so existing installs are scheduled here too.
+		add_action( 'admin_init', array( $this, 'schedule_cleanup' ) );
 	}
 
 	/**

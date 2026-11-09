@@ -34,18 +34,18 @@ class Seculoco_Rate_Limiter {
 
 
 	/**
-	 * Default time window in seconds (1 hour).
+	 * Default time window in seconds (5 minutes).
 	 *
 	 * @var int
 	 */
-	const DEFAULT_TIME_WINDOW = 3600;
+	const DEFAULT_TIME_WINDOW = 300;
 
 	/**
 	 * Default maximum attempts per time window.
 	 *
 	 * @var int
 	 */
-	const DEFAULT_MAX_ATTEMPTS = 3;
+	const DEFAULT_MAX_ATTEMPTS = 10;
 
 	/**
 	 * Base block duration in seconds (1 hour).

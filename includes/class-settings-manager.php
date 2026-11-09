@@ -94,7 +94,7 @@ class Seculoco_Settings_Manager {
 					'resetButton'           => __( 'Reset Encryption', 'secure-login-collector' ),
 					'cancel'                => __( 'Cancel', 'secure-login-collector' ),
 					'passwordMismatch'      => __( 'Passwords do not match.', 'secure-login-collector' ),
-					'passwordTooShort'      => __( 'Password must be at least 8 characters.', 'secure-login-collector' ),
+					'passwordTooShort'      => __( 'Password must be at least 12 characters.', 'secure-login-collector' ),
 					'setupSuccess'          => __( 'Password-based encryption setup successfully!', 'secure-login-collector' ),
 					'resetSuccess'          => __( 'Password-based encryption reset successfully!', 'secure-login-collector' ),
 					'setupFailed'           => __( 'Failed to setup password encryption.', 'secure-login-collector' ),
@@ -737,8 +737,8 @@ class Seculoco_Settings_Manager {
 		$password = wp_unslash( $_POST['password'] );
 
 		// Validate password length.
-		if ( strlen( $password ) < 8 ) {
-			wp_send_json_error( array( 'message' => __( 'Password must be at least 8 characters.', 'secure-login-collector' ) ) );
+		if ( strlen( $password ) < 12 ) {
+			wp_send_json_error( array( 'message' => __( 'Password must be at least 12 characters.', 'secure-login-collector' ) ) );
 		}
 
 		try {
@@ -759,17 +759,10 @@ class Seculoco_Settings_Manager {
 				wp_send_json_error( array( 'message' => __( 'Failed to initialize password-based keys.', 'secure-login-collector' ) ) );
 			}
 
-			$status  = isset( $result['status'] ) ? $result['status'] : 'success';
-			$message = __( 'Password-based encryption setup successfully!', 'secure-login-collector' );
-
-			if ( 'already_initialized' === $status ) {
-				$message = __( 'Password-based encryption is already configured.', 'secure-login-collector' );
-			}
-
 			wp_send_json_success(
 				array(
-					'message' => $message,
-					'status'  => $status,
+					'message' => __( 'Password-based encryption setup successfully!', 'secure-login-collector' ),
+					'status'  => isset( $result['status'] ) ? $result['status'] : 'success',
 				)
 			);
 		} catch ( Exception $e ) {

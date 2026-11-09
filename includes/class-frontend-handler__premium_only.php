@@ -75,7 +75,7 @@ class Seculoco_Frontend_Handler_Pro {
 			return true;
 		}
 
-		return (bool) get_option( SECULOCO_OPTION_PRO_KEYS_ACTIVE, false ) && (bool) get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false );
+		return Seculoco_Passkey_Manager::is_setup_ready();
 	}
 }
 

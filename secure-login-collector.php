@@ -157,13 +157,10 @@ class SecureLoginCollector {
 
 		$this->encryption_handler = Seculoco_Encryption_Handler_Factory::get_shared_handler();
 
-		// Plugin activation/deactivation hooks.
-		register_activation_hook( __FILE__, array( $this, 'activate' ) );
-		register_deactivation_hook( __FILE__, array( $this, 'deactivate' ) );
-
 		// Add upgrade notices.
 		add_action( 'admin_notices', array( $this, 'show_upgrade_notices' ) );
 		add_action( 'admin_notices', array( $this, 'maybe_show_encryption_notice' ), 5 );
+		add_action( 'admin_notices', array( $this, 'maybe_show_https_notice' ) );
 	}
 
 	/**
@@ -311,6 +308,32 @@ class SecureLoginCollector {
 	}
 
 	/**
+	 * Warn on the plugin's own admin pages when the site does not use HTTPS.
+	 *
+	 * Without HTTPS a network attacker can swap the public key the form fetches
+	 * and read submissions. Local development sites are not reachable by such
+	 * attackers, so the notice is skipped there.
+	 */
+	public function maybe_show_https_notice() {
+		if ( ! current_user_can( 'manage_options' ) || wp_is_using_https() || 'local' === wp_get_environment_type() ) {
+			return;
+		}
+
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( ! $screen || strpos( $screen->id, 'secure-login-collector' ) === false ) {
+			return;
+		}
+		?>
+		<div class="notice notice-warning">
+			<p>
+				<strong><?php esc_html_e( 'Your site does not use HTTPS.', 'secure-login-collector' ); ?></strong>
+				<?php esc_html_e( 'Without HTTPS, submitted login data can be intercepted before it is encrypted. Enable HTTPS before sharing the form with clients.', 'secure-login-collector' ); ?>
+			</p>
+		</div>
+		<?php
+	}
+
+	/**
 	 * Determine if password-based keys are configured.
 	 *
 	 * @return bool
@@ -363,6 +386,21 @@ class SecureLoginCollector {
 }
 
 register_uninstall_hook( __FILE__, 'seculoco_wp_uninstall_cleanup' );
+
+// Activation and deactivation hooks must be registered when the file is
+// included: the activation request includes the plugin after plugins_loaded.
+register_activation_hook(
+	__FILE__,
+	static function () {
+		SecureLoginCollector::instance()->activate();
+	}
+);
+register_deactivation_hook(
+	__FILE__,
+	static function () {
+		SecureLoginCollector::instance()->deactivate();
+	}
+);
 
 /**
  * Boot plugin after WordPress finishes loading all plugins.

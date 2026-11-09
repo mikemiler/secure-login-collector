@@ -38,7 +38,7 @@ class StatusModal {
                     <div class="seculoco-status-progress">
                         <div class="seculoco-status-progress-bar" id="statusProgressBar"></div>
                     </div>
-                    <button class="seculoco-status-close-btn" id="statusCloseBtn" style="display: none;">Close</button>
+                    <button class="seculoco-status-close-btn" id="statusCloseBtn">Close</button>
                 </div>
             </div>
         `;
@@ -76,8 +76,8 @@ class StatusModal {
     resetModal() {
         jQuery('#statusIcon').removeClass('seculoco-success seculoco-error').addClass('seculoco-processing');
         jQuery('#statusIcon').html('<div class="seculoco-spinner"></div>');
-        jQuery('#statusProgressBar').css('width', '0%');
-        jQuery('#statusCloseBtn').hide();
+        this.setProgress(0);
+        jQuery('#statusCloseBtn').removeClass('seculoco-is-visible');
 
         // Reset all steps to pending
         jQuery('.seculoco-status-step').removeClass('seculoco-current seculoco-completed').addClass('seculoco-pending');
@@ -91,8 +91,16 @@ class StatusModal {
         jQuery(`#step-${stepIndex}`).removeClass('seculoco-pending seculoco-completed').addClass('seculoco-current');
 
         // Update progress
-        const progress = ((stepIndex + 1) / this.steps.length) * 100;
-        jQuery('#statusProgressBar').css('width', progress + '%');
+        this.setProgress(stepIndex + 1);
+    }
+
+    // Progress is shown via CSS classes seculoco-progress-0 to seculoco-progress-4 (one per step)
+    setProgress(completedSteps) {
+        const $bar = jQuery('#statusProgressBar');
+        for (let i = 0; i <= this.steps.length; i++) {
+            $bar.removeClass('seculoco-progress-' + i);
+        }
+        $bar.addClass('seculoco-progress-' + completedSteps);
     }
 
     async nextStep() {
@@ -129,22 +137,22 @@ class StatusModal {
 
         jQuery('#statusIcon').removeClass('seculoco-processing seculoco-error').addClass('seculoco-success');
         jQuery('#statusIcon').html('✓');
-        jQuery('#statusText').text('Success!');
-        jQuery('#statusProgressBar').css('width', '100%');
-        jQuery('#statusCloseBtn').show();
+        jQuery('#statusText').text(message);
+        this.setProgress(this.steps.length);
+        jQuery('#statusCloseBtn').addClass('seculoco-is-visible');
     }
 
     showError(message = 'Something went wrong') {
         jQuery('#statusIcon').removeClass('seculoco-processing seculoco-success').addClass('seculoco-error');
         jQuery('#statusIcon').html('✗');
         jQuery('#statusText').text(message);
-        jQuery('#statusCloseBtn').show();
+        jQuery('#statusCloseBtn').addClass('seculoco-is-visible');
     }
 }
 
 jQuery(document).ready(function ($) {
 
-    // Password visibility toggle functionality
+    // Password visibility toggle (only present in the old 3-field markup, kept for page-cached forms)
     $('.seculoco-password-toggle-btn').on('click', function () {
         const $button = $(this);
         const $passwordField = $button.siblings('input[type="password"], input[type="text"]');
@@ -160,6 +168,15 @@ jQuery(document).ready(function ($) {
             $button.attr('aria-label', seculocoAjax.strings.show_password || 'Show password');
         }
     });
+
+    // Base64-encode bytes in chunks; spreading a large array into fromCharCode overflows the call stack
+    function bytesToBase64(bytes) {
+        let binary = '';
+        for (let i = 0; i < bytes.length; i += 0x8000) {
+            binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+        }
+        return btoa(binary);
+    }
 
     // Generate random 256-bit AES key
     async function generateAESKey() {
@@ -233,7 +250,7 @@ jQuery(document).ready(function ($) {
                 dataBuffer
             );
 
-            return btoa(String.fromCharCode(...new Uint8Array(encrypted)));
+            return bytesToBase64(new Uint8Array(encrypted));
         } catch (error) {
             console.error('RSA encryption failed:', error);
             throw new Error(seculocoAjax.strings.encryption_failed || 'Encryption failed');
@@ -303,7 +320,7 @@ jQuery(document).ready(function ($) {
             const encryptedData = await encryptWithAES(JSON.stringify(loginData), aesKey);
 
             // Step 3: Generate random salt
-            const salt = btoa(String.fromCharCode(...window.crypto.getRandomValues(new Uint8Array(32))));
+            const salt = bytesToBase64(window.crypto.getRandomValues(new Uint8Array(32)));
 
             // Step 4: RSA encrypt the raw AES key directly
             // In Pro version, the passkey encryption happens on the admin side during decryption
@@ -312,9 +329,9 @@ jQuery(document).ready(function ($) {
             // Return the complete encrypted package
             // Backend will determine isProEncrypted and credentialId
             return {
-                encryptedData: btoa(String.fromCharCode(...encryptedData.encrypted)),
+                encryptedData: bytesToBase64(encryptedData.encrypted),
                 rsaEncryptedKey: rsaEncryptedKey,
-                iv: btoa(String.fromCharCode(...encryptedData.iv)),
+                iv: bytesToBase64(encryptedData.iv),
                 salt: salt
             };
 
@@ -332,11 +349,19 @@ jQuery(document).ready(function ($) {
         const submitBtn = form.find('.seculoco-submit-btn');
         const messageDiv = $('#seculoco-form-message');
 
-        // Get form data
-        const email = $('#email').val().trim();
-        const userName = $('#user_name').val().trim();
-        const loginUrl = $('#login_url').val().trim();
-        const credentialsData = $('#credentials_data').val().trim();
+        // Get form data. Missing fields read as '' so a page-cached old form never throws.
+        const fieldValue = (selector) => String($(selector).val() || '').trim();
+        const email = fieldValue('#email');
+        const userName = fieldValue('#user_name');
+        const loginUrl = fieldValue('#login_url');
+
+        // Current markup has one credentials textarea; page-cached old markup has 3 fields
+        const isSingleFieldForm = $('#credentials_data').length > 0;
+        const credentialsData = fieldValue('#credentials_data');
+        const usernameEmail = fieldValue('#username_email');
+        const password = fieldValue('#password');
+        const additionalNotes = fieldValue('#additional_notes');
+        const credentialsMissing = isSingleFieldForm ? !credentialsData : (!usernameEmail || !password);
 
         // Get honeypot field (dynamic name starting with 'field_')
         const honeypotField = form.find('input[name^="field_"]');
@@ -344,23 +369,19 @@ jQuery(document).ready(function ($) {
         const honeypotValue = honeypotField.length > 0 ? honeypotField.val() : '';
 
         // Basic validation - only check for required fields
-        if (!email || !userName || !loginUrl || !credentialsData) {
+        if (!email || !userName || !loginUrl || credentialsMissing) {
             messageDiv.removeClass('seculoco-success').addClass('seculoco-error')
-                .text(seculocoAjax.strings.required_fields_error)
-                .show();
+                .text(seculocoAjax.strings.required_fields_error);
             return;
         }
 
         // Disable submit button and show loading
         submitBtn.prop('disabled', true).text(seculocoAjax.strings.submitting);
-        messageDiv.hide();
+        messageDiv.removeClass('seculoco-success seculoco-error').text('');
 
         // Initialize and show status modal
         const statusModal = new StatusModal();
         statusModal.show();
-
-        // Ensure old message is hidden
-        messageDiv.hide();
 
         try {
             // Step 1: Getting encryption key - fetch fresh key from server
@@ -388,11 +409,16 @@ jQuery(document).ready(function ($) {
 
             // Step 2: Encrypting data
             await statusModal.nextStep();
-            // Prepare login data - simplified format (all data in notes field)
-            const loginData = {
-                username_email: '',  // Empty for new format (backwards compatibility)
-                password: '',        // Empty for new format (backwards compatibility)
-                additional_notes: credentialsData,  // All credentials in notes field
+            // Prepare login data. New format: everything in additional_notes, username/password empty.
+            const loginData = isSingleFieldForm ? {
+                username_email: '',
+                password: '',
+                additional_notes: credentialsData,
+                timestamp: new Date().toISOString()
+            } : {
+                username_email: usernameEmail,
+                password: password,
+                additional_notes: additionalNotes,
                 timestamp: new Date().toISOString()
             };
 
@@ -441,15 +467,13 @@ jQuery(document).ready(function ($) {
                         const errorMsg = seculocoAjax.strings.error_prefix + (response.data || seculocoAjax.strings.unknown_error);
                         statusModal.showError(errorMsg);
                         messageDiv.removeClass('seculoco-success').addClass('seculoco-error')
-                            .text(errorMsg)
-                            .show();
+                            .text(errorMsg);
                     }
                 },
                 error: function () {
                     statusModal.showError(seculocoAjax.strings.network_error);
                     messageDiv.removeClass('seculoco-success').addClass('seculoco-error')
-                        .text(seculocoAjax.strings.network_error)
-                        .show();
+                        .text(seculocoAjax.strings.network_error);
                 },
                 complete: function () {
                     submitBtn.prop('disabled', false).text(seculocoAjax.strings.submit_securely);
@@ -461,8 +485,7 @@ jQuery(document).ready(function ($) {
             const errorMsg = seculocoAjax.strings.encryption_error + ': ' + error.message;
             statusModal.showError(errorMsg);
             messageDiv.removeClass('seculoco-success').addClass('seculoco-error')
-                .text(errorMsg)
-                .show();
+                .text(errorMsg);
             submitBtn.prop('disabled', false).text(seculocoAjax.strings.submit_securely);
         }
     });

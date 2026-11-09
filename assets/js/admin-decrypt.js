@@ -551,9 +551,8 @@
             const $container = $row.find('.decrypted-data-container');
 
             if ($container.length === 0) {
-                // Determine if this is old format (has username/password) or new format (only notes)
-                const isOldFormat = (data.username_email && data.username_email.trim() !== '') ||
-                                   (data.password && data.password.trim() !== '');
+                // Old format has username/password fields; new format keeps everything in additional_notes
+                const isOldFormat = this.isLegacyFormat(data);
 
                 let credentialsHTML = '';
 
@@ -645,7 +644,8 @@
 
             $row.find('.copy-btn').off('click').on('click', async function(e) {
                 e.preventDefault();
-                const value = $(this).data('value');
+                // attr() keeps the raw string; data() would convert numeric or JSON-like text
+                const value = $(this).attr('data-value') || '';
                 try {
                     await navigator.clipboard.writeText(value);
                     $(this).text('Copied!');
@@ -837,6 +837,20 @@
                 bytes[i] = binaryString.charCodeAt(i);
             }
             return bytes.buffer;
+        }
+
+        /**
+         * Detect the legacy 3-field format (separate username/email and password).
+         * Entries from the single "Login Credentials" field store everything in
+         * additional_notes and leave both fields empty.
+         * CORE UTILITY - Used by both FREE and PRO
+         *
+         * @param {Object} data - Decrypted entry data
+         * @returns {boolean}
+         */
+        isLegacyFormat(data) {
+            const hasText = (value) => typeof value === 'string' && value.trim() !== '';
+            return !!data && (hasText(data.username_email) || hasText(data.password));
         }
 
         /**
@@ -1041,7 +1055,8 @@
 
                 // Submit handler
                 const submitPassword = () => {
-                    const password = $input.val().trim();
+                    // No trim: setup stores the password exactly as typed.
+                    const password = $input.val();
 
                     if (!password) {
                         $error.text('Please enter your master password').show();

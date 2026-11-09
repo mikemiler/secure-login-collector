@@ -21,7 +21,19 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Seculoco_Unified_Crypto {
 
-	const PBKDF2_ITERATIONS = 100000;
+	/**
+	 * PBKDF2 iterations for newly wrapped keys.
+	 *
+	 * Every wrapped key stores its own `kdf_iterations`, so raising this value
+	 * only affects new setups. Existing keys keep unwrapping with their stored count.
+	 */
+	const PBKDF2_ITERATIONS = 600000;
+
+	/**
+	 * Fallback for wrapped keys without a stored `kdf_iterations` (the default before 2.1.0).
+	 */
+	const PBKDF2_LEGACY_ITERATIONS = 100000;
+
 	const SALT_LENGTH       = 32;
 	const IV_LENGTH         = 12;
 	const WRAPPING_KEY_LEN  = 32;
@@ -189,11 +201,17 @@ class Seculoco_Unified_Crypto {
 			);
 		}
 
+		// Use the iteration count stored with the key so keys wrapped with an older default keep working.
+		$iterations = isset( $wrapped_data['kdf_iterations'] ) ? (int) $wrapped_data['kdf_iterations'] : 0;
+		if ( $iterations <= 0 ) {
+			$iterations = self::PBKDF2_LEGACY_ITERATIONS;
+		}
+
 		$key = hash_pbkdf2(
 			'sha256',
 			$password,
 			$salt,
-			self::PBKDF2_ITERATIONS,
+			$iterations,
 			self::WRAPPING_KEY_LEN,
 			true
 		);

@@ -881,9 +881,9 @@ button .dashicons {
 	gap: 15px;
 }
 
-/* New format credentials textarea */
-.seculoco-credentials-textarea {
-	min-height: 200px !important;
+/* New format credentials textarea (scoped to beat .field-value textarea) */
+.field-value .seculoco-credentials-textarea {
+	min-height: 200px;
 	font-family: monospace;
 	line-height: 1.6;
 	background-color: #f9f9f9;
@@ -1483,6 +1483,10 @@ button.button-expired[disabled]:hover {
 	font-weight: bold;
 }
 
+.seculoco-export-form-label--muted {
+	color: #666;
+}
+
 .seculoco-export-form-url-container {
 	display: flex;
 	gap: 8px;
@@ -1563,6 +1567,11 @@ button.button-expired[disabled]:hover {
 	display: flex;
 	gap: 10px;
 	justify-content: flex-end;
+}
+
+.seculoco-export-form-buttons .seculoco-export-form-submit {
+	padding: 10px 20px;
+	font-weight: 600;
 }
 
 .seculoco-export-form-backdrop {
@@ -2011,6 +2020,11 @@ button.button-expired[disabled]:hover {
 	padding: 20px;
 }
 
+/* The master password prompt can open during a bulk export, above its progress modal (z-index 999999). */
+#seculoco-master-password-modal {
+	z-index: 1000000;
+}
+
 .seculoco-modal-container {
 	background: #fff;
 	border-radius: 10px;
@@ -2115,4 +2129,12 @@ button.button-expired[disabled]:hover {
 
 .seculoco-modal-footer .button {
 	min-width: 110px;
+}
+
+/* ==========================================================================
+	Passkey PRF key wrapping (2.1.0): outdated-setup alert in the Pro column
+	========================================================================== */
+
+.seculoco-passkey-outdated-card {
+	margin-bottom: 16px;
 }

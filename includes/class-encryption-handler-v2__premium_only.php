@@ -64,9 +64,6 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
 		// Surface pro encryption state to shared helpers.
 		add_filter( 'seculoco_is_entry_pro_encrypted', array( $this, 'filter_is_entry_pro_encrypted' ), 10, 3 );
 		add_filter( 'seculoco_has_passkey_encryption', array( $this, 'has_passkey_encryption' ) );
-
-		// Prevent unnecessary password-key initialization when passkeys are active.
-		add_filter( 'seculoco_should_initialize_standard_keys', array( $this, 'maybe_skip_standard_key_initialization' ) );
 	}
 
 	/**
@@ -152,6 +149,12 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
 			return; // Explicit return, though wp_send_json_error exits.
 		}
 
+		// Blobs written before 2.1.0 use a wrapping the browser cannot unlock any more.
+		if ( ! Seculoco_Passkey_Manager::is_current_wrapped_key( $pro_wrapped_key ) ) {
+			wp_send_json_error( Seculoco_Passkey_Manager::get_outdated_setup_message() );
+			return;
+		}
+
 		// Log this security-sensitive operation.
 		$this->log_key_access( get_current_user_id(), 'pro' );
 
@@ -184,11 +187,8 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
 			return $encryption_metadata;
 		}
 
-		// Check if pro keys are active and passkey is registered.
-		$is_pro_active      = get_option( SECULOCO_OPTION_PRO_KEYS_ACTIVE, false );
-		$passkey_registered = get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false );
-
-		if ( ! $is_pro_active || ! $passkey_registered ) {
+		// Pro keys active, passkey registered and a current (2.1.0+) wrapped key stored.
+		if ( ! $this->is_passkey_ready() ) {
 			return $encryption_metadata;
 		}
 
@@ -272,72 +272,6 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
 	}
 
 	/**
-	 * Initialize pro keys with passkey wrapping.
-	 *
-	 * Generates RSA keypair for pro encryption and wraps private key with passkey-derived key.
-	 *
-	 * @since  1.0.0
-	 * @param  string $passkey_derived_key 32-byte key derived from passkey.
-	 * @return array|WP_Error Result of initialization.
-	 */
-	public function initialize_pro_keys( $passkey_derived_key ) {
-		// Check if pro license is active.
-		if ( ! $this->is_pro_license_active() ) {
-			return new WP_Error( 'no_pro_license', 'Pro license required for passkey encryption' );
-		}
-
-		// Validate passkey-derived key.
-		if ( empty( $passkey_derived_key ) || strlen( $passkey_derived_key ) !== 32 ) {
-			return new WP_Error( 'invalid_key', 'Invalid passkey-derived key (must be 32 bytes)' );
-		}
-
-		// Check if pro keys already exist.
-		$public_key_pro          = get_option( SECULOCO_OPTION_PUBLIC_KEY_PRO );
-		$wrapped_private_key_pro = get_option( SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PRO );
-
-		if ( $public_key_pro && $wrapped_private_key_pro ) {
-			return array(
-				'status'  => 'already_initialized',
-				'type'    => 'pro',
-				'message' => 'Pro keys already exist',
-			);
-		}
-
-		// Generate new RSA keypair for pro version using unified crypto.
-		$unified = $this->get_unified_crypto();
-		$keypair = $unified->generate_keypair();
-		if ( is_wp_error( $keypair ) ) {
-			return $keypair;
-		}
-
-		// Store public key (publicly accessible).
-		update_option( SECULOCO_OPTION_PUBLIC_KEY_PRO, $keypair['public'] );
-
-		// Wrap private key with passkey-derived key using AES-256-GCM.
-		$wrapped_key_data = $this->wrap_private_key( $keypair['private'], $passkey_derived_key );
-		if ( is_wp_error( $wrapped_key_data ) ) {
-			// Cleanup public key if wrapping fails.
-			delete_option( SECULOCO_OPTION_PUBLIC_KEY_PRO );
-			return $wrapped_key_data;
-		}
-
-		// Store wrapped private key.
-		update_option( SECULOCO_OPTION_WRAPPED_PRIVATE_KEY_PRO, $wrapped_key_data );
-
-		// Mark pro keys as active.
-		update_option( SECULOCO_OPTION_PRO_KEYS_ACTIVE, true );
-
-		// Log operation.
-		$this->log_key_operation( 'pro_keys_initialized' );
-
-		return array(
-			'status'  => 'success',
-			'type'    => 'pro',
-			'message' => 'Pro keys initialized with passkey wrapping',
-		);
-	}
-
-	/**
 	 * Delete pro encryption keys.
 	 *
 	 * Removes all pro encryption keys and resets pro status flags.
@@ -367,87 +301,12 @@ class Seculoco_Encryption_Handler_V2_Premium extends Seculoco_Encryption_Handler
 	}
 
 	/**
-	 * Wrap private key with passkey-derived key using AES-256-GCM.
-	 *
-	 * Encrypts the RSA private key with AES-256-GCM for secure storage.
-	 * Uses a random 12-byte IV and includes authentication tag.
-	 *
-	 * @since  1.0.0
-	 * @param  string $private_key  RSA private key to wrap.
-	 * @param  string $wrapping_key 32-byte wrapping key.
-	 * @return array|WP_Error Wrapped key data or error.
-	 */
-	public function wrap_private_key( $private_key, $wrapping_key ) {
-		// Check if pro license is active.
-		if ( ! $this->is_pro_license_active() ) {
-			return new WP_Error( 'no_pro_license', 'Pro license required for key wrapping' );
-		}
-
-		// Validate inputs.
-		if ( empty( $private_key ) ) {
-			return new WP_Error( 'invalid_key', 'Private key cannot be empty' );
-		}
-
-		if ( strlen( $wrapping_key ) !== 32 ) {
-			return new WP_Error( 'invalid_wrapping_key', 'Wrapping key must be 32 bytes' );
-		}
-
-		// Check if OpenSSL is available.
-		if ( ! function_exists( 'openssl_encrypt' ) ) {
-			return new WP_Error( 'openssl_missing', 'OpenSSL extension required' );
-		}
-
-		// Generate random 12-byte IV for AES-GCM.
-		$iv = random_bytes( 12 );
-
-		// Encrypt private key with AES-256-GCM.
-		$tag        = '';
-		$ciphertext = openssl_encrypt(
-			$private_key,
-			'aes-256-gcm',
-			$wrapping_key,
-			OPENSSL_RAW_DATA,
-			$iv,
-			$tag,
-			'',
-			16  // 16-byte authentication tag.
-		);
-
-		if ( false === $ciphertext ) {
-			return new WP_Error( 'encryption_failed', 'Failed to wrap private key' );
-		}
-
-		// Return wrapped key data (all base64 encoded for storage).
-		return array(
-			'ciphertext' => base64_encode( $ciphertext ),
-			'iv'         => base64_encode( $iv ),
-			'tag'        => base64_encode( $tag ),
-			'algorithm'  => 'aes-256-gcm',
-		);
-	}
-
-	/**
-	 * Skip automatic free-key initialization when passkey mode is active.
-	 *
-	 * @param bool $should_initialize Current determination.
-	 * @return bool
-	 */
-	public function maybe_skip_standard_key_initialization( $should_initialize ) {
-		if ( $this->is_passkey_ready() ) {
-			return false;
-		}
-
-		return $should_initialize;
-	}
-
-	/**
 	 * Determine if passkey encryption has been provisioned.
 	 *
 	 * @return bool
 	 */
 	private function is_passkey_ready() {
-		return (bool) get_option( SECULOCO_OPTION_PRO_KEYS_ACTIVE, false )
-			&& (bool) get_option( SECULOCO_OPTION_PASSKEY_REGISTERED, false );
+		return Seculoco_Passkey_Manager::is_setup_ready();
 	}
 
 	/**

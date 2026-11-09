@@ -21,44 +21,47 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Deploying version: $VERSION"
 
+      - name: Verify tag matches every version reference
+        run: |
+          set -eu
+          VERSION="${{ steps.get_version.outputs.version }}"
+
+          if ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Tag v${VERSION} is not a plain X.Y.Z version"
+            exit 1
+          fi
+
+          HEADER_VERSION="$(sed -E -n 's/^[[:space:]]*\*[[:space:]]*Version:[[:space:]]*([^[:space:]]+).*/\1/p' secure-login-collector.php | head -n1)"
+          CONSTANT_VERSION="$(sed -E -n "s/^define\( 'SECULOCO_VERSION', '([^']+)' \);.*/\1/p" secure-login-collector.php | head -n1)"
+          STABLE_TAG="$(sed -E -n 's/^Stable tag:[[:space:]]*([^[:space:]]+).*/\1/p' readme.txt | head -n1)"
+
+          echo "Tag version:      ${VERSION}"
+          echo "Header version:   ${HEADER_VERSION}"
+          echo "SECULOCO_VERSION: ${CONSTANT_VERSION}"
+          echo "Stable tag:       ${STABLE_TAG}"
+
+          FAILED=0
+          [ "$HEADER_VERSION" = "$VERSION" ] || { echo "::error::Plugin header 'Version: ${HEADER_VERSION}' does not match tag v${VERSION}"; FAILED=1; }
+          [ "$CONSTANT_VERSION" = "$VERSION" ] || { echo "::error::SECULOCO_VERSION '${CONSTANT_VERSION}' does not match tag v${VERSION}"; FAILED=1; }
+          [ "$STABLE_TAG" = "$VERSION" ] || { echo "::error::readme.txt 'Stable tag: ${STABLE_TAG}' does not match tag v${VERSION}"; FAILED=1; }
+          grep -q "^= ${VERSION} =$" readme.txt || { echo "::error::readme.txt has no changelog entry '= ${VERSION} ='"; FAILED=1; }
+          exit "$FAILED"
+
       - name: Create deployment package
         run: |
-          # Create temporary build directory outside plugin structure
-          BUILD_DIR="/tmp/plugin-build-${{ steps.get_version.outputs.version }}"
+          set -eu
+          VERSION="${{ steps.get_version.outputs.version }}"
+          BUILD_DIR="$RUNNER_TEMP/plugin-build-${VERSION}"
           mkdir -p "$BUILD_DIR/secure-login-collector"
 
-          # Copy plugin files (exclude dev files only - Freemius handles premium/free separation)
-          rsync -av \
-            --exclude='.git*' \
-            --exclude='node_modules' \
-            --exclude='tests' \
-            --exclude='.claude' \
-            --exclude='.claude-flow' \
-            --exclude='.swarm' \
-            --exclude='*.log' \
-            --exclude='.DS_Store' \
-            --exclude='phpunit.xml' \
-            --exclude='composer.json' \
-            --exclude='composer.lock' \
-            --exclude='package.json' \
-            --exclude='package-lock.json' \
-            --exclude='.github' \
-            --exclude='deploy' \
-            --exclude='deploy.sh' \
-            --exclude='docs' \
-            --exclude='scripts' \
-            ./ "$BUILD_DIR/secure-login-collector/"
+          # .distignore is the single source of truth for what ships.
+          # Premium files stay in: Freemius strips *__premium_only* for the free build.
+          rsync -a --exclude-from='.distignore' ./ "$BUILD_DIR/secure-login-collector/"
 
-          # Create ZIP file in workflow root (not in plugin structure)
-          cd "$BUILD_DIR"
-          zip -r "$GITHUB_WORKSPACE/secure-login-collector-${{ steps.get_version.outputs.version }}.zip" secure-login-collector/
-          cd "$GITHUB_WORKSPACE"
+          ( cd "$BUILD_DIR" && zip -rq "$GITHUB_WORKSPACE/secure-login-collector-${VERSION}.zip" secure-login-collector/ )
 
-          # Clean up temporary build directory
-          rm -rf "$BUILD_DIR"
-
-          # Verify ZIP was created
-          ls -lh secure-login-collector-${{ steps.get_version.outputs.version }}.zip
+          echo "--- Zip contents ---"
+          unzip -l "secure-login-collector-${VERSION}.zip"
 
       - name: Deploy to Freemius
         uses: buttonizer/freemius-deploy@v0.1.3
@@ -76,5 +79,5 @@ jobs:
 
       - name: Notify deployment success
         run: |
-          echo "✅ Successfully deployed version ${{ steps.get_version.outputs.version }} to Freemius"
-          echo "📦 Release package: secure-login-collector-${{ steps.get_version.outputs.version }}.zip"
+          echo "Deployed version ${{ steps.get_version.outputs.version }} to Freemius (release mode: pending)"
+          echo "Next: release it in the Freemius dashboard, then run scripts/deploy-freemius-to-svn.sh for wordpress.org"

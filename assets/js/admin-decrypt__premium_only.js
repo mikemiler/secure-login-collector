@@ -69,16 +69,7 @@
          * Determines key type and unwraps accordingly
          */
         async handleProKeyUnwrapping(entryId) {
-            // Determine key type
-            const keyInfo = await this.getKeyType(entryId);
-            const keyType = keyInfo.type;
-
-            // Check if we have the right key cached
-            if (this.unwrappedKeys[keyType]) {
-                return this.unwrappedKeys[keyType];
-            }
-
-            // Get wrapped key from server
+            // Get wrapped key (and its type) from server
             const wrappedResponse = await $.ajax({
                 url: seculocoAjax.ajaxurl,
                 method: 'POST',
@@ -90,50 +81,51 @@
             });
 
             if (!wrappedResponse.success) {
-                throw new Error('Failed to get wrapped private key');
+                throw new Error(wrappedResponse.data || 'Failed to get wrapped private key');
             }
 
-            // Handle PRO vs FREE keys differently
-            if (wrappedResponse.data.type === 'pro') {
-                // PRO key: Authenticate with passkey and unwrap
+            const keyType = wrappedResponse.data.type === 'pro' ? 'pro' : 'standard';
+
+            // Check if we have the right key cached
+            if (this.unwrappedKeys[keyType]) {
+                return this.unwrappedKeys[keyType];
+            }
+
+            if (keyType === 'pro') {
+                // PRO key: Authenticate with passkey and unwrap in the browser
                 const wrappedKey = wrappedResponse.data.wrapped_key;
-                const unwrappingKey = await this.authenticateWithPasskey();
+                const unwrappingKey = await this.authenticateWithPasskey(wrappedKey);
                 this.unwrappedKeys.pro = await this.unwrapKey(wrappedKey, unwrappingKey);
                 return this.unwrappedKeys.pro;
-            } else {
-                // Standard password-based key: delegate to base handler
-                this.unwrappedKeys.standard = await this.base.getStandardPrivateKey(entryId);
-                return this.unwrappedKeys.standard;
             }
+
+            // Standard password-based key: delegate to base handler
+            this.unwrappedKeys.standard = await this.base.getStandardPrivateKey(entryId);
+            return this.unwrappedKeys.standard;
         }
 
         /**
-         * Determine if entry uses pro or free key
+         * Authenticate with the passkey and return the AES-GCM unwrapping key.
+         *
+         * The key is derived in the browser from the WebAuthn PRF output of the registered
+         * passkey (HKDF-SHA256); no key material comes from the server. Blobs written before
+         * 2.1.0 (no version field) cannot be unlocked and produce a clear error.
+         *
+         * @param {Object} wrappedKey Wrapped key blob as returned by seculoco_get_wrapped_private_key.
+         * @returns {Promise<CryptoKey>}
          */
-        async getKeyType(entryId) {
-            const response = await $.ajax({
-                url: seculocoAjax.ajaxurl,
-                method: 'POST',
-                data: {
-                    action: 'seculoco_get_wrapped_private_key',
-                    entry_id: entryId,
-                    nonce: seculocoAjax.nonce
-                }
-            });
-
-            if (!response.success) {
-                throw new Error('Failed to get key type information');
-            }
-
-            return { type: response.data.type || 'standard' };
-        }
-
-        /**
-         * Authenticate with passkey to derive unwrapping key
-         */
-        async authenticateWithPasskey() {
+        async authenticateWithPasskey(wrappedKey) {
             if (!window.PublicKeyCredential) {
                 throw new Error('WebAuthn not supported. Please use a modern browser.');
+            }
+
+            const helpers = window.seculocoPasskeyCrypto;
+            if (!helpers) {
+                throw new Error('Passkey crypto helpers not loaded. Please refresh the page.');
+            }
+
+            if (!helpers.isPrfWrapped(wrappedKey)) {
+                throw new Error(helpers.strings().outdatedSetup || 'The passkey setup is outdated. Reset the passkey and register it again.');
             }
 
             // Get challenge from server
@@ -151,59 +143,13 @@
                 throw new Error('Failed to get authentication challenge');
             }
 
-            const challenge = this.base64ToArrayBuffer(challengeResponse.data.challenge);
-            const allowCredentials = challengeResponse.data.credentials.map(cred => ({
-                type: 'public-key',
-                id: this.base64ToArrayBuffer(cred.id)
-            }));
-
-            // Authenticate with passkey
-            const assertion = await navigator.credentials.get({
-                publicKey: {
-                    challenge: challenge,
-                    allowCredentials: allowCredentials,
-                    userVerification: 'required',
-                    timeout: 60000
-                }
-            });
-
-            return this.deriveUnwrappingKey(assertion);
-        }
-
-        /**
-         * Derive unwrapping key from passkey assertion
-         *
-         * Global passkey storage: No user_id needed for key derivation.
-         */
-        async deriveUnwrappingKey(assertion) {
-            const credentialId = new Uint8Array(assertion.rawId);
-            const credentialIdB64 = btoa(String.fromCharCode(...credentialId));
-
-            // Server derives key (has access to wp_salt())
-            // No user_id needed - passkey is global, not per-user
-            const keyResponse = await $.ajax({
-                url: seculocoAjax.ajaxurl,
-                method: 'POST',
-                data: {
-                    action: 'seculoco_derive_passkey_unwrapping_key',
-                    credential_id: credentialIdB64,
-                    nonce: seculocoAjax.nonce
-                }
-            });
-
-            if (!keyResponse.success) {
-                throw new Error('Failed to derive unwrapping key');
-            }
-
-            // Import derived key as AES-GCM key
-            const keyBytes = this.base64ToArrayBuffer(keyResponse.data.key);
-            return await crypto.subtle.importKey(
-                'raw',
-                keyBytes,
-                { name: 'AES-GCM', length: 256 },
-                false,
-                ['decrypt']
+            const prf = await helpers.getPrfAssertion(
+                wrappedKey.credential_id,
+                helpers.b64ToBytes(wrappedKey.prf_salt),
+                helpers.b64ToBytes(challengeResponse.data.challenge)
             );
+
+            return helpers.deriveWrappingKey(prf.prfOutput, wrappedKey.kdf_info);
         }
 
         /**
@@ -349,6 +295,9 @@
          * Build form HTML content
          */
         buildFormHTML(data, url) {
+            // Entries from the single "Login Credentials" field have no separate username/password
+            const isLegacy = this.base.isLegacyFormat(data);
+
             return `
                 <h3 class="seculoco-export-form-title">Export Login to Password Manager</h3>
 
@@ -369,6 +318,15 @@
                     ⚠️ Remember to copy this URL! You'll need it to edit the password manager entry.
                 </small>
 
+                ${isLegacy ? '' : `
+                    <div class="seculoco-export-form-warning">
+                        <strong class="seculoco-export-form-warning-title">Username and password needed</strong>
+                        <p class="seculoco-export-form-warning-text">
+                            This entry stores all login data in one text field. Copy the username and password from the Login Credentials below into the Username and Password fields, then save.
+                        </p>
+                    </div>
+                `}
+
                 <label class="seculoco-export-form-label">Username:</label>
                 <input type="text" name="username" id="seculoco-export-username" autocomplete="username"
                        value="${this.escapeHtml(data.username_email || '')}"
@@ -384,7 +342,7 @@
                 </div>
 
                 ${data.additional_notes ? `
-                    <label class="seculoco-export-form-label" style="color: #666;">Notes (for reference only):</label>
+                    <label class="seculoco-export-form-label seculoco-export-form-label--muted">${isLegacy ? 'Notes (for reference only):' : 'Login Credentials:'}</label>
                     <textarea readonly class="seculoco-export-form-notes">${this.escapeHtml(data.additional_notes)}</textarea>
                 ` : ''}
 
@@ -394,7 +352,7 @@
 
                 <div class="seculoco-export-form-buttons">
                     <button type="button" id="cancel-export-btn" class="button">Cancel</button>
-                    <button type="submit" class="button button-primary" style="padding: 10px 20px; font-weight: 600;">Save to Password Manager</button>
+                    <button type="submit" class="button button-primary seculoco-export-form-submit">Save to Password Manager</button>
                 </div>
             `;
         }
